@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <title>Mapray 動作テスト</title>
+    <script type="text/javascript" src="mapray.js"></script>
+    <script type="text/javascript" src="fall.js"></script>
+    <style>
+      #inou-container {
+        width: 98%;
+        height: 95%;
+        margin: 0;
+        overflow: hidden;
+        padding: 0;
+        border: solid 2px blue;
+      }
+      html {
+        height: 100%;
+      }
+      body {
+        padding: 0;
+        margin: 0;
+        overflow: hidden;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <input type="button" value="開始" onclick="startApp('inou-container');"/>
+    </div>
+    <div id="inou-container">
+    </div>
+  </body>
+</html>

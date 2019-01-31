@@ -1,0 +1,57 @@
+{
+  "name": "mapray-js",
+  "version": "0.5.1",
+  "description": "3D Rendering Engine for GIS",
+  "keywords": [
+    "3D",
+    "sdk",
+    "api",
+    "webgl",
+    "map",
+    "geospatial",
+    "globe"
+  ],
+  "main": "dist/mapray.js",
+  "directories": {
+    "doc": "doc"
+  },
+  "scripts": {
+    "dist": "cross-env WEBPACK_ENV=dist webpack -p",
+    "mapray-devel": "webpack --watch -d",
+    "apps": "cross-env WEBPACK_ENV=apps webpack -p",
+    "apps-devel": "cross-env WEBPACK_ENV=apps webpack --watch -d",
+    "jsdoc": "jsdoc --recurse --destination ./doc/jsdoc --package ./package.json --readme ./doc/config/reference_top.md --access undefined,public,protected  --configure ./doc/config/jsdoc.json ./src/mapray",
+    "jsdoc-devel": "jsdoc --recurse --destination ./doc/jsdoc --package ./package.json --readme ./doc/config/reference_top.md --private  --configure ./doc/config/jsdoc.json ./src/mapray",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "contributors": [
+    {
+      "name": "Yasuhisa Tanioka"
+    },
+    {
+      "name": "Daisuke Matsumoto",
+      "url": "https://github.com/daisuke201"
+    }
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sony/mapray-js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sony/mapray-js/issues"
+  },
+  "homepage": "https://github.com/sony/mapray-js",
+  "devDependencies": {
+    "babel-core": "^6.21.0",
+    "babel-loader": "^6.2.10",
+    "babel-plugin-add-module-exports": "^0.2.1",
+    "babel-preset-env": "^1.7.0",
+    "babel-preset-es2015": "^6.18.0",
+    "cross-env": "^5.1.0",
+    "jsdoc": "^3.5.0",
+    "raw-loader": "^0.5.1",
+    "semver": "^5.6.0",
+    "webpack": "^1.14.0"
+  }
+}

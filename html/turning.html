@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <script src="mapray.js"></script>
+    <script src="turning.js"></script>
+    <style>
+      html, body {
+        height: 100%;
+        margin: 0;
+      }
+      div#inou-container {
+        display: flex;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body onload="new Turning('inou-container');">
+    <div id="inou-container"></div>
+  </body>
+</html>

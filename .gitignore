@@ -1,0 +1,7 @@
+build/
+dist/
+doc/jsdoc/
+node_modules/
+
+.idea
+.DS_Store

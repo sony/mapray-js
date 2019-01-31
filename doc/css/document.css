@@ -1,0 +1,15 @@
+@import url(http://thomasf.github.io/solarized-css/solarized-light.css);
+
+table {
+    border: solid 2px darkgray;
+    border-collapse: collapse;
+}
+
+table th, table td {
+    border: solid 1px darkgray;
+    padding: 3px 10px;
+}
+
+table th {
+    background: rgba(0,0,0,0.1);
+}
