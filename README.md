@@ -13,7 +13,7 @@ Mapray JS is a JavaScript library for a high quality interactive 3D globes and m
 
 ### npm
 ```bash
-npm install --save mapray
+npm install --save mapray-js
 ```
 
 ## Usage
