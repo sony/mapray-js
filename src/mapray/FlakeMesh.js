@@ -27,12 +27,18 @@ class FlakeMesh {
         // 頂点数
         this._num_vertices = 0;
 
+        // 頂点属性辞書
+        this._vertex_attribs = {};
+
         // XY グリッドサイズ
         this._num_quads_x = 0;
         this._num_quads_y = 0;
 
-        // 頂点を生成
+        // 頂点データを生成
         this._createVertices( gl, flake, dpows, dem );
+
+        // 頂点属性辞書を設定
+        this._setupVertexAttribs( gl );
 
         // インデックス型
         this._index_type = (this._num_vertices < 65536) ? gl.UNSIGNED_SHORT : gl.UNSIGNED_INT;
@@ -278,6 +284,53 @@ class FlakeMesh {
     }
 
 
+    /**
+     * @summary 頂点属性の辞書を設定
+     * @desc
+     * <p>this._vertex_attribs に Mesh.AttribData の辞書を設定する。</p>
+     *
+     * @param {WebGLRenderingContext} gl
+     * @private
+     */
+    _setupVertexAttribs( gl )
+    {
+        var   type = gl.FLOAT;
+        var stride = FlakeMesh.VERTEX_BYTES;
+
+        // Mesh.AttribData の辞書
+        this._vertex_attribs = {
+
+            "a_position": {
+                buffer:         this._vertices,
+                num_components: 3,
+                component_type: type,
+                normalized:     false,
+                byte_stride:    stride,
+                byte_offset:    FlakeMesh.OFFSET_P
+            },
+
+            "a_normal": {
+                buffer:         this._vertices,
+                num_components: 3,
+                component_type: type,
+                normalized:     false,
+                byte_stride:    stride,
+                byte_offset:    FlakeMesh.OFFSET_N
+            },
+
+            "a_uv": {
+                buffer:         this._vertices,
+                num_components: 2,
+                component_type: type,
+                normalized:     false,
+                byte_stride:    stride,
+                byte_offset:    FlakeMesh.OFFSET_UV
+            }
+
+        };
+    }
+
+
     _createIndices()
     {
         var gl = this._gl;
@@ -437,6 +490,8 @@ class FlakeMesh {
     {
         var gl = this._gl;
 
+        this._vertex_attribs = {};
+
         gl.deleteBuffer( this._vertices );
         this._vertices = null;
 
@@ -504,15 +559,10 @@ class FlakeMesh {
     draw( material )
     {
         var     gl = this._gl;
-        var stride = FlakeMesh.VERTEX_BYTES;
         var isWire = material.isWireframe();
 
         // 頂点属性のバインド
-        gl.bindBuffer( gl.ARRAY_BUFFER, this._vertices );
-        material.bindVertexAttrib( "a_position", 3, stride, FlakeMesh.OFFSET_P );
-        material.bindVertexAttrib( "a_normal",   3, stride, FlakeMesh.OFFSET_N );
-        material.bindVertexAttrib( "a_uv",       2, stride, FlakeMesh.OFFSET_UV );
-        gl.bindBuffer( gl.ARRAY_BUFFER, null );
+        material.bindVertexAttribs( this._vertex_attribs );
 
         // インデックスのバインド
         var indices = isWire ? this.wire_indices : this.indices;
