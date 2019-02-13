@@ -2,7 +2,21 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8">
-    <title>Mapray 動作テスト</title>
+    <title>Mapray Fall</title>
+    <noscript>
+      <div style="
+            padding: 0.5em 1em;
+            margin: 2em 0;
+            color: black;
+            background: #fcefb7;
+            border: solid 2px #f8d450;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.22);
+        ">
+        <p style="
+                margin: 0;
+                padding: 0;">JavaScriptが無効になっています。MaprayのWebサイトを正しく表示するためにはJavaScriptを有効にして下さい。</p>
+      </div>
+    </noscript>
     <script type="text/javascript" src="mapray.js"></script>
     <script type="text/javascript" src="fall.js"></script>
     <style>
@@ -27,9 +41,12 @@
   </head>
   <body>
     <div>
-      <input type="button" value="開始" onclick="startApp('inou-container');"/>
+      <input type="button" value="start" onclick="startApp('inou-container');"/>
     </div>
     <div id="inou-container">
+    </div>
+    <div style="font-size:0.55rem; color: #696969; margin-left: 16px">
+      この地図の作成に当たっては、国土地理院の承認を得て、同院発行の基盤地図情報を使用した。（承認番号　平30情使、 第626号）, <a href="http://maps.gsi.go.jp/development/ichiran.html">国土地理院</a>
     </div>
   </body>
 </html>
