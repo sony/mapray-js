@@ -13,7 +13,7 @@ class Fall {
      */
     constructor( container )
     {
-        this._image_provider  = new mapray.StandardImageProvider( "http://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", ".jpg", 256, 0, 18 );
+        this._image_provider  = new mapray.StandardImageProvider( "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", ".jpg", 256, 0, 18 );
         this._render_callback = new FallRenderCallback( this );
 
         this._viewer = new mapray.Viewer( container, { image_provider:  this._image_provider,

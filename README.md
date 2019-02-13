@@ -47,7 +47,7 @@ Mapray cloud managed by [Sony Network Communications Inc.](https://www.sonynetwo
        var accessToken = "<your access token here>";
 
        // For Image tiles
-       var imageProvider = new mapray.StandardImageProvider( "http://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", ".jpg", 256, 0, 18 );
+       var imageProvider = new mapray.StandardImageProvider( "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", ".jpg", 256, 0, 18 );
 
        // Create viewer
        var viewer = new mapray.Viewer(
