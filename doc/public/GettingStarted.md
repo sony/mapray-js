@@ -109,7 +109,7 @@ var accessToken = 'AbCdEfGhIjKlMnOpQrStU';
        var accessToken = "<your access token here>";
 
        // 国土地理院提供の地図タイルを設定
-       var imageProvider = new mapray.StandardImageProvider( "http://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", ".jpg", 256, 0, 18 );
+       var imageProvider = new mapray.StandardImageProvider( "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", ".jpg", 256, 0, 18 );
 
        // Viewerを作成する
        var viewer = new mapray.Viewer(

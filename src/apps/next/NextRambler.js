@@ -104,7 +104,7 @@ class Rambler extends mapray.RenderCallback {
      */
     _createImageProvider()
     {
-        return new mapray.StandardImageProvider( "http://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", ".jpg", 256, 2, 18 );
+        return new mapray.StandardImageProvider( "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", ".jpg", 256, 2, 18 );
     }
 
     /**

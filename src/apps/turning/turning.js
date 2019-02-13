@@ -41,7 +41,7 @@ class Turning extends mapray.RenderCallback {
     // 画像プロバイダを生成
     createImageProvider()
     {
-        return new mapray.StandardImageProvider( "http://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", ".jpg", 256, 2, 18 );
+        return new mapray.StandardImageProvider( "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", ".jpg", 256, 2, 18 );
     }
 
     // 基準座標系から GOCS への変換行列を生成
