@@ -1,3 +1,6 @@
+import MeshBuffer from "./MeshBuffer";
+
+
 /**
  * @summary モデルメッシュ
  * @memberof mapray
@@ -26,7 +29,8 @@ class Mesh {
             this._initByBinary( data );
         }
         else {
-            this._initByObject( data );
+            // JSON オブジェクト
+            this._initByInitializer( (new JsonInit( glenv, data )).initializer );
         }
     }
 
@@ -99,35 +103,6 @@ class Mesh {
         };
 
         this._initCommon( vinfo, ptype );
-    }
-
-
-    /**
-     * @summary JSON オブジェクトによる初期化
-     * @desc
-     * <p>data は Scene-Schema.txt の <MESH-DATA> と同じ構造である。</p>
-     * @param {object} data  メッシュデータ
-     * @private
-     */
-    _initByObject( data )
-    {
-        var vinfo = Mesh._createVertexInfo( data.vtype );
-
-        this._num_vertices = data.vertices.length / Mesh._numVertexElements( vinfo );
-        var   num_indices  = data.indices.length;
-        this._vertices     = this._createVerticesByObject( data.vertices, vinfo );   // vertices: [Number+]
-
-        // インデックスの型は頂点数により自動的に決める
-        var itype = (this._num_vertices < 65536) ? Mesh.ENUM_ITYPE_UINT16 : Mesh.ENUM_ITYPE_UINT32;
-
-        this._index_data = {
-            buffer:      this._createIndicesByObject( data.indices, itype, num_indices ),  // indices: [Number+]
-            num_indices: num_indices,
-            type:        this._indexTypeToComponentType( itype ),
-            byte_offset: 0
-        };
-
-        this._initCommon( vinfo, data.ptype );
     }
 
 
@@ -333,80 +308,6 @@ class Mesh {
             index_bytes = 4;
             for ( i = 0; i < num_indices; ++i ) {
                 dst_array[i] = src_view.getUint32( index_bytes * i, true );
-            }
-            break;
-        default:
-            dst_array = null;
-            console.error( "mapray: unknown itype: " + itype );
-        }
-
-        // VBO を生成
-        var     gl = this._glenv.context;
-        var target = gl.ELEMENT_ARRAY_BUFFER;
-        var    vbo = gl.createBuffer();
-        gl.bindBuffer( target, vbo );
-        gl.bufferData( target, dst_array, gl.STATIC_DRAW );
-        gl.bindBuffer( target, null );
-
-        return vbo;
-    }
-
-
-    /**
-     * @summary 頂点バッファを作成 (頂点配列から)
-     *
-     * @param  {array} src_array  頂点配列
-     * @param  {array} vinfo      頂点情報
-     * @return {WebGLBuffer}      頂点データを格納した WebGL バッファ
-     * @private
-     */
-    _createVerticesByObject( src_array, vinfo )
-    {
-        // 入力配列を作成
-        var num_vertices = this._num_vertices;
-        var num_elements = Mesh._numVertexElements( vinfo ) * num_vertices;
-        var dst_array    = new Float32Array( num_elements );
-        for ( var i = 0; i < num_elements; ++i ) {
-            dst_array[i] = src_array[i];
-        }
-
-        // VBO を生成
-        var     gl = this._glenv.context;
-        var target = gl.ARRAY_BUFFER;
-        var    vbo = gl.createBuffer();
-        gl.bindBuffer( target, vbo );
-        gl.bufferData( target, dst_array, gl.STATIC_DRAW );
-        gl.bindBuffer( target, null );
-
-        return vbo;
-    }
-
-
-    /**
-     * @summary インデックスバッファを作成 (インデックス配列から)
-     *
-     * @param  {array}  src_array    インデックス配列
-     * @param  {number} itype        インデックス型 (ENUM_ITYPE_UINT16 | ENUM_ITYPE_UINT32)
-     * @param  {number} num_indices  インデックス数
-     * @return {WebGLBuffer}         インデックスを格納した WebGL バッファ
-     * @private
-     */
-    _createIndicesByObject( src_array, itype, num_indices )
-    {
-        var i;
-        var dst_array;
-
-        switch ( itype ) {
-        case Mesh.ENUM_ITYPE_UINT16:
-            dst_array = new Uint16Array( num_indices );
-            for ( i = 0; i < num_indices; ++i ) {
-                dst_array[i] = src_array[i];
-            }
-            break;
-        case Mesh.ENUM_ITYPE_UINT32:
-            dst_array = new Uint32Array( num_indices );
-            for ( i = 0; i < num_indices; ++i ) {
-                dst_array[i] = src_array[i];
             }
             break;
         default:
@@ -761,6 +662,221 @@ var ComponentType = {
     Mesh.FSIZE_N = 3;
     Mesh.FSIZE_T = 2;
 }
+
+
+/**
+ * @summary JSON オブジェクトを Mesh.Initializer に変換
+ *
+ * @memberof mapray.Mesh
+ * @private
+ */
+class JsonInit
+{
+
+    /**
+     * @param {mapray.GLEnv} glenv
+     * @param {object}       data   メッシュデータ
+     */
+    constructor( glenv, data )
+    {
+        var        vinfo = InitHelper.createVertexInfo( data.vtype );
+        var  num_vcompos = InitHelper.numVertexComponents( vinfo );
+        var num_vertices = data.vertices.length / num_vcompos;
+
+        this._initializer = new Initializer( JsonInit._toDrawMode( data ), num_vertices );
+
+        this._addIndex( glenv, data.indices, num_vertices );
+
+        var  FLT_BYTES = 4;
+        var     buffer = new MeshBuffer( glenv, InitHelper.toTypedArray( data.vertices, ComponentType.FLOAT ) );
+        var byteStride = num_vcompos * FLT_BYTES;
+        var byteOffset = 0;
+
+        for ( var i = 0; i < vinfo.length; ++i ) {
+            var num_compos = vinfo[i].size;
+            this._initializer.addAttribute( vinfo[i].name, buffer, num_compos, ComponentType.FLOAT,
+                                            { byte_stride: byteStride, byte_offset: byteOffset } );
+            byteOffset += num_compos * FLT_BYTES;
+        }
+    }
+
+
+    /**
+     * @summary Mesh.Initializer を取得
+     * @type {Mesh.Initializer}
+     * @readonly
+     */
+    get initializer() { return this._initializer; }
+
+
+    /**
+     * @summary インデックスデータを追加
+     *
+     * @param {mapray.GLEnv} glenv
+     * @param {object}       indices       インデックス配列
+     * @param {number}       num_vertices  頂点数
+     */
+    _addIndex( glenv, indices, num_vertices )
+    {
+        // インデックスの型は頂点数により自動的に決める
+        var type = (num_vertices < 65536) ? ComponentType.UNSIGNED_SHORT : ComponentType.UNSIGNED_INT;
+
+        var buffer = new MeshBuffer( glenv, InitHelper.toTypedArray( indices, type ),
+                                     { target: MeshBuffer.Target.INDEX } );
+
+        this._initializer.addIndex( buffer, indices.length, type );
+    }
+
+
+    /**
+     * @summary Mesh.DrawMode に変換
+     *
+     * @param  {object} data           メッシュデータ
+     * @return {mapray.Mesh.DrawMode}  描画モード
+     * @private
+     */
+    static
+    _toDrawMode( data )
+    {
+        // ptype?: ("triangles" | "lines") = "triangles"
+        switch ( data.ptype ) {
+        case "triangles": return DrawMode.TRIANGLES;
+        case "lines":     return DrawMode.LINES;
+        default:          return DrawMode.TRIANGLES;
+        }
+    }
+
+
+}
+
+
+/**
+ * @summary 初期化ヘルパー
+ *
+ * @memberof mapray.Mesh
+ * @private
+ */
+class InitHelper
+{
+
+    /**
+     * @summary 頂点情報を生成
+     * @desc
+     * <p>vtype を以下の形式に変換して返す。ただし vtype が配列なら vtype を返す。</p>
+     * <pre>
+     *   [ { name: 頂点属性名, size: 要素数 }, ... ]
+     * </pre>
+     * @param  {string|number|array} vtype  頂点タイプまたは頂点情報
+     * @return {array}                      頂点情報
+     */
+    static
+    createVertexInfo( vtype )
+    {
+        if ( Array.isArray( vtype ) ) {
+            // vtype は最初から頂点情報
+            return vtype;
+        }
+
+        var vinfo = null;
+
+        // vtype: ("P" | "PN" | "PT" | "PNT")
+        switch ( vtype ) {
+        case "P":
+        case InitHelper.ENUM_VTYPE_P:
+            vinfo = [
+                { name: InitHelper.ANAME_P, size: InitHelper.FSIZE_P }
+            ];
+            break;
+        case "PN":
+        case InitHelper.ENUM_VTYPE_PN:
+            vinfo = [
+                { name: InitHelper.ANAME_P, size: InitHelper.FSIZE_P },
+                { name: InitHelper.ANAME_N, size: InitHelper.FSIZE_N }
+            ];
+            break;
+        case "PT":
+        case InitHelper.ENUM_VTYPE_PT:
+            vinfo = [
+                { name: InitHelper.ANAME_P, size: InitHelper.FSIZE_P },
+                { name: InitHelper.ANAME_T, size: InitHelper.FSIZE_T }
+            ];
+            break;
+        case "PNT":
+        case InitHelper.ENUM_VTYPE_PNT:
+            vinfo = [
+                { name: InitHelper.ANAME_P, size: InitHelper.FSIZE_P },
+                { name: InitHelper.ANAME_N, size: InitHelper.FSIZE_N },
+                { name: InitHelper.ANAME_T, size: InitHelper.FSIZE_T }
+            ];
+            break;
+        default:
+            throw new Error( "mapray: unknown vtype: " + vtype );
+        }
+
+        return vinfo;
+    }
+
+
+    /**
+     * @summary 頂点データの要素数を取得
+     *
+     * @param  {object[]} vinfo  頂点情報
+     * @return {number}          頂点データの要素数
+     */
+    static
+    numVertexComponents( vinfo )
+    {
+        var     length = vinfo.length;
+        var num_compos = 0;
+
+        for ( var i = 0; i < length; ++i ) {
+            num_compos += vinfo[i].size;
+        }
+
+        return num_compos;
+    }
+
+
+    /**
+     * @summary 型配列に変換
+     *
+     * @param  {object}                    array  入力配列
+     * @param  {mapray.Mesh.ComponentType} type   変換先の要素型
+     * @return {TypedArray}                       変換された配列
+     */
+    static
+    toTypedArray( array, type )
+    {
+        switch ( type ) {
+        case ComponentType.UNSIGNED_SHORT:
+            return (array instanceof Uint16Array) ? array : new Uint16Array( array );
+        case ComponentType.UNSIGNED_INT:
+            return (array instanceof Uint32Array) ? array : new Uint32Array( array );
+        case ComponentType.FLOAT:
+            return (array instanceof Float32Array) ? array : new Float32Array( array );
+        default:
+            throw new Error( "invalid component type: " + type );
+        }
+    }
+
+}
+
+
+// VTYPE 列挙値
+InitHelper.ENUM_VTYPE_P   = 0;
+InitHelper.ENUM_VTYPE_PN  = 1;
+InitHelper.ENUM_VTYPE_PT  = 2;
+InitHelper.ENUM_VTYPE_PNT = 3;
+
+// 頂点属性名
+InitHelper.ANAME_P = "a_position";
+InitHelper.ANAME_N = "a_normal";
+InitHelper.ANAME_T = "a_texcoord";
+
+// 要素のサイズ (要素数)
+InitHelper.FSIZE_P = 3;
+InitHelper.FSIZE_N = 3;
+InitHelper.FSIZE_T = 2;
 
 
 Mesh.Initializer = Initializer;
