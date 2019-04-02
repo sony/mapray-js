@@ -1,0 +1,15 @@
+{
+  "entity_list": [
+    {
+      "type": "text",
+      "entries": [
+        { "text": "Mt.Fuji",
+          "position": { "cartographic": [138.730647, 35.362773, 4000.0] },
+          "font_size": 25,
+          "color": [1, 0, 0] }
+      ],
+      "font_size": 20
+    }
+
+  ]
+}

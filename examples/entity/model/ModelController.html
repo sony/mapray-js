@@ -1,0 +1,97 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>ModelControllerSample</title>
+    <script src="https://api.mapray.com/mapray-js/v0.5.1/mapray.js"></script>
+    <script src="ModelController.js"></script>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            background-color: #E0E0E0;
+        }
+
+        input {
+            font-size: 13px;
+        }
+
+        div#mapray-container {
+            display: flex;
+            height: 89%;
+        }
+
+        div#ButtonBox {
+            display: block;
+            background-color: #E0E0E0;
+            height: 100px;
+            width: 220px;
+            border: inset 1px #000000;
+            float: left;
+        }
+
+        div#ForwardButton{
+            display:flex;
+            width:70px;
+            height:30px;
+            margin-top: 5px;
+            margin-bottom:auto;
+            margin-left:auto;
+            margin-right:auto;
+        }
+
+        div#RotateLeft90Button{
+            display: flex;
+            width:70px;
+            height:30px;
+            margin-left: 5px;
+            margin-right:auto;
+            margin-top:auto;
+            margin-bottom:auto;
+            float: left;
+        }
+
+        div#RotateRight90Button{
+            display: flex;
+            width:70px;
+            height:30px;
+            margin-right: 7px;
+            margin-left:auto;
+            margin-top:auto;
+            margin-bottom:auto;
+        }
+
+        div#BackwardButton{
+            display: flex;
+            width:70px;
+            height:30px;
+            margin-bottom:5px;
+            margin-top:auto;
+            margin-left:auto;
+            margin-right:auto;
+        }
+
+        div#mapInfo{
+            display: flex;
+            width: 50px;
+            height: 100px;
+            margin-left: auto;
+            margin-right: 10px;
+            align-items: center;
+        }
+    </style>
+</head>
+
+<body onload="CreateModelControllerInstance('mapray-container');">
+    <div id="mapray-container"></div>
+
+    <div id="ButtonBox">
+        <div id="ForwardButton"><input type="button" value="Forward" onclick="ForwardButtonClicked()"></div>
+        <div id="RotateLeft90Button"><input type="button" value="Left Turn" onclick="LeftTurnButtonClicked()"></div>
+        <div id="RotateRight90Button"><input type="button" value="Right Turn" onclick="RightTurnButtonClicked()"></div>
+        <div id="BackwardButton"><input type="button" value="Backward" onclick="BackwardButtonClicked()"></div>
+    </div>
+
+    <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
+</body>
+</html>
