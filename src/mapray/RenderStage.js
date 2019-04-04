@@ -112,8 +112,15 @@ class RenderStage {
             return;
         }
 
-        var  collector = new FlakeCollector( this );
-        var flake_list = collector.traverse();
+        var flake_list;
+        if ( this._viewer.getVisibility( Viewer.Category.GROUND ) ) {
+            var  collector = new FlakeCollector( this );
+            flake_list = collector.traverse();
+        }
+        else {
+            // 地表が非表示のときは地表断片が 0 個として処理
+            flake_list = [];
+        }
 
         // すべての地表断片を描画
         gl.enable( gl.BLEND );
@@ -124,9 +131,8 @@ class RenderStage {
         }
 
         // モデルシーン描画
-        var scene = this._scene;
-        if ( scene !== null ) {
-            scene.draw( this );
+        if ( this._viewer.getVisibility( Viewer.Category.ENTITY ) ) {
+            this._scene.draw( this );
         }
 
         // 描画地表断片数を記録

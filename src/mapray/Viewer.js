@@ -26,6 +26,8 @@ class Viewer {
      * @param {mapray.DemProvider}       [options.dem_provider]      DEM プロバイダ
      * @param {mapray.ImageProvider}     [options.image_provider]    画像プロバイダ
      * @param {array}                    [options.layers]            地図レイヤー情報の配列
+     * @param {boolean}                  [options.ground_visibility=true]  地表の可視性
+     * @param {boolean}                  [options.entity_visibility=true]  エンティティの可視性
      * @param {mapray.RenderCallback}    [options.render_callback]   レンダリングコールバック
      * @param {mapray.Viewer.RenderMode} [options.render_mode]       レンダリングモード
      * @param {mapray.DebugStats}        [options.debug_stats]       デバッグ統計オブジェクト
@@ -55,6 +57,8 @@ class Viewer {
         this._globe              = new Globe( this._glenv, this._dem_provider );
         this._tile_texture_cache = new TileTextureCache( this._glenv, this._image_provider );
         this._scene              = new Scene( this._glenv );
+        this._ground_visibility  = Viewer._getBoolOption( options, "ground_visibility", true );
+        this._entity_visibility  = Viewer._getBoolOption( options, "entity_visibility", true );
         this._render_mode        = (options && options.render_mode) || RenderMode.SURFACE;
         this._debug_stats        = (options && options.debug_stats) || null;
         this._render_callback    = this._createRenderCallback( options );
@@ -196,6 +200,17 @@ class Viewer {
 
 
     /**
+     * ブール値のオプションを取得
+     * @private
+     */
+    static
+    _getBoolOption( options, name, defaultValue )
+    {
+        return (options && (options[name] !== undefined)) ? options[name] : defaultValue;
+    }
+
+
+    /**
      * @summary コンテナ要素 (キャンバス要素を保有する)
      * @type {Element}
      * @readonly
@@ -306,6 +321,55 @@ class Viewer {
      * @package
      */
     get tile_texture_cache() { return this._tile_texture_cache; }
+
+
+    /**
+     * @summary 可視性を設定
+     * @desc
+     * <p>target に属するオブジェクトを表示するかどうかを指定する。</p>
+     * <p>可視性は Viewer の構築子の ground_visibility と entity_visibility オプションでも指定することができる。</p>
+     *
+     * @param {mapray.Viewer.Category} target      表示対象
+     * @param {boolean}                visibility  表示するとき true, 表示しないとき false
+     *
+     * @see {@link mapray.Viewer#getVisibility}
+     */
+    setVisibility( target, visibility )
+    {
+        switch ( target ) {
+        case Category.GROUND:
+            this._ground_visibility = visibility;
+            break;
+        case Category.ENTITY:
+            this._entity_visibility = visibility;
+            break;
+        default:
+            throw new Error( "invalid target: " + target );
+        }
+    }
+
+
+    /**
+     * @summary 可視性を取得
+     * @desc
+     * <p>target に属するオブジェクトを表示するかどうかを取得する。</p>
+     *
+     * @param  {mapray.Viewer.Category} target  表示対象
+     * @return {boolean}  表示するとき true, 表示しないとき false
+     *
+     * @see {@link mapray.Viewer#setVisibility}
+     */
+    getVisibility( target, visibility )
+    {
+        switch ( target ) {
+        case Category.GROUND:
+            return this._ground_visibility;
+        case Category.ENTITY:
+            return this._entity_visibility;
+        default:
+            throw new Error( "invalid target: " + target );
+        }
+    }
 
 
     /**
@@ -496,6 +560,30 @@ class Viewer {
 
 
 /**
+ * @summary 表示対象の列挙型
+ * @desc
+ * <p>{@link mapray.Viewer#setVisibility} と {@link mapray.Viewer#getVisibility} メソッドの target 引数に指定する値の型である。</p>
+ * @enum {object}
+ * @memberof mapray.Viewer
+ * @constant
+ */
+var Category = {
+
+    /**
+     * 地表 (レイヤーも含む)
+     */
+    GROUND: { id: "GROUND" },
+
+
+    /**
+     * エンティティ
+     */
+    ENTITY: { id: "ENTITY" }
+
+};
+
+
+/**
  * @summary レンダリングモードの列挙型
  * @desc
  * {@link mapray.Viewer} の構築子の options.render_mode パラメータ、または {@link mapray.Viewer#render_mode} プロパティに指定する値の型である。
@@ -521,6 +609,7 @@ var RenderMode = {
 
 // クラス定数の定義
 {
+Viewer.Category   = Category;
 Viewer.RenderMode = RenderMode;
 }
 
