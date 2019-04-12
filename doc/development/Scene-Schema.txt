@@ -1,0 +1,146 @@
+# -*- coding: utf-8 -*-
+
+
+■ シーンファイル (JSON)
+
+start => <SCENE>
+
+<SCENE> => {
+  mesh_register?: { (<ID>: <MESH>)* } = {}
+  texture_register?: { (<ID>: <TEXTURE>)* } = {}
+  entity_list?: [ <ENTITY>* ] = []
+}
+
+<MESH> => {
+  (binary: <URL> | <MESH-DATA>)
+}
+
+<TEXTURE> => {
+  image: <URL>
+}
+
+<ENTITY> => {
+  id?: <ID>
+  <GENERIC-CONTENT> | <MARKERLINE-CONTENT> | <TEXT-CONTENT>
+}
+
+<GENERIC-CONTENT> =>
+  type?: "generic"
+  mode?: String = "basic"
+  transform: <TRANSFORM>
+  ref_mesh: <ID>
+  properties?: { (<ID>: (<PARAM-FLOAT> | <PARAM-VEC3> | <PARAM-TEXTURE>))* } = {}
+
+<MARKERLINE-CONTENT> =>
+  type: "markerline"
+  points: (<CARTESIAN-POINTS> | <CARTOGRAPHIC-POINTS>)
+  line_width?: <PARAM-FLOAT> = 1
+  color?: <PARAM-VEC3> = [1, 1, 1]
+  opacity?: <PARAM-FLOAT> = 1
+
+<TEXT-CONTENT> =>
+  type: "text"
+  entries: [<TEXT-ENTRY>*]
+  font_style?: String = "normal"
+  font_weight?: String = "normal"
+  font_size?: Number = 16
+  font_family?: String = "sans-serif"
+  color?: <PARAM-VEC3> = [1, 1, 1]
+
+<TRANSFORM> => {
+  (matrix: <MATRIX>) | (cartographic: <CARTOGRAPHIC>)
+}
+
+<CARTESIAN-POINTS> => {
+  type?: "cartesian"
+  coords: [(Number, Number, Number)*]
+}
+
+<CARTOGRAPHIC-POINTS> => {
+  type: "cartographic"
+  coords: [(Number, Number, Number)*]    (* 順序は [経度, 緯度, 高度] *)
+}
+
+<TEXT-ENTRY> => {
+  text: String
+  position: <POSITION>
+  font_style?: String
+  font_weight?: String
+  font_size?: Number
+  font_family?: String
+  color?: <PARAM-VEC3>
+}
+
+<POSITION> => {
+  (cartesian: <PARAM-VEC3>) | (cartographic: <CARTOGRAPHIC>)
+}
+
+<ID> => String
+
+<URL> => String
+
+<MATRIX> => [Number, Number, Number, Number, Number, Number, Number, Number, Number, Number, Number, Number, Number, Number, Number, Number]    (* 列優先 *)
+
+<CARTOGRAPHIC> => [Number, Number, Number]    (* 順序は [経度, 緯度, 高度] *)
+
+<PARAM-FLOAT> => Number
+
+<PARAM-VEC3> => [Number, Number, Number]
+
+<PARAM-TEXTURE> => {
+  type:        "tex-2d"
+  ref_texture: <ID>
+}
+
+<MESH-DATA> =>
+  vtype:    ("P" | "PN" | "PT" | "PNT")
+  ptype?:   ("triangles" | "lines") = "triangles"
+  vertices: [Number+]
+  indices:  [Number+]
+
+
+■ メッシュファイル (バイナリ)
+
+全体構造
+  vtype           uint8
+  itype           uint8
+  ptype           uint8
+  0               uint8
+  頂点数          uint32
+  インデックス数  uint32
+  頂点データ      VDATA[頂点数]
+  プリミティブ    IDATA[インデックス数]
+
+vtype: VDATA の型
+  0: P
+  1: P,N
+  2: P,T
+  3: P,N,T
+
+  P: 位置
+   float32 X
+   float32 Y
+   float32 Z
+
+  N: 正規化法線
+   float32 X
+   float32 Y
+   float32 Z
+
+  T: テクスチャ座標
+   float32 X
+   float32 Y
+
+itype: IDATA の型
+  0: uint16
+  1: uint32
+
+ptype: プリミティブ型
+  0: TRIANGLES
+  1: LINES
+
+
+※ 整数または浮動小数点数はリトルエンディアンで格納されている。
+
+
+# End of File
