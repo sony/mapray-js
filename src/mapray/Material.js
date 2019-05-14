@@ -10,17 +10,16 @@ class Material {
 
     /**
      * @param {mapray.GLEnv} glenv    WebGL 環境
-     * @param {string}     vs_code  頂点シェーダのソースコード
-     * @param {string}     fs_code  フラグメントシェーダのソースコード
+     * @param {string}       vs_code  頂点シェーダのソースコード
+     * @param {string}       fs_code  フラグメントシェーダのソースコード
      */
     constructor( glenv, vs_code, fs_code )
     {
         var shader     = new Shader( glenv, vs_code, fs_code );
         this._gl       = glenv.context;
         this._program  = this._link_shaders( shader.vs_object, shader.fs_object );
-        this._attrib_location  = this._create_attrib_location();
+        this._vertex_attribs   = this._create_vertex_attribs();
         this._uniform_location = this._create_uniform_location();
-        this._attrib_names     = Object.keys( this._attrib_location );
 
         shader.dispose();
     }
@@ -62,24 +61,27 @@ class Material {
 
 
     /**
-     * @summary 頂点属性のロケーション辞書を作成
+     * @summary 頂点属性情報を作成
      *
-     * @return {object}  ロケーション辞書
+     * @return {array}  頂点属性名前とロケーションの配列
      * @private
      */
-    _create_attrib_location()
+    _create_vertex_attribs()
     {
-        var       gl = this._gl;
-        var  program = this._program;
-        var location = {};
+        var      gl = this._gl;
+        var program = this._program;
+        var attribs = [];
 
         var num_items = gl.getProgramParameter( program, gl.ACTIVE_ATTRIBUTES );
+
         for ( var i = 0; i < num_items; ++i ) {
-            var info = gl.getActiveAttrib( program, i );
-            location[info.name] = gl.getAttribLocation( program, info.name );
+            var   info = gl.getActiveAttrib( program, i );
+            var attrib = { name:     info.name,
+                           location: gl.getAttribLocation( program, info.name ) };
+            attribs.push( attrib );
         }
 
-        return location;
+        return attribs;
     }
 
 
@@ -114,16 +116,6 @@ class Material {
         var gl = this._gl;
         gl.deleteProgram( this._program );
         this._program = null;
-    }
-
-
-    /**
-     * @summary 頂点属性の名前の配列を取得
-     * @return {Array.<string>}  頂点属性の名前の配列
-     */
-    getAttribNames()
-    {
-        return this._attrib_names;
     }
 
 
@@ -228,19 +220,39 @@ class Material {
 
 
     /**
-     * @summary 頂点データを束縛
-     * @param {string} name     変数名
-     * @param {number} size     要素数
-     * @param {number} stride   頂点バイト数
-     * @param {number} offst    開始バイト数
+     * @summary 頂点属性データを束縛
+     *
+     * @desc
+     * <p>mesh_attribs は頂点属性名から Mesh.AttribData インスタンスを取得する辞書である。</p>
+     *
+     * @param {object} mesh_attribs  メッシュ側の頂点属性データの辞書
      */
-    bindVertexAttrib( name, size, stride, offset )
+    bindVertexAttribs( mesh_attribs )
     {
-        var location = this._attrib_location[name];
-        if ( location >= 0 ) {
-            var gl = this._gl;
-            gl.enableVertexAttribArray( location );
-            gl.vertexAttribPointer( location, size, gl.FLOAT, false, stride, offset );
+        var gl = this._gl;
+        var mtl_attribs = this._vertex_attribs;  // マテリアル側の頂点属性データ配列
+        var num_attribs = mtl_attribs.length;
+
+        for ( var i = 0; i < num_attribs; ++i ) {
+            var mtl_attrib  = mtl_attribs[i];
+            var mesh_attrib = mesh_attribs[mtl_attrib.name];
+            var location    = mtl_attrib.location;
+
+            if ( mesh_attrib !== undefined ) {
+                // 頂点属性データを束縛
+                gl.bindBuffer( gl.ARRAY_BUFFER, mesh_attrib.buffer );
+                gl.enableVertexAttribArray( location );
+                gl.vertexAttribPointer( location,
+                                        mesh_attrib.num_components,
+                                        mesh_attrib.component_type,
+                                        mesh_attrib.normalized,
+                                        mesh_attrib.byte_stride,
+                                        mesh_attrib.byte_offset );
+            }
+            else {
+                // メッシュ側に必要な頂点属性がないとき
+                gl.disableVertexAttribArray( location );
+            }
         }
     }
 
