@@ -6,9 +6,15 @@
 start => <SCENE>
 
 <SCENE> => {
+  model_register?: { (<ID>: <MODEL>)* } = {}
   mesh_register?: { (<ID>: <MESH>)* } = {}
   texture_register?: { (<ID>: <TEXTURE>)* } = {}
   entity_list?: [ <ENTITY>* ] = []
+}
+
+<MODEL> => {
+  link: <URL>
+  offset_transform?: <OFFSET-TRANSFORM> = {}
 }
 
 <MESH> => {
@@ -21,8 +27,14 @@ start => <SCENE>
 
 <ENTITY> => {
   id?: <ID>
-  <GENERIC-CONTENT> | <MARKERLINE-CONTENT> | <TEXT-CONTENT>
+  <MODEL-CONTENT> | <GENERIC-CONTENT> | <MARKERLINE-CONTENT> | <TEXT-CONTENT>
 }
+
+<MODEL-CONTENT> =>
+  type: "model"
+  transform: <TRANSFORM>
+  ref_model: <ID>
+  index?: Number = 0
 
 <GENERIC-CONTENT> =>
   type?: "generic"
@@ -47,8 +59,28 @@ start => <SCENE>
   font_family?: String = "sans-serif"
   color?: <PARAM-VEC3> = [1, 1, 1]
 
-<TRANSFORM> => {
-  (matrix: <MATRIX>) | (cartographic: <CARTOGRAPHIC>)
+<TRANSFORM> => <TRANSFORM-MATRIX> | <TRANSFORM-CARTOGRAPHIC>
+
+<OFFSET-TRANSFORM> => <TRANSFORM-MATRIX> | <OFFSET-TRANSFORM-PARAMS>
+
+<TRANSFORM-MATRIX> => {
+  matrix: <MATRIX>
+}
+
+<TRANSFORM-CARTOGRAPHIC> => {
+  cartographic: <CARTOGRAPHIC>
+  heading?: <PARAM-FLOAT> = 0
+  tilt?: <PARAM-FLOAT> = 0
+  roll?: <PARAM-FLOAT> = 0
+  scale?: <PARAM-SCALE3> = [1, 1, 1]
+}
+
+<OFFSET-TRANSFORM-PARAMS> => {
+  translate?: <PARAM-VEC3> = [0, 0, 0]
+  heading?: <PARAM-FLOAT> = 0
+  tilt?: <PARAM-FLOAT> = 0
+  roll?: <PARAM-FLOAT> = 0
+  scale?: <PARAM-SCALE3> = [1, 1, 1]
 }
 
 <CARTESIAN-POINTS> => {
@@ -91,6 +123,8 @@ start => <SCENE>
   type:        "tex-2d"
   ref_texture: <ID>
 }
+
+<PARAM-SCALE3> => <PARAM-VEC3> | Number
 
 <MESH-DATA> =>
   vtype:    ("P" | "PN" | "PT" | "PNT")
