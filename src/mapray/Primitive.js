@@ -90,6 +90,33 @@ class Primitive {
 
 
     /**
+     * @summary インスタンスの複製を返す
+     *
+     * @desc
+     * <p>公開プロパティが this と同じインスタンスを生成して返す。</p>
+     * <p>ただしプロパティ mesh, material, properties は参照コピーで、それ以外は深いコピーとなる。</p>
+     *
+     * @return {mapray.Primitive}  インスタンスの複製
+     */
+    fastClone()
+    {
+        var clone = new Primitive( this._glenv, this.mesh, this.material, GeoMath.createMatrix( this.transform ) );
+
+        if ( this.pivot ) {
+            clone.pivot = GeoMath.createVector3( this.pivot );
+        }
+
+        if ( this.bbox ) {
+            clone.bbox = this.bbox.map( v => GeoMath.createVector3( v ) );
+        }
+
+        clone.properties = this.properties;
+
+        return clone;
+    }
+
+
+    /**
      * @summary プリミティブが見えるか？
      * @desc
      * <p>true を返したときはソート深度 this.sort_z が設定される。</p>

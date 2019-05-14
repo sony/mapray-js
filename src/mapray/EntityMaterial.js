@@ -65,12 +65,31 @@ class EntityMaterial extends Material {
         this.setMatrix( "u_obj_to_clip", obj_to_clip );
     }
 
+
+    /**
+     * @summary u_obj_to_view 変数を設定
+     * @param {mapray.RenderStage} stage      レンダリングステージ
+     * @param {mapray.Primitive}   primitive  プリミティブ
+     * @protected
+     */
+    setObjToView( stage, primitive )
+    {
+        var obj_to_gocs = primitive.transform;
+        var obj_to_view = EntityMaterial._obj_to_view;
+
+        // obj_to_view = gocs_to_view * obj_to_gocs
+        GeoMath.mul_AA( stage._gocs_to_view, obj_to_gocs, obj_to_view );
+
+        this.setMatrix( "u_obj_to_view", obj_to_view );
+    }
+
 }
 
 
 // クラス定数の定義
 {
     EntityMaterial._obj_to_clip  = GeoMath.createMatrixf();  // 計算用一時領域
+    EntityMaterial._obj_to_view  = GeoMath.createMatrixf();  // 計算用一時領域
 }
 
 

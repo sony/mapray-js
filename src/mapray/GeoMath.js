@@ -665,6 +665,63 @@ class GeoMath {
 
 
     /**
+     * @summary KML 互換のモデル変換行列
+     *
+     * @desc
+     * <p>変換は scale -> roll -> tilt -> heading の順に行われる。</p>
+     *
+     * @param  {number}         heading  Z 軸を中心に Y 軸から X 軸の方向の回転角 (Degrees)
+     * @param  {number}         tilt     X 軸を中心に Z 軸から Y 軸の方向の回転角 (Degrees)
+     * @param  {number}         roll     Y 軸を中心に X 軸から Z 軸の方向の回転角 (Degrees)
+     * @param  {mapray.Vector3} scale    スケール
+     * @param  {mapray.Matrix}  dst      結果を代入する行列
+     * @return {mapray.Matrix}           dst
+     *
+     * @package
+     * @see https://developers.google.com/kml/documentation/kmlreference#model
+     */
+    static kml_model_matrix( heading, tilt, roll, scale, dst )
+    {
+        var h = heading * GeoMath.DEGREE;
+        var t =    tilt * GeoMath.DEGREE;
+        var r =    roll * GeoMath.DEGREE;
+
+        var sinH = Math.sin( h );
+        var cosH = Math.cos( h );
+        var sinT = Math.sin( t );
+        var cosT = Math.cos( t );
+        var sinR = Math.sin( r );
+        var cosR = Math.cos( r );
+
+        var sx = scale[0];
+        var sy = scale[1];
+        var sz = scale[2];
+
+        dst[ 0] = sx * (sinH*sinR*sinT + cosH*cosR);
+        dst[ 1] = sx * (cosH*sinR*sinT - sinH*cosR);
+        dst[ 2] = sx * sinR * cosT;
+        dst[ 3] = 0;
+
+        dst[ 4] = sy * sinH * cosT;
+        dst[ 5] = sy * cosH * cosT;
+        dst[ 6] = -sy * sinT;
+        dst[ 7] = 0;
+
+        dst[ 8] = sz * (sinH*cosR*sinT - cosH*sinR);
+        dst[ 9] = sz * (cosH*cosR*sinT + sinH*sinR);
+        dst[10] = sz * cosR * cosT;
+        dst[11] = 0;
+
+        dst[12] = 0;
+        dst[13] = 0;
+        dst[14] = 0;
+        dst[15] = 1;
+
+        return dst;
+    }
+
+
+    /**
      * @summary グーデルマン関数
      * @param  {number}  x   数値
      * @return {number}      gd( x )
