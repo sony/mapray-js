@@ -30,7 +30,10 @@ class CloudDemProvider extends DemProvider {
 
         fetch( this._makeURL( z, x, y ), { headers: this._headers,
                                            signal:  actrl.signal } )
-            .then( response => response.arrayBuffer() )
+            .then( response => {
+                return response.ok ?
+                    response.arrayBuffer() : Promise.reject( Error( response.statusText ) );
+            } )
             .then( buffer => {
                 // データ取得に成功
                 callback( buffer );
