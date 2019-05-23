@@ -4,6 +4,7 @@ import Mesh from "./Mesh";
 import Texture from "./Texture";
 import TextMaterial from "./TextMaterial";
 import GeoMath from "./GeoMath";
+import GeoPoint from "./GeoPoint";
 
 
 /**
@@ -123,9 +124,9 @@ class TextEntity extends Entity {
 
     /**
      * @summary テキストを追加
-     * @param {string}         text
-     * @param {mapray.Vector3} position
-     * @param {object}         [props]
+     * @param {string}          text      テキスト
+     * @param {mapray.GeoPoint} position  位置
+     * @param {object}          [props]   プロパティ
      * @param {string}         [props.font_style]   フォントスタイル ("normal" | "italic" | "oblique")
      * @param {string}         [props.font_weight]  フォントの太さ   ("normal" | "bold")
      * @param {number}         [props.font_size]    フォントの大きさ (Pixels)
@@ -272,12 +273,13 @@ class TextEntity extends Entity {
         var        xsum = 0;
         var        ysum = 0;
         var        zsum = 0;
+        var    pos_gocs = GeoMath.createVector3();
 
         for ( var i = 0; i < num_entries; ++i ) {
-            var position = this._entries[i].position;
-            xsum += position[0];
-            ysum += position[1];
-            zsum += position[2];
+            this._entries[i].position.getAsGocs( pos_gocs );
+            xsum += pos_gocs[0];
+            ysum += pos_gocs[1];
+            zsum += pos_gocs[2];
         }
 
         // 変換行列の更新
@@ -293,10 +295,13 @@ class TextEntity extends Entity {
      */
     _setupByJson( json )
     {
-        var entries = json.entries;
+        var  entries = json.entries;
+        var position = new GeoPoint();
+
         for ( var i = 0; i < entries.length; ++i ) {
             var entry = entries[i];
-            this.addText( entry.text, TextEntity._toCartesian( entry.position ), entry );
+            position.setFromArray( entry.position );
+            this.addText( entry.text, position, entry );
         }
 
         var props = this._text_parent_props;
@@ -305,42 +310,6 @@ class TextEntity extends Entity {
         if ( json.font_size )   props.font_size   = json.font_size;
         if ( json.font_family ) props.font_family = json.font_family;
         if ( json.color )       GeoMath.copyVector3( json.color, props.color );
-    }
-
-
-    /**
-     * @summary 位置を GOCS に変換
-     * @param  {object} position  入力頂点
-     * @return {array}            変換結果
-     * @private
-     */
-    static _toCartesian( position )
-    {
-        var dst = null;
-
-        if ( position.cartesian ) {
-            dst = position.cartesian;
-        }
-        else if ( position.cartographic ) {
-            dst = GeoMath.createVector3();
-
-            var    src = position.cartographic;
-            var degree = GeoMath.DEGREE;
-
-            var λ = src[0] * degree;
-            var φ = src[1] * degree;
-            var  r = src[2] + GeoMath.EARTH_RADIUS;
-            var sinλ = Math.sin( λ );
-            var cosλ = Math.cos( λ );
-            var sinφ = Math.sin( φ );
-            var cosφ = Math.cos( φ );
-
-            dst[0] = r * cosφ * cosλ;
-            dst[1] = r * cosφ * sinλ;
-            dst[2] = r * sinφ;
-        }
-
-        return dst;
     }
 
 }
@@ -369,7 +338,7 @@ class Entry {
     /**
      * @param {mapray.TextEntity} owner                所有者
      * @param {string}            text                 テキスト
-     * @param {mapray.Vector3}    position             位置 (GOCS)
+     * @param {mapray.GeoPoint}   position             位置
      * @param {object}            [props]              プロパティ
      * @param {string}            [props.font_style]   フォントスタイル ("normal" | "italic" | "oblique")
      * @param {string}            [props.font_weight]  フォントの太さ   ("normal" | "bold")
@@ -379,9 +348,9 @@ class Entry {
      */
     constructor( owner, text, position, props )
     {
-        this._owner      = owner;
-        this._text       = text;
-        this._position   = GeoMath.createVector3f( position );
+        this._owner    = owner;
+        this._text     = text;
+        this._position = position.clone();
 
         this._props = Object.assign( {}, props );  // props の複製
         this._copyPropertyVector3f( "color" );     // deep copy
@@ -401,7 +370,7 @@ class Entry {
 
     /**
      * @summary 位置
-     * @type {mapray.Vector3}
+     * @type {mapray.GeoPoint}
      * @readonly
      */
     get position()
@@ -659,6 +628,7 @@ class Layout {
     _createVertices( width, height )
     {
         var vertices = [];
+        var pos_gocs = GeoMath.createVector3();
 
         // テキスト集合の原点 (GOCS)
         var transform = this._owner._transform;
@@ -674,15 +644,15 @@ class Layout {
             var entry = item.entry;
 
             // テキストの位置 (GOCS)
-            var pos = entry.position;
+            entry.position.getAsGocs( pos_gocs );
 
             // テキストの色
             var color = entry.color;
 
             // テキストの位置 (モデル座標系)
-            var xm = pos[0] - xo;
-            var ym = pos[1] - yo;
-            var zm = pos[2] - zo;
+            var xm = pos_gocs[0] - xo;
+            var ym = pos_gocs[1] - yo;
+            var zm = pos_gocs[2] - zo;
 
             // ベースライン左端 (キャンバス座標系)
             var xc = item.pos_x;
