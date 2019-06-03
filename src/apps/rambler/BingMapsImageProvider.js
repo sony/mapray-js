@@ -48,7 +48,10 @@ class BingMapsImageProvider extends ImageProvider {
         url = url.replace( /\{uriScheme\}/g, opts.uriScheme || BingMapsImageProvider.DefaultUriScheme );
 
         fetch( url )
-            .then( response => response.json() )
+            .then( response => {
+                return response.ok ?
+                    response.json() : Promise.reject( Error( response.statusText ) );
+            } )
             .then( json => {
                 this._analyze_matadata( json, opts );
                 this._status = Status.READY;

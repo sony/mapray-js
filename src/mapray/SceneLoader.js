@@ -116,7 +116,8 @@ class SceneLoader {
         fetch( tr.url, this._make_fetch_params( tr ) )
             .then( response => {
                 this._check_cancel();
-                return response.json();
+                return response.ok ?
+                    response.json() : Promise.reject( Error( response.statusText ) );
             } )
             .then( oscene => {
                 // JSON データの取得に成功
@@ -226,7 +227,8 @@ class SceneLoader {
         fetch( tr.url, this._make_fetch_params( tr ) )
             .then( response => {
                 this._check_cancel();
-                return response.json();
+                return response.ok ?
+                    response.json() : Promise.reject( Error( response.statusText ) );
             } )
             .then( json => {
                 // モデルデータの取得に成功
@@ -269,7 +271,8 @@ class SceneLoader {
         fetch( tr.url, this._make_fetch_params( tr ) )
             .then( response => {
                 this._check_cancel();
-                return response.arrayBuffer();
+                return response.ok ?
+                    response.arrayBuffer() : Promise.reject( Error( response.statusText ) );
             } )
             .then( buffer => {
                 // バイナリデータの取得に成功
