@@ -1,4 +1,5 @@
 import GeoMath from "./GeoMath";
+import Orientation from "./Orientation";
 import CredentialMode from "./CredentialMode";
 import Mesh from "./Mesh";
 import Texture from "./Texture";
@@ -462,32 +463,26 @@ class SceneLoader {
     static
     parseOffsetTransform( offset_transform )
     {
-        var     ot = offset_transform;
-        var result = GeoMath.createMatrix();
+        var ot = offset_transform;
 
-        if ( ot.matrix ) {
-            // <TRANSFORM-MATRIX>
-            return GeoMath.copyMatrix( ot.matrix, result );
+        // <OFFSET-TRANSFORM-PARAMS>
+        var   translate = ot.translate || [0, 0, 0];
+        var orientation = new Orientation( ot.heading, ot.tilt, ot.roll );
+        var       scale = (ot.scale !== undefined) ? ot.scale : [1, 1, 1];  // <PARAM-SCALE3>
+        if ( typeof scale == 'number' ) {
+            // スケールをベクトルに正規化
+            scale = [scale, scale, scale];
         }
-        else {
-            // <OFFSET-TRANSFORM-PARAMS>
-            var translate = ot.translate || [0, 0, 0];
-            var heading   = ot.heading   || 0;
-            var tilt      = ot.tilt      || 0;
-            var roll      = ot.roll      || 0;
-            var scale     = (ot.scale !== undefined) ? ot.scale : [1, 1, 1];  // <PARAM-SCALE3>
-            if ( typeof scale == 'number' ) {
-                // スケールをベクトルに正規化
-                scale = [scale, scale, scale];
-            }
 
-            // KML 互換のモデル変換行列 + 平行移動
-            GeoMath.kml_model_matrix( heading, tilt, roll, scale, result );
-            result[12] = translate[0];
-            result[13] = translate[1];
-            result[14] = translate[2];
-            return result;
-        }
+        // scale -> orientation -> translate 順の変換
+        var matrix = GeoMath.createMatrix();
+
+        orientation.getTransformMatrix( scale, matrix );
+        matrix[12] = translate[0];
+        matrix[13] = translate[1];
+        matrix[14] = translate[2];
+
+        return matrix;
     }
 
 }
