@@ -450,6 +450,8 @@ class GeoMath {
      * @param  {number}         position.height      高度 (Meters)
      * @param  {mapray.Matrix}  dst                  結果を代入する行列
      * @return {mapray.Matrix}                       dst
+     *
+     * @deprecated {@link maplay.GeoPoint.mlocs_to_gocs_matrix} の使用を推奨
      */
     static iscs_to_gocs_matrix( position, dst )
     {
@@ -498,6 +500,8 @@ class GeoMath {
      * @param  {number}         dst.longitude  経度 (Degrees)
      * @param  {number}         dst.height     高度 (Meters)
      * @return {object}                        dst
+     *
+     * @deprecated {@link mapray.GeoPoint.setFromGocs} の使用を推奨
      */
     static gocs_to_iscs( src, dst )
     {
@@ -679,6 +683,8 @@ class GeoMath {
      *
      * @package
      * @see https://developers.google.com/kml/documentation/kmlreference#model
+     *
+     * @deprecated {@link maplay.Orientation.transform_matrix} の使用を推奨
      */
     static kml_model_matrix( heading, tilt, roll, scale, dst )
     {
@@ -836,4 +842,403 @@ GeoMath.LOG2PI = 1.6514961294723187980;
 }
 
 
+/**
+ * @summary 球面座標
+ *
+ * @classdesc
+ * <p>経度、緯度、高度により位置を表現する。</p>
+ *
+ * @memberof mapray
+ */
+class GeoPoint {
+
+    /**
+     * @desc
+     * <p>経度、緯度、高度を与えてインスタンスを生成する。</p>
+     *
+     * @param {number} [longitude=0]  経度 (Degrees)
+     * @param {number} [latitude=0]   緯度 (Degrees)
+     * @param {number} [altitude=0]   高度 (Meters)
+     */
+    constructor( longitude, latitude, altitude )
+    {
+        /**
+         *  @summary 経度 (Degrees)
+         *  @member mapray.GeoPoint#longitude
+         *  @type {number}
+         */
+        this.longitude = (longitude !== undefined) ? longitude : 0;
+
+        /**
+         *  @summary 緯度 (Degrees)
+         *  @member mapray.GeoPoint#latitude
+         *  @type {number}
+         */
+        this.latitude = (latitude !== undefined) ? latitude : 0;
+
+        /**
+         *  @summary 高度 (Meters)
+         *  @member mapray.GeoPoint#altitude
+         *  @type {number}
+         */
+        this.altitude = (altitude !== undefined) ? altitude : 0;
+    }
+
+
+    /**
+     * @summary インスタンスを複製
+     *
+     * @desc
+     * <p>this の複製を生成して返す。</p>
+     *
+     * @return {mapray.GeoPoint}  this の複製
+     */
+    clone()
+    {
+        return new GeoPoint( this.longitude, this.latitude, this.altitude );
+    }
+
+
+    /**
+     * @summary インスタンスを代入
+     *
+     * @desc
+     * <p>src を this に代入する。</p>
+     *
+     * @param  {mapray.GeoPoint} src  代入元
+     * @return {mapray.GeoPoint}      this
+     */
+    assign( src )
+    {
+        this.longitude = src.longitude;
+        this.latitude  = src.latitude;
+        this.altitude  = src.altitude;
+
+        return this;
+    }
+
+
+    /**
+     * @summary 配列からの設定
+     *
+     * @desc
+     * <p>longitude, latitude, altitude の順序で格納されている配列 position によりプロパティを設定する。</p>
+     * <p>position の長は 2 または 3 で、長が 2 なら altitude は 0 に設定される。</p>
+     *
+     * @param  {number[]} position  [longitude, latitude, altitude] または [longitude, latitude]
+     * @return {GeoPoint} this
+     */
+    setFromArray( position )
+    {
+        this.longitude = position[0];
+        this.latitude  = position[1];
+        this.altitude  = (position.length > 2) ? position[2] : 0;
+
+        return this;
+    }
+
+
+    /**
+     * @summary 地心直交座標からの設定
+     *
+     * @desc
+     * <p>地心直交座標 position を球面座標に変換して this に設定する。</p>
+     *
+     * @param  {mapray.Vector3} position  入力 GOCS 座標 (Meters)
+     * @return {GeoPoint}  this
+     */
+    setFromGocs( position )
+    {
+        var x = position[0];
+        var y = position[1];
+        var z = position[2];
+
+        var x2 = x * x;
+        var y2 = y * y;
+        var z2 = z * z;
+
+        // 緯度 φ = ArcTan[z / √(x^2 + y^2)]
+        // 経度 λ = ArcTan[x, y]
+        if ( x != 0 || y != 0 ) {
+            this.latitude  = Math.atan( z / Math.sqrt( x2 + y2 ) ) / GeoMath.DEGREE;
+            this.longitude = Math.atan2( y, x ) / GeoMath.DEGREE;
+        }
+        else { // x == 0 && y == 0
+            if ( z > 0 )
+                this.latitude = 90;
+            else if ( z < 0 )
+                this.latitude = -90;
+            else
+                this.latitude = 0;
+
+            this.longitude = 0;
+        }
+
+        // 高度 h = √(x^2 + y^2 + z^2) - R
+        this.height = Math.sqrt( x2 + y2 + z2 ) - GeoMath.EARTH_RADIUS;
+
+        return this;
+    }
+
+
+    /**
+     * @summary 地心直交座標として取得
+     *
+     * @param  {Vector3} dst  結果を格納するオブジェクト
+     * @return {Vector3}      dst
+     */
+    getAsGocs( dst )
+    {
+        var λ = this.longitude * GeoMath.DEGREE;
+        var φ = this.latitude  * GeoMath.DEGREE;
+        var r = GeoMath.EARTH_RADIUS + this.altitude;
+        var cosφ = Math.cos( φ );
+
+        dst[0] = r * cosφ * Math.cos( λ );
+        dst[1] = r * cosφ * Math.sin( λ );
+        dst[2] = r * Math.sin( φ );
+
+        return dst;
+    }
+
+
+    /**
+     * @summary 座標変換行列を計算 (MLOCS → GOCS)
+     * @desc
+     * <p>原点が this の Mapray ローカル直交座標系 (MLOCS) から地心直交座標系 (GOCS) に変換する行列を計算する。</p>
+     *
+     * @param  {mapray.Matrix} dst  結果を代入する行列
+     * @return {mapray.Matrix}      dst
+     */
+    getMlocsToGocsMatrix( dst )
+    {
+        var    λ = this.longitude * GeoMath.DEGREE;
+        var    φ = this.latitude  * GeoMath.DEGREE;
+        var sinλ = Math.sin( λ );
+        var cosλ = Math.cos( λ );
+        var sinφ = Math.sin( φ );
+        var cosφ = Math.cos( φ );
+        var     r = GeoMath.EARTH_RADIUS + this.altitude;
+
+        // ∂u/∂λ
+        dst[ 0] = -sinλ;
+        dst[ 1] = cosλ;
+        dst[ 2] = 0;
+        dst[ 3] = 0;
+
+        // ∂u/∂φ
+        dst[ 4] = -cosλ * sinφ;
+        dst[ 5] = -sinλ * sinφ;
+        dst[ 6] = cosφ;
+        dst[ 7] = 0;
+
+        // u = {x, y, z} / r
+        dst[ 8] = cosφ * cosλ;
+        dst[ 9] = cosφ * sinλ;
+        dst[10] = sinφ;
+        dst[11] = 0;
+
+        // {x, y, z}
+        dst[12] = r * cosφ * cosλ;
+        dst[13] = r * cosφ * sinλ;
+        dst[14] = r * sinφ;
+        dst[15] = 1;
+
+        return dst;
+    }
+
+
+    /**
+     * @summary 球面座標を地心直交座標に変換
+     *
+     * @param  {number[]} points      [lon_0, lat_0, alt_0, ...]
+     * @param  {number}   num_points  点の数
+     * @param  {number[]} dst         [x0, y0, z0, ...] (結果を格納する配列)
+     * @return {number[]} dst
+     *
+     * @see {@link mapray.GeoPoint.getAsGocs}
+     */
+    static
+    toGocsArray( points, num_points, dst )
+    {
+        var degree = GeoMath.DEGREE;
+        var radius = GeoMath.EARTH_RADIUS;
+
+        for ( var i = 0; i < num_points; ++i ) {
+            var b = 3*i;
+
+            var λ = points[b]     * degree;
+            var φ = points[b + 1] * degree;
+            var r = radius + points[b + 2];
+            var cosφ = Math.cos( φ );
+
+            dst[b]     = r * cosφ * Math.cos( λ );
+            dst[b + 1] = r * cosφ * Math.sin( λ );
+            dst[b + 2] = r * Math.sin( φ );
+        }
+
+        return dst;
+    }
+
+}
+
+
+/**
+ * @summary 方向表現
+ *
+ * @classdesc
+ * <p>heading (機首方位)、tilt (前後の傾き)、roll (左右の傾き) により方向を表現する。</p>
+ *
+ * @memberof mapray
+ * @see https://developers.google.com/kml/documentation/kmlreference#model
+ */
+class Orientation {
+
+    /**
+     * @desc
+     * <p>heading, tilt, roll に角度を与えてインスタンスを生成する。</p>
+     *
+     * @param {number} [heading=0]  機首方位 (Degrees)
+     * @param {number} [tilt=0]     前後の傾き (Degrees)
+     * @param {number} [roll=0]     左右の傾き (Degrees)
+     */
+    constructor( heading, tilt, roll )
+    {
+        /**
+         *  @summary 機首方位 (Degrees)
+         *  @member mapray.Orientation#heading
+         *  @type {number}
+         */
+        this.heading = (heading !== undefined) ? heading : 0;
+
+        /**
+         *  @summary 前後の傾き (Degrees)
+         *  @member mapray.Orientation#tilt
+         *  @type {number}
+         */
+        this.tilt = (tilt !== undefined) ? tilt : 0;
+
+        /**
+         *  @summary 左右の傾き (Degrees)
+         *  @member mapray.Orientation#roll
+         *  @type {number}
+         */
+        this.roll = (roll !== undefined) ? roll : 0;
+    }
+
+
+    /**
+     * @summary インスタンスを複製
+     *
+     * @desc
+     * <p>this の複製を生成して返す。</p>
+     *
+     * @return {mapray.Orientation}  this の複製
+     */
+    clone()
+    {
+        return new Orientation( this.heading, this.tilt, this.roll );
+    }
+
+
+    /**
+     * @summary インスタンスを代入
+     *
+     * @desc
+     * <p>src を this に代入する。</p>
+     *
+     * @param  {mapray.Orientation} src  代入元
+     * @return {mapray.Orientation}      this
+     */
+    assign( src )
+    {
+        this.heading = src.heading;
+        this.tilt    = src.tilt;
+        this.roll    = src.roll;
+
+        return this;
+    }
+
+
+    /**
+     * @summary 変換行列を取得
+     *
+     * @desc
+     * <p>変換は scale -> roll -> tilt -> heading の順に行われる。</p>
+     *
+     * @param  {mapray.Vector3} scale  スケール
+     * @param  {mapray.Matrix}  dst    結果を代入する行列
+     * @return {mapray.Matrix}  dst
+     */
+    getTransformMatrix( scale, dst )
+    {
+        var h = this.heading * GeoMath.DEGREE;
+        var t = this.tilt    * GeoMath.DEGREE;
+        var r = this.roll    * GeoMath.DEGREE;
+
+        var sinH = Math.sin( h );
+        var cosH = Math.cos( h );
+        var sinT = Math.sin( t );
+        var cosT = Math.cos( t );
+        var sinR = Math.sin( r );
+        var cosR = Math.cos( r );
+
+        var sx = scale[0];
+        var sy = scale[1];
+        var sz = scale[2];
+
+        dst[ 0] = sx * (sinH*sinR*sinT + cosH*cosR);
+        dst[ 1] = sx * (cosH*sinR*sinT - sinH*cosR);
+        dst[ 2] = sx * sinR * cosT;
+        dst[ 3] = 0;
+
+        dst[ 4] = sy * sinH * cosT;
+        dst[ 5] = sy * cosH * cosT;
+        dst[ 6] = -sy * sinT;
+        dst[ 7] = 0;
+
+        dst[ 8] = sz * (sinH*cosR*sinT - cosH*sinR);
+        dst[ 9] = sz * (cosH*cosR*sinT + sinH*sinR);
+        dst[10] = sz * cosR * cosT;
+        dst[11] = 0;
+
+        dst[12] = 0;
+        dst[13] = 0;
+        dst[14] = 0;
+        dst[15] = 1;
+
+        return dst;
+    }
+
+}
+
+
 export default GeoMath;
+export { GeoPoint, Orientation };  // 下を参照
+
+
+/*
+ * 解説: このファイルで GeoPoint クラスと Orientation クラスを定義している理由
+ *
+ *   GeoPoint と Orientation のインタフェースは GeoMath に依存しないが、GeoMath
+ *   のインタフェースは GeoPoint や Orientation に依存する可能性がある。
+ *
+ *   一方、GeoPoint と Orientation の内部実装では一部の GeoMath インタフェースを
+ *   使用できたほうが都合がよい。
+ *
+ *   GeoPoint と Orientation を個別のファイルで定義したいが、この場合実装のために
+ *   GeoMath をインポートすることになる。
+ *
+ *   そうすると、GeoMath.js に GeoPoint や Orientation が (循環依存のため)
+ *   インポートできなくなってしまう。
+ *
+ *   そこで GeoMath.js 内で GeoPoint と Orientation を定義する。これで GeoPoint
+ *   と Orientation の実装で GeoMath を使用でき、GeoMath のインタフェースと実装で
+ *   GeoPoint や Orientation を使用できる。
+ *
+ *   GeoPoint はまず GeoMath.js から GeoPoint.js にエクスポートし、さらに
+ *   GeoPoint.js から GeoPoint を他のファイルにエクスポートする。
+ *   Orientation も同様のことを行う。
+ *
+ *   このようにすることで、他のファイルからは実装の事情は見えなくなる。
+ */
