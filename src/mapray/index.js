@@ -1,6 +1,8 @@
 import Viewer from "./Viewer";
 import Camera from "./Camera";
 import GeoMath from "./GeoMath";
+import GeoPoint from "./GeoPoint";
+import Orientation from "./Orientation";
 import Ray from "./Ray";
 import CredentialMode from "./CredentialMode";
 import Layer from "./Layer";
@@ -28,6 +30,8 @@ var mapray = {
     Viewer: Viewer,
     Camera: Camera,
     GeoMath: GeoMath,
+    GeoPoint: GeoPoint,
+    Orientation: Orientation,
     Ray: Ray,
     CredentialMode: CredentialMode,
     Layer: Layer,
