@@ -61,7 +61,7 @@ class MarkerLineEntity extends Entity {
      */
     getPrimitives( stage )
     {
-        if ( this._num_floats < 2 ) {
+        if ( this._num_floats < 6 ) {
             // 2頂点未満は表示しない
             return this._empty;
         }
@@ -158,7 +158,7 @@ class MarkerLineEntity extends Entity {
     /**
      * @summary プリミティブの更新
      * @desc
-     * 条件: this._num_floats >= 2
+     * 条件: this._num_floats >= 6
      * 入力:
      *   this._geom_dirty
      *   this._buffer
@@ -212,7 +212,7 @@ class MarkerLineEntity extends Entity {
     /**
      * @summary プリミティブの更新
      * @desc
-     * 条件: this._num_floats >= 1
+     * 条件: this._num_floats >= 3
      * 入力:
      *   this._buffer
      *   this._num_floats
@@ -293,7 +293,7 @@ class MarkerLineEntity extends Entity {
     /**
      * @summary 頂点配列は生成
      * @desc
-     * 条件: this._num_floats >= 2
+     * 条件: this._num_floats >= 6
      * 入力:
      *   this._buffer
      *   this._num_floats
@@ -372,7 +372,7 @@ class MarkerLineEntity extends Entity {
     /**
      * @summary 頂点配列は生成
      * @desc
-     * 条件: this._num_floats >= 2
+     * 条件: this._num_floats >= 6
      * 入力:
      *   this._num_floats
      * @return {Uint32Array}  インデックス配列
