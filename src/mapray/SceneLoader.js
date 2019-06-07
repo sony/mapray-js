@@ -3,7 +3,6 @@ import CredentialMode from "./CredentialMode";
 import Mesh from "./Mesh";
 import Texture from "./Texture";
 import ModelContainer from "./ModelContainer";
-import GenericEntity from "./GenericEntity";
 import MarkerLineEntity from "./MarkerLineEntity";
 import TextEntity from "./TextEntity";
 import ModelEntity from "./ModelEntity";
@@ -356,13 +355,10 @@ class SceneLoader {
 
         for ( var i = 0; i < entity_list.length; ++i ) {
             var   item = entity_list[i];
-            var   type = item.type || "generic";
+            var   type = item.type;
             var entity = null;
 
             switch ( type ) {
-            case "generic":
-                entity = new GenericEntity( scene, { json: item, refs: this._references } );
-                break;
             case "markerline":
                 entity = new MarkerLineEntity( scene, { json: item, refs: this._references } );
                 break;
