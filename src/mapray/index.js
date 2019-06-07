@@ -15,7 +15,6 @@ import RenderCallback from "./RenderCallback";
 import StandardImageProvider from "./StandardImageProvider";
 import Scene from "./Scene";
 import Entity from "./Entity";
-import GenericEntity from "./GenericEntity";
 import MarkerLineEntity from "./MarkerLineEntity";
 import TextEntity from "./TextEntity";
 import SceneLoader from "./SceneLoader";
@@ -44,7 +43,6 @@ var mapray = {
     StandardImageProvider: StandardImageProvider,
     Scene: Scene,
     Entity: Entity,
-    GenericEntity: GenericEntity,
     MarkerLineEntity, MarkerLineEntity,
     TextEntity, TextEntity,
     SceneLoader, SceneLoader,

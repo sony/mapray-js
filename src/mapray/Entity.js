@@ -47,44 +47,6 @@ class Entity {
 
 
     /**
-     * @summary プロパティ集合の読み込み
-     * @desc
-     * <p>json.properties をプロパティ集合 props に読み込む。</p>
-     * @param  {object}       json     生成情報
-     * @param  {object}       refs     参照辞書
-     * @param  {mapray.PropSet} [props]  格納先プロパティ集合 (指定がなければ生成される)
-     * @return {mapray.PropSet}          プロパティ集合
-     * @package
-     */
-    loadProperties( json, refs, props )
-    {
-        var src_props = json.properties || {};
-        var dst_props = props || {};
-        var  prop_ids = Object.keys( src_props );
-
-        for ( var i = 0; i < prop_ids.length; ++i ) {
-            var  pid = prop_ids[i];
-            var pval = src_props[pid];
-
-            if ( pval.type == "tex-2d" ) {
-                // テクスチャ
-                dst_props[pid] = refs[pval.ref_texture];
-            }
-            else if ( Array.isArray( pval ) ) {
-                // ベクトル
-                dst_props[pid] = new Float32Array( pval );
-            }
-            else {
-                // その他
-                dst_props[pid] = pval;
-            }
-        }
-
-        return dst_props;
-    }
-
-
-    /**
      * @summary スキーマ <TRANSFORM> のオブジェクトを解析
      *
      * @param  {object} transform  <TRANSFORM> オブジェクト
