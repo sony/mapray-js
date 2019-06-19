@@ -56,7 +56,7 @@ class Viewer {
         this._layers             = this._createLayerCollection( options );
         this._globe              = new Globe( this._glenv, this._dem_provider );
         this._tile_texture_cache = new TileTextureCache( this._glenv, this._image_provider );
-        this._scene              = new Scene( this._glenv );
+        this._scene              = new Scene( this, this._glenv );
         this._ground_visibility  = Viewer._getBoolOption( options, "ground_visibility", true );
         this._entity_visibility  = Viewer._getBoolOption( options, "entity_visibility", true );
         this._render_mode        = (options && options.render_mode) || RenderMode.SURFACE;
