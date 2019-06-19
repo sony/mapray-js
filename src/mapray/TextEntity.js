@@ -22,7 +22,7 @@ class TextEntity extends Entity {
      */
     constructor( scene, opts )
     {
-        super( scene );
+        super( scene, opts );
 
         // テキスト管理
         this._entries = [];

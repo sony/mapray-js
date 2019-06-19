@@ -21,7 +21,7 @@ class ModelEntity extends Entity {
      */
     constructor( scene, opts )
     {
-        super( scene );
+        super( scene, opts );
 
         this._position    = new GeoPoint( 0, 0, 0 );
         this._orientation = new Orientation( 0, 0, 0 );
