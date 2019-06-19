@@ -12,10 +12,12 @@
 class Scene {
 
     /**
-     * @param {mapray.GLEnv}  glenv
+     * @param {mapray.Viewer}  viewer  Viewer インスタンス (未構築)
+     * @param {mapray.GLEnv}   glenv   GLEnv インスタンス
      */
-    constructor( glenv )
+    constructor( viewer, glenv )
     {
+        this._viewer      = viewer;
         this._glenv       = glenv;
         this._entity_list = [];
         this._loaders     = [];  // 現在読み込み中の SceneLoader (取り消し用)
@@ -29,6 +31,14 @@ class Scene {
      * @package
      */
     get glenv() { return this._glenv; }
+
+
+    /**
+     * this を保有する親オブジェクト
+     * @type {mapray.Viewer}
+     * @readonly
+     */
+    get viewer() { return this._viewer; }
 
 
     /**
