@@ -12,9 +12,13 @@ class Entity {
     /**
      * @desc
      * <p>インスタンス生成後に、それを scene に追加することができる。</p>
+     *
      * @param {mapray.Scene} scene  所属可能シーン
+     * @param {object} [opts]       オプション集合
+     * @param {object} [opts.json]  生成情報
+     * @param {object} [opts.refs]  参照辞書
      */
-    constructor( scene )
+    constructor( scene, opts )
     {
         /**
          * @summary 所属可能シーン

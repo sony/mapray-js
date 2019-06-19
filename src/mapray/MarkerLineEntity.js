@@ -21,7 +21,7 @@ class MarkerLineEntity extends Entity {
      */
     constructor( scene, opts )
     {
-        super( scene );
+        super( scene, opts );
 
         // 頂点管理
         this._buffer     = new Float64Array( 1 );
