@@ -4,6 +4,8 @@ import Mesh from "./Mesh";
 import MarkerLineMaterial from "./MarkerLineMaterial";
 import GeoMath from "./GeoMath";
 import GeoPoint from "./GeoPoint";
+import AltitudeMode from "./AltitudeMode";
+import EntityRegion from "./EntityRegion";
 
 
 /**
@@ -74,6 +76,15 @@ class MarkerLineEntity extends Entity {
 
 
     /**
+     * @override
+     */
+    onChangeAltitudeMode( prev_mode )
+    {
+        this._geom_dirty = true;
+    }
+
+
+    /**
      * @summary 線の太さを設定
      * @param {number} width  線の太さ (画素単位)
      */
@@ -139,6 +150,29 @@ class MarkerLineEntity extends Entity {
             buffer[base + j] = points[j];
         }
         this._num_floats = target_size;
+
+        // 形状が変化した可能性がある
+        this.needToCreateRegions();
+        this._geom_dirty = true;
+    }
+
+
+    /**
+     * @override
+     */
+    createRegions()
+    {
+        var region = new EntityRegion();
+        region.addPoints( this._buffer, 0, 3, this._num_floats / 3 );
+        return [region];
+    }
+
+
+    /**
+     * @override
+     */
+    onChangeElevation( regions )
+    {
         this._geom_dirty = true;
     }
 
@@ -181,9 +215,9 @@ class MarkerLineEntity extends Entity {
             return;
         }
 
-        // this._buffer を GOCS に変換した配列を生成
+        // GeoPoint 平坦化配列を GOCS 平坦化配列に変換
         var  num_points = this._num_floats / 3;
-        var gocs_buffer = GeoPoint.toGocsArray( this._buffer, num_points,
+        var gocs_buffer = GeoPoint.toGocsArray( this._getFlatGeoPoints_with_Absolute(), num_points,
                                                 new Float64Array( this._num_floats ) );
 
         // プリミティブの更新
@@ -214,6 +248,39 @@ class MarkerLineEntity extends Entity {
 
         // 更新終了
         this._geom_dirty = false;
+    }
+
+
+    /**
+     * @summary GeoPoint 平坦化配列を取得 (絶対高度)
+     *
+     * @return {number[]}  GeoPoint 平坦化配列
+     * @private
+     */
+    _getFlatGeoPoints_with_Absolute()
+    {
+        var abs_buffer = null;
+
+        switch ( this.altitude_mode ) {
+        case AltitudeMode.RELATIVE:
+            var num_points = this._num_floats / 3;
+            abs_buffer = new Float64Array( this._num_floats );
+            // abs_buffer[] の高度要素に現在の標高を設定
+            this.scene.viewer.getExistingElevations( num_points, this._buffer, 0, 3, abs_buffer, 2, 3 );
+            // abs_buffer[] に経度要素と緯度要素を設定し、高度要素に絶対高度を設定
+            for ( var i = 0; i < this._num_floats; i += 3 ) {
+                abs_buffer[i    ]  = this._buffer[i    ];  // 経度
+                abs_buffer[i + 1]  = this._buffer[i + 1];  // 緯度
+                abs_buffer[i + 2] += this._buffer[i + 2];  // 絶対高度
+            }
+            break;
+
+        default: // AltitudeMode.ABSOLUTE
+            abs_buffer = this._buffer;
+            break;
+        }
+
+        return abs_buffer;
     }
 
 
