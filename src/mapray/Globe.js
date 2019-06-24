@@ -1,6 +1,7 @@
 import GeoMath from "./GeoMath";
 import DemBinary from "./DemBinary";
 import FlakeMesh from "./FlakeMesh";
+import UpdatedTileArea from "./UpdatedTileArea";
 
 
 /**
@@ -19,6 +20,7 @@ class Globe {
         this._glenv        = glenv;
         this._dem_provider = dem_provider;
         this._status = Status.NOT_READY;
+        this._dem_area_updated = new UpdatedTileArea();
 
         this._ρ        = dem_provider.getResolutionPower();
         this._dem_zbias = GeoMath.LOG2PI - this._ρ + 1;  // b = log2(π) - ρ + 1
@@ -96,6 +98,16 @@ class Globe {
     get status()
     {
         return this._status;
+    }
+
+    /**
+     * @summary DEM が更新された領域を取得
+     * @type {mapray.UpdatedTileArea}
+     * @readonly
+     */
+    get dem_area_updated()
+    {
+        return this._dem_area_updated;
     }
 
     /**
@@ -318,6 +330,8 @@ class Globe {
             this._reduceMeshes();
         }
 
+        this._dem_area_updated.clear();
+
         this._num_touch_flakes = 0;
         this._num_touch_meshes = 0;
         ++this._frame_counter;
@@ -340,6 +354,7 @@ class Globe {
                 this._root_flake = new Flake( null, z, x, y );
                 this._root_flake.setupRoot( this, dem );
                 this._status = Status.READY;
+                this._dem_area_updated.addTileArea( dem );
             }
             else { // データ取得に失敗
                 this._status = Status.FAILED;
@@ -883,6 +898,7 @@ class Flake {
                     if ( data ) {
                         flake._dem_data  = new DemBinary( flake.z, flake.x, flake.y, globe._ρ, data );
                         flake._dem_state = DemState.LOADED;
+                        globe._dem_area_updated.addTileArea( flake );
                     }
                     else { // データ取得に失敗
                         flake._dem_data  = null;

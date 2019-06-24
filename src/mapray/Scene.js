@@ -17,10 +17,10 @@ class Scene {
      */
     constructor( viewer, glenv )
     {
-        this._viewer      = viewer;
-        this._glenv       = glenv;
-        this._entity_list = [];
-        this._loaders     = [];  // 現在読み込み中の SceneLoader (取り消し用)
+        this._viewer     = viewer;
+        this._glenv      = glenv;
+        this._enode_list = [];  // ENode のリスト
+        this._loaders    = [];  // 現在読み込み中の SceneLoader (取り消し用)
     }
 
 
@@ -46,7 +46,7 @@ class Scene {
      * @type {number}
      * @readonly
      */
-    get num_entities() { return this._entity_list.length; }
+    get num_entities() { return this._enode_list.length; }
 
 
     /**
@@ -54,7 +54,7 @@ class Scene {
      */
     clearEntities()
     {
-        this._entity_list = [];
+        this._enode_list = [];
     }
 
 
@@ -67,7 +67,7 @@ class Scene {
         if ( entity.scene !== this ) {
             throw new Error( "invalid entity" );
         }
-        this._entity_list.push( entity );
+        this._enode_list.push( new ENode( entity ) );
     }
 
 
@@ -77,10 +77,13 @@ class Scene {
      */
     removeEntity( entity )
     {
-        var array = this._entity_list;
-        var index = array.indexOf( entity );
-        if ( index >= 0 ) {
-            array.splice( index, 1 );
+        var array = this._enode_list;
+
+        for ( var i = 0; i < array.length; ++i ) {
+            if ( array[i].entity === entity ) {
+                array.splice( i, 1 );
+                break;
+            }
         }
     }
 
@@ -92,7 +95,7 @@ class Scene {
      */
     getEntity( index )
     {
-        return this._entity_list[index];
+        return this._enode_list[index].entity;
     }
 
 
@@ -103,18 +106,70 @@ class Scene {
      */
     draw( stage )
     {
+        this._prepare_entities();
+
         // プリミティブの配列を生成
         var op_prims = [];  // 不透明プリミティブ
         var tp_prims = [];  // 半透明プリミティブ
 
-        for ( var i = 0; i < this._entity_list.length; ++i ) {
-            var entity = this._entity_list[i];
+        for ( var i = 0; i < this._enode_list.length; ++i ) {
+            var entity = this._enode_list[i].entity;
             this._add_primitives( stage, entity, op_prims, tp_prims );
         }
 
         // プリミティブ配列を整列してから描画
         this._draw_opaque_primitives( stage, op_prims );
         this._draw_translucent_primitives( stage, tp_prims );
+    }
+
+
+    /**
+     * @summary 描画前のエンティティの準備
+     * @private
+     */
+    _prepare_entities()
+    {
+        var dem_area_updated = this._viewer.globe.dem_area_updated;
+
+        for ( var i = 0; i < this._enode_list.length; ++i ) {
+            var  enode = this._enode_list[i];
+            var entity = enode.entity;
+
+            if ( !entity.needsElevation() ) {
+                // entity が標高を必要としないときは何もしない
+                continue;
+            }
+
+            if ( entity.checkToCreateRegions() || enode.regions === null ) {
+                // 領域情報が分からない、または領域情報が変化した可能性があるとき
+                enode.regions = entity.createRegions();
+                if ( enode.regions.length > 0 ) {
+                    enode.regions.forEach( rgn => { rgn.compile(); } );
+                    entity.onChangeElevation( enode.regions );
+                }
+            }
+            else {
+                if ( dem_area_updated.isEmpty() ) {
+                    // 更新された DEM 領域は存在しない
+                    // 標高の変化はないので以下の処理を省く
+                    continue;
+                }
+
+                var regions = [];
+
+                enode.regions.forEach( region => {
+                    if ( region.intersectsWith( dem_area_updated ) ) {
+                        // 領域の標高に変化があった
+                        regions.push( region );
+                    }
+                } );
+
+                if ( regions.length > 0 ) {
+                    // 標高が変化した可能性がある領域を通知
+                    entity.onChangeElevation( regions );
+                }
+            }
+        }
     }
 
 
@@ -213,5 +268,33 @@ class Scene {
     }
 
 }
+
+
+/**
+ * エンティティ管理用ノード
+ *
+ * @memberof mapray.Scene
+ * @private
+ */
+class ENode {
+
+    /**
+     * @param {mapray.Entity} entity  管理対象のエンティティ
+     */
+    constructor( entity )
+    {
+        /**
+         * @summary 管理対象のエンティティ
+         * @member mapray.Scene.ENode#entity
+         * @type {mapray.Entity}
+         * @readonly
+         */
+        this.entity = entity;
+
+        this.regions = null;
+    }
+
+}
+
 
 export default Scene;

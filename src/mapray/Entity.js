@@ -35,6 +35,8 @@ class Entity {
         // 高度モード
         this._altitude_mode = AltitudeMode.ABSOLUTE;
 
+        this._need_to_create_regions = false;
+
         // 生成情報から設定
         if ( opts && opts.json ) {
             this._setupEntityByJson( opts.json );
@@ -76,6 +78,38 @@ class Entity {
      */
     onChangeAltitudeMode( prev_mode )
     {
+    }
+
+
+    /**
+     * @summary 領域が更新されたとき呼び出す
+     *
+     * @desc
+     * <p>need_to_create_regions 状態を true に設定する。</p>
+     *
+     * @protected
+     */
+    needToCreateRegions()
+    {
+        this._need_to_create_regions = true;
+    }
+
+
+    /**
+     * @summary need_to_create_regions を取得
+     *
+     * @desc
+     * <p>need_to_create_regions 状態を返してから、need_to_create_regions 状態を false に設定する。</p>
+     *
+     * @return {boolean}  need_to_create_regions
+     *
+     * @package
+     */
+    checkToCreateRegions()
+    {
+        var result = this._need_to_create_regions;
+        this._need_to_create_regions = false;
+        return result;
     }
 
 
@@ -131,6 +165,57 @@ class Entity {
         }
 
         return dst_props;
+    }
+
+
+    /**
+     * @summary エンティティに標高値は必要か？
+     *
+     * @desc
+     * <p>既定の実装では this.altitude_mode が AltitudeMode.ABSOLUTE なら false, それ以外なら true を返す。</p>
+     *
+     * @return {boolean}  エンティティに標高値は必要なら true, それ以外なら false
+     *
+     * @abstruct
+     * @package
+     */
+    needsElevation()
+    {
+        return (this._altitude_mode !== AltitudeMode.ABSOLUTE);
+    }
+
+
+    /**
+     * @summary エンティティ領域を生成
+     *
+     * @desc
+     * <p>既定の実装では [] を返す。</p>
+     *
+     * @return {mapray.EntityRegion[]}  エンティティ領域の配列
+     *
+     * @abstruct
+     * @package
+     */
+    createRegions()
+    {
+        return [];
+    }
+
+
+    /**
+     * @summary 更新されたエンティティ領域の通知
+     *
+     * @desc
+     * <p>標高が更新されたエンティティ領域が通知される。</p>
+     * <p>既定の実装では何もしない。</p>
+     *
+     * @param {mapray.EntityRegion[]} regions  エンティティ領域の配列
+     *
+     * @abstruct
+     * @package
+     */
+    onChangeElevation( regions )
+    {
     }
 
 
