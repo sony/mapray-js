@@ -2,6 +2,8 @@ import Entity from "./Entity";
 import GeoMath from "./GeoMath";
 import GeoPoint from "./GeoPoint";
 import Orientation from "./Orientation";
+import AltitudeMode from "./AltitudeMode";
+import EntityRegion from "./EntityRegion";
 
 
 /**
@@ -30,6 +32,8 @@ class ModelEntity extends Entity {
         this._primitives = [];  // プリミティブ配列
         this._ptoe_array = [];  // 各プリミティブ座標系からエンティティ座標系への変換行列
 
+        this._abs_position = null;  // 絶対高度に変換した位置のキャッシュ (null なら無効)
+
         if ( opts && opts.json ) {
             var json = opts.json;
             var refs = opts.refs || {};
@@ -44,7 +48,10 @@ class ModelEntity extends Entity {
      */
     getPrimitives( stage )
     {
-        var  mlocs_to_gocs  = this._position.getMlocsToGocsMatrix( GeoMath.createMatrix() );
+        // this._abs_position を更新
+        this._updateAbsPosition();
+
+        var  mlocs_to_gocs  = this._abs_position.getMlocsToGocsMatrix( GeoMath.createMatrix() );
         var entity_to_mlocs = this._orientation.getTransformMatrix( this._scale, GeoMath.createMatrix() );
         var entity_to_gocs  = GeoMath.mul_AA( mlocs_to_gocs, entity_to_mlocs, GeoMath.createMatrix() );
 
@@ -59,6 +66,15 @@ class ModelEntity extends Entity {
         }
 
         return this._primitives;
+    }
+
+
+    /**
+     * @override
+     */
+    onChangeAltitudeMode( prev_mode )
+    {
+        this._abs_position = null;  // キャッシュを無効化
     }
 
 
@@ -122,6 +138,10 @@ class ModelEntity extends Entity {
     setPosition( value )
     {
         this._position.assign( value );
+
+        // 変化した可能性がある
+        this.needToCreateRegions();
+        this._abs_position = null;
     }
 
 
@@ -144,6 +164,55 @@ class ModelEntity extends Entity {
     setScale( value )
     {
         GeoMath.copyVector3( value, this._scale );
+    }
+
+
+    /**
+     * @override
+     */
+    createRegions()
+    {
+        const region = new EntityRegion();
+
+        region.addPoint( this._position );
+
+        return [region];
+    }
+
+
+    /**
+     * @override
+     */
+    onChangeElevation( regions )
+    {
+        this._abs_position = null;  // キャッシュを無効化
+    }
+
+
+    /**
+     * @summary 絶対高度位置を更新
+     *
+     * 出力: this._abs_position
+     *
+     * @private
+     */
+    _updateAbsPosition()
+    {
+        if ( this._abs_position !== null ) {
+            // キャッシュされている
+            return;
+        }
+
+        this._abs_position = this._position.clone();
+
+        switch ( this.altitude_mode ) {
+        case AltitudeMode.RELATIVE:
+            this._abs_position.altitude += this.scene.viewer.getExistingElevation( this._position );
+            break;
+
+        default: // AltitudeMode.ABSOLUTE
+            break;
+        }
     }
 
 }
