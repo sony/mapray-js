@@ -5,6 +5,8 @@ import Texture from "./Texture";
 import TextMaterial from "./TextMaterial";
 import GeoMath from "./GeoMath";
 import GeoPoint from "./GeoPoint";
+import AltitudeMode from "./AltitudeMode";
+import EntityRegion from "./EntityRegion";
 
 
 /**
@@ -68,6 +70,15 @@ class TextEntity extends Entity {
     getPrimitives( stage )
     {
         return this._updatePrimitive();
+    }
+
+
+    /**
+     * @override
+     */
+    onChangeAltitudeMode( prev_mode )
+    {
+        this._dirty = true;
     }
 
 
@@ -136,6 +147,36 @@ class TextEntity extends Entity {
     addText( text, position, props )
     {
         this._entries.push( new Entry( this, text, position, props ) );
+
+        // 変化した可能性がある
+        this.needToCreateRegions();
+        this._dirty = true;
+    }
+
+
+    /**
+     * @override
+     */
+    createRegions()
+    {
+        const region = new EntityRegion();
+
+        const entries = this._entries;
+        const length  = entries.length;
+
+        for ( let i = 0; i < length; ++i ) {
+            region.addPoint( entries[i].position );
+        }
+
+        return [region];
+    }
+
+
+    /**
+     * @override
+     */
+    onChangeElevation( regions )
+    {
         this._dirty = true;
     }
 
@@ -209,11 +250,14 @@ class TextEntity extends Entity {
             return this._primitives;
         }
 
+        // 各エントリーの GOCS 位置を生成 (平坦化配列)
+        var gocs_array = this._createFlatGocsArray();
+
         // プリミティブの更新
         //   primitive.transform
-        this._updateTransform();
+        this._updateTransform( gocs_array );
 
-        var layout = new Layout( this );
+        var layout = new Layout( this, gocs_array );
         if ( !layout.isValid() ) {
             // 更新に失敗
             this._primitives = [];
@@ -257,29 +301,90 @@ class TextEntity extends Entity {
 
 
     /**
+     * @summary GOCS 平坦化配列を取得
+     *
+     * 入力: this._entries
+     *
+     * @return {number[]}  GOCS 平坦化配列
+     * @private
+     */
+    _createFlatGocsArray()
+    {
+        const num_points = this._entries.length;
+        return GeoPoint.toGocsArray( this._getFlatGeoPoints_with_Absolute(), num_points,
+                                     new Float64Array( 3 * num_points ) );
+    }
+
+
+    /**
+     * @summary GeoPoint 平坦化配列を取得 (絶対高度)
+     *
+     * 入力: this._entries
+     *
+     * @return {number[]}  GeoPoint 平坦化配列
+     * @private
+     */
+    _getFlatGeoPoints_with_Absolute()
+    {
+        const entries    = this._entries;
+        const num_points = entries.length;
+        const flat_array = new Float64Array( 3 * num_points );
+
+        // flat_array[] に経度要素と緯度要素を設定
+        for ( let i = 0; i < num_points; ++i ) {
+            let pos = entries[i].position;
+            flat_array[3*i]     = pos.longitude;
+            flat_array[3*i + 1] = pos.latitude;
+        }
+
+        switch ( this.altitude_mode ) {
+        case AltitudeMode.RELATIVE:
+            // flat_array[] の高度要素に現在の標高を設定
+            this.scene.viewer.getExistingElevations( num_points, flat_array, 0, 3, flat_array, 2, 3 );
+            // flat_array[] の高度要素に絶対高度を設定
+            for ( let i = 0; i < num_points; ++i ) {
+                flat_array[3*i + 2] += entries[i].position.altitude;
+            }
+            break;
+
+        default: // AltitudeMode.ABSOLUTE
+            // flat_array[] の高度要素に絶対高度を設定
+            for ( let i = 0; i < num_points; ++i ) {
+                flat_array[3*i + 2] = entries[i].position.altitude;
+            }
+            break;
+        }
+
+        return flat_array;
+    }
+
+
+    /**
      * @summary プリミティブの更新
      * @desc
      * 条件:
      *   this._entries.length > 0
      * 入力:
-     *   this._entries
+     *   this._entries.length
      * 出力:
      *   this._transform
+     *
+     * @param {number[]} gocs_array  GOCS 平坦化配列
+     *
      * @private
      */
-    _updateTransform()
+    _updateTransform( gocs_array )
     {
         var num_entries = this._entries.length;
         var        xsum = 0;
         var        ysum = 0;
         var        zsum = 0;
-        var    pos_gocs = GeoMath.createVector3();
 
-        for ( var i = 0; i < num_entries; ++i ) {
-            this._entries[i].position.getAsGocs( pos_gocs );
-            xsum += pos_gocs[0];
-            ysum += pos_gocs[1];
-            zsum += pos_gocs[2];
+        for ( let i = 0; i < num_entries; ++i ) {
+            let ibase = 3*i;
+            xsum += gocs_array[ibase];
+            ysum += gocs_array[ibase + 1];
+            zsum += gocs_array[ibase + 2];
         }
 
         // 変換行列の更新
@@ -452,9 +557,11 @@ class Layout {
      *   owner.scene.glenv
      *   owner._entries
      *   owner._transform
-     * @param {mapray.TextEntity} owner  所有者
+     *
+     * @param {mapray.TextEntity} owner       所有者
+     * @param {number[]}          gocs_array  GOCS 平坦化配列
      */
-    constructor( owner )
+    constructor( owner, gocs_array )
     {
         this._owner = owner;
         this._items = this._createItemList();
@@ -471,7 +578,7 @@ class Layout {
         var size = this._setupLocation( row_layouts );
 
         this._texture  = this._createTexture( size.width, size.height );
-        this._vertices = this._createVertices( size.width, size.height );
+        this._vertices = this._createVertices( size.width, size.height, gocs_array );
         this._indices  = this._createIndices();
     }
 
@@ -620,15 +727,17 @@ class Layout {
 
     /**
      * @summary 頂点配列を生成
-     * @param  {number} width    横幅
-     * @param  {number} height   高さ
+     *
+     * @param  {number}   width       横幅
+     * @param  {number}   height      高さ
+     * @param  {number[]} gocs_array  GOCS 平坦化配列
      * @return {array.<number>}  頂点配列 [左下0, 右下0, 左上0, 右上0, ...]
+     *
      * @private
      */
-    _createVertices( width, height )
+    _createVertices( width, height, gocs_array )
     {
         var vertices = [];
-        var pos_gocs = GeoMath.createVector3();
 
         // テキスト集合の原点 (GOCS)
         var transform = this._owner._transform;
@@ -643,16 +752,14 @@ class Layout {
 
             var entry = item.entry;
 
-            // テキストの位置 (GOCS)
-            entry.position.getAsGocs( pos_gocs );
-
             // テキストの色
             var color = entry.color;
 
             // テキストの位置 (モデル座標系)
-            var xm = pos_gocs[0] - xo;
-            var ym = pos_gocs[1] - yo;
-            var zm = pos_gocs[2] - zo;
+            var ibase = 3 * i;
+            var xm = gocs_array[ibase]     - xo;
+            var ym = gocs_array[ibase + 1] - yo;
+            var zm = gocs_array[ibase + 2] - zo;
 
             // ベースライン左端 (キャンバス座標系)
             var xc = item.pos_x;
