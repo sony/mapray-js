@@ -17,6 +17,7 @@ start => <SCENE>
 
 <ENTITY> => {
   id?: <ID>
+  altitude_mode?: <ALTITUDE-MODE> = "absolute"
   <MODEL-CONTENT> | <MARKERLINE-CONTENT> | <TEXT-CONTENT>
 }
 
@@ -84,5 +85,6 @@ start => <SCENE>
 
 <PARAM-SCALE3> => <PARAM-VEC3> | Number
 
+<ALTITUDE-MODE> => "absolute" | "relative"
 
 # End of File
