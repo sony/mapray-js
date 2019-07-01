@@ -1,4 +1,4 @@
-# mapray JS CHANGELOG
+# Change Log
 
 
 ## 0.6.0
