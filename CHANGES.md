@@ -1,5 +1,6 @@
 # mapray JS CHANGELOG
 
+
 ## 0.6.0
 ### Added
 - Added options and methods to specify object visibility in mapray.Viewer
@@ -77,111 +78,94 @@ It can be selected by specifying.
 
 ## 0.5.1
 ### Added
-- npmjsへ公開
-
-## Version 0.5.0
-Open Sourceとして公開
-
-### mapray-js
-
-[新規]
-* レイヤー機能の追加
-
-[変更]
-* Inouをmaprayに改名
+- Published to [npm.com](https://www.npmjs.com/package/mapray-js)
 
 
-## Version 0.4.2
+## 0.5.0
+- Published as open source software
+- Supports layering of image provider
 
-### サンプル
-
-[新規]
-* クラウドにアクセスを行うアプリケーションnextRamblerを追加
-
-
-## Version 0.4.1
-
-[不具合]
-
-* テクスチャのキャッシュが削減されない問題 (Version 0.4.0 で発生) を修正した。
-* rambler.html の <div> タグが閉じられていない問題を修正した。
+### Changed
+- Renamed Inou to maprayJS
 
 
-## Version 0.4.0
+## 0.4.2
 
-### inou エンジン
-
-* Inou.Viewer のインスタンスを破棄する destroy() メソッドを追加した。
-
-
-## Version 0.3.1
-
-### inou エンジン
-
-[不具合]
-
-* Inou.TextEntity が公開されていない問題を解決
-* Inou.GenericEntity#setTransform() が実装されていない問題を解決
-
-### その他
-
-[新規]
-
-* Inou コンテンツ開発者ガイド doc/InouDeveloperGuide.md を追加
-* サンプルプログラム Turning を追加
+### Added
+- Add new application nextRambler to access the cloud
 
 
-## Version 0.3.0
+## 0.4.1
 
-### inou エンジン
+### Fixed
+- Fixed the issue with texture cache not being reduced (Occurred in Version 0.4.0).
+- Fixed the issue that the `div` tag in rambler.html was not closed.
 
-[新規]
 
-* レイと地表との交点を取得する機能を追加
+## 0.4.0
+
+### Added
+- Added destroy () method to destroy Inou.Viewer instance.
+
+
+## 0.3.1
+
+### Added
+- Added Inou Content Developer Guide in `doc/InouDeveloperGuide.md`
+- Added sample source code `Turning`
+
+### Fixed
+- Fixed the issue that Inou.TextEntity method was private 
+- Fixed the issue that Inou.GenericEntity # setTransform () was not implemented
+
+
+## 0.3.0
+
+### Added
+
+- Added the function to get the intersection of ray and ground
   - Inou.Ray
   - Inou.Viewer#getRayIntersection()
-* カメラに変換行列を取得するメソッドを追加
+- Added the method to get transformation matrix to camera
   - Inou.Camera#getCanvasToView()
   - Inou.Camera#getCanvasToGocs()
   - Inou.Camera#getViewToCanvas()
-* カメラにレイを取得するメソッドを追加
+- Added the method to get rays to the camera
   - Inou.Camera#getCanvasRay()
+- Merged Inou.DemBinary and Inou.FlakeMesh cache into Inou.Globe
 
-[内部]
-
-* Inou.DemBinary と Inou.FlakeMesh のキャッシュを Inou.Globe へ統合
-
-### サンプル
-
-* Rambler
-  - ドラッグによるカメラの移動操作を追加
-  - カメラの回転操作をドラッグから Ctrl + ドラッグに変更
-  - Microsoft Edge ブラウザに対応
+- Rambler
+  - Added camera move operation with dragging
+  - Changed camera rotation operation from Drag to Ctrl + Drag
+  - Supports Microsoft Edge
 
 
-## Version 0.2.0
+## 0.2.0
 
-### inou エンジン
+### Added
 
-[新規]
+- Changed Inou.DemProvider of the DEM data provider from the abstract class to public class 
+  - Added an option of dem_provider to Inou.Viewer constructor
+  - Added property of dem_provider to the Inou.Viewer instance
+  - Added implementation class Inou.StandardDemProvider of standard DEM data provider
 
-* DEM データプロバイダの抽象クラス Inou.DemProvider を公開
-  - Inou.Viewer の構築子にオプション dem_provider を追加
-  - Inou.Viewer のインスタンスにプロパティ dem_provider を追加
-  - 標準的な DEM データプロバイダの具象クラス Inou.StandardDemProvider を追加
+### Changed
 
-[変更]
-
-* Inou.ImageProvider のインタフェースを Inou.DemProvider に合わせて変更
-  - 追加メソッド
+- The interface of Inou.ImageProvider has been changed due to the change of Inou.DemProvider
+  - Added method
     - ImageProvider#requestTile( z, x, y, callback )
     - ImageProvider#cancelRequest( id )
-  - 削除メソッド
+  - Deleted method
     - ImageProvider#getTileAddress( z, x, y )
 
 
-## Version 0.1.0
+## 0.1.0
 
-+ inou エンジンをライブラリ化 (UMD 対応) して、npm パッケージとして使用できるようにした。
-+ テキスト表示エンティティ TextEntity を追加した。
-+ MarkerLineEntity のシーンスキーマを変更した。
+### Added
+
+- Packaged inou engine to npm package
+- Added Text Entity
+
+### Changed
+- The scene schema of MarkerLineEntity
+
