@@ -12,11 +12,18 @@
     - setVisibility
     - getVisibility
 
-- Supports loading a glTF model
-- Supports new scene graph engine that manages 3D models
-- Added method to calculate KML compatible model transformation matrix in mapray.GeoMath
+- Supports loading a glTF model [#18](https://github.com/sony/mapray-js/pull/18)
+- Supports new scene graph engine that manages 3D models [#17](https://github.com/sony/mapray-js/pull/17) [#18](https://github.com/sony/mapray-js/pull/18)
+- Added method to calculate KML compatible model transformation matrix in mapray.GeoMath [#15](https://github.com/sony/mapray-js/pull/15)
   - kml_model_matrix()
-- Add entity class mapray.ModelEntity
+- Add entity class mapray.ModelEntity [#18](https://github.com/sony/mapray-js/pull/18)
+- Support rotate and scale to the transform property in mapray scene file [#16](https://github.com/sony/mapray-js/pull/16)
+- Added some samples for maprayJS [#10](https://github.com/sony/mapray-js/pull/10)
+- Support CI with TravisCI [#23](https://github.com/sony/mapray-js/pull/23)
+
+### Changed
+- Remove babel es2015 [#21](https://github.com/sony/mapray-js/pull/21)
+- Support error handing in fetch functions [#20](https://github.com/sony/mapray-js/pull/20)
 
 #### Details about changes to the mapray scene file
 Rotate (`heading`, `tilt`, `roll`) and scale(`scale`) to the transform property of each entity
