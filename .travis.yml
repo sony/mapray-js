@@ -15,23 +15,15 @@ deploy:
   - provider: script
     skip_cleanup: true
     script: bash ./_deploy/scripts/setup_deploy.sh dev
-    on:
-      branch: support-automatic-release
   - provider: script
     skip_cleanup: true
     script: bash ./_deploy/scripts/setup_deploy.sh staging
-    on:
-      branch: support-automatic-release
   - provider: script
     skip_cleanup: true
     script: bash ./_deploy/scripts/deploy_to_cdn.sh ${FIREBASE_DEV_PROJECT} ${FIREBASE_DEPLOY_TOKEN}
-    on:
-      branch: support-automatic-release
   - provider: script
     skip_cleanup: true
     script: bash ./_deploy/scripts/deploy_to_cdn.sh ${FIREBASE_STG_PROJECT} ${FIREBASE_DEPLOY_TOKEN}
-    on:
-      branch: support-automatic-release
   - provider: script
     skip_cleanup: true
     script: bash ./_deploy/scripts/deploy_to_cdn.sh ${FIREBASE_PROD_PROJECT} ${FIREBASE_DEPLOY_TOKEN}
