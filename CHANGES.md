@@ -1,12 +1,86 @@
-# mapray JS 改訂履歴
+# mapray JS CHANGELOG
 
-## Version 0.5.1
-npmjsへ公開
+## 0.6.0
+### Added
+- Added options and methods to specify object visibility in mapray.Viewer
+  - Options
+    - ground_visibility: Ground visibility
+    - entity_visibility: Entity visibility
+
+  - Method
+    - setVisibility
+    - getVisibility
+
+- Supports loading a glTF model
+- Supports new scene graph engine that manages 3D models
+- Added method to calculate KML compatible model transformation matrix in mapray.GeoMath
+  - kml_model_matrix()
+- Add entity class mapray.ModelEntity
+
+#### Details about changes to the mapray scene file
+Rotate (`heading`, `tilt`, `roll`) and scale(`scale`) to the transform property of each entity
+You can now optionally specify the properties.
+
+The following is an example specification of the `transform` property.
+It rotates 45 degrees to the right and makes the scale 10 times larger.
+```
+{
+  "type": "generic",
+  "transform": {
+    "cartographic": [139.8, 36.5, 12.3],
+    "heading": 45,
+    "scale": [10, 10, 10]
+  },
+  ...
+}
+```
+
+Added entity type corresponding to mapray.ModelEntity.
+When using this type, specify *model* for the `type` property.
+
+Refers to a model object registered in `model_register` by the `ref_model` property.
+
+If there are multiple models in the referenced model object, you can use integers or names in `index`
+It can be selected by specifying.
+
+```
+"model_register": {
+  "model-x": {
+    "link": "models/model-x.gltf",
+    "offset_transform": { "heading": 180, "tilt": -90 }
+  },
+  ...
+},
+
+"entity_list": [
+  {
+    "type": "model",
+    "transform": { "cartographic": [140.0, 35, 0], "heading": 180 },
+    "ref_model": "model-x"
+  },
+  {
+    "type": "model",
+    "transform": { "cartographic": [140.1, 35, 0], "scale": 2.5 },
+    "ref_model": "model-x",
+    "index": 3
+  },
+  {
+    "type": "model",
+    "transform": { "cartographic": [140.2, 35, 0] },
+    "ref_model": "model-x",
+    "index": "scene-name-x"
+  },
+  ...
+]
+```
+
+
+## 0.5.1
+### Added
+- npmjsへ公開
 
 ## Version 0.5.0
 Open Sourceとして公開
-
-## Version 0.4.3
 
 ### mapray-js
 
