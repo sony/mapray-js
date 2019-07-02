@@ -20,6 +20,12 @@ deploy:
     script: bash ./_deploy/scripts/setup_deploy.sh staging
   - provider: script
     skip_cleanup: true
+    script: bash ./_deploy/scripts/setup_deploy.sh production
+    on:
+      tags: true
+      condition: $TRAVIS_TAG =~ [0-9]+(\.[0-9]+)
+  - provider: script
+    skip_cleanup: true
     script: bash ./_deploy/scripts/deploy_to_cdn.sh ${FIREBASE_DEV_PROJECT} ${FIREBASE_DEPLOY_TOKEN}
   - provider: script
     skip_cleanup: true
