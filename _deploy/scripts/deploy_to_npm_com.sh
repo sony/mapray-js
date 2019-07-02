@@ -14,5 +14,5 @@ cd ${HOME}
 echo "//registry.npmjs.org/:_authToken="${_NPM_TOKEN}  > .npmrc
 echo "Command, npm publish, is executed in "${HOME}
 
-_VERSION=`git describe --tags --abbrev=0`.
+_VERSION=`git describe --tags --abbrev=0`
 npm publish mapray-js-${_VERSION}.tgz
