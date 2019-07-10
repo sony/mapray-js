@@ -19,6 +19,7 @@ import Entity from "./Entity";
 import MarkerLineEntity from "./MarkerLineEntity";
 import TextEntity from "./TextEntity";
 import SceneLoader from "./SceneLoader";
+import GeoJSONLoader from "./GeoJSONLoader";
 import DebugStats from "./DebugStats";
 
 
@@ -48,6 +49,7 @@ var mapray = {
     MarkerLineEntity, MarkerLineEntity,
     TextEntity, TextEntity,
     SceneLoader, SceneLoader,
+    GeoJSONLoader, GeoJSONLoader,
     DebugStats: DebugStats
 };
 
