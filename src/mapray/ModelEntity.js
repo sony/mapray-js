@@ -1,5 +1,9 @@
 import Entity from "./Entity";
 import GeoMath from "./GeoMath";
+import GeoPoint from "./GeoPoint";
+import Orientation from "./Orientation";
+import AltitudeMode from "./AltitudeMode";
+import EntityRegion from "./EntityRegion";
 
 
 /**
@@ -19,16 +23,21 @@ class ModelEntity extends Entity {
      */
     constructor( scene, opts )
     {
-        super( scene );
+        super( scene, opts );
 
-        this._transform  = GeoMath.setIdentity( GeoMath.createMatrix() );
+        this._position    = new GeoPoint( 0, 0, 0 );
+        this._orientation = new Orientation( 0, 0, 0 );
+        this._scale       = GeoMath.createVector3( [1, 1, 1] );
+
         this._primitives = [];  // プリミティブ配列
         this._ptoe_array = [];  // 各プリミティブ座標系からエンティティ座標系への変換行列
+
+        this._abs_position = null;  // 絶対高度に変換した位置のキャッシュ (null なら無効)
 
         if ( opts && opts.json ) {
             var json = opts.json;
             var refs = opts.refs || {};
-            this._transform = this.parseTransform( json.transform );
+            this._setupTransform( json );
             this._setupPrimitives( json, refs );
         }
     }
@@ -39,14 +48,21 @@ class ModelEntity extends Entity {
      */
     getPrimitives( stage )
     {
+        // this._abs_position を更新
+        this._updateAbsPosition();
+
+        var  mlocs_to_gocs  = this._abs_position.getMlocsToGocsMatrix( GeoMath.createMatrix() );
+        var entity_to_mlocs = this._orientation.getTransformMatrix( this._scale, GeoMath.createMatrix() );
+        var entity_to_gocs  = GeoMath.mul_AA( mlocs_to_gocs, entity_to_mlocs, GeoMath.createMatrix() );
+
         // Primitive#transform を設定
         var primitives = this._primitives;
         var ptoe_array = this._ptoe_array;
         for ( var i = 0; i < primitives.length; ++i ) {
             var prim = primitives[i];
             var ptoe = ptoe_array[i];
-            // prim.transform = this._transform * ptoe
-            GeoMath.mul_AA( this._transform, ptoe, prim.transform );
+            // prim.transform = entity_to_gocs * ptoe
+            GeoMath.mul_AA( entity_to_gocs, ptoe, prim.transform );
         }
 
         return this._primitives;
@@ -54,12 +70,38 @@ class ModelEntity extends Entity {
 
 
     /**
-     * @summary 変換行列を設定
-     * @param {mapray.Matrix} matrix  モデル座標系から GOCS への変換行列
+     * @override
      */
-    setTransform( matrix )
+    onChangeAltitudeMode( prev_mode )
     {
-        GeoMath.copyMatrix( matrix, this._transform );
+        this._abs_position = null;  // キャッシュを無効化
+    }
+
+
+    /**
+     * this._position, this._orientation, this._scale を設定
+     *
+     * @param {object} json  生成情報
+     *
+     * @private
+     */
+    _setupTransform( json )
+    {
+        var tr = json.transform;  // <TRANSFORM>
+
+        // position
+        this._position.setFromArray( tr.position );  // <GEO-POINT>
+
+        // heading, tilt, roll
+        this._orientation = new Orientation( tr.heading, tr.tilt, tr.roll );
+
+        // scale
+        var scale = (tr.scale !== undefined) ? tr.scale : [1, 1, 1];  // <PARAM-SCALE3>
+        if ( typeof scale == 'number' ) {
+            // スケールをベクトルに正規化
+            scale = [scale, scale, scale];
+        }
+        GeoMath.copyVector3( scale, this._scale );
     }
 
 
@@ -84,6 +126,92 @@ class ModelEntity extends Entity {
         else {
             // ModelContainer からモデルが見つからなかった
             throw new Error( "model is not found in ModelContiner" );
+        }
+    }
+
+
+    /**
+     * @summary モデル原点位置を設定
+     *
+     * @param {mapray.GeoPoint} value  モデル原点の位置
+     */
+    setPosition( value )
+    {
+        this._position.assign( value );
+
+        // 変化した可能性がある
+        this.needToCreateRegions();
+        this._abs_position = null;
+    }
+
+
+    /**
+     * @summary モデルの向きを設定
+     *
+     * @param {mapray.Orientation} value  モデルの向き
+     */
+    setOrientation( value )
+    {
+        this._orientation.assign( value );
+    }
+
+
+    /**
+     * @summary モデルのスケールを設定
+     *
+     * @param {mapray.Vector3} value  モデルのスケール
+     */
+    setScale( value )
+    {
+        GeoMath.copyVector3( value, this._scale );
+    }
+
+
+    /**
+     * @override
+     */
+    createRegions()
+    {
+        const region = new EntityRegion();
+
+        region.addPoint( this._position );
+
+        return [region];
+    }
+
+
+    /**
+     * @override
+     */
+    onChangeElevation( regions )
+    {
+        this._abs_position = null;  // キャッシュを無効化
+    }
+
+
+    /**
+     * @summary 絶対高度位置を更新
+     *
+     * 出力: this._abs_position
+     *
+     * @private
+     */
+    _updateAbsPosition()
+    {
+        if ( this._abs_position !== null ) {
+            // キャッシュされている
+            return;
+        }
+
+        this._abs_position = this._position.clone();
+
+        switch ( this.altitude_mode ) {
+        case AltitudeMode.RELATIVE:
+            this._abs_position.altitude += this.scene.viewer.getExistingElevation( this._position );
+            break;
+
+        default: // AltitudeMode.ABSOLUTE
+            break;
         }
     }
 

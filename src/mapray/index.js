@@ -1,7 +1,10 @@
 import Viewer from "./Viewer";
 import Camera from "./Camera";
 import GeoMath from "./GeoMath";
+import GeoPoint from "./GeoPoint";
+import Orientation from "./Orientation";
 import Ray from "./Ray";
+import AltitudeMode from "./AltitudeMode";
 import CredentialMode from "./CredentialMode";
 import Layer from "./Layer";
 import LayerCollection from "./LayerCollection";
@@ -13,7 +16,6 @@ import RenderCallback from "./RenderCallback";
 import StandardImageProvider from "./StandardImageProvider";
 import Scene from "./Scene";
 import Entity from "./Entity";
-import GenericEntity from "./GenericEntity";
 import MarkerLineEntity from "./MarkerLineEntity";
 import TextEntity from "./TextEntity";
 import SceneLoader from "./SceneLoader";
@@ -28,7 +30,10 @@ var mapray = {
     Viewer: Viewer,
     Camera: Camera,
     GeoMath: GeoMath,
+    GeoPoint: GeoPoint,
+    Orientation: Orientation,
     Ray: Ray,
+    AltitudeMode: AltitudeMode,
     CredentialMode: CredentialMode,
     Layer: Layer,
     LayerCollection: LayerCollection,
@@ -40,7 +45,6 @@ var mapray = {
     StandardImageProvider: StandardImageProvider,
     Scene: Scene,
     Entity: Entity,
-    GenericEntity: GenericEntity,
     MarkerLineEntity, MarkerLineEntity,
     TextEntity, TextEntity,
     SceneLoader, SceneLoader,

@@ -4,6 +4,9 @@ import Mesh from "./Mesh";
 import Texture from "./Texture";
 import TextMaterial from "./TextMaterial";
 import GeoMath from "./GeoMath";
+import GeoPoint from "./GeoPoint";
+import AltitudeMode from "./AltitudeMode";
+import EntityRegion from "./EntityRegion";
 
 
 /**
@@ -21,7 +24,7 @@ class TextEntity extends Entity {
      */
     constructor( scene, opts )
     {
-        super( scene );
+        super( scene, opts );
 
         // テキスト管理
         this._entries = [];
@@ -67,6 +70,15 @@ class TextEntity extends Entity {
     getPrimitives( stage )
     {
         return this._updatePrimitive();
+    }
+
+
+    /**
+     * @override
+     */
+    onChangeAltitudeMode( prev_mode )
+    {
+        this._dirty = true;
     }
 
 
@@ -123,9 +135,9 @@ class TextEntity extends Entity {
 
     /**
      * @summary テキストを追加
-     * @param {string}         text
-     * @param {mapray.Vector3} position
-     * @param {object}         [props]
+     * @param {string}          text      テキスト
+     * @param {mapray.GeoPoint} position  位置
+     * @param {object}          [props]   プロパティ
      * @param {string}         [props.font_style]   フォントスタイル ("normal" | "italic" | "oblique")
      * @param {string}         [props.font_weight]  フォントの太さ   ("normal" | "bold")
      * @param {number}         [props.font_size]    フォントの大きさ (Pixels)
@@ -135,6 +147,36 @@ class TextEntity extends Entity {
     addText( text, position, props )
     {
         this._entries.push( new Entry( this, text, position, props ) );
+
+        // 変化した可能性がある
+        this.needToCreateRegions();
+        this._dirty = true;
+    }
+
+
+    /**
+     * @override
+     */
+    createRegions()
+    {
+        const region = new EntityRegion();
+
+        const entries = this._entries;
+        const length  = entries.length;
+
+        for ( let i = 0; i < length; ++i ) {
+            region.addPoint( entries[i].position );
+        }
+
+        return [region];
+    }
+
+
+    /**
+     * @override
+     */
+    onChangeElevation( regions )
+    {
         this._dirty = true;
     }
 
@@ -208,11 +250,14 @@ class TextEntity extends Entity {
             return this._primitives;
         }
 
+        // 各エントリーの GOCS 位置を生成 (平坦化配列)
+        var gocs_array = this._createFlatGocsArray();
+
         // プリミティブの更新
         //   primitive.transform
-        this._updateTransform();
+        this._updateTransform( gocs_array );
 
-        var layout = new Layout( this );
+        var layout = new Layout( this, gocs_array );
         if ( !layout.isValid() ) {
             // 更新に失敗
             this._primitives = [];
@@ -256,28 +301,90 @@ class TextEntity extends Entity {
 
 
     /**
+     * @summary GOCS 平坦化配列を取得
+     *
+     * 入力: this._entries
+     *
+     * @return {number[]}  GOCS 平坦化配列
+     * @private
+     */
+    _createFlatGocsArray()
+    {
+        const num_points = this._entries.length;
+        return GeoPoint.toGocsArray( this._getFlatGeoPoints_with_Absolute(), num_points,
+                                     new Float64Array( 3 * num_points ) );
+    }
+
+
+    /**
+     * @summary GeoPoint 平坦化配列を取得 (絶対高度)
+     *
+     * 入力: this._entries
+     *
+     * @return {number[]}  GeoPoint 平坦化配列
+     * @private
+     */
+    _getFlatGeoPoints_with_Absolute()
+    {
+        const entries    = this._entries;
+        const num_points = entries.length;
+        const flat_array = new Float64Array( 3 * num_points );
+
+        // flat_array[] に経度要素と緯度要素を設定
+        for ( let i = 0; i < num_points; ++i ) {
+            let pos = entries[i].position;
+            flat_array[3*i]     = pos.longitude;
+            flat_array[3*i + 1] = pos.latitude;
+        }
+
+        switch ( this.altitude_mode ) {
+        case AltitudeMode.RELATIVE:
+            // flat_array[] の高度要素に現在の標高を設定
+            this.scene.viewer.getExistingElevations( num_points, flat_array, 0, 3, flat_array, 2, 3 );
+            // flat_array[] の高度要素に絶対高度を設定
+            for ( let i = 0; i < num_points; ++i ) {
+                flat_array[3*i + 2] += entries[i].position.altitude;
+            }
+            break;
+
+        default: // AltitudeMode.ABSOLUTE
+            // flat_array[] の高度要素に絶対高度を設定
+            for ( let i = 0; i < num_points; ++i ) {
+                flat_array[3*i + 2] = entries[i].position.altitude;
+            }
+            break;
+        }
+
+        return flat_array;
+    }
+
+
+    /**
      * @summary プリミティブの更新
      * @desc
      * 条件:
      *   this._entries.length > 0
      * 入力:
-     *   this._entries
+     *   this._entries.length
      * 出力:
      *   this._transform
+     *
+     * @param {number[]} gocs_array  GOCS 平坦化配列
+     *
      * @private
      */
-    _updateTransform()
+    _updateTransform( gocs_array )
     {
         var num_entries = this._entries.length;
         var        xsum = 0;
         var        ysum = 0;
         var        zsum = 0;
 
-        for ( var i = 0; i < num_entries; ++i ) {
-            var position = this._entries[i].position;
-            xsum += position[0];
-            ysum += position[1];
-            zsum += position[2];
+        for ( let i = 0; i < num_entries; ++i ) {
+            let ibase = 3*i;
+            xsum += gocs_array[ibase];
+            ysum += gocs_array[ibase + 1];
+            zsum += gocs_array[ibase + 2];
         }
 
         // 変換行列の更新
@@ -293,10 +400,13 @@ class TextEntity extends Entity {
      */
     _setupByJson( json )
     {
-        var entries = json.entries;
+        var  entries = json.entries;
+        var position = new GeoPoint();
+
         for ( var i = 0; i < entries.length; ++i ) {
             var entry = entries[i];
-            this.addText( entry.text, TextEntity._toCartesian( entry.position ), entry );
+            position.setFromArray( entry.position );
+            this.addText( entry.text, position, entry );
         }
 
         var props = this._text_parent_props;
@@ -305,42 +415,6 @@ class TextEntity extends Entity {
         if ( json.font_size )   props.font_size   = json.font_size;
         if ( json.font_family ) props.font_family = json.font_family;
         if ( json.color )       GeoMath.copyVector3( json.color, props.color );
-    }
-
-
-    /**
-     * @summary 位置を GOCS に変換
-     * @param  {object} position  入力頂点
-     * @return {array}            変換結果
-     * @private
-     */
-    static _toCartesian( position )
-    {
-        var dst = null;
-
-        if ( position.cartesian ) {
-            dst = position.cartesian;
-        }
-        else if ( position.cartographic ) {
-            dst = GeoMath.createVector3();
-
-            var    src = position.cartographic;
-            var degree = GeoMath.DEGREE;
-
-            var λ = src[0] * degree;
-            var φ = src[1] * degree;
-            var  r = src[2] + GeoMath.EARTH_RADIUS;
-            var sinλ = Math.sin( λ );
-            var cosλ = Math.cos( λ );
-            var sinφ = Math.sin( φ );
-            var cosφ = Math.cos( φ );
-
-            dst[0] = r * cosφ * cosλ;
-            dst[1] = r * cosφ * sinλ;
-            dst[2] = r * sinφ;
-        }
-
-        return dst;
     }
 
 }
@@ -369,7 +443,7 @@ class Entry {
     /**
      * @param {mapray.TextEntity} owner                所有者
      * @param {string}            text                 テキスト
-     * @param {mapray.Vector3}    position             位置 (GOCS)
+     * @param {mapray.GeoPoint}   position             位置
      * @param {object}            [props]              プロパティ
      * @param {string}            [props.font_style]   フォントスタイル ("normal" | "italic" | "oblique")
      * @param {string}            [props.font_weight]  フォントの太さ   ("normal" | "bold")
@@ -379,9 +453,9 @@ class Entry {
      */
     constructor( owner, text, position, props )
     {
-        this._owner      = owner;
-        this._text       = text;
-        this._position   = GeoMath.createVector3f( position );
+        this._owner    = owner;
+        this._text     = text;
+        this._position = position.clone();
 
         this._props = Object.assign( {}, props );  // props の複製
         this._copyPropertyVector3f( "color" );     // deep copy
@@ -401,7 +475,7 @@ class Entry {
 
     /**
      * @summary 位置
-     * @type {mapray.Vector3}
+     * @type {mapray.GeoPoint}
      * @readonly
      */
     get position()
@@ -483,9 +557,11 @@ class Layout {
      *   owner.scene.glenv
      *   owner._entries
      *   owner._transform
-     * @param {mapray.TextEntity} owner  所有者
+     *
+     * @param {mapray.TextEntity} owner       所有者
+     * @param {number[]}          gocs_array  GOCS 平坦化配列
      */
-    constructor( owner )
+    constructor( owner, gocs_array )
     {
         this._owner = owner;
         this._items = this._createItemList();
@@ -502,7 +578,7 @@ class Layout {
         var size = this._setupLocation( row_layouts );
 
         this._texture  = this._createTexture( size.width, size.height );
-        this._vertices = this._createVertices( size.width, size.height );
+        this._vertices = this._createVertices( size.width, size.height, gocs_array );
         this._indices  = this._createIndices();
     }
 
@@ -651,12 +727,15 @@ class Layout {
 
     /**
      * @summary 頂点配列を生成
-     * @param  {number} width    横幅
-     * @param  {number} height   高さ
+     *
+     * @param  {number}   width       横幅
+     * @param  {number}   height      高さ
+     * @param  {number[]} gocs_array  GOCS 平坦化配列
      * @return {array.<number>}  頂点配列 [左下0, 右下0, 左上0, 右上0, ...]
+     *
      * @private
      */
-    _createVertices( width, height )
+    _createVertices( width, height, gocs_array )
     {
         var vertices = [];
 
@@ -673,16 +752,14 @@ class Layout {
 
             var entry = item.entry;
 
-            // テキストの位置 (GOCS)
-            var pos = entry.position;
-
             // テキストの色
             var color = entry.color;
 
             // テキストの位置 (モデル座標系)
-            var xm = pos[0] - xo;
-            var ym = pos[1] - yo;
-            var zm = pos[2] - zo;
+            var ibase = 3 * i;
+            var xm = gocs_array[ibase]     - xo;
+            var ym = gocs_array[ibase + 1] - yo;
+            var zm = gocs_array[ibase + 2] - zo;
 
             // ベースライン左端 (キャンバス座標系)
             var xc = item.pos_x;

@@ -1,9 +1,7 @@
 import GeoMath from "./GeoMath";
+import Orientation from "./Orientation";
 import CredentialMode from "./CredentialMode";
-import Mesh from "./Mesh";
-import Texture from "./Texture";
 import ModelContainer from "./ModelContainer";
-import GenericEntity from "./GenericEntity";
 import MarkerLineEntity from "./MarkerLineEntity";
 import TextEntity from "./TextEntity";
 import ModelEntity from "./ModelEntity";
@@ -82,7 +80,7 @@ class SceneLoader {
      * @desc
      * <p>注意: シーンの読み込みが終了したことを確認してからこのメソッドを呼び出すこと。</p>
      * @param  {string}                                   id  識別子
-     * @return {?(mapray.Mesh|mapray.Texture|mapray.ModelContainer|mapray.Entity)}  オブジェクト
+     * @return {?(mapray.ModelContainer|mapray.Entity)}  オブジェクト
      */
     getReference( id )
     {
@@ -96,7 +94,7 @@ class SceneLoader {
      * @desc
      * <p>オブジェクト item を識別子 id で参照できるように this に設定する。</p>
      * @param {string}                                   id    識別子
-     * @param {mapray.Mesh|mapray.Texture|mapray.ModelContainer|mapray.Entity} item  オブジェクト
+     * @param {mapray.ModelContainer|mapray.Entity} item  オブジェクト
      * @private
      */
     _setReference( id, item )
@@ -140,8 +138,6 @@ class SceneLoader {
         oscene.req_count = 0;
         oscene.req_ended = false;
 
-        this._load_mesh_register( oscene );
-        this._load_texture_register( oscene );
         this._load_model_register( oscene );
 
         if ( oscene.req_count == 0 ) {
@@ -173,28 +169,6 @@ class SceneLoader {
         --oscene.req_count;
         if ( (oscene.req_count == 0) && oscene.req_ended ) {
             this._postload_object( oscene );
-        }
-    }
-
-
-    /**
-     * @private
-     */
-    _load_mesh_register( oscene )
-    {
-        var mesh_register = oscene["mesh_register"];
-        if ( !mesh_register ) return;
-
-        var keys = Object.keys( mesh_register );
-        for ( var i = 0; i < keys.length; ++i ) {
-            var   id = keys[i];
-            var mesh = mesh_register[id];
-            if ( mesh.binary ) {
-                this._load_mesh_binary( oscene, id, mesh.binary );
-            }
-            else if ( mesh.vertices ) {
-                this._setReference( id, new Mesh( this._glenv, mesh ) );
-            }
         }
     }
 
@@ -264,89 +238,6 @@ class SceneLoader {
     /**
      * @private
      */
-    _load_mesh_binary( oscene, id, url )
-    {
-        var tr = this._transform( url, ResourceType.MESH );
-
-        fetch( tr.url, this._make_fetch_params( tr ) )
-            .then( response => {
-                this._check_cancel();
-                return response.ok ?
-                    response.arrayBuffer() : Promise.reject( Error( response.statusText ) );
-            } )
-            .then( buffer => {
-                // バイナリデータの取得に成功
-                this._check_cancel();
-                this._setReference( id, new Mesh( this._glenv, buffer ) );
-            } )
-            .catch( () => {
-                // バイナリデータの取得に失敗
-                console.error( "mapray: failed to retrieve: " + tr.url );
-            } )
-            .then( () => {
-                this._postload_object_ifNoReq( oscene );
-            } );
-
-        ++oscene.req_count;
-    }
-
-
-    /**
-     * @private
-     */
-    _load_texture_register( oscene )
-    {
-        var texture_register = oscene["texture_register"];
-        if ( !texture_register ) return;
-
-        var keys = Object.keys( texture_register );
-        for ( var i = 0; i < keys.length; ++i ) {
-            var      id = keys[i];
-            var texture = texture_register[id];
-            if ( texture.image ) {
-                this._load_texture_image( oscene, id, texture.image );
-            }
-        }
-    }
-
-
-    /**
-     * @private
-     */
-    _load_texture_image( oscene, id, url )
-    {
-        var image = new Image();
-        var    tr = this._transform( url, ResourceType.IMAGE );
-
-        image.onload = () => {
-            if ( !this._cancelled ) {
-                this._setReference( id, new Texture( this._glenv, image ) );
-            }
-            this._postload_object_ifNoReq( oscene );
-        };
-
-        image.onerror = () => {
-            console.error( "mapray: failed to retrieve: " + tr.url );
-            this._postload_object_ifNoReq( oscene );
-        };
-
-        // crossorigin 属性の値
-        if ( tr.credentials === CredentialMode.SAME_ORIGIN ) {
-            image.crossOrigin = "anonymous";
-        }
-        else if ( tr.credentials === CredentialMode.INCLUDE ) {
-            image.crossOrigin = "use-credentials";
-        }
-
-        // 画像リクエスト
-        ++oscene.req_count;
-        image.src = tr.url;
-    }
-
-
-    /**
-     * @private
-     */
     _load_entity_list( oscene )
     {
         var entity_list = oscene["entity_list"];
@@ -356,13 +247,10 @@ class SceneLoader {
 
         for ( var i = 0; i < entity_list.length; ++i ) {
             var   item = entity_list[i];
-            var   type = item.type || "generic";
+            var   type = item.type;
             var entity = null;
 
             switch ( type ) {
-            case "generic":
-                entity = new GenericEntity( scene, { json: item, refs: this._references } );
-                break;
             case "markerline":
                 entity = new MarkerLineEntity( scene, { json: item, refs: this._references } );
                 break;
@@ -466,32 +354,26 @@ class SceneLoader {
     static
     parseOffsetTransform( offset_transform )
     {
-        var     ot = offset_transform;
-        var result = GeoMath.createMatrix();
+        var ot = offset_transform;
 
-        if ( ot.matrix ) {
-            // <TRANSFORM-MATRIX>
-            return GeoMath.copyMatrix( ot.matrix, result );
+        // <OFFSET-TRANSFORM-PARAMS>
+        var   translate = ot.translate || [0, 0, 0];
+        var orientation = new Orientation( ot.heading, ot.tilt, ot.roll );
+        var       scale = (ot.scale !== undefined) ? ot.scale : [1, 1, 1];  // <PARAM-SCALE3>
+        if ( typeof scale == 'number' ) {
+            // スケールをベクトルに正規化
+            scale = [scale, scale, scale];
         }
-        else {
-            // <OFFSET-TRANSFORM-PARAMS>
-            var translate = ot.translate || [0, 0, 0];
-            var heading   = ot.heading   || 0;
-            var tilt      = ot.tilt      || 0;
-            var roll      = ot.roll      || 0;
-            var scale     = (ot.scale !== undefined) ? ot.scale : [1, 1, 1];  // <PARAM-SCALE3>
-            if ( typeof scale == 'number' ) {
-                // スケールをベクトルに正規化
-                scale = [scale, scale, scale];
-            }
 
-            // KML 互換のモデル変換行列 + 平行移動
-            GeoMath.kml_model_matrix( heading, tilt, roll, scale, result );
-            result[12] = translate[0];
-            result[13] = translate[1];
-            result[14] = translate[2];
-            return result;
-        }
+        // scale -> orientation -> translate 順の変換
+        var matrix = GeoMath.createMatrix();
+
+        orientation.getTransformMatrix( scale, matrix );
+        matrix[12] = translate[0];
+        matrix[13] = translate[1];
+        matrix[14] = translate[2];
+
+        return matrix;
     }
 
 }
@@ -561,16 +443,6 @@ var ResourceType = {
     SCENE: { id: "SCENE" },
 
     /**
-     * テクスチャ画像ファイル
-     */
-    IMAGE: { id: "IMAGE" },
-
-    /**
-     * メッシュファイル
-     */
-    MESH: { id: "MESH" },
-
-    /**
      * モデルファイル
      */
     MODEL: { id: "MODEL" },
@@ -578,7 +450,12 @@ var ResourceType = {
     /**
      * バイナリファイル
      */
-    BINARY: { id: "BINARY" }
+    BINARY: { id: "BINARY" },
+
+    /**
+     * テクスチャ画像ファイル
+     */
+    IMAGE: { id: "IMAGE" }
 
 };
 

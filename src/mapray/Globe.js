@@ -1,6 +1,7 @@
 import GeoMath from "./GeoMath";
 import DemBinary from "./DemBinary";
 import FlakeMesh from "./FlakeMesh";
+import UpdatedTileArea from "./UpdatedTileArea";
 
 
 /**
@@ -19,6 +20,7 @@ class Globe {
         this._glenv        = glenv;
         this._dem_provider = dem_provider;
         this._status = Status.NOT_READY;
+        this._dem_area_updated = new UpdatedTileArea();
 
         this._ρ        = dem_provider.getResolutionPower();
         this._dem_zbias = GeoMath.LOG2PI - this._ρ + 1;  // b = log2(π) - ρ + 1
@@ -99,6 +101,16 @@ class Globe {
     }
 
     /**
+     * @summary DEM が更新された領域を取得
+     * @type {mapray.UpdatedTileArea}
+     * @readonly
+     */
+    get dem_area_updated()
+    {
+        return this._dem_area_updated;
+    }
+
+    /**
      * @summary 基底 Flake を取得
      * @type {mapray.Globe.Flake}
      * @readonly
@@ -170,6 +182,140 @@ class Globe {
     }
 
     /**
+     * @summary 現行の標高 (複数) を取得
+     *
+     * @desc
+     * <p>現在メモリーにある最高精度の標高値を一括で取得する。</p>
+     * <p>まだ DEM データが存在しない、または経度, 緯度が範囲外の場所は標高を 0 とする。</p>
+     *
+     * <p>このメソッドは DEM のリクエストは発生しない。また DEM のキャッシュには影響を与えない。</p>
+     *
+     * <p>一般的に画面に表示されていない場所は標高の精度が低い。</p>
+     *
+     * @param  {number}   num_points  入出力データ数
+     * @param  {number[]} src_array   入力配列 (経度, 緯度, ...)
+     * @param  {number}   src_offset  入力データの先頭インデックス
+     * @param  {number}   src_stride  入力データのストライド
+     * @param  {number[]} dst_array   出力配列 (標高, ...)
+     * @param  {number}   dst_offset  出力データの先頭インデックス
+     * @param  {number}   dst_stride  出力データのストライド
+     * @return {number[]}             dst_array
+     *
+     * @see mapray.Viewer#getExistingElevations
+     */
+    getExistingElevations( num_points, src_array, src_offset, src_stride, dst_array, dst_offset, dst_stride )
+    {
+        var dPI = 2 * Math.PI;
+        var demSize = 1 << this._ρ;  // 2^ρ
+
+        var src_index = src_offset;
+        var dst_index = dst_offset;
+
+        for ( var i = 0; i < num_points; ++i ) {
+            // 経緯度 (Degrees)
+            var lon = src_array[src_index];
+            var lat = src_array[src_index + 1];
+
+            // 正規化経緯度 (Degrees)
+            var _lon = lon + 180 * Math.floor( (90 - lat) / 360 + Math.floor( (90 + lat) / 360 ) );
+            var nlon = _lon - 360 - 360 * Math.floor( (_lon - 180) / 360 );               // 正規化経度 [-180,180)
+            var nlat = 90 - Math.abs( 90 - lat + 360 * Math.floor( (90 + lat) / 360 ) );  // 正規化緯度 [-90,90]
+
+            // 単位球メルカトル座標
+            var xm = nlon * GeoMath.DEGREE;
+            var ym = GeoMath.invGudermannian( nlat * GeoMath.DEGREE );
+
+            // 基底タイル座標 (左上(0, 0)、右下(1, 1))
+            var xt = xm / dPI + 0.5;
+            var yt = 0.5 - ym / dPI;
+
+            if ( yt >= 0 && yt <= 1 ) {
+                // 通常範囲のとき
+                var dem = this._findHighestAccuracy2( xt, yt );
+                if ( dem !== null ) {
+                    var pow = Math.pow( 2, dem.z );  // 2^ze
+                    var  uf = demSize * (pow * xt - dem.x);
+                    var  vf = demSize * (pow * yt - dem.y);
+                    var  ui = GeoMath.clamp( Math.floor( uf ), 0, demSize - 1 );
+                    var  vi = GeoMath.clamp( Math.floor( vf ), 0, demSize - 1 );
+
+                    var heights = dem.getHeights( ui, vi );
+                    var h00 = heights[0];
+                    var h10 = heights[1];
+                    var h01 = heights[2];
+                    var h11 = heights[3];
+
+                    // 標高を補間
+                    var s = uf - ui;
+                    var t = vf - vi;
+                    dst_array[dst_index] = (h00 * (1 - s) + h10 * s) * (1 - t) + (h01 * (1 - s) + h11 * s) * t;
+                }
+                else {
+                    // まだ標高を取得することができない
+                    dst_array[dst_index] = 0;
+                }
+            }
+            else {
+                // 緯度が Web メルカトルの範囲外 (極に近い)
+                dst_array[dst_index] = 0;
+            }
+
+            src_index += src_stride;
+            dst_index += dst_stride;
+        }
+
+        return dst_array;
+    }
+
+    /**
+     * @summary 正確度が最も高い DEM タイルデータを検索
+     *
+     * @desc
+     * <p>基底タイル座標 (左上(0, 0)、右下(1, 1)) [xt, yt] の標高データを取得することができる、正確度が最も高い DEM タイルデータを検索する。</p>
+     *
+     * @param  {number}         xt  X 座標 (基底タイル座標系)
+     * @param  {number}         yt  Y 座標 (基底タイル座標系)
+     * @return {?mapray.DemBinary}  DEM タイルデータ (存在しなければ null)
+     *
+     * @private
+     */
+    _findHighestAccuracy2( xt, yt )
+    {
+        var flake = this._root_flake;
+        if ( flake === null ) {
+            // まだ基底タイルが読み込まれていない
+            return null;
+        }
+
+        var      size = 2;  // 2^(flake.z + 1)
+        var        xf = size * xt;
+        var        yf = size * yt;
+        var dem_flake = flake;  // DEM を持った地表断片
+
+        for (;;) {
+            var     u = GeoMath.clamp( Math.floor( xf ), 0, size - 1 ) % 2;
+            var     v = GeoMath.clamp( Math.floor( yf ), 0, size - 1 ) % 2;
+            var child = flake._children[u + 2*v];
+
+            if ( child === null ) {
+                // これ以上のレベルは存在しない
+                break;
+            }
+            else if ( flake._dem_state === DemState.LOADED ) {
+                // より正確度が高い DEM を持つ地表断片に更新
+                dem_flake = flake;
+            }
+
+            flake = child;
+            size *= 2;
+            xf   *= 2;
+            yf   *= 2;
+        }
+
+        return dem_flake._dem_data;
+    }
+
+    /**
      * @summary フレームの最後の処理
      */
     endFrame()
@@ -183,6 +329,8 @@ class Globe {
              this._num_cache_meshes > this._mesh_reduce_thresh * this._num_touch_meshes ) {
             this._reduceMeshes();
         }
+
+        this._dem_area_updated.clear();
 
         this._num_touch_flakes = 0;
         this._num_touch_meshes = 0;
@@ -206,6 +354,7 @@ class Globe {
                 this._root_flake = new Flake( null, z, x, y );
                 this._root_flake.setupRoot( this, dem );
                 this._status = Status.READY;
+                this._dem_area_updated.addTileArea( dem );
             }
             else { // データ取得に失敗
                 this._status = Status.FAILED;
@@ -749,6 +898,7 @@ class Flake {
                     if ( data ) {
                         flake._dem_data  = new DemBinary( flake.z, flake.x, flake.y, globe._ρ, data );
                         flake._dem_state = DemState.LOADED;
+                        globe._dem_area_updated.addTileArea( flake );
                     }
                     else { // データ取得に失敗
                         flake._dem_data  = null;
