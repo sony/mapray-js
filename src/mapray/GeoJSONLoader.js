@@ -1,4 +1,6 @@
+import GeoMath from "./GeoMath";
 import CredentialMode from "./CredentialMode";
+import MarkerLineEntity from "./MarkerLineEntity";
 
 /**
  * @summary シーンの読み込み
@@ -22,8 +24,14 @@ class GeoJSONLoader {
 
         this._scene      = scene;
         this._url        = url;
-        this._callback   = opts.callback  || defaultFinishCallback;
+        this._onLoad   = opts.onLoad  || defaultOnLoadCallback;
+        this._getLineColor = opts._getLineColor || defaultGetLineColorCallback;
+        this._getLineWidth = opts._getLineWidth || defaultGetLineWidthCallback;
+        this._getRadius = opts._getRadius || defaultGetRadiusCallback;
+        this._getFillColor = opts._getLineColor || defaultGetFillColorCallback;
+        this._getElevation = opts._getElevetion || defaultGetElevationCallback;
         this._transform  = opts.transform || defaultTransformCallback;
+        this._getExtrudedMode = opts._getExtrudedMode || defaultExtrudedModeCallback;
         this._glenv      = scene.glenv;
         this._references = {};
         this._cancelled  = false;
@@ -127,7 +135,7 @@ class GeoJSONLoader {
             return null;
         }
         
-        switch (geometry.type) {
+        switch ( geometry.type) {
             case "Point":
                 console.log( "GeoJSON Point" );
                 return null;
@@ -146,6 +154,7 @@ class GeoJSONLoader {
 		         // latlngs = coordsToLatLngs(coords, geometry.type === 'LineString' ? 0 : 1, _coordsToLatLng);
                 // return new Polyline(latlngs, options);
                 console.log( "GeoJSON LineString or MultiString" );
+                this._loadLines( geometry, this._getLineColor(geojson), this._getLineWidth(geojson), this._getExtrudedMode(geojson), this._getElevation(geojson) );
                 return null;
 
 	        case "Polygon":
@@ -212,7 +221,7 @@ class GeoJSONLoader {
     {
         if ( this._finished ) return;
 
-        this._callback( this, false );
+        this._onLoad( this, false );
     }
 
 
@@ -225,7 +234,7 @@ class GeoJSONLoader {
 
         this._finished = true;
         this._scene.removeLoader( this );
-        this._callback( this, true );
+        this._onLoad( this, true );
     }
 
 
@@ -239,10 +248,62 @@ class GeoJSONLoader {
         console.error( msg );
         this._finished = true;
         this._scene.removeLoader( this );
-        this._callback( this, false );
+        this._onLoad( this, false );
     }
 
-    
+    _loadLines( geometry, color4, width, extruded, elevation ) 
+    {
+        if ( !geometry || color4.length !== 4 ) {
+            return null;
+        }
+        var type = geometry.type;
+        var coords = geometry.coordinates;
+        var rgb = color4.slice(0, 3);
+        var alpha = color4[3];
+
+        // If multiline, split entity
+        if ( type === "MultiLineString" ) {
+            coords.forEach( points => {
+                this._genereteLine( points, width, rgb, alpha, extruded, elevation );
+            });
+        } else if ( type === "LineString" ) {
+            this._genereteLine( coords, width, rgb, alpha, extruded, elevation )
+        }
+    }
+
+    _genereteLine( points, width, color, opaticy, extruded, elevation ) 
+    {
+        if ( !points )  {
+            return null;
+        }
+
+        var h = 0;
+        if ( !extruded ) {
+            h = 0;
+        } else if ( extruded ) {
+            h = elevation;
+        }
+
+        var entity = new MarkerLineEntity( this._scene );
+        var fp = this._flatten( points, h );
+
+        console.log('line list:' + fp);
+        entity.addPoints(fp);
+    }
+
+    /*_flatten( ary )
+    {
+        return ary.reduce((p, c) => {
+          return Array.isArray(c) ? p.concat(this._flatten(c)) : p.concat(c);
+        }, []);
+    };*/
+
+    _flatten( ary, h )
+    {
+        return ary.reduce((p, c) => {
+          return c.length === 2 ? p.concat(c, h) : p.concat(c);
+        }, []);
+    };
 }
 
 /**
@@ -294,14 +355,62 @@ class GeoJSONLoader {
  */
 
 
+{
+    GeoJSONLoader._defaultHeaders = {};
+    GeoJSONLoader.defaultLineColor = [0, 0, 0, 255];
+    GeoJSONLoader.defaultFillColor = [0, 0, 0, 255];
+    GeoJSONLoader.defaultLineWidth = 1;
+    GeoJSONLoader.defaultRadius = 10;
+    GeoJSONLoader.defaultExtrudedMode = false;
+}
 
-GeoJSONLoader._defaultHeaders = {};
-
-
-function defaultFinishCallback( loader, isSuccess )
+function defaultOnLoadCallback( loader, isSuccess )
 {
 }
 
+function defaultGetLineColorCallback( geojson )
+{
+    return GeoJSONLoader.defaultLineColor;
+}
+
+function defaultGetLineWidthCallback( geojson ) 
+{
+    return GeoJSONLoader.defaultLineWidth;
+}
+
+function defaultGetRadiusCallback( geojson )
+{
+    return GeoJSONLoader.defaultRadius;
+}
+
+function defaultGetFillColorCallback( geojson )
+{
+    return GeoJSONLoader.defaultFillColor;
+}
+
+function defaultGetElevationCallback( geojson )
+{
+    return 100;
+}
+
+function defaultExtrudedModeCallback( geojson )
+{
+    var geometry = geojson.type === "Feature" ? geojson.geometry : geojson;
+    switch (geometry.type) {
+        case "Point":
+        case "MultiPoint":
+            return true;            
+        case "LineString":
+        case "MultiLineString":
+            return true;
+        case "Polygon":
+        case "MultiPolygon":
+            return false;
+        default:
+            throw new Error('Invalid GeoJSON object.');
+    }
+    return GeoJSONLoader.defaultExtrudedMode;
+}
 
 function defaultTransformCallback( url )
 {

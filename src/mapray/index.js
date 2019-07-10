@@ -21,6 +21,7 @@ import TextEntity from "./TextEntity";
 import ModelEntity from "./ModelEntity";
 import PolygonEntity from "./PolygonEntity";
 import SceneLoader from "./SceneLoader";
+import GeoJSONLoader from "./GeoJSONLoader";
 import DebugStats from "./DebugStats";
 
 
@@ -52,6 +53,7 @@ var mapray = {
     ModelEntity,
     PolygonEntity,
     SceneLoader,
+    GeoJSONLoader,
     DebugStats
 };
 
