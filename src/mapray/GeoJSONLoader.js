@@ -289,6 +289,12 @@ class GeoJSONLoader {
 
         console.log('line list:' + fp);
         entity.addPoints(fp);
+        entity.setLineWidth(width);
+        entity.setColor(color);
+        entity.setOpacity(opaticy);
+        this._scene.addEntity(entity);
+        
+        return true;
     }
 
     /*_flatten( ary )
@@ -357,9 +363,9 @@ class GeoJSONLoader {
 
 {
     GeoJSONLoader._defaultHeaders = {};
-    GeoJSONLoader.defaultLineColor = [0, 0, 0, 255];
+    GeoJSONLoader.defaultLineColor = [128, 0, 0, 255];
     GeoJSONLoader.defaultFillColor = [0, 0, 0, 255];
-    GeoJSONLoader.defaultLineWidth = 1;
+    GeoJSONLoader.defaultLineWidth = 10;
     GeoJSONLoader.defaultRadius = 10;
     GeoJSONLoader.defaultExtrudedMode = false;
 }
