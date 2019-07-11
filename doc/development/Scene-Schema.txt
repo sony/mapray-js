@@ -18,7 +18,7 @@ start => <SCENE>
 <ENTITY> => {
   id?: <ID>
   altitude_mode?: <ALTITUDE-MODE> = "absolute"
-  <MODEL-CONTENT> | <MARKERLINE-CONTENT> | <TEXT-CONTENT>
+  <MODEL-CONTENT> | <MARKERLINE-CONTENT> | <TEXT-CONTENT> | <POLYGON-CONTENT>
 }
 
 <MODEL-CONTENT> =>
@@ -42,6 +42,13 @@ start => <SCENE>
   font_size?: Number = 16
   font_family?: String = "sans-serif"
   color?: <PARAM-VEC3> = [1, 1, 1]
+
+<POLYGON-CONTENT> =>
+  type: "polygon"
+  boundaries: [<BOUNDARY>*]
+  extruded?: Boolean = false
+  color?: <PARAM-VEC3> = [1, 1, 1]
+  opacity?: <PARAM-FLOAT> = 1
 
 <TRANSFORM> => {
   position: <GEO-POINT>
@@ -69,6 +76,12 @@ start => <SCENE>
   color?: <PARAM-VEC3>
 }
 
+<BOUNDARY> => {
+  type?: <BOUNDARY-TYPE> = "outer"
+  points: <GEO-POINTS>
+}
+
+
 <ID> => String
 
 <URL> => String
@@ -86,5 +99,8 @@ start => <SCENE>
 <PARAM-SCALE3> => <PARAM-VEC3> | Number
 
 <ALTITUDE-MODE> => "absolute" | "relative"
+
+<BOUNDARY-TYPE> => "outer" | "inner"
+
 
 # End of File
