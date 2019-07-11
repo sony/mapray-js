@@ -5,6 +5,7 @@ import ModelContainer from "./ModelContainer";
 import MarkerLineEntity from "./MarkerLineEntity";
 import TextEntity from "./TextEntity";
 import ModelEntity from "./ModelEntity";
+import PolygonEntity from "./PolygonEntity";
 import GltfTool from "./gltf/Tool";
 
 
@@ -259,6 +260,9 @@ class SceneLoader {
                 break;
             case "model":
                 entity = new ModelEntity( scene, { json: item, refs: this._references } );
+                break;
+            case "polygon":
+                entity = new PolygonEntity( scene, { json: item, refs: this._references } );
                 break;
             default:
                 console.error( "mapray: unknown entity type: " + type );
