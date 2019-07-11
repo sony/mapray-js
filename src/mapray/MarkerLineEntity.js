@@ -480,9 +480,9 @@ class MarkerLineEntity extends Entity {
         //     .color
         //     .opacity
         var props = this._properties;
-        if ( json.line_width ) props.width = json.line_width;
-        if ( json.color )      GeoMath.copyVector3( json.color, props.color );
-        if ( json.opacity )    props.opacity = json.opacity;
+        if ( json.line_width !== undefined ) props.width = json.line_width;
+        if ( json.color !== undefined )      GeoMath.copyVector3( json.color, props.color );
+        if ( json.opacity !== undefined )    props.opacity = json.opacity;
     }
 
 }
