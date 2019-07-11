@@ -130,6 +130,21 @@ class Material {
 
 
     /**
+     * @summary 真偽値パラメータを設定
+     * @param {string}  name   変数名
+     * @param {boolean} value  真偽値
+     */
+    setBoolean( name, value )
+    {
+        var location = this._uniform_location[name];
+        if ( location ) {
+            var gl = this._gl;
+            gl.uniform1i( location, value ? 1 : 0 );
+        }
+    }
+
+
+    /**
      * @summary 整数パラメータを設定
      * @param {string} name   変数名
      * @param {number} value  整数値
