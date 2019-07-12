@@ -25,13 +25,13 @@ class GeoJSONLoader {
         this._scene      = scene;
         this._url        = url;
         this._onLoad   = opts.onLoad  || defaultOnLoadCallback;
-        this._getLineColor = opts._getLineColor || defaultGetLineColorCallback;
-        this._getLineWidth = opts._getLineWidth || defaultGetLineWidthCallback;
-        this._getRadius = opts._getRadius || defaultGetRadiusCallback;
-        this._getFillColor = opts._getLineColor || defaultGetFillColorCallback;
-        this._getElevation = opts._getElevetion || defaultGetElevationCallback;
+        this._getLineColor = opts.getLineColor || defaultGetLineColorCallback;
+        this._getLineWidth = opts.getLineWidth || defaultGetLineWidthCallback;
+        this._getRadius = opts.getRadius || defaultGetRadiusCallback;
+        this._getFillColor = opts.getFillColor || defaultGetFillColorCallback;
+        this._getElevation = opts.getElevetion || defaultGetElevationCallback;
         this._transform  = opts.transform || defaultTransformCallback;
-        this._getExtrudedMode = opts._getExtrudedMode || defaultExtrudedModeCallback;
+        this._getExtrudedMode = opts.getExtrudedMode || defaultExtrudedModeCallback;
         this._glenv      = scene.glenv;
         this._references = {};
         this._cancelled  = false;
@@ -100,7 +100,7 @@ class GeoJSONLoader {
 
 
     /**
-     * JSON シーンオブジェクトを解析
+     * JSON GeoJSONを解析
      * @private
      */
     _load_feature( geojson )
@@ -297,19 +297,24 @@ class GeoJSONLoader {
         return true;
     }
 
-    /*_flatten( ary )
-    {
-        return ary.reduce((p, c) => {
-          return Array.isArray(c) ? p.concat(this._flatten(c)) : p.concat(c);
-        }, []);
-    };*/
-
     _flatten( ary, h )
     {
         return ary.reduce((p, c) => {
           return c.length === 2 ? p.concat(c, h) : p.concat(c);
         }, []);
     };
+
+    _generateFeature( geojson ) {
+        if ( geojson.type === "Feature" || geojson.type === "FeatureCollection" ) {
+            return geojson;
+        }
+
+        return {
+            type: "Feature",
+            properties: {},
+            geometry: geojson
+        }
+    }
 }
 
 /**
@@ -363,9 +368,9 @@ class GeoJSONLoader {
 
 {
     GeoJSONLoader._defaultHeaders = {};
-    GeoJSONLoader.defaultLineColor = [128, 0, 0, 255];
+    GeoJSONLoader.defaultLineColor = [0, 0, 0, 255];
     GeoJSONLoader.defaultFillColor = [0, 0, 0, 255];
-    GeoJSONLoader.defaultLineWidth = 10;
+    GeoJSONLoader.defaultLineWidth = 1;
     GeoJSONLoader.defaultRadius = 10;
     GeoJSONLoader.defaultExtrudedMode = false;
 }
