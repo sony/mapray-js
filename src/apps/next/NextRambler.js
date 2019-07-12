@@ -146,8 +146,10 @@ class Rambler extends mapray.RenderCallback {
         } );
 
         // GeoJSON
-        new mapray.GeoJSONLoader( this._viewer.scene, "./sampleMultiGeometries.json", {
-            callback: (loader, isSuccess) => { console.log("success load geojson") }
+        new mapray.GeoJSONLoader( this._viewer.scene, "./sample2features.json", {
+            onLoad: (loader, isSuccess) => { console.log("success load geojson") },
+            getLineColor: d => d.properties.color ? d.properties.color : [255, 255, 255, 255],
+            getLineWidth: d => d.properties.width ? d.properties.width : 3
         } );
     }
 
