@@ -29,7 +29,7 @@ class GeoJSONLoader {
         this._getLineWidth = opts.getLineWidth || defaultGetLineWidthCallback;
         this._getRadius = opts.getRadius || defaultGetRadiusCallback;
         this._getFillColor = opts.getFillColor || defaultGetFillColorCallback;
-        this._getElevation = opts.getElevetion || defaultGetElevationCallback;
+        this._getElevation = opts.getElevation || defaultGetElevationCallback;
         this._transform  = opts.transform || defaultTransformCallback;
         this._getExtrudedMode = opts.getExtrudedMode || defaultExtrudedModeCallback;
         this._glenv      = scene.glenv;
@@ -90,7 +90,11 @@ class GeoJSONLoader {
             .then( json => {
                 // JSON データの取得に成功
                 this._check_cancel();
-                this._load_feature( json );
+                if (!this._load_feature( json )) {
+                    return reject( json )
+                }
+                this._success_callback();
+                return json;
             } )
             .catch( ( e ) => {
                 // JSON データの取得に失敗
@@ -115,15 +119,14 @@ class GeoJSONLoader {
 					this._load_feature(feature);
 				}
             }
-            return this;
         }
 
         // Geometory
-        this._load_geometry( geojson )
+        var success = this._load_geometry( geojson )
 
-        if ( this._cancelled ) return;
-        // this._load_entity_list( oscene );
-        this._success_callback();
+        if ( this._cancelled ) return false;
+
+        return success;
     }
 
     _load_geometry( geojson ) {
@@ -132,13 +135,13 @@ class GeoJSONLoader {
         var layers = [];
         
         if (!coords && !geometry) {
-            return null;
+            return false;
         }
         
         switch ( geometry.type) {
             case "Point":
                 console.log( "GeoJSON Point" );
-                return null;
+                return false;
                 // return new Marker(latlng);
 
 	        case "MultiPoint":
@@ -146,7 +149,7 @@ class GeoJSONLoader {
                     // layers.push(new Marker(latlng));
                     console.log( "GeoJSON MultiPoint i:" );
                 }
-                return null;
+                return false;
                 //return new FeatureGroup(layers);
                 
 	        case "LineString":
@@ -154,15 +157,14 @@ class GeoJSONLoader {
 		         // latlngs = coordsToLatLngs(coords, geometry.type === 'LineString' ? 0 : 1, _coordsToLatLng);
                 // return new Polyline(latlngs, options);
                 console.log( "GeoJSON LineString or MultiString" );
-                this._loadLines( geometry, this._getLineColor(geojson), this._getLineWidth(geojson), this._getExtrudedMode(geojson), this._getElevation(geojson) );
-                return null;
+                return this._loadLines( geometry, this._getLineColor(geojson), this._getLineWidth(geojson), this._getExtrudedMode(geojson), this._getElevation(geojson) );
 
 	        case "Polygon":
 	        case "MultiPolygon":
 		        // latlngs = coordsToLatLngs(coords, geometry.type === 'Polygon' ? 1 : 2, _coordsToLatLng);
                 // return new Polygon(latlngs, options);
                 console.log( "GeoJSON Polygon or MultiPolgon");
-                return null;
+                return false;
 
 	        case "GeometryCollection":
             /*    for (var i = 0, len = geometry.geometries.length; i < len; i++) {
@@ -177,7 +179,7 @@ class GeoJSONLoader {
 			}
 		}
         return new FeatureGroup(layers); */
-            return null;
+            return false;
 	    default:
 		    throw new Error('Invalid GeoJSON object.');
         }
@@ -254,7 +256,7 @@ class GeoJSONLoader {
     _loadLines( geometry, color4, width, extruded, elevation ) 
     {
         if ( !geometry || color4.length !== 4 ) {
-            return null;
+            return false;
         }
         var type = geometry.type;
         var coords = geometry.coordinates;
@@ -264,17 +266,23 @@ class GeoJSONLoader {
         // If multiline, split entity
         if ( type === "MultiLineString" ) {
             coords.forEach( points => {
-                this._genereteLine( points, width, rgb, alpha, extruded, elevation );
+                if ( !this._genereteLine( points, width, rgb, alpha, extruded, elevation ) ) {
+                    return false;
+                }
             });
         } else if ( type === "LineString" ) {
-            this._genereteLine( coords, width, rgb, alpha, extruded, elevation )
+            if ( !this._genereteLine( coords, width, rgb, alpha, extruded, elevation ) ) {
+                return false;
+            }
         }
+        
+        return true;
     }
 
     _genereteLine( points, width, color, opaticy, extruded, elevation ) 
     {
         if ( !points )  {
-            return null;
+            return false;
         }
 
         var h = 0;
@@ -286,8 +294,9 @@ class GeoJSONLoader {
 
         var entity = new MarkerLineEntity( this._scene );
         var fp = this._flatten( points, h );
-
-        console.log('line list:' + fp);
+        if ( !fp ) {
+            return false;
+        }
         entity.addPoints(fp);
         entity.setLineWidth(width);
         entity.setColor(color);
