@@ -122,7 +122,7 @@ class Rambler extends mapray.RenderCallback {
     {
         // シーンの読み込みを開始
         // 3D
-        new mapray.SceneLoader( this._viewer.scene, NATS_JSON_URL, {
+      /*  new mapray.SceneLoader( this._viewer.scene, NATS_JSON_URL, {
             transform: (url, type) => this._onTransform( url, type ),
             callback: (loader, isSuccess) => {
                 this._onLoadScene( loader, isSuccess );
@@ -143,13 +143,15 @@ class Rambler extends mapray.RenderCallback {
         // Mountain
         new mapray.SceneLoader( this._viewer.scene, MOUNTAIN_JSON_URL, {
             callback: (loader, isSuccess) => { this._onLoadScene( loader, isSuccess ); }
-        } );
+        } ); */
 
         // GeoJSON
-        new mapray.GeoJSONLoader( this._viewer.scene, "./sample2features.json", {
+        new mapray.GeoJSONLoader( this._viewer.scene, "./shinjuku_linestring.json", {
             onLoad: (loader, isSuccess) => { console.log("success load geojson") },
-            getLineColor: d => d.properties.color ? d.properties.color : [255, 255, 255, 255],
-            getLineWidth: d => d.properties.width ? d.properties.width : 3
+            getLineColor: d => d.properties && d.properties.color ? d.properties.color : [0, 255, 255, 255],
+            getLineWidth: d => d.properties && d.properties.width ? d.properties.width : 3,
+            getExtrudedMode: () => true,
+            getElevation: () => 40
         } );
     }
 
