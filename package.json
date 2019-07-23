@@ -22,6 +22,7 @@
     "apps-devel": "cross-env WEBPACK_ENV=apps webpack --watch -d",
     "jsdoc": "jsdoc --recurse --destination ./doc/jsdoc --package ./package.json --readme ./doc/config/reference_top.md --access undefined,public,protected  --configure ./doc/config/jsdoc.json ./src/mapray",
     "jsdoc-devel": "jsdoc --recurse --destination ./doc/jsdoc --package ./package.json --readme ./doc/config/reference_top.md --private  --configure ./doc/config/jsdoc.json ./src/mapray",
+    "tests-devel": "cross-env WEBPACK_ENV=tests webpack --watch -d",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "contributors": [

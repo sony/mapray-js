@@ -52,6 +52,44 @@ var mapray_config = {
 };
 
 
+// configuration for tests
+var tests_config = {
+
+    // base directory for resolving the entry option
+    context: path.join( __dirname, "src" ),
+
+    // entry point for the bundle
+    entry: "./mapray/tests/index.js",
+
+    // options affecting the output of the compilation
+    output: {
+        // output directory as an absolute path (required)
+        path: path.join( __dirname, outdir ),
+
+        // specifies the name of each output file on disk
+        filename: "tests.js"
+    },
+
+    // options affecting the normal modules (NormalModuleFactory)
+    module: {
+        // array of automatically applied loaders
+        loaders: [
+            {
+                test: /\.js$/,
+                exclude: /node_modules/,
+                loader: "babel-loader",
+                query: {
+                    presets: [
+                        ["env", { "targets": { "chrome": 75 } } ]
+                    ]
+                }
+            }
+        ]
+    }
+
+};
+
+
 // configuration for apps
 var apps_config = {
 
@@ -92,4 +130,14 @@ var apps_config = {
 };
 
 
-module.exports = (env == "apps") ? apps_config : mapray_config;
+switch ( env ) {
+case "apps":
+    module.exports = apps_config;
+    break;
+case "tests":
+    module.exports = tests_config;
+    break;
+default:
+    module.exports = mapray_config;
+    break;
+}
