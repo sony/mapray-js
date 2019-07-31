@@ -14,7 +14,7 @@
 <head>
     <meta charset="utf-8">
     <title>CreateDeleteLayerChangeOpacitySample</title>
-    <script src="https://api.mapray.com/mapray-js/v0.5.1/mapray.js"></script>
+    <script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
     <script src="CreateDeleteLayerChangeOpacity.js"></script>
     <style>
         html, body {
@@ -245,7 +245,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 6、7行目でhtmlで参照するJavaScriptのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイルとレイヤの動的追加、削除と不透明度を変更するJavaScriptファイル（**CreateDeleteLayerChangeOpacity.js**）を設定します。
 
 ```HTML
-<script src="https://api.mapray.com/mapray-js/v0.5.1/mapray.js"></script>
+<script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
 <script src="CreateDeleteLayerChangeOpacity.js"></script>
 ```
 

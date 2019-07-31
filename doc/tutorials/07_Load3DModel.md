@@ -13,7 +13,7 @@ mapray.SceneLoaderを使って3Dモデルを表示する**Load3DModel.html**及�
 <head>
     <meta charset="UTF-8">
     <title>Load3DModelSample</title>
-    <script src="https://api.mapray.com/mapray-js/v0.5.1/mapray.js"></script>
+    <script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
     <script src="Load3DModel.js"></script>
     <style>
         html, body {
@@ -174,7 +174,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 6、7行目で参照するJavaScripのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイルとモデルのシーンを読み込むJavaScriptファイル（**Load3DModel.js**）を設定します。
 
 ```HTML
-<script src="https://api.mapray.com/mapray-js/v0.5.1/mapray.js"></script>
+<script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
 <script src="Load3DModel.js"></script>
 ```
 

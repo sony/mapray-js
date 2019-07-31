@@ -14,7 +14,7 @@
 <head>
     <meta charset="utf-8">
     <title>ModelControllerSample</title>
-    <script src="https://api.mapray.com/mapray-js/v0.5.1/mapray.js"></script>
+    <script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
     <script src="ModelController.js"></script>
     <style>
         html, body {
@@ -309,7 +309,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### JavaScriptファイルのパス設定
 6、7行目でhtmlで参照するJavaScriptのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイルと3Dモデルを操作するJavaScriptファイル（**ModelController.js**）を設定します。
 ```HTML
-<script src="https://api.mapray.com/mapray-js/v0.5.1/mapray.js"></script>
+<script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
 <script src="ModelController.js"></script>
 ```
 

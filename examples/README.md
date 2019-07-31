@@ -1,5 +1,5 @@
-# Mapray JS Examples
-Mapray JS examples are in ECMA Script5 and 6.
+# maprayJS Examples
+maprayJS examples are in ECMA Script5 and 6.
 The simple code uses ES5, while the complex one uses ES6.
 Modern browsers support ES6 so it allows you to run code directly in the browser without the transpiling from ES6 to ES5.
 All examples use mapray cloud and you need to replace below **\<your access token here\>** in each sample with your access token of mapray cloud.

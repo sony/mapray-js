@@ -1,23 +1,23 @@
 ## まず始めに
-このドキュメントではmapray JSのセットアップ方法を説明し、そのmapray cloudからデータを取得して、最初の３次元地理データを表示するサンプルを作成します。
-mapray JSはWebブラウザ上で動作するJavaScriptライブラリで、3D地図データを高速に美しく表現することができます。また、mapray cloudはmapray JSに最適化されたデータを保存・配信するクラウドサービスです。世界規模の地形データを強力なクラウドインフラで配信することができます。
+このドキュメントではmaprayJSのセットアップ方法を説明し、そのmapray cloudからデータを取得して、最初の３次元地理データを表示するサンプルを作成します。
+maprayJSはWebブラウザ上で動作するJavaScriptライブラリで、3D地図データを高速に美しく表現することができます。また、mapray cloudはmaprayJSに最適化されたデータを保存・配信するクラウドサービスです。世界規模の地形データを強力なクラウドインフラで配信することができます。
 mapray cloudはソニーネットワークコミュニケーションズ（株）によって運営されているクラウドサービスです。
-mapbox JSはオープンソースプロジェクトです。([Github.comへのリンク](https://github.com/sony/mapray-js))
+maprayJSはオープンソースプロジェクトです。([Github.comへのリンク](https://github.com/sony/mapray-js))
 
 ## QuickStart
 このドキュメントではmapray cloudへのアカウト登録はすでに終了しているという前提で記載しています。
 アカウント登録に関しては別途サポートからのご案内を参照してください。
 また、JavaScriptの言語仕様、npmの使い方については本ドキュメントでは説明しません。あらかじめご了承下さい。
 
-### 1. mapray JSの取得
-mapray JSはJavaScriptファイルを`<head>`で直接読み込むか(以下CDN方式)、npmパッケージでモジュールとして取得（以下モジュール方式）することが可能です。
+### 1. maprayJSの取得
+maprayJSはJavaScriptファイルを`<head>`で直接読み込むか(以下CDN方式)、npmパッケージでモジュールとして取得（以下モジュール方式）することが可能です。
 
 #### CDN方式
 HTMLファイルでJavaScriptを読み込みます。`<head>`タグ内で以下のようにインクルードして下さい。
 ```html
-  <script src="https://api.mapray.com/mapray-js/v0.5.1/mapray.js"></script>
+  <script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
 ```
-上記はバージョン0.5.1の場合です。`v0.5.1`には任意のバージョンを指定して下さい。
+上記はバージョン0.6.0の場合です。`v0.6.0`には任意のバージョンを指定して下さい。
 リリースされている該当のバージョンがあれば、アクセスすることができます。
 
 #### モジュール形式
@@ -87,7 +87,7 @@ var accessToken = 'AbCdEfGhIjKlMnOpQrStU';
 <head>
     <meta charset="UTF-8">
     <title>Hello Globe</title>
-    <script src="https://api.mapray.com/mapray-js/v0.5.1/mapray.js"></script>
+    <script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
 </head>
 <style>
     html, body {
