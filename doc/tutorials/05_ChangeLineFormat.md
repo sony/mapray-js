@@ -14,7 +14,7 @@
 <head>
     <meta charset="utf-8">
     <title>ChangeLineFormatSample</title>
-    <script src="https://api.mapray.com/mapray-js/v0.5.1/mapray.js"></script>
+    <script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
     <script src="ChangeLineFormat.js" charset="utf-8"></script>
     <style>
         html, body {
@@ -285,7 +285,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 6、7行目でで参照するJavaScriptのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイルと線のフォーマットを変えるJavaScriptファイル（**ChangeLineFormat.js**）を設定します。線のフォーマットを変えるJavaScriptファイルの文字コードはutf-8に設定します。
 
 ```HTML
-<script src="https://api.mapray.com/mapray-js/v0.5.1/mapray.js"></script>
+<script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
 <script src="ChangeLineFormat.js" charset="utf-8"></script>
 ```
 

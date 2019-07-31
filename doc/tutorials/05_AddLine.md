@@ -12,7 +12,7 @@ mapray.MarkerLineEntityのaddPointsを使って線を表示する**AddLine.html*
 <head>
     <meta charset="UTF-8">
     <title>AddLineSample</title>
-    <script src="https://api.mapray.com/mapray-js/v0.5.1/mapray.js"></script>
+    <script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
     <style>
         html, body {
             height: 100%;
@@ -134,7 +134,7 @@ mapray.MarkerLineEntityのaddPointsを使って線を表示する**AddLine.html*
 <head>
     <meta charset="UTF-8">
     <title>AddLineSample</title>
-    <script src="https://api.mapray.com/mapray-js/v0.5.1/mapray.js"></script>
+    <script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
     <style>
         html, body {
             height: 100%;

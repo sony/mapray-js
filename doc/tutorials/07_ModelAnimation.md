@@ -13,7 +13,7 @@
 <head>
     <meta charset="utf-8">
     <title>ModelAnimationSample</title>
-    <script src="https://api.mapray.com/mapray-js/v0.5.1/mapray.js"></script>
+    <script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
     <script src="ModelAnimation.js"></script>
     <style>
         html, body {
@@ -212,7 +212,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 6、7行目で参照するJavaScripのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイルとモデルのアニメーションJavaScriptファイル（**ModelAnimation.js**）を設定します。
 
 ```HTML
-<script src="https://api.mapray.com/mapray-js/v0.5.1/mapray.js"></script>
+<script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
 <script src="ModelAnimation.js"></script>
 ```
 

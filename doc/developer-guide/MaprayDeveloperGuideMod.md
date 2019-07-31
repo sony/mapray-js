@@ -1,27 +1,27 @@
-# mapray JS の概要
+# maprayJS の概要
 
-この章では、mapray JS とはどのようなものか、どのような環境で動作するのか、mapray JS を使うためにはどのような知識が必要かなどを説明します。
+この章では、maprayJS とはどのようなものか、どのような環境で動作するのか、maprayJS を使うためにはどのような知識が必要かなどを説明します。
 
-## mapray JS とは
+## maprayJS とは
 
-mapray JS は Web ブラウザに 3 次元地図をリアルタイムに表示するための JavaScript ライブラリです。
+maprayJS は Web ブラウザに 3 次元地図をリアルタイムに表示するための JavaScript ライブラリです。
 
 このライブラリを使うと HTML 文書の特定の要素内に、任意の視点からの 3D 地図をレンダリングすることができます。
 
-次の図は Web ブラウザ上で mapray JS が 3D 地図をレンダリングしている様子を示しています。ここでは
-HTML 文書の特定の `<div>` 要素（赤枠で囲っている部分）を指定し、その上に mapray JS がレンダリングしています。
+次の図は Web ブラウザ上で maprayJS が 3D 地図をレンダリングしている様子を示しています。ここでは
+HTML 文書の特定の `<div>` 要素（赤枠で囲っている部分）を指定し、その上に maprayJS がレンダリングしています。
 
-![mapray JS による 3D 地図のレンダリング](images/inou-rendering.png)
+![maprayJS による 3D 地図のレンダリング](images/inou-rendering.png)
 
-コンテンツ開発者は mapray JS のカメラの位置や角度をフレームごとに変更することによって、リアルタイムにカメラが移動・回転しているように見せることができます。
+コンテンツ開発者は maprayJS のカメラの位置や角度をフレームごとに変更することによって、リアルタイムにカメラが移動・回転しているように見せることができます。
 
-mapray JS は現在のカメラの視点に合わせて、速度低下やメモリー消費を抑えながら、起伏や地図をなるべく高い解像度で表示しようとします。
+maprayJS は現在のカメラの視点に合わせて、速度低下やメモリー消費を抑えながら、起伏や地図をなるべく高い解像度で表示しようとします。
 
-コンテンツ開発者は、このような mapray JS 内部の複雑な処理をほとんど意識することなく、mapray JS を利用することができます。
+コンテンツ開発者は、このような maprayJS 内部の複雑な処理をほとんど意識することなく、maprayJS を利用することができます。
 
 ## 動作環境
 
-現在、mapray JS の動作が確認されている Web ブラウザは以下の通りです。
+現在、maprayJS の動作が確認されている Web ブラウザは以下の通りです。
 
 * Google Chrome (Windows, macOS版)
 * Mozilla Firefox (Windows, macOS版)
@@ -51,7 +51,7 @@ HTML 要素インタフェースを持ったオブジェクトを生成できる
 
 ## 必要な知識
 
-mapray JS API を利用するコンテンツ開発者は、次の技術を理解している必要があります。
+maprayJS API を利用するコンテンツ開発者は、次の技術を理解している必要があります。
 
 * HTML5 と JavaScript による Web アプリケーションの開発
 * ベクトルと行列の計算
@@ -62,11 +62,11 @@ mapray エンジンの内部では 3 次元の位置や方向を 4 次元ベク�
 
 # 基本概念
 
-## mapray JS ライブラリ
+## maprayJS ライブラリ
 
 ### インポート方法
 
-mapray JS ライブラリは `mapray.js` ファイルをインポートすることによってプログラムから利用することができます。
+maprayJS ライブラリは `mapray.js` ファイルをインポートすることによってプログラムから利用することができます。
 
 インポート方法は次の 3 種類の中から選択できます。(より正確には [UMD](https://github.com/umdjs/umd) に対応したインポートが可能なライブラリです。)
 
@@ -86,7 +86,7 @@ mapray JS ライブラリは `mapray.js` ファイルをインポートするこ
     <script src="myapp.js"></script>
 ~~~
 
-このとき `myapp.js` 内のコードでは、次のようにインポートを明示せずに直接 mapray JS API が使えるようになります。
+このとき `myapp.js` 内のコードでは、次のようにインポートを明示せずに直接 maprayJS API が使えるようになります。
 
 ~~~javascript
 var viewer = new mapray.Viewer(...);
@@ -94,7 +94,7 @@ var viewer = new mapray.Viewer(...);
 
 ---
 
-これに対し2の方法は、mapray JS API を利用する各々の JavaScript ファイルで `require()` 関数を呼び出します。
+これに対し2の方法は、maprayJS API を利用する各々の JavaScript ファイルで `require()` 関数を呼び出します。
 例えば次のような使い方になります。
 
 ~~~javascript
@@ -104,7 +104,7 @@ var viewer = new mapray.Viewer(...);
 
 ---
 
-次に3の方法は、mapray JS API を利用する各々の JavaScript ファイルで `import` 構文を使います。例えば次のような使い方になります。
+次に3の方法は、maprayJS API を利用する各々の JavaScript ファイルで `import` 構文を使います。例えば次のような使い方になります。
 
 ~~~javascript
 import mapray from 'mapray';
@@ -118,10 +118,10 @@ var viewer = new mapray.Viewer(...);
 
 ### 名前空間とクラス
 
-JavaScript は言語機能として名前空間やクラス（ECMAScript 2015 (ES6) から [class 構文](https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Classes) が追加されましたが、これは従来から使われてきたプロトタイプベース継承の糖衣構文です。） をサポートしていませんが、mapray JS API はこれらの概念で設計され、
+JavaScript は言語機能として名前空間やクラス（ECMAScript 2015 (ES6) から [class 構文](https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Classes) が追加されましたが、これは従来から使われてきたプロトタイプベース継承の糖衣構文です。） をサポートしていませんが、maprayJS API はこれらの概念で設計され、
 このドキュメントやリファレンスマニュアルでも、名前空間とクラスの概念を使って説明します。 
 
-mapray JS API はすべて `mapray` 名前空間に含まれています。例えば `mapray` 名前空間に含まれる `Viewer` クラスは、`mapray.Viewer` のようにな記述で説明します。
+maprayJS API はすべて `mapray` 名前空間に含まれています。例えば `mapray` 名前空間に含まれる `Viewer` クラスは、`mapray.Viewer` のようにな記述で説明します。
 
 前節の方法でライブラリをインポートした場合、次のような JavaScript での記述で `mapray.Viewer` クラスのインスタンスを生成することができます。
 
@@ -170,13 +170,13 @@ GeoMath.createMatrix();
 GeoMath.createVector3();
 ~~~
 
-mapray JS API では最上位の名前空間がすべて `mapray` なので、以降本ドキュメントでは `mapray.Viewer` を `Viewer` のように省略して記述します。
+maprayJS API では最上位の名前空間がすべて `mapray` なので、以降本ドキュメントでは `mapray.Viewer` を `Viewer` のように省略して記述します。
 実際のソースコード上では省略することができません。
 
 
 #### サブクラスの定義 {#class-define}
 
-mapray JS API の既存のクラスを利用する場合は、特にクラスを定義する方法を知る必要はありません。
+maprayJS API の既存のクラスを利用する場合は、特にクラスを定義する方法を知る必要はありません。
 しかし `RenderCallback` のような抽象クラスやインタフェースにより動作をカスタマイズするとき、コンテンツ開発者はサブクラスを定義する必要があります。
 
 ECMAScript 2015 (ES6) の場合、`class` 構文が用意されているので、それを利用すると簡単にサブクラスを定義することができます。
@@ -307,7 +307,7 @@ mapray エンジンはレンダリング時に地表の形状や地図画像の�
 
 DEM データを指定するときは `dem_provider` オプションに `DemProvider` の実装クラスのインスタンスを指定します。
 
-mapray JS ライブラリは `DemProvider` の実装クラスとして `StandardDemProvider` を用意しています。
+maprayJS ライブラリは `DemProvider` の実装クラスとして `StandardDemProvider` を用意しています。
 たとえば `http://server/dem/` から DEM データを取得したいときは、`Viewer` コンストラクタのオプションを次のように指定します。
 
 ~~~javascript
@@ -318,7 +318,7 @@ new mapray.Viewer( container, { dem_provider: provider } );
 地図画像データを指定するときは `Viewer` コンストラクタの `image_provider` オプションに `ImageProvider`
 の実装クラスのインスタンスを指定します。
 
-mapray JS ライブラリでは `ImageProvider` の実装クラスとして `StandardImageProvider` を用意しています。
+maprayJS ライブラリでは `ImageProvider` の実装クラスとして `StandardImageProvider` を用意しています。
 たとえば `http://server/map/` から地図画像データ (拡張子が `.png`、サイズが 256×256、レベルが 0 から 10)
 を取得したいときは、`Viewer` コンストラクタのオプションを次のように指定します。
 
@@ -327,7 +327,7 @@ var provider = new mapray.StandardImageProvider( "http://server/map/", ".png", 2
 new mapray.Viewer( container, { image_provider: provider } );
 ~~~
 
-mapray JS ライブラリが用意している `StandardDemProvider` や `StandardImageProvider` はサイト認証などの機能がないので、
+maprayJS ライブラリが用意している `StandardDemProvider` や `StandardImageProvider` はサイト認証などの機能がないので、
 これらだけでは不十分なことがあります。その場合、`DemProvider` や `ImageProvider` のサブクラスをコンテンツ開発者が
 実装する必要があります。詳細は[「データプロバイダの作成」](#データプロバイダの作成)を参照してください。
 
@@ -353,9 +353,9 @@ mapray JS ライブラリが用意している `StandardDemProvider` や `Standa
 
 ## 単位と座標系
 
-mapray JS API では、原則的に距離の単位がメートル、角度の単位が度 (arc degree) になります。
+maprayJS API では、原則的に距離の単位がメートル、角度の単位が度 (arc degree) になります。
 
-mapray JS に関連する主な座標系には次の 3 種類があります。
+maprayJS に関連する主な座標系には次の 3 種類があります。
 
 * 地心座標系 (GOCS)
 * 球面座標系
@@ -390,7 +390,7 @@ Z 軸を北極の方向にとって、空間上の位置を *<x, y, z>* の数�
 ![式2](images/chishin_2_kyuumen.png)
 
 
-なお、半径 *R**は mapray JS API で `GeoMath.EARTH_RADIUS` として定義されています。
+なお、半径 *R**は maprayJS API で `GeoMath.EARTH_RADIUS` として定義されています。
 
 
 ### 視点座標系
@@ -405,7 +405,7 @@ Z 軸を北極の方向にとって、空間上の位置を *<x, y, z>* の数�
 
 ### 変換行列について
 
-mapray JS API が想定する *4x4* 変換行列 *M* は、3 次元位置 *< p_x, p_y, p_z >* を次の式で変換します。
+maprayJS API が想定する *4x4* 変換行列 *M* は、3 次元位置 *< p_x, p_y, p_z >* を次の式で変換します。
 
 ![式3](images/mul.png)
 
@@ -420,7 +420,7 @@ mapray JS API が想定する *4x4* 変換行列 *M* は、3 次元位置 *< p_x
 
 # 簡単なサンプルプログラム
 
-mapray JS ライブラリを使ったコンテンツの簡単なサンプルとして、富士山の周りを回転しながら富士山を見るプログラム `turning.js` を示します。
+maprayJS ライブラリを使ったコンテンツの簡単なサンプルとして、富士山の周りを回転しながら富士山を見るプログラム `turning.js` を示します。
 
 ## HTML ファイル
 
@@ -450,9 +450,9 @@ mapray JS ライブラリを使ったコンテンツの簡単なサンプルと�
 </html>
 ~~~
 
-`<script>` タグにより mapray JS ライブラリ `mapray.js` とコンテンツの JavaScript ファイル `turning.js` を指定しています。
+`<script>` タグにより maprayJS ライブラリ `mapray.js` とコンテンツの JavaScript ファイル `turning.js` を指定しています。
 
-このコンテンツでは `<div id="mapray-container">` の要素を mapray JS API に指定して、そこにシーンをレンダリングします。
+このコンテンツでは `<div id="mapray-container">` の要素を maprayJS API に指定して、そこにシーンをレンダリングします。
 
 `turning.js` では `Turning` クラスを定義しています。
 この HTML では `<body>` 要素を読み込み終わったときに `Turning` インスタンスを生成してレンダリングを開始します。
@@ -759,7 +759,7 @@ class MyImageProvider extends mapray.ImageProvider {
 また、マウスのドラッグにより地表を掴んで動かすイメージの操作を実現するとき、ドラッグ開始時のマウスカーソル位置に
 表示されている地表の位置を知ると、それによりカメラの位置を計算することができます。
 
-mapray JS API では、DEM データから地形の情報を得るメソッドとして次のメソッドを用意しています。
+maprayJS API では、DEM データから地形の情報を得るメソッドとして次のメソッドを用意しています。
 
 * `Viewer#getElevation(lat, lon)`
 * `Viewer#getRayIntersection(ray)`
@@ -793,11 +793,11 @@ mapray エンジンは地表と同時にポリゴンモデルや文字などの�
 ![mapray エンティティによる文字の表示](images/fuji-motosuko.png)
 
 
-mapray JS API ではこのオブジェクトのことをエンティティと呼び、`Scene` インスタンスに `Entity` インスタンスを追加
+maprayJS API ではこのオブジェクトのことをエンティティと呼び、`Scene` インスタンスに `Entity` インスタンスを追加
 することによってエンティティを表示することができます。
 `Scene` インスタンスは `Viewer#scene` プロパティによりアクセスすることができます。
 
-mapray JS ライブラリは現在、以下に示す `Entity` のサブクラスを用意しています。
+maprayJS ライブラリは現在、以下に示す `Entity` のサブクラスを用意しています。
 
 |     クラス         |   表示内容      |
 |--------------------|-----------------|

@@ -1,7 +1,7 @@
 [<p align="center"><img width="400" alt="Mapray" src="https://storage.googleapis.com/ino-sandbox.appspot.com/github/mainlogo.png"></p>](https://mapray.com/)
 [![Build Status](https://travis-ci.org/sony/mapray-js.svg?branch=master)](https://travis-ci.org/sony/mapray-js)
 
-Mapray JS is a JavaScript library for a high quality interactive 3D globes and map on the web. It is based on WebGL.
+maprayJS is a JavaScript library for a high quality interactive 3D globes and map on the web. It is based on WebGL.
 [WebSite](https://mapray.com)
 
 [<p align="center"><img src="https://storage.googleapis.com/ino-sandbox.appspot.com/github/fujisan.jpg" /></p>](https://mapray.com/nextRambler.html)
@@ -9,7 +9,7 @@ Mapray JS is a JavaScript library for a high quality interactive 3D globes and m
 ## Installation
 ### CDN
 ```html
-  <script src="https://api.mapray.com/mapray-js/v0.5.1/mapray.js"></script>
+  <script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
 ```
 
 ### npm
@@ -26,7 +26,7 @@ Mapray cloud managed by [Sony Network Communications Inc.](https://www.sonynetwo
 <head>
     <meta charset="UTF-8">
     <title>Hello Globe</title>
-    <script src="https://api.mapray.com/mapray-js/v0.5.1/mapray.js"></script>
+    <script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
 </head>
 <style>
     html, body {
@@ -80,7 +80,7 @@ Mapray cloud managed by [Sony Network Communications Inc.](https://www.sonynetwo
 
 ## Documentation
 All documents only support Japanese.
-- [Getting started with mapray JS](/doc/public/GettingStarted.md)
+- [Getting started with maprayJS](/doc/public/GettingStarted.md)
 - [Developer Guide](/doc/public/MaprayDeveloperGuideMod.md)
 
 **API documents**
@@ -89,4 +89,4 @@ npm run jsdoc
 ```
 
 ## License
-Mapray JS is licensed under the [MIT license](/LICENSE).
+maprayJS is licensed under the [MIT license](/LICENSE).
