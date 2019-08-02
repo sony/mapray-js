@@ -80,8 +80,10 @@ Mapray cloud managed by [Sony Network Communications Inc.](https://www.sonynetwo
 
 ## Documentation
 All documents only support Japanese.
-- [Getting started with maprayJS](/doc/public/GettingStarted.md)
-- [Developer Guide](/doc/public/MaprayDeveloperGuideMod.md)
+- [Getting started with maprayJS](/doc/developer-guide/GettingStarted.md)
+- [Developer Guide](/doc/developer-guide/MaprayDeveloperGuideMod.md)
+
+Documentation on Mapray official [website](https://mapray.com/documents/overview/gettingstarted/index.html)
 
 **API documents**
 ```bash
