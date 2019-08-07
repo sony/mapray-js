@@ -112,8 +112,7 @@ class Scene {
         var op_prims = [];  // 不透明プリミティブ
         var tp_prims = [];  // 半透明プリミティブ
 
-        for ( var i = 0; i < this._enode_list.length; ++i ) {
-            var entity = this._enode_list[i].entity;
+        for ( let {entity} of this._enode_list ) {
             this._add_primitives( stage, entity, op_prims, tp_prims );
         }
 
@@ -131,21 +130,21 @@ class Scene {
     {
         var dem_area_updated = this._viewer.globe.dem_area_updated;
 
-        for ( var i = 0; i < this._enode_list.length; ++i ) {
-            var  enode = this._enode_list[i];
-            var entity = enode.entity;
+        for ( let enode of this._enode_list ) {
+            let producer = enode.entity.getPrimitiveProducer();
 
-            if ( !entity.needsElevation() ) {
-                // entity が標高を必要としないときは何もしない
+            if ( (producer === null) || !producer.needsElevation() ) {
+                // producer が存在しないとき、または
+                // producer が標高を必要としないときは何もしない
                 continue;
             }
 
-            if ( entity.checkToCreateRegions() || enode.regions === null ) {
+            if ( producer.checkToCreateRegions() || enode.regions === null ) {
                 // 領域情報が分からない、または領域情報が変化した可能性があるとき
-                enode.regions = entity.createRegions();
+                enode.regions = producer.createRegions();
                 if ( enode.regions.length > 0 ) {
-                    enode.regions.forEach( rgn => { rgn.compile(); } );
-                    entity.onChangeElevation( enode.regions );
+                    enode.regions.forEach( region => { region.compile(); } );
+                    producer.onChangeElevation( enode.regions );
                 }
             }
             else {
@@ -155,7 +154,7 @@ class Scene {
                     continue;
                 }
 
-                var regions = [];
+                var regions = [];  // 標高に変化があった領域
 
                 enode.regions.forEach( region => {
                     if ( region.intersectsWith( dem_area_updated ) ) {
@@ -166,7 +165,7 @@ class Scene {
 
                 if ( regions.length > 0 ) {
                     // 標高が変化した可能性がある領域を通知
-                    entity.onChangeElevation( regions );
+                    producer.onChangeElevation( regions );
                 }
             }
         }
@@ -179,12 +178,12 @@ class Scene {
      */
     _add_primitives( stage, entity, op_prims, tp_prims )
     {
-        var src_prims = entity.getPrimitives( stage );
+        let producer = entity.getPrimitiveProducer();
+        if ( producer === null ) return;
 
-        for ( var i = 0; i < src_prims.length; ++i ) {
-            var primitive = src_prims[i];
+        for ( let primitive of producer.getPrimitives( stage ) ) {
             if ( primitive.isVisible( stage ) ) {
-                var dst_prims = primitive.isTranslucent( stage ) ? tp_prims : op_prims;
+                let dst_prims = primitive.isTranslucent( stage ) ? tp_prims : op_prims;
                 dst_prims.push( primitive );
             }
         }
