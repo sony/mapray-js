@@ -1,6 +1,8 @@
 import GeoMath from "./GeoMath";
+import GeoPoint from "./GeoPoint";
 import CredentialMode from "./CredentialMode";
 import MarkerLineEntity from "./MarkerLineEntity";
+import PinEntity from "./PinEntity";
 
 /**
  * @summary シーンの読み込み
@@ -132,8 +134,7 @@ class GeoJSONLoader {
     _load_geometry( geojson ) {
         var geometry = geojson.type === "Feature" ? geojson.geometry : geojson;
         var coords = geometry ? geometry.coordinates : null;
-        var layers = [];
-        
+
         if (!coords && !geometry) {
             return false;
         }
@@ -141,7 +142,7 @@ class GeoJSONLoader {
         switch ( geometry.type) {
             case "Point":
                 console.log( "GeoJSON Point" );
-                return false;
+                return this._loadPoint( geometry, this._getLineColor(geojson), this._getLineWidth(geojson), this._getExtrudedMode(geojson), this._getElevation(geojson) );
                 // return new Marker(latlng);
 
 	        case "MultiPoint":
@@ -150,36 +151,19 @@ class GeoJSONLoader {
                     console.log( "GeoJSON MultiPoint i:" );
                 }
                 return false;
-                //return new FeatureGroup(layers);
                 
 	        case "LineString":
 	        case "MultiLineString":
-		         // latlngs = coordsToLatLngs(coords, geometry.type === 'LineString' ? 0 : 1, _coordsToLatLng);
-                // return new Polyline(latlngs, options);
                 console.log( "GeoJSON LineString or MultiString" );
                 return this._loadLines( geometry, this._getLineColor(geojson), this._getLineWidth(geojson), this._getExtrudedMode(geojson), this._getElevation(geojson) );
 
 	        case "Polygon":
 	        case "MultiPolygon":
-		        // latlngs = coordsToLatLngs(coords, geometry.type === 'Polygon' ? 1 : 2, _coordsToLatLng);
-                // return new Polygon(latlngs, options);
                 console.log( "GeoJSON Polygon or MultiPolgon");
                 return false;
 
 	        case "GeometryCollection":
-            /*    for (var i = 0, len = geometry.geometries.length; i < len; i++) {
-			    var layer = geometryToLayer({
-				    geometry: geometry.geometries[i],
-				    type: 'Feature',
-				    properties: geojson.properties
-			}   , options);
-
-			if (layer) {
-				layers.push(layer);
-			}
-		}
-        return new FeatureGroup(layers); */
-            return false;
+                return false;
 	    default:
 		    throw new Error('Invalid GeoJSON object.');
         }
@@ -303,6 +287,36 @@ class GeoJSONLoader {
         entity.setOpacity(opaticy);
         this._scene.addEntity(entity);
         
+        return true;
+    }
+
+    _loadPoint( geometry, color4, width, extruded, elevation ) 
+    {
+        if ( !geometry || color4.length !== 4 ) {
+            return false;
+        }
+        var type = geometry.type;
+        // TO do: height is fake.
+        var coords = new GeoPoint(geometry.coordinates[0], geometry.coordinates[1], geometry.coordinates[2]);
+        var rgb = color4.slice(0, 3);
+        var alpha = color4[3];
+
+        var props = {
+            "color": [255, 111, 0],
+            "size": 20,
+        }
+
+        // If multiline, split entity
+        if ( type === "Point" ) {
+            console.log("before new PinEntity coords:" + coords + " props:" + JSON.stringify(props) );
+            var entity = new PinEntity( this._scene );
+            // dummy
+            entity.addPinFromIcon( "bus-15", coords, props );
+            this._scene.addEntity( entity);
+        } else { 
+            return false;
+        }
+
         return true;
     }
 
