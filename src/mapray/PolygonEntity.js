@@ -26,31 +26,16 @@ class PolygonEntity extends Entity {
     {
         super( scene, opts );
 
-        this._status   = Status.INVALID;
         this._extruded = false;
+        this._color    = GeoMath.createVector3( [1, 1, 1] );
+        this._opacity  = 1.0;
 
         // 頂点管理
         this._boundaries = [];    // Boundary のリスト
         this._position   = null;  // 中央付近の GeoPoint
-        this._triangles  = null;  // 三角形リスト (Uint32Array)
 
-        // プリミティブの要素
-        this._transform  = GeoMath.setIdentity( GeoMath.createMatrix() );
-        this._pivot      = GeoMath.createVector3();
-        this._bbox       = [GeoMath.createVector3(),
-                            GeoMath.createVector3()];
-        this._properties = {
-            color:    GeoMath.createVector3f( [1.0, 1.0, 1.0] ),
-            opacity:  1.0,
-            lighting: false
-        };
-
-        // プリミティブ
-        var primitive = new Primitive( scene.glenv, null, this._getPolygonMaterial(), this._transform );
-        primitive.pivot      = this._pivot;
-        primitive.bbox       = this._bbox;
-        primitive.properties = this._properties;
-        this._primitive = primitive;
+        // Entity.PrimitiveProducer インスタンス
+        this._primitive_producer = new PrimitiveProducer( this );
 
         // 生成情報から設定
         if ( opts && opts.json ) {
@@ -69,11 +54,10 @@ class PolygonEntity extends Entity {
 
         if ( (prev && !value) || (!prev && value) ) {
             // モードが変化した
-            this._extruded            = value;
-            this._properties.lighting = value;
+            this._extruded = value;
 
-            if ( this._status === Status.NORMAL ) {
-                this._status = Status.MESH_DIRTY;
+            if ( this._primitive_producer ) {
+                this._primitive_producer.onChangeExtruded();
             }
         }
     }
@@ -85,28 +69,9 @@ class PolygonEntity extends Entity {
     /**
      * @override
      */
-    getPrimitives( stage )
+    getPrimitiveProducer()
     {
-        if ( this._status === Status.INVALID ) {
-            // 多角形なし、または三角形に変換できなかったとき
-            return [];
-        }
-        else if ( this._status === Status.TRIANGLE_DIRTY ) {
-            this._triangles = this._createTriangles();
-            if ( this._triangles === null ) {
-                // 多角形の三角形化に失敗
-                this._primitive.mesh = null;
-                this._status = Status.INVALID;
-                return [];
-            }
-            this._updatePrimitive();
-        }
-        else if ( this._status === Status.MESH_DIRTY ) {
-            this._updatePrimitive();
-        }
-
-        this._status = Status.NORMAL;
-        return [this._primitive];
+        return this._primitive_producer;
     }
 
 
@@ -115,8 +80,8 @@ class PolygonEntity extends Entity {
      */
     onChangeAltitudeMode( prev_mode )
     {
-        if ( this._status === Status.NORMAL ) {
-            this._status = Status.MESH_DIRTY;
+        if ( this._primitive_producer ) {
+            this._primitive_producer.onChangeAltitudeMode();
         }
     }
 
@@ -127,7 +92,7 @@ class PolygonEntity extends Entity {
      */
     setColor( color )
     {
-        GeoMath.copyVector3( color, this._properties.color );
+        GeoMath.copyVector3( color, this._color );
     }
 
 
@@ -137,7 +102,7 @@ class PolygonEntity extends Entity {
      */
     setOpacity( opacity )
     {
-        this._properties.opacity = opacity;
+        this._opacity = opacity;
     }
 
 
@@ -182,55 +147,10 @@ class PolygonEntity extends Entity {
     _addBoundary( points, is_inner )
     {
         this._boundaries.push( new Boundary( points, is_inner ) );
+        this._position = null;
 
-        this._status    = Status.TRIANGLE_DIRTY;
-        this._position  = null;
-        this._triangles = null;
-        this.needToCreateRegions();
-    }
-
-
-    /**
-     * @override
-     */
-    needsElevation()
-    {
-        // ABSOLUTE でも押し出しモードのときは高さが必要
-        return (this.altitude_mode !== AltitudeMode.ABSOLUTE) || this._extruded;
-    }
-
-
-    /**
-     * @override
-     */
-    createRegions()
-    {
-        if ( this._status === Status.INVALID ) {
-            // 多角形なし、または三角形に変換できなかったとき
-            return [];
-        }
-
-        // 正常な多角形のとき
-
-        var region = new EntityRegion();
-
-        for ( let boundary of this._boundaries ) {
-            region.addPoints( boundary.points, 0, 3, boundary.num_points );
-        }
-
-        region.addPoint( this._getPosition() );
-
-        return [region];
-    }
-
-
-    /**
-     * @override
-     */
-    onChangeElevation( regions )
-    {
-        if ( this._status === Status.NORMAL ) {
-            this._status = Status.MESH_DIRTY;
+        if ( this._primitive_producer ) {
+            this._primitive_producer.onChangeBoundary();
         }
     }
 
@@ -247,113 +167,6 @@ class PolygonEntity extends Entity {
             scene._PolygonEntity_material = new PolygonMaterial( scene.glenv );
         }
         return scene._PolygonEntity_material;
-    }
-
-
-    /**
-     * @summary 三角形リストを生成
-     *
-     * @desc
-     * <p>this._boundaries を三角形に変換してリストを返す。ただし変換に失敗したときは null を返す。</p>
-     *
-     * @return {Uint32Array}  三角形リストまたは null
-     *
-     * @private
-     */
-    _createTriangles()
-    {
-        // 連結座標リストを作成
-        let num_points = this._countNumPointsOnBoundaries();
-
-        let coords = new Float64Array( 2 * num_points );
-        let di = 0;
-
-        for ( let bo of this._boundaries ) {
-            let size   = 3 * bo.num_points;
-            let points = bo.points;
-            for ( let si = 0; si < size; si += 3 ) {
-                coords[di++] = points[si    ];
-                coords[di++] = points[si + 1];
-            }
-        }
-
-        // 境界を登録
-        let triangulator = new Triangulator( coords, 0, 2, num_points );
-        let index = 0;
-
-        for ( let bo of this._boundaries ) {
-            let num_indices = bo.num_points;
-            let indices     = new Uint32Array( num_indices );
-            for ( let i = 0; i < num_indices; ++i ) {
-                indices[i] = index++;
-            }
-            triangulator.addBoundary( indices );
-        }
-
-        try {
-            // 変換を実行
-            return triangulator.run();
-        }
-        catch ( e ) {
-            // 変換に失敗
-            console.error( e.message );
-            return null;
-        }
-    }
-
-
-    /**
-     * @summary すべての境界の頂点数の合計を取得
-     */
-    _countNumPointsOnBoundaries()
-    {
-        let num_points = 0;
-
-        for ( let b of this._boundaries ) {
-            num_points += b.num_points;
-        }
-
-        return num_points;
-    }
-
-
-    /**
-     * @summary プリミティブの更新
-     *
-     * 入力:
-     *   this._boundaries
-     *   this._triangles
-     * 出力:
-     *   this._transform
-     *   this._pivot
-     *   this._bbox
-     *   this._primitive.mesh
-     *
-     * @private
-     */
-    _updatePrimitive()
-    {
-        var cb_data = new BoundaryConbiner( this );
-
-        // プリミティブの更新
-        //   primitive.transform
-        //   primitive.pivot
-        //   primitive.bbox
-        this._updateTransformPivotBBox( cb_data );
-
-        // メッシュ生成
-        var mesh_data = {
-            vtype: [
-                { name: "a_position", size: 3 },
-                { name: "a_normal",   size: 3 }
-            ],
-            vertices: this._createVertices( cb_data ),
-            indices:  this._createIndices( cb_data )
-        };
-        var mesh = new Mesh( this.scene.glenv, mesh_data );
-
-        // メッシュ設定
-        this._primitive.mesh = mesh;
     }
 
 
@@ -379,9 +192,327 @@ class PolygonEntity extends Entity {
 
         // json.color
         //     .opacity
-        var props = this._properties;
-        if ( json.color !== undefined )   GeoMath.copyVector3( json.color, props.color );
-        if ( json.opacity !== undefined ) props.opacity = json.opacity;
+        if ( json.color   !== undefined ) GeoMath.copyVector3( json.color, this._color );
+        if ( json.opacity !== undefined ) this._opacity = json.opacity;
+    }
+
+
+    /**
+     * @summary 中央位置を取得
+     *
+     * @desc
+     * <p>中央位置を計算して返す。多角形が存在しないときは null を返す。</p>
+     *
+     * <p>中央位置が変化する可能性があるときは this._position にを null を設定すること。</p>
+     *
+     * <pre>
+     * 入力: this._boundaries
+     * </pre>
+     *
+     * @return {mapray.GeoPoint}  中央位置 (高度は 0) または null
+     *
+     * @private
+     */
+    _getPosition()
+    {
+        if ( this._position !== null ) {
+            // キャッシュさている値を返す
+            return this._position;
+        }
+
+        if ( this._boundaries.length == 0 ) {
+            // 多角形が存在しない
+            return null;
+        }
+
+        var min_lon =  Number.MAX_VALUE;
+        var max_lon = -Number.MAX_VALUE;
+        var min_lat =  Number.MAX_VALUE;
+        var max_lat = -Number.MAX_VALUE;
+
+        for ( let bo of this._boundaries ) {
+            let count  = bo.num_points;
+            let points = bo.points;
+
+            for ( let i = 0; i < count; ++i ) {
+                var lon = points[3*i    ];
+                var lat = points[3*i + 1];
+
+                if ( lon < min_lon ) min_lon = lon;
+                if ( lon > max_lon ) max_lon = lon;
+                if ( lat < min_lat ) min_lat = lat;
+                if ( lat > max_lat ) max_lat = lat;
+            }
+        }
+
+        this._position = new GeoPoint( (min_lon + max_lon) / 2,
+                                       (min_lat + max_lat) / 2 );
+
+        return this._position;
+    }
+
+
+    /**
+     * @summary すべての境界の頂点数の合計を取得
+     *
+     * @private
+     */
+    _countNumPointsOnBoundaries()
+    {
+        let num_points = 0;
+
+        for ( let bo of this._boundaries ) {
+            num_points += bo.num_points;
+        }
+
+        return num_points;
+    }
+
+
+    /**
+     * @summary 三角形リストを生成
+     *
+     * @desc
+     * <p>this.entity._boundaries を三角形に変換してリストを返す。ただし変換に失敗したときは null を返す。</p>
+     *
+     * @return {Uint32Array}  三角形リストまたは null
+     *
+     * @private
+     */
+    _createTriangles()
+    {
+        let boundaries = this._boundaries;
+
+        // 連結座標リストを作成
+        let num_points = this._countNumPointsOnBoundaries();
+
+        let coords = new Float64Array( 2 * num_points );
+        let di = 0;
+
+        for ( let bo of boundaries ) {
+            let size   = 3 * bo.num_points;
+            let points = bo.points;
+            for ( let si = 0; si < size; si += 3 ) {
+                coords[di++] = points[si    ];
+                coords[di++] = points[si + 1];
+            }
+        }
+
+        // 境界を登録
+        let triangulator = new Triangulator( coords, 0, 2, num_points );
+        let index = 0;
+
+        for ( let bo of boundaries ) {
+            let num_indices = bo.num_points;
+            let indices     = new Uint32Array( num_indices );
+            for ( let i = 0; i < num_indices; ++i ) {
+                indices[i] = index++;
+            }
+            triangulator.addBoundary( indices );
+        }
+
+        try {
+            // 変換を実行
+            return triangulator.run();
+        }
+        catch ( e ) {
+            // 変換に失敗
+            console.error( e.message );
+            return null;
+        }
+    }
+
+}
+
+
+/**
+ * @summary PolygonEntity の PrimitiveProducer
+ *
+ * @private
+ */
+class PrimitiveProducer extends Entity.PrimitiveProducer {
+
+
+    /**
+     * @param {mapray.PolygonEntity} entity
+     */
+    constructor( entity )
+    {
+        super( entity );
+
+        this._status    = Status.INVALID;
+        this._triangles = null;  // 三角形リスト (Uint32Array)
+
+        // プリミティブの要素
+        this._transform  = GeoMath.setIdentity( GeoMath.createMatrix() );
+        this._pivot      = GeoMath.createVector3();
+        this._bbox       = [GeoMath.createVector3(),
+                            GeoMath.createVector3()];
+        this._properties = {
+            color:    GeoMath.createVector3f(),
+            opacity:  1.0,
+            lighting: false
+        };
+
+        // プリミティブ
+        var primitive = new Primitive( entity.glenv, null, entity._getPolygonMaterial(), this._transform );
+        primitive.pivot      = this._pivot;
+        primitive.bbox       = this._bbox;
+        primitive.properties = this._properties;
+
+        this._primitive = primitive;
+    }
+
+
+    /**
+     * @override
+     */
+    needsElevation()
+    {
+        let owner = this.entity;
+
+        // ABSOLUTE でも押し出しモードのときは高さが必要
+        return (owner.altitude_mode !== AltitudeMode.ABSOLUTE) || owner._extruded;
+    }
+
+
+    /**
+     * @override
+     */
+    createRegions()
+    {
+        let owner = this.entity;
+
+        if ( this._status === Status.INVALID ) {
+            // 多角形なし、または三角形に変換できなかったとき
+            return [];
+        }
+
+        // 正常な多角形のとき
+
+        var region = new EntityRegion();
+
+        for ( let bo of owner._boundaries ) {
+            region.addPoints( bo.points, 0, 3, bo.num_points );
+        }
+
+        region.addPoint( owner._getPosition() );
+
+        return [region];
+    }
+
+
+    /**
+     * @override
+     */
+    onChangeElevation( regions )
+    {
+        if ( this._status === Status.NORMAL ) {
+            this._status = Status.MESH_DIRTY;
+        }
+    }
+
+
+    /**
+     * @override
+     */
+    getPrimitives( stage )
+    {
+        if ( this._status === Status.INVALID ) {
+            // 多角形なし、または三角形に変換できなかったとき
+            return [];
+        }
+        else if ( this._status === Status.TRIANGLE_DIRTY ) {
+            this._triangles = this.entity._createTriangles();
+            if ( this._triangles === null ) {
+                // 多角形の三角形化に失敗
+                this._primitive.mesh = null;
+                this._status = Status.INVALID;
+                return [];
+            }
+            this._updatePrimitiveMesh();
+        }
+        else if ( this._status === Status.MESH_DIRTY ) {
+            this._updatePrimitiveMesh();
+        }
+
+        this._updatePrimitiveProperties();
+
+        this._status = Status.NORMAL;
+        return [this._primitive];
+    }
+
+
+    /**
+     * @summary 押し出しモードが変更されたことを通知
+     */
+    onChangeExtruded()
+    {
+        if ( this._status === Status.NORMAL ) {
+            this._status = Status.MESH_DIRTY;
+        }
+    }
+
+
+    /**
+     * @summary 高度モードが変更されたことを通知
+     */
+    onChangeAltitudeMode()
+    {
+        if ( this._status === Status.NORMAL ) {
+            this._status = Status.MESH_DIRTY;
+        }
+    }
+
+
+    /**
+     * @summary 境界が変更されたことを通知
+     */
+    onChangeBoundary()
+    {
+        this._status    = Status.TRIANGLE_DIRTY;
+        this._triangles = null;
+        this.needToCreateRegions();
+    }
+
+
+    /**
+     * @summary プリミティブの更新
+     *
+     * 入力:
+     *   this.entity
+     *   this._triangles
+     * 出力:
+     *   this._transform
+     *   this._pivot
+     *   this._bbox
+     *   this._primitive.mesh
+     *
+     * @private
+     */
+    _updatePrimitiveMesh()
+    {
+        var cb_data = new BoundaryConbiner( this.entity );
+
+        // プリミティブの更新
+        //   primitive.transform
+        //   primitive.pivot
+        //   primitive.bbox
+        this._updateTransformPivotBBox( cb_data );
+
+        // メッシュ生成
+        var mesh_data = {
+            vtype: [
+                { name: "a_position", size: 3 },
+                { name: "a_normal",   size: 3 }
+            ],
+            vertices: this._createVertices( cb_data ),
+            indices:  this._createIndices( cb_data )
+        };
+        var mesh = new Mesh( this.entity.scene.glenv, mesh_data );
+
+        // メッシュ設定
+        this._primitive.mesh = mesh;
     }
 
 
@@ -473,7 +604,7 @@ class PolygonEntity extends Entity {
      * S2 は cb_data.num_points 個の四角形に対する頂点データが順番に並んでいる。
      * 各四角形の頂点データは 左下、右下、左上、右上 の順序で格納されている。
      *
-     * 入力: this._boundaries
+     * 入力: this.entity._boundaries
      *
      * @param {BoundaryConbiner} cb_data  入力データ
      *
@@ -517,7 +648,7 @@ class PolygonEntity extends Entity {
 
             let beg_i = 0;  // bo の最初の頂点のインデックス
 
-            for ( let bo of this._boundaries ) {
+            for ( let bo of this.entity._boundaries ) {
                 let end_i = beg_i + bo.num_points;  // bo の最後の頂点のインデックス + 1
 
                 for ( let i = beg_i; i < end_i; ++i ) {
@@ -604,57 +735,21 @@ class PolygonEntity extends Entity {
 
 
     /**
-     * @summary 中央位置を取得
+     * @summary プリミティブのプロパティを更新
      *
-     * @desc
-     * <p>中央位置を計算して返す。多角形が存在しないときは null を返す。</p>
-     *
-     * <p>中央位置が変化する可能性があるときは this._position にを null を設定すること。</p>
-     *
-     * <pre>
-     * 入力: this._boundaries
-     * </pre>
-     *
-     * @return {mapray.GeoPoint}  中央位置 (高度は 0) または null
+     * 入力: this.entity
+     * 出力: this._properties
      *
      * @private
      */
-    _getPosition()
+    _updatePrimitiveProperties()
     {
-        if ( this._position !== null ) {
-            // キャッシュさている値を返す
-            return this._position;
-        }
+        let owner = this.entity;
+        let props = this._properties;
 
-        if ( this._boundaries.length == 0 ) {
-            // 多角形が存在しない
-            return null;
-        }
-
-        var min_lon =  Number.MAX_VALUE;
-        var max_lon = -Number.MAX_VALUE;
-        var min_lat =  Number.MAX_VALUE;
-        var max_lat = -Number.MAX_VALUE;
-
-        for ( let boundary of this._boundaries ) {
-            let count  = boundary.num_points;
-            let points = boundary.points;
-
-            for ( let i = 0; i < count; ++i ) {
-                var lon = points[3*i    ];
-                var lat = points[3*i + 1];
-
-                if ( lon < min_lon ) min_lon = lon;
-                if ( lon > max_lon ) max_lon = lon;
-                if ( lat < min_lat ) min_lat = lat;
-                if ( lat > max_lat ) max_lat = lat;
-            }
-        }
-
-        this._position = new GeoPoint( (min_lon + max_lon) / 2,
-                                       (min_lat + max_lat) / 2 );
-
-        return this._position;
+        GeoMath.copyVector3( owner._color, props.color );
+        props.opacity  = owner._opacity;
+        props.lighting = owner._extruded;
     }
 
 }
