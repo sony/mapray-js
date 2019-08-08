@@ -11,6 +11,7 @@ import EntityRegion from "./EntityRegion";
 
 /**
  * @summary テキストエンティティ
+ *
  * @memberof mapray
  * @extends mapray.Entity
  */
@@ -28,7 +29,6 @@ class TextEntity extends Entity {
 
         // テキスト管理
         this._entries = [];
-        this._dirty   = true;
 
         // テキストの親プロパティ
         this._text_parent_props = {
@@ -39,23 +39,8 @@ class TextEntity extends Entity {
             color: GeoMath.createVector3f( TextEntity.DEFAULT_COLOR )
         };
 
-        // プリミティブの要素
-        this._transform  = GeoMath.setIdentity( GeoMath.createMatrix() );
-        this._properties = {
-            image: null  // テキスト画像
-        };
-
-        // プリミティブ
-        var primitive = new Primitive( scene.glenv, null, this._getTextMaterial(), this._transform );
-        primitive.properties = this._properties;
-        this._primitive = primitive;
-
-        // プリミティブ配列
-        this._primitives = [];
-
-        // 境界値
-        this._text_upper = TextEntity.DEFAULT_TEXT_UPPER;
-        this._text_lower = TextEntity.DEFAULT_TEXT_LOWER;
+        // Entity.PrimitiveProducer インスタンス
+        this._primitive_producer = new PrimitiveProducer( this );
 
         // 生成情報から設定
         if ( opts && opts.json ) {
@@ -67,9 +52,9 @@ class TextEntity extends Entity {
     /**
      * @override
      */
-    getPrimitives( stage )
+    getPrimitiveProducer()
     {
-        return this._updatePrimitive();
+        return this._primitive_producer;
     }
 
 
@@ -78,7 +63,7 @@ class TextEntity extends Entity {
      */
     onChangeAltitudeMode( prev_mode )
     {
-        this._dirty = true;
+        this._primitive_producer.onChangeAltitudeMode();
     }
 
 
@@ -147,37 +132,7 @@ class TextEntity extends Entity {
     addText( text, position, props )
     {
         this._entries.push( new Entry( this, text, position, props ) );
-
-        // 変化した可能性がある
-        this.needToCreateRegions();
-        this._dirty = true;
-    }
-
-
-    /**
-     * @override
-     */
-    createRegions()
-    {
-        const region = new EntityRegion();
-
-        const entries = this._entries;
-        const length  = entries.length;
-
-        for ( let i = 0; i < length; ++i ) {
-            region.addPoint( entries[i].position );
-        }
-
-        return [region];
-    }
-
-
-    /**
-     * @override
-     */
-    onChangeElevation( regions )
-    {
-        this._dirty = true;
+        this._primitive_producer.onAddTextEntry();
     }
 
 
@@ -204,7 +159,7 @@ class TextEntity extends Entity {
         var props = this._text_parent_props;
         if ( props[name] != value ) {
             props[name] = value;
-            this._dirty = true;
+            this._primitive_producer.onChangeParentProperty();
         }
     }
 
@@ -217,16 +172,150 @@ class TextEntity extends Entity {
         var dst = this._text_parent_props[name];
         if ( dst[0] != value[0] || dst[1] != value[1] || dst[2] != value[2] ) {
             GeoMath.copyVector3( value, dst );
-            this._dirty = true;
+            this._primitive_producer.onChangeParentProperty();
         }
     }
 
 
     /**
+     * @private
+     */
+    _setupByJson( json )
+    {
+        var position = new GeoPoint();
+
+        for ( let entry of json.entries ) {
+            position.setFromArray( entry.position );
+            this.addText( entry.text, position, entry );
+        }
+
+        if ( json.font_style  !== undefined ) this.setFontStyle( json.font_style );
+        if ( json.font_weight !== undefined ) this.setFontWeight( json.font_weight );
+        if ( json.font_size   !== undefined ) this.setFontSize( json.font_size );
+        if ( json.font_family !== undefined ) this.setFontFamily( json.font_family );
+        if ( json.color       !== undefined ) this.setColor( json.color );
+    }
+
+}
+
+
+// クラス定数の定義
+{
+    TextEntity.DEFAULT_FONT_SIZE   = 16;
+    TextEntity.DEFAULT_FONT_FAMILY = "sans-serif";
+    TextEntity.DEFAULT_COLOR       = GeoMath.createVector3f( [1, 1, 1] );
+
+    TextEntity.DEFAULT_TEXT_UPPER  = 1.1;
+    TextEntity.DEFAULT_TEXT_LOWER  = 0.38;
+    TextEntity.SAFETY_PIXEL_MARGIN = 1;
+    TextEntity.MAX_IMAGE_WIDTH     = 4096;
+}
+
+
+/**
+ * @summary TextEntity の PrimitiveProducer
+ *
+ * TODO: relative で標高の変化のたびにテクスチャを生成する必要はないので
+ *       Layout でのテクスチャの生成とメッシュの生成を分離する
+ *
+ * @private
+ */
+class PrimitiveProducer extends Entity.PrimitiveProducer {
+
+    /**
+     * @param {mapray.TextEntity} entity
+     */
+    constructor( entity )
+    {
+        super( entity );
+
+        this._glenv = entity.scene.glenv;
+        this._dirty = true;
+
+        // プリミティブの要素
+        this._transform  = GeoMath.setIdentity( GeoMath.createMatrix() );
+        this._properties = {
+            image: null  // テキスト画像
+        };
+
+        // プリミティブ
+        var primitive = new Primitive( this._glenv, null, entity._getTextMaterial(), this._transform );
+        primitive.properties = this._properties;
+        this._primitive = primitive;
+
+        // プリミティブ配列
+        this._primitives = [];
+    }
+
+
+    /**
+     * @override
+     */
+    createRegions()
+    {
+        const region = new EntityRegion();
+
+        for ( let {position} of this.entity._entries ) {
+            region.addPoint( position );
+        }
+
+        return [region];
+    }
+
+
+    /**
+     * @override
+     */
+    onChangeElevation( regions )
+    {
+        this._dirty = true;
+    }
+
+
+    /**
+     * @override
+     */
+    getPrimitives( stage )
+    {
+        return this._updatePrimitive();
+    }
+
+
+    /**
+     * @summary 親プロパティが変更されたことを通知
+     */
+    onChangeParentProperty()
+    {
+        this._dirty = true;
+    }
+
+
+    /**
+     * @summary 高度モードが変更されたことを通知
+     */
+    onChangeAltitudeMode()
+    {
+        this._dirty = true;
+    }
+
+
+    /**
+     * @summary テキストが追加されたことを通知
+     */
+    onAddTextEntry()
+    {
+        // 変化した可能性がある
+        this.needToCreateRegions();
+        this._dirty = true;
+    }
+
+
+    /**
      * @summary プリミティブの更新
+     *
      * @desc
      * 入力:
-     *   this._entries
+     *   this.entity._entries
      *   this._dirty
      * 出力:
      *   this._transform
@@ -234,7 +323,9 @@ class TextEntity extends Entity {
      *   this._primitive.mesh
      *   this._primitives
      *   this._dirty
+     *
      * @return {array.<mapray.Prmitive>}  this._primitives
+     *
      * @private
      */
     _updatePrimitive()
@@ -244,7 +335,7 @@ class TextEntity extends Entity {
             return this._primitives;
         }
 
-        if ( this._entries.length == 0 ) {
+        if ( this.entity._entries.length == 0 ) {
             this._primitives = [];
             this._dirty = false;
             return this._primitives;
@@ -283,7 +374,7 @@ class TextEntity extends Entity {
             vertices: layout.vertices,
             indices:  layout.indices
         };
-        var mesh = new Mesh( this.scene.glenv, mesh_data );
+        var mesh = new Mesh( this._glenv, mesh_data );
 
         // メッシュ設定
         //   primitive.mesh
@@ -301,71 +392,13 @@ class TextEntity extends Entity {
 
 
     /**
-     * @summary GOCS 平坦化配列を取得
-     *
-     * 入力: this._entries
-     *
-     * @return {number[]}  GOCS 平坦化配列
-     * @private
-     */
-    _createFlatGocsArray()
-    {
-        const num_points = this._entries.length;
-        return GeoPoint.toGocsArray( this._getFlatGeoPoints_with_Absolute(), num_points,
-                                     new Float64Array( 3 * num_points ) );
-    }
-
-
-    /**
-     * @summary GeoPoint 平坦化配列を取得 (絶対高度)
-     *
-     * 入力: this._entries
-     *
-     * @return {number[]}  GeoPoint 平坦化配列
-     * @private
-     */
-    _getFlatGeoPoints_with_Absolute()
-    {
-        const entries    = this._entries;
-        const num_points = entries.length;
-        const flat_array = new Float64Array( 3 * num_points );
-
-        // flat_array[] に経度要素と緯度要素を設定
-        for ( let i = 0; i < num_points; ++i ) {
-            let pos = entries[i].position;
-            flat_array[3*i]     = pos.longitude;
-            flat_array[3*i + 1] = pos.latitude;
-        }
-
-        switch ( this.altitude_mode ) {
-        case AltitudeMode.RELATIVE:
-            // flat_array[] の高度要素に現在の標高を設定
-            this.scene.viewer.getExistingElevations( num_points, flat_array, 0, 3, flat_array, 2, 3 );
-            // flat_array[] の高度要素に絶対高度を設定
-            for ( let i = 0; i < num_points; ++i ) {
-                flat_array[3*i + 2] += entries[i].position.altitude;
-            }
-            break;
-
-        default: // AltitudeMode.ABSOLUTE
-            // flat_array[] の高度要素に絶対高度を設定
-            for ( let i = 0; i < num_points; ++i ) {
-                flat_array[3*i + 2] = entries[i].position.altitude;
-            }
-            break;
-        }
-
-        return flat_array;
-    }
-
-
-    /**
      * @summary プリミティブの更新
+     *
      * @desc
      * 条件:
-     *   this._entries.length > 0
+     *   this.entity._entries.length > 0
      * 入力:
-     *   this._entries.length
+     *   this.entity._entries.length
      * 出力:
      *   this._transform
      *
@@ -375,7 +408,7 @@ class TextEntity extends Entity {
      */
     _updateTransform( gocs_array )
     {
-        var num_entries = this._entries.length;
+        var num_entries = this.entity._entries.length;
         var        xsum = 0;
         var        ysum = 0;
         var        zsum = 0;
@@ -396,40 +429,64 @@ class TextEntity extends Entity {
 
 
     /**
+     * @summary GOCS 平坦化配列を取得
+     *
+     * 入力: this.entity._entries
+     *
+     * @return {number[]}  GOCS 平坦化配列
      * @private
      */
-    _setupByJson( json )
+    _createFlatGocsArray()
     {
-        var  entries = json.entries;
-        var position = new GeoPoint();
-
-        for ( var i = 0; i < entries.length; ++i ) {
-            var entry = entries[i];
-            position.setFromArray( entry.position );
-            this.addText( entry.text, position, entry );
-        }
-
-        var props = this._text_parent_props;
-        if ( json.font_style )  props.font_style  = json.font_style;
-        if ( json.font_weight ) props.font_weight = json.font_weight;
-        if ( json.font_size )   props.font_size   = json.font_size;
-        if ( json.font_family ) props.font_family = json.font_family;
-        if ( json.color )       GeoMath.copyVector3( json.color, props.color );
+        const num_points = this.entity._entries.length;
+        return GeoPoint.toGocsArray( this._getFlatGeoPoints_with_Absolute(), num_points,
+                                     new Float64Array( 3 * num_points ) );
     }
 
-}
 
+    /**
+     * @summary GeoPoint 平坦化配列を取得 (絶対高度)
+     *
+     * 入力: this.entity._entries
+     *
+     * @return {number[]}  GeoPoint 平坦化配列
+     * @private
+     */
+    _getFlatGeoPoints_with_Absolute()
+    {
+        const owner      = this.entity;
+        const entries    = owner._entries;
+        const num_points = entries.length;
+        const flat_array = new Float64Array( 3 * num_points );
 
-// クラス定数の定義
-{
-    TextEntity.DEFAULT_FONT_SIZE   = 16;
-    TextEntity.DEFAULT_FONT_FAMILY = "sans-serif";
-    TextEntity.DEFAULT_COLOR       = GeoMath.createVector3f( [1, 1, 1] );
+        // flat_array[] に経度要素と緯度要素を設定
+        for ( let i = 0; i < num_points; ++i ) {
+            let pos = entries[i].position;
+            flat_array[3*i]     = pos.longitude;
+            flat_array[3*i + 1] = pos.latitude;
+        }
 
-    TextEntity.DEFAULT_TEXT_UPPER  = 1.1;
-    TextEntity.DEFAULT_TEXT_LOWER  = 0.38;
-    TextEntity.SAFETY_PIXEL_MARGIN = 1;
-    TextEntity.MAX_IMAGE_WIDTH     = 4096;
+        switch ( owner.altitude_mode ) {
+        case AltitudeMode.RELATIVE:
+            // flat_array[] の高度要素に現在の標高を設定
+            owner.scene.viewer.getExistingElevations( num_points, flat_array, 0, 3, flat_array, 2, 3 );
+            // flat_array[] の高度要素に絶対高度を設定
+            for ( let i = 0; i < num_points; ++i ) {
+                flat_array[3*i + 2] += entries[i].position.altitude;
+            }
+            break;
+
+        default: // AltitudeMode.ABSOLUTE
+            // flat_array[] の高度要素に絶対高度を設定
+            for ( let i = 0; i < num_points; ++i ) {
+                flat_array[3*i + 2] = entries[i].position.altitude;
+            }
+            break;
+        }
+
+        return flat_array;
+    }
+
 }
 
 
@@ -546,6 +603,7 @@ class Entry {
 
 /**
  * @summary テキスト画像を Canvas 上にレイアウト
+ *
  * @memberof mapray.TextEntity
  * @private
  */
@@ -554,11 +612,11 @@ class Layout {
     /**
      * @desc
      * 入力:
-     *   owner.scene.glenv
-     *   owner._entries
+     *   owner._glenv
+     *   owner.entity._entries
      *   owner._transform
      *
-     * @param {mapray.TextEntity} owner       所有者
+     * @param {PrimitiveProducer} owner       所有者
      * @param {number[]}          gocs_array  GOCS 平坦化配列
      */
     constructor( owner, gocs_array )
@@ -641,12 +699,11 @@ class Layout {
      */
     _createItemList()
     {
-        var entries = this._owner._entries;
         var context = Layout._createCanvasContext( 1, 1 );
 
         var items = [];
-        for ( var i = 0; i < entries.length; ++i ) {
-            items.push( new LItem( this, entries[i], context ) );
+        for ( let entry of this._owner.entity._entries ) {
+            items.push( new LItem( this, entry, context ) );
         }
 
         return items;
@@ -717,7 +774,7 @@ class Layout {
             item.drawText( context );
         }
 
-        var glenv = this._owner.scene.glenv;
+        var glenv = this._owner._glenv;
         var  opts = {
             usage: Texture.Usage.TEXT
         };
@@ -877,9 +934,8 @@ class LItem {
         this._width  = context.measureText( entry.text ).width;
 
         // テキストの上下範囲
-        var entity = layout._owner;
-        this._upper = entry.size * entity._text_upper;
-        this._lower = entry.size * entity._text_lower;
+        this._upper = entry.size * TextEntity.DEFAULT_TEXT_UPPER;
+        this._lower = entry.size * TextEntity.DEFAULT_TEXT_LOWER;
 
         this._is_canceled = false;
     }
