@@ -44,15 +44,6 @@ class PinEntity extends Entity {
 
         // プリミティブ配列
         this._primitives = [];
-
-        // 境界値
-        this._text_upper = TextEntity.DEFAULT_TEXT_UPPER;
-        this._text_lower = TextEntity.DEFAULT_TEXT_LOWER;
-
-        // 生成情報から設定
-        if ( opts && opts.json ) {
-            this._setupByJson( opts.json );
-        }
     }
 
 
@@ -136,11 +127,11 @@ class PinEntity extends Entity {
     _getTextMaterial()
     {
         var scene = this.scene;
-        if ( !scene._TextEntity_text_material ) {
+        if ( !scene._PinEntity_text_material ) {
             // scene にマテリアルをキャッシュ
-            scene._TextEntity_text_material = new TextMaterial( scene.glenv );
+            scene._PinEntity_text_material = new TextMaterial( scene.glenv );
         }
-        return scene._TextEntity_text_material;
+        return scene._PinEntity_text_material;
     }
 
 
@@ -341,43 +332,13 @@ class PinEntity extends Entity {
         transform[13] = ysum / num_entries;
         transform[14] = zsum / num_entries;
     }
-
-
-    /**
-     * @private
-     */
-    _setupByJson( json )
-    {
-        var  entries = json.entries;
-        var position = new GeoPoint();
-
-        for ( var i = 0; i < entries.length; ++i ) {
-            var entry = entries[i];
-            position.setFromArray( entry.position );
-            this.addText( entry.text, position, entry );
-        }
-
-        var props = this._text_parent_props;
-        if ( json.font_style )  props.font_style  = json.font_style;
-        if ( json.font_weight ) props.font_weight = json.font_weight;
-        if ( json.font_size )   props.font_size   = json.font_size;
-        if ( json.font_family ) props.font_family = json.font_family;
-        if ( json.color )       GeoMath.copyVector3( json.color, props.color );
-    }
-
 }
-
 
 // クラス定数の定義
 {
-    TextEntity.DEFAULT_FONT_SIZE   = 16;
-    TextEntity.DEFAULT_FONT_FAMILY = "sans-serif";
-    TextEntity.DEFAULT_COLOR       = GeoMath.createVector3f( [1, 1, 1] );
-
-    TextEntity.DEFAULT_TEXT_UPPER  = 1.1;
-    TextEntity.DEFAULT_TEXT_LOWER  = 0.38;
-    TextEntity.SAFETY_PIXEL_MARGIN = 1;
-    TextEntity.MAX_IMAGE_WIDTH     = 4096;
+    PinEntity.DEFAULT_COLOR       = GeoMath.createVector3f( [1, 1, 1] );
+    PinEntity.SAFETY_PIXEL_MARGIN = 1;
+    PinEntity.MAX_IMAGE_WIDTH     = 4096;
 }
 
 
@@ -393,8 +354,8 @@ class MakiEntry {
      * @param {string}            id                   MakiアイコンのID
      * @param {mapray.GeoPoint}   position             位置
      * @param {object}            [props]              プロパティ
-     * @param {float} [props.size]        テキストの色
-     * @param {mapray.Vector3} [props.color]        テキストの色
+     * @param {float} [props.size]        アイコンサイズ
+     * @param {mapray.Vector3} [props.color]        アイコンの色
      */
     constructor( owner, id, position, props )
     {
@@ -405,18 +366,6 @@ class MakiEntry {
         this._props = Object.assign( {}, props );  // props の複製
         this._copyPropertyVector3f( "color" );     // deep copy
     }
-
-
-    /**
-     * @summary テキスト
-     * @type {string}
-     * @readonly
-     */
-    get text()
-    {
-        return this._text;
-    }
-
 
     /**
      * @summary 位置
@@ -430,15 +379,14 @@ class MakiEntry {
 
 
     /**
-     * @summary フォントサイズ (Pixels)
+     * @summary アイコンサイズ (Pixels)
      * @type {number}
      * @readonly
      */
     get size()
     {
         var props  = this._props;
-        var parent = this._owner._text_parent_props;
-        return props.font_size || parent.font_size;
+        return props.size;
     }
 
 
@@ -450,30 +398,8 @@ class MakiEntry {
     get color()
     {
         var props  = this._props;
-        var parent = this._owner._text_parent_props;
-        return props.color || parent.color;
+        return props.color;
     }
-
-
-    /**
-     * @summary フォント
-     * @type {string}
-     * @readonly
-     * @see https://developer.mozilla.org/ja/docs/Web/CSS/font
-     */
-    get font()
-    {
-        var props  = this._props;
-        var parent = this._owner._text_parent_props;
-
-        var   style = props.font_style  || parent.font_style;
-        var variant = "normal";
-        var  weight = props.font_weight || parent.font_weight;
-        var  family = props.font_family || parent.font_family;
-
-        return style + " " + variant + " " + weight + " " + this.size + "px " + family;
-    }
-
 
     /**
      * @private
@@ -485,7 +411,6 @@ class MakiEntry {
             props[name] = GeoMath.createVector3f( props[name] );
         }
     }
-
 }
 
 
@@ -503,7 +428,7 @@ class Layout {
      *   owner._entries
      *   owner._transform
      *
-     * @param {mapray.TextEntity} owner       所有者
+     * @param {mapray.PinEntity} owner       所有者
      * @param {number[]}          gocs_array  GOCS 平坦化配列
      */
     constructor( owner, gocs_array )
@@ -512,18 +437,9 @@ class Layout {
         this._items = this._createItemList();
         this._is_valid = true;
 
-        var row_layouts = this._createRowLayouts();
-        if ( row_layouts.length == 0 ) {
-            // 有効なテキストが1つも無い
-            this._is_valid = false;
-            return;
-        }
-
         // アイテムの配置の設定とキャンバスサイズの決定
-        var size = this._setupLocation( row_layouts );
-
-        this._texture  = this._createTexture( size.width, size.height );
-        this._vertices = this._createVertices( size.width, size.height, gocs_array );
+        this._texture  = this._createTexture( 85, 40 );
+        this._vertices = this._createVertices( 85, 40, gocs_array );
         this._indices  = this._createIndices();
     }
 
@@ -581,17 +497,16 @@ class Layout {
 
     /**
      * @summary レイアウトアイテムのリストを生成
-     * @return {array.<mapray.TextEntity.LItem>}
+     * @return {array.<mapray.PinEntity.LItem>}
      * @private
      */
     _createItemList()
     {
         var entries = this._owner._entries;
-        var context = Layout._createCanvasContext( 1, 1 );
 
         var items = [];
         for ( var i = 0; i < entries.length; ++i ) {
-            items.push( new LItem( this, entries[i], context ) );
+            items.push( new LItem( this, entries[i] ) );
         }
 
         return items;
@@ -602,7 +517,7 @@ class Layout {
      * @summary 測定用コンテキストを生成
      * @param  {number} width
      * @param  {number} height
-     * @return {CanvasRenderingContext2D}
+     * @return {CanvasRenderingcontext}
      * @private
      */
     static _createCanvasContext( width, height )
@@ -611,32 +526,6 @@ class Layout {
         canvas.width  = width;
         canvas.height = height;
         return canvas.getContext( "2d" );
-    }
-
-
-    /**
-     * @summary RowLayout のリストを生成
-     * @return {array.<mapray.TextEntity.RowLayout>}
-     * @private
-     */
-    _createRowLayouts()
-    {
-        // アイテムリストの複製
-        var items = [].concat( this._items );
-
-        // RowLayout 内であまり高さに差が出ないように、アイテムリストを高さで整列
-        items.sort( function( a, b ) { return a.height_pixel - b.height_pixel; } );
-
-        // リストを生成
-        var row_layouts = [];
-        while ( items.length > 0 ) {
-            var row_layout = new RowLayout( items );
-            if ( row_layout.isValid() ) {
-                row_layouts.push( row_layout );
-            }
-        }
-
-        return row_layouts;
     }
 
 
@@ -651,16 +540,7 @@ class Layout {
     {
         var context = Layout._createCanvasContext( width, height );
 
-        context.textAlign    = "left";
-        context.textBaseline = "alphabetic";
-        context.fillStyle    = "rgba( 255, 255, 255, 1.0 )";
-
-        var items = this._items;
-        for ( var i = 0; i < items.length; ++i ) {
-            var item = items[i];
-            if ( item.is_canceled ) continue;
-            item.drawText( context );
-        }
+        this._drawPin( context );
 
         var glenv = this._owner.scene.glenv;
         var  opts = {
@@ -706,39 +586,34 @@ class Layout {
             var ym = gocs_array[ibase + 1] - yo;
             var zm = gocs_array[ibase + 2] - zo;
 
-            // ベースライン左端 (キャンバス座標系)
-            var xc = item.pos_x;
-            var yc = item.pos_y;
-
-            var upper = item.upper;
-            var lower = item.lower;
             var xsize = item.width;
+            var ysize = item.height;
 
             var xn = 1 / width;
             var yn = 1 / height;
 
             // 左下
             vertices.push( xm, ym, zm );                                // a_position
-            vertices.push( -xsize / 2, -lower );                        // a_offset
-            vertices.push( xc * xn, 1 - (yc + lower) * yn );            // a_texcoord
+            vertices.push( -xsize / 2, -ysize / 2 );                        // a_offset
+            vertices.push( 0.0, 1.0 );            // a_texcoord
             vertices.push( color[0], color[1], color[2], 1 );           // a_color
 
             // 右下
             vertices.push( xm, ym, zm );                                // a_position
-            vertices.push( xsize / 2, -lower );                         // a_offset
-            vertices.push( (xc + xsize) * xn, 1 - (yc + lower) * yn );  // a_texcoord
+            vertices.push( xsize / 2, -ysize / 2 );                         // a_offset
+            vertices.push( 1.0, 1.0 );  // a_texcoord
             vertices.push( color[0], color[1], color[2], 1 );           // a_color
 
             // 左上
             vertices.push( xm, ym, zm );                                // a_position
-            vertices.push( -xsize / 2, upper );                         // a_offset
-            vertices.push( xc * xn, 1 - (yc - upper) * yn );            // a_texcoord
+            vertices.push( -xsize / 2, ysize / 2 );                         // a_offset
+            vertices.push( 0.0, 0.0 );            // a_texcoord
             vertices.push( color[0], color[1], color[2], 1 );           // a_color
 
             // 右上
             vertices.push( xm, ym, zm );                                // a_position
-            vertices.push( xsize / 2, upper );                          // a_offset
-            vertices.push( (xc + xsize) * xn, 1 - (yc - upper) * yn );  // a_texcoord
+            vertices.push( xsize / 2, ysize / 2 );                          // a_offset
+            vertices.push( 1.0, 0.0 );  // a_texcoord
             vertices.push( color[0], color[1], color[2], 1 );           // a_color
         }
 
@@ -767,70 +642,47 @@ class Layout {
         return indices;
     }
 
-
-    /**
-     * @summary アイテムの配置を設定
-     * @param  {array.<mapray.TextEntity.RowLayout>} row_layouts
-     * @return {object}                              キャンバスサイズ
-     * @private
-     */
-    _setupLocation( row_layouts )
-    {
-        var width  = 0;
-        var height = 0;
-
-        height += TextEntity.SAFETY_PIXEL_MARGIN;
-
-        for ( var i = 0; i < row_layouts.length; ++i ) {
-            var row_layout = row_layouts[i];
-            row_layout.locate( height );
-            width   = Math.max( row_layout.width_assumed, width );
-            height += row_layout.height_pixel + TextEntity.SAFETY_PIXEL_MARGIN;
-        }
-
-        return {
-            width:  width,
-            height: height
-        };
+    _drawPin( context ) {
+        context.save();
+        context.beginPath();
+        context.moveTo(0,0);
+        context.lineTo(80, 40);
+        context.lineTo(80, 10);
+        context.closePath();
+        context.stroke();
+        context.restore();
     }
 
 }
 
-
-/**
- * @summary レイアウト対象
- * @memberof mapray.PinEntity
- * @private
- */
-class LItem {
-
     /**
-     * @param {mapray.PinEntity.Layout} layout   所有者
-     * @param {mapray.PinEntity.Entry}  entry    PinEntity エントリ
-     * @param {CanvasRenderingContext2D} context  測定用コンテキスト
+     * @summary レイアウト対象
+     * @memberof mapray.PinEntity
+     * @private
      */
-    constructor( layout, entry, context )
-    {
-        this._entry = entry;
+    class LItem {
 
-        // テキストの基点
-        this._pos_x = 0;  // 左端
-        this._pos_y = 0;  // ベースライン位置
+        /**
+         * @param {mapray.PinEntity.Layout} layout   所有者
+         * @param {mapray.PinEntity.Entry}  entry    PinEntityのエントリ
+         */
+        constructor( layout, entry )
+        {
+            this._entry = entry;
 
-        // テキストの横幅
-        context.font = entry.font;
-        this._width  = context.measureText( entry.text ).width;
-
-        // テキストの上下範囲
-        var entity = layout._owner;
-        this._upper = entry.size * entity._text_upper;
-        this._lower = entry.size * entity._text_lower;
-
-        this._is_canceled = false;
-    }
+            // テキストの基点
+            this._pos_x = 0;  // 左端
+            this._pos_y = 0;  // ベースライン位置
 
 
-    /**
+            this._width = 100;
+            this._height = 100;
+            // テキストの上下範囲
+            var entity = layout._owner;
+            this._is_canceled = false;
+        }
+
+          /**
      * @type {mapray.TextEntity.Entry}
      * @readonly
      */
@@ -867,6 +719,11 @@ class LItem {
     get width()
     {
         return this._width;
+    }
+
+    get height()
+    {
+        return this._height;
     }
 
 
@@ -940,145 +797,8 @@ class LItem {
     locate( x, y )
     {
         this._pos_x = x;
-        this._pos_y = y + Math.ceil( this._upper );
+        this._pos_y = y;
     }
-
-
-    /**
-     * @summary テキストを描画
-     * @desc
-     * <p>context は以下のように設定していること。</p>
-     * <pre>
-     *   context.textAlign    = "left";
-     *   context.textBaseline = "alphabetic";
-     *   context.fillStyle    = "rgba( 255, 255, 255, 1.0 )";
-     * </pre>
-     * @param {CanvasRenderingContext2D} context  描画先コンテキスト
-     */
-    drawText( context )
-    {
-        var entry = this._entry;
-        context.font = entry.font;
-        context.fillText( entry.text, this._pos_x, this._pos_y );
-    }
-
 }
 
-
-/**
- * @summary 水平レイアウト
- * @memberof mapray.TextEntity
- * @private
- */
-class RowLayout {
-
-    /**
-     * @desc
-     * <p>レイアウトされた、またはレイアウトに失敗したアイテムは src_items から削除される。</p>
-     * <p>レイアウトに失敗したアイテムは取り消し (is_canceled) になる。</p>
-     * @param {array.<mapray.TextEntity.LItem>} src_items  アイテムリスト
-     */
-    constructor( src_items )
-    {
-        var width_assumed_total = 0;
-        var height_pixel_max    = 0;
-        var row_items           = [];
-
-        width_assumed_total += TextEntity.SAFETY_PIXEL_MARGIN;  // 左マージン
-
-        while ( src_items.length > 0 ) {
-            var item          = src_items.shift();
-            var width_assumed = item.width_pixel + TextEntity.SAFETY_PIXEL_MARGIN;  // テキスト幅 + 右マージン
-
-            if ( width_assumed_total + width_assumed <= TextEntity.MAX_IMAGE_WIDTH ) {
-                // 行にアイテムを追加
-                row_items.push( item );
-                width_assumed_total += width_assumed;
-                height_pixel_max = Math.max( item.height_pixel, height_pixel_max );
-            }
-            else {
-                if ( row_items.length == 0 ) {
-                    // テキストが長すぎて表示できない
-                    item.cancel();
-                }
-                else {
-                    // 次の行になるため差し戻して終了
-                    src_items.unshift( item );
-                    break;
-                }
-            }
-        }
-
-        this._items         = row_items;
-        this._width_assumed = width_assumed_total;
-        this._height_pixel  = height_pixel_max;
-    }
-
-
-    /**
-     * @summary 有効なオブジェクトか？
-     * @desc
-     * <p>無効のとき、他のメソッドは呼び出せない。</p>
-     * @return {boolean}  有効のとき true, 無効のとき false
-     */
-    isValid()
-    {
-        return this._items.length > 0;
-    }
-
-
-    /**
-     *
-     * @type {array.<mapray.TextEntity.LItem>}
-     * @readonly
-     */
-    get items()
-    {
-        return this._items;
-    }
-
-
-    /**
-     * キャンバス上での行の横占有画素数
-     * @type {number}
-     * @readonly
-     */
-    get width_assumed()
-    {
-        return this._width_assumed;
-    }
-
-
-    /**
-     * キャンバス上での行の縦画素数
-     * @type {number}
-     * @readonly
-     */
-    get height_pixel()
-    {
-        return this._height_pixel;
-    }
-
-
-    /**
-     * @summary レイアウトの配置を決定
-     * @param {number} y  テキスト矩形上辺の Y 座標 (キャンバス座標系)
-     */
-    locate( y )
-    {
-        var items = this._items;
-        var x = 0;
-
-        x += TextEntity.SAFETY_PIXEL_MARGIN;  // 左マージン
-
-        for ( var i = 0; i < items.length; ++i ) {
-            var item = items[i];
-            item.locate( x, y );
-            x += item.width_pixel + TextEntity.SAFETY_PIXEL_MARGIN;  // テキスト幅 + 右マージン
-        }
-    }
-
-}
-
-
-export default TextEntity;
+export default PinEntity;
