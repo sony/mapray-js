@@ -25,32 +25,14 @@ class MarkerLineEntity extends Entity {
     {
         super( scene, opts );
 
-        // 頂点管理
-        this._buffer     = new Float64Array( 1 );
-        this._num_floats = 0;
-        this._geom_dirty = true;
+        this._point_array = new Float64Array( 0 );
+        this._num_floats  = 0;
 
-        // プリミティブの要素
-        this._transform  = GeoMath.setIdentity( GeoMath.createMatrix() );
-        this._pivot      = GeoMath.createVector3();
-        this._bbox       = [GeoMath.createVector3(),
-                            GeoMath.createVector3()];
-        this._properties = {
-            width:   1.0,
-            color:   GeoMath.createVector3f( [1.0, 1.0, 1.0] ),
-            opacity: 1.0
-        };
+        this._width   = 1.0;
+        this._color   = GeoMath.createVector3( [1.0, 1.0, 1.0] );
+        this._opacity = 1.0;
 
-        // プリミティブ
-        var primitive = new Primitive( scene.glenv, null, this._getMarkerLineMaterial(), this._transform );
-        primitive.pivot      = this._pivot;
-        primitive.bbox       = this._bbox;
-        primitive.properties = this._properties;
-        this._primitive = primitive;
-
-        // プリミティブ配列
-        this._empty      = [];
-        this._primitives = [primitive];
+        this._primitive_producer = new PrimitiveProducer( this );
 
         // 生成情報から設定
         if ( opts && opts.json ) {
@@ -62,16 +44,9 @@ class MarkerLineEntity extends Entity {
     /**
      * @override
      */
-    getPrimitives( stage )
+    getPrimitiveProducer()
     {
-        if ( this._num_floats < 6 ) {
-            // 2頂点未満は表示しない
-            return this._empty;
-        }
-        else {
-            this._updatePrimitive();
-            return this._primitives;
-        }
+        return this._primitive_producer;
     }
 
 
@@ -80,37 +55,40 @@ class MarkerLineEntity extends Entity {
      */
     onChangeAltitudeMode( prev_mode )
     {
-        this._geom_dirty = true;
+        this._primitive_producer.onChangeAltitudeMode();
     }
 
 
     /**
      * @summary 線の太さを設定
+     *
      * @param {number} width  線の太さ (画素単位)
      */
     setLineWidth( width )
     {
-        this._properties.width = width;
+        this._width = width;
     }
 
 
     /**
      * @summary 基本色を設定
+     *
      * @param {mapray.Vector3} color  基本色
      */
     setColor( color )
     {
-        GeoMath.copyVector3( color, this._properties.color );
+        GeoMath.copyVector3( color, this._color );
     }
 
 
     /**
      * @summary 不透明度を設定
+     *
      * @param {number} opacity  不透明度
      */
     setOpacity( opacity )
     {
-        this._properties.opacity = opacity;
+        this._opacity = opacity;
     }
 
 
@@ -132,19 +110,19 @@ class MarkerLineEntity extends Entity {
 
         // バッファを拡張
         var target_size = this._num_floats + add_size;
-        var buffer_size = this._buffer.length;
+        var buffer_size = this._point_array.length;
         if ( target_size > buffer_size ) {
             var new_buffer = new Float64Array( Math.max( target_size, 2 * buffer_size ) );
-            var old_buffer = this._buffer;
+            var old_buffer = this._point_array;
             var  copy_size = this._num_floats;
             for ( var i = 0; i < copy_size; ++i ) {
                 new_buffer[i] = old_buffer[i];
             }
-            this._buffer = new_buffer;
+            this._point_array = new_buffer;
         }
 
         // 頂点追加処理
-        var buffer = this._buffer;
+        var buffer = this._point_array;
         var   base = this._num_floats;
         for ( var j = 0; j < add_size; ++j ) {
             buffer[base + j] = points[j];
@@ -152,28 +130,7 @@ class MarkerLineEntity extends Entity {
         this._num_floats = target_size;
 
         // 形状が変化した可能性がある
-        this.needToCreateRegions();
-        this._geom_dirty = true;
-    }
-
-
-    /**
-     * @override
-     */
-    createRegions()
-    {
-        var region = new EntityRegion();
-        region.addPoints( this._buffer, 0, 3, this._num_floats / 3 );
-        return [region];
-    }
-
-
-    /**
-     * @override
-     */
-    onChangeElevation( regions )
-    {
-        this._geom_dirty = true;
+        this._primitive_producer.onChangePoints();
     }
 
 
@@ -193,32 +150,160 @@ class MarkerLineEntity extends Entity {
 
 
     /**
+     * @private
+     */
+    _setupByJson( json )
+    {
+        // json.points
+        this.addPoints( json.points );
+
+        // json.line_width
+        //     .color
+        //     .opacity
+        if ( json.line_width !== undefined ) this.setLineWidth( json.line_width );
+        if ( json.color      !== undefined ) this.setColor( json.color );
+        if ( json.opacity    !== undefined ) this.setOpacity( json.opacity );
+    }
+
+}
+
+
+/**
+ * @summary MarkerLineEntity の PrimitiveProducer
+ *
+ * @private
+ */
+class PrimitiveProducer extends Entity.PrimitiveProducer {
+
+    /**
+     * @param {mapray.MarkerLineEntity} entity
+     */
+    constructor( entity )
+    {
+        super( entity );
+
+        // プリミティブの要素
+        this._transform = GeoMath.setIdentity( GeoMath.createMatrix() );
+        this._pivot     = GeoMath.createVector3();
+        this._bbox      = [GeoMath.createVector3(),
+                            GeoMath.createVector3()];
+
+        this._properties = {
+            width:   1.0,
+            color:   GeoMath.createVector3f(),
+            opacity: 1.0
+        };
+
+        // プリミティブ
+        var primitive = new Primitive( entity.scene.glenv, null, entity._getMarkerLineMaterial(), this._transform );
+        primitive.pivot      = this._pivot;
+        primitive.bbox       = this._bbox;
+        primitive.properties = this._properties;
+        this._primitive = primitive;
+
+        // プリミティブ配列
+        this._primitives = [primitive];
+
+        this._geom_dirty = true;
+    }
+
+
+    /**
+     * @override
+     */
+    createRegions()
+    {
+        let region = new EntityRegion();
+
+        region.addPoints( this.entity._point_array, 0, 3, this._numPoints() );
+
+        return [region];
+    }
+
+
+    /**
+     * @override
+     */
+    onChangeElevation( regions )
+    {
+        this._geom_dirty = true;
+    }
+
+
+    /**
+     * @override
+     */
+    getPrimitives( stage )
+    {
+        if ( this._num_floats < 6 ) {
+            // 2頂点未満は表示しない
+            return [];
+        }
+        else {
+            this._updatePrimitive();
+            return this._primitives;
+        }
+    }
+
+
+    /**
+     * @summary 高度モードが変更されたことを通知
+     */
+    onChangeAltitudeMode()
+    {
+        this._geom_dirty = true;
+    }
+
+
+    /**
+     * @summary 頂点が変更されたことを通知
+     */
+    onChangePoints()
+    {
+        this.needToCreateRegions();
+        this._geom_dirty = true;
+    }
+
+
+    /**
      * @summary プリミティブの更新
+     *
      * @desc
+     * <pre>
      * 条件: this._num_floats >= 6
      * 入力:
      *   this._geom_dirty
-     *   this._buffer
-     *   this._num_floats
+     *   this.entity._point_array
+     *   this.entity._num_floats
+     *   this.entity._width
+     *   this.entity._color
+     *   this.entity._opacity
      * 出力:
      *   this._transform
      *   this._pivot
      *   this._bbox
+     *   this._properties
      *   this._primitive.mesh
      *   this._geom_dirty
+     * </pre>
+     *
      * @private
      */
     _updatePrimitive()
     {
+        this._updateProperties();
+
         if ( !this._geom_dirty ) {
-            // 更新する必要はない
+            // メッシュは更新する必要がない
             return;
         }
 
+        let entity = this.entity;
+
         // GeoPoint 平坦化配列を GOCS 平坦化配列に変換
-        var  num_points = this._num_floats / 3;
+        var  num_points = this._numPoints();
         var gocs_buffer = GeoPoint.toGocsArray( this._getFlatGeoPoints_with_Absolute(), num_points,
-                                                new Float64Array( this._num_floats ) );
+                                                new Float64Array( entity._num_floats ) );
 
         // プリミティブの更新
         //   primitive.transform
@@ -236,7 +321,7 @@ class MarkerLineEntity extends Entity {
             vertices: this._createVertices( gocs_buffer, num_points ),
             indices:  this._createIndices()
         };
-        var mesh = new Mesh( this.scene.glenv, mesh_data );
+        var mesh = new Mesh( entity.scene.glenv, mesh_data );
 
         // メッシュ設定
         //   primitive.mesh
@@ -252,6 +337,32 @@ class MarkerLineEntity extends Entity {
 
 
     /**
+     * @summary プロパティを更新
+     *
+     * @desc
+     * <pre>
+     * 入力:
+     *   this.entity._width
+     *   this.entity._color
+     *   this.entity._opacity
+     * 出力:
+     *   this._properties
+     * </pre>
+     *
+     * @private
+     */
+    _updateProperties()
+    {
+        let entity = this.entity;
+        let props  = this._properties;
+
+        props.width = entity._width;
+        GeoMath.copyVector3( entity._color, props.color );
+        props.opacity = entity._opacity;
+    }
+
+
+    /**
      * @summary GeoPoint 平坦化配列を取得 (絶対高度)
      *
      * @return {number[]}  GeoPoint 平坦化配列
@@ -259,24 +370,28 @@ class MarkerLineEntity extends Entity {
      */
     _getFlatGeoPoints_with_Absolute()
     {
+        let entity      = this.entity;
+        let point_array = entity._point_array;
+        let num_floats  = entity._num_floats;
+
         var abs_buffer = null;
 
-        switch ( this.altitude_mode ) {
+        switch ( entity.altitude_mode ) {
         case AltitudeMode.RELATIVE:
-            var num_points = this._num_floats / 3;
-            abs_buffer = new Float64Array( this._num_floats );
+            var num_points = this._numPoints();
+            abs_buffer = new Float64Array( num_floats );
             // abs_buffer[] の高度要素に現在の標高を設定
-            this.scene.viewer.getExistingElevations( num_points, this._buffer, 0, 3, abs_buffer, 2, 3 );
+            entity.scene.viewer.getExistingElevations( num_points, point_array, 0, 3, abs_buffer, 2, 3 );
             // abs_buffer[] に経度要素と緯度要素を設定し、高度要素に絶対高度を設定
-            for ( var i = 0; i < this._num_floats; i += 3 ) {
-                abs_buffer[i    ]  = this._buffer[i    ];  // 経度
-                abs_buffer[i + 1]  = this._buffer[i + 1];  // 緯度
-                abs_buffer[i + 2] += this._buffer[i + 2];  // 絶対高度
+            for ( var i = 0; i < num_floats; i += 3 ) {
+                abs_buffer[i    ]  = point_array[i    ];  // 経度
+                abs_buffer[i + 1]  = point_array[i + 1];  // 緯度
+                abs_buffer[i + 2] += point_array[i + 2];  // 絶対高度
             }
             break;
 
         default: // AltitudeMode.ABSOLUTE
-            abs_buffer = this._buffer;
+            abs_buffer = point_array;
             break;
         }
 
@@ -369,6 +484,7 @@ class MarkerLineEntity extends Entity {
      * @param  {Float64Array} gocs_buffer  入力頂点配列 (GOCS)
      * @param  {number}       num_points   入力頂点数
      * @return {Float32Array}              Mesh 用の頂点配列
+     *
      * @private
      */
     _createVertices( gocs_buffer, num_points )
@@ -439,16 +555,20 @@ class MarkerLineEntity extends Entity {
 
     /**
      * @summary 頂点配列は生成
+     *
      * @desc
-     * 条件: this._num_floats >= 6
-     * 入力:
-     *   this._num_floats
+     * <pre>
+     * 条件: this.entity._num_floats >= 6
+     * 入力: this.entity._num_floats
+     * </pre>
+     *
      * @return {Uint32Array}  インデックス配列
+     *
      * @private
      */
     _createIndices()
     {
-        var num_points   = this._num_floats / 3;
+        var num_points   = this._numPoints();
         var num_segments = num_points - 1;
         var num_indices = 6 * num_segments;
         var indices     = new Uint32Array( num_indices );
@@ -469,20 +589,15 @@ class MarkerLineEntity extends Entity {
 
 
     /**
+     * @summary 頂点数を取得
+     *
+     * @return {number} 頂点数
+     *
      * @private
      */
-    _setupByJson( json )
+    _numPoints()
     {
-        // json.points
-        this.addPoints( json.points );
-
-        // json.line_width
-        //     .color
-        //     .opacity
-        var props = this._properties;
-        if ( json.line_width !== undefined ) props.width = json.line_width;
-        if ( json.color !== undefined )      GeoMath.copyVector3( json.color, props.color );
-        if ( json.opacity !== undefined )    props.opacity = json.opacity;
+        return Math.floor( this.entity._num_floats / 3 );
     }
 
 }
