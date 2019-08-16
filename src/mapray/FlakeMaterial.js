@@ -52,11 +52,12 @@ class FlakeMaterial extends Material {
      * @param  {mapray.RenderStage} stage   呼び出し側オブジェクト
      * @param  {mapray.RenderFlake} rflake  描画地表断片
      * @param  {mapray.FlakeMesh}   mesh    地表断片メッシュ
-     * @return {boolean}                  描画の有無
+     * @param  {number}             index   描画インデックス
+     * @return {boolean}  描画の有無
      *
      * @abstract
      */
-    setFlakeParameter( stage, rflake, mesh )
+    setFlakeParameter( stage, rflake, mesh, index )
     {
         return false;
     }
