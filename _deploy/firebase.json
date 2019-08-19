@@ -17,16 +17,27 @@
             "value" : "*"
           } 
         ]
-       }, {
+       }, 
+       {
         "source" : "**/*.@(svg|jpg|jpeg|gif|png|ico)",
         "headers" : [ 
           {
             "key" : "Cache-Control",
-            "value" : "max-age=7200"
+            "value" : "max-age=2592000"
+          } 
+        ]
+      }, 
+      {
+        "source" : "/mapray-js/**/mapray.js",
+        "headers" : [ 
+          {
+            "key" : "Cache-Control",
+            "value" : "max-age=86400"
           } 
         ]
       }
     ]
   }
 }
+
 
