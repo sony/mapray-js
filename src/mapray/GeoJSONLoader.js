@@ -100,7 +100,7 @@ class GeoJSONLoader {
             } )
             .catch( ( e ) => {
                 // JSON データの取得に失敗
-                this._fail_callback( "mapray: failed to retrieve: " + tr.url );
+                this._fail_callback( "mapray: failed to retrieve: " + tr.url, e );
             } );
     }
 
@@ -118,8 +118,8 @@ class GeoJSONLoader {
             for ( var i = 0, len = features.length; i < len; i++ ) {
                 feature = features[i];
                 if (feature.geometries || feature.geometry || feature.features || feature.coordinates) {
-					this._load_feature(feature);
-				}
+                    this._load_feature(feature);
+                }
             }
         }
 
@@ -145,27 +145,27 @@ class GeoJSONLoader {
                 return this._loadPoint( geometry, this._getLineColor(geojson), this._getLineWidth(geojson), this._getExtrudedMode(geojson), this._getElevation(geojson) );
                 // return new Marker(latlng);
 
-	        case "MultiPoint":
+            case "MultiPoint":
                 for ( var i = 0, len = coords.length; i < len; i++) {
                     // layers.push(new Marker(latlng));
                     console.log( "GeoJSON MultiPoint i:" );
                 }
                 return false;
                 
-	        case "LineString":
-	        case "MultiLineString":
+            case "LineString":
+            case "MultiLineString":
                 console.log( "GeoJSON LineString or MultiString" );
                 return this._loadLines( geometry, this._getLineColor(geojson), this._getLineWidth(geojson), this._getExtrudedMode(geojson), this._getElevation(geojson) );
 
-	        case "Polygon":
-	        case "MultiPolygon":
+            case "Polygon":
+            case "MultiPolygon":
                 console.log( "GeoJSON Polygon or MultiPolgon");
                 return false;
 
-	        case "GeometryCollection":
+            case "GeometryCollection":
                 return false;
-	    default:
-		    throw new Error('Invalid GeoJSON object.');
+        default:
+            throw new Error('Invalid GeoJSON object.');
         }
     }
 
@@ -227,11 +227,11 @@ class GeoJSONLoader {
     /**
      * @private
      */
-    _fail_callback( msg )
+    _fail_callback( msg, e )
     {
         if ( this._cancelled ) return;
 
-        console.error( msg );
+        console.error( msg + "\n", e );
         this._finished = true;
         this._scene.removeLoader( this );
         this._onLoad( this, false );
