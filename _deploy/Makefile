@@ -1,4 +1,3 @@
-# This make file assume to be call from local, not from Cricle CI
 MAPRAY_JS_DIR = ".."
 
 .PHONY: release-patch
