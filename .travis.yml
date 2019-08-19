@@ -16,7 +16,7 @@ deploy:
     skip_cleanup: true
     script: bash ./_deploy/scripts/setup_deploy.sh dev
     on:
-      all_branch: true
+      all_branches: true
   - provider: script
     skip_cleanup: true
     script: bash ./_deploy/scripts/setup_deploy.sh staging
@@ -30,7 +30,7 @@ deploy:
     skip_cleanup: true
     script: bash ./_deploy/scripts/deploy_to_cdn.sh ${FIREBASE_DEV_PROJECT} ${FIREBASE_DEPLOY_TOKEN}
     on:
-      all_branch: true
+      all_branches: true
   - provider: script
     skip_cleanup: true
     script: bash ./_deploy/scripts/deploy_to_cdn.sh ${FIREBASE_STG_PROJECT} ${FIREBASE_DEPLOY_TOKEN}
