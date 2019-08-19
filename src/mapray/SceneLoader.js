@@ -125,7 +125,7 @@ class SceneLoader {
             } )
             .catch( ( e ) => {
                 // JSON データの取得に失敗
-                this._fail_callback( "mapray: failed to retrieve: " + tr.url );
+                this._fail_callback( "mapray: failed to retrieve: " + tr.url, e );
             } );
     }
 
@@ -224,9 +224,9 @@ class SceneLoader {
                 }
                 this._setReference( id, container );
             } )
-            .catch( () => {
+            .catch( ( e ) => {
                 // モデルデータの取得に失敗
-                console.error( "mapray: failed to retrieve: " + tr.url );
+                this._fail_callback( "mapray: failed to retrieve: " + tr.url, e );
             } )
             .then( () => {
                 this._postload_object_ifNoReq( oscene );
@@ -337,11 +337,11 @@ class SceneLoader {
     /**
      * @private
      */
-    _fail_callback( msg )
+    _fail_callback( msg, e )
     {
         if ( this._cancelled ) return;
 
-        console.error( msg );
+        console.error( msg + "\n", e );
         this._finished = true;
         this._scene.removeLoader( this );
         this._callback( this, false );
