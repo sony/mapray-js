@@ -7,6 +7,26 @@
       "**/node_modules/**",
       "scripts/",
       "Makefile"
+    ],
+    "headers": [ 
+      {
+        "source" : "**/*.@(svg|jpg|jpeg|gif|png|ico)",
+        "headers" : [ 
+          {
+            "key" : "Access-Control-Allow-Origin",
+            "value" : "*"
+          } 
+        ]
+       }, {
+        "source" : "**/*.@(svg|jpg|jpeg|gif|png|ico)",
+        "headers" : [ 
+          {
+            "key" : "Cache-Control",
+            "value" : "max-age=7200"
+          } 
+        ]
+      }
     ]
   }
 }
+
