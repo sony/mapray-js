@@ -7,7 +7,7 @@ import GeoMath from "./GeoMath";
 import GeoPoint from "./GeoPoint";
 import AltitudeMode from "./AltitudeMode";
 import EntityRegion from "./EntityRegion";
-
+import Dom from "./util/Dom";
 
 /**
  * @summary テキストエンティティ
@@ -699,7 +699,8 @@ class Layout {
      */
     _createItemList()
     {
-        var context = Layout._createCanvasContext( 1, 1 );
+        var entries = this._owner._entries;
+        var context = Dom.createCanvasContext( 1, 1 );
 
         var items = [];
         for ( let entry of this._owner.entity._entries ) {
@@ -707,22 +708,6 @@ class Layout {
         }
 
         return items;
-    }
-
-
-    /**
-     * @summary 測定用コンテキストを生成
-     * @param  {number} width
-     * @param  {number} height
-     * @return {CanvasRenderingContext2D}
-     * @private
-     */
-    static _createCanvasContext( width, height )
-    {
-        var canvas = document.createElement( "canvas" );
-        canvas.width  = width;
-        canvas.height = height;
-        return canvas.getContext( "2d" );
     }
 
 
@@ -761,7 +746,7 @@ class Layout {
      */
     _createTexture( width, height )
     {
-        var context = Layout._createCanvasContext( width, height );
+        var context = Dom.createCanvasContext( width, height );
 
         context.textAlign    = "left";
         context.textBaseline = "alphabetic";
