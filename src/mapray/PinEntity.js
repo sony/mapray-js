@@ -880,6 +880,7 @@ class Layout {
         var map = new Map();
 
         var items = [];
+        var counter = 0;
         for ( var i = 0; i < entries.length; ++i ) {
             var entry = entries[i];
             if (entry.status === "loaded") {
@@ -888,7 +889,7 @@ class Layout {
                     map.set(entry.icon, item = new LItem( this ));
                     items.push( item );
                 }
-                item.add( i, entry );
+                item.add( counter++, entry );
             }
         }
 
