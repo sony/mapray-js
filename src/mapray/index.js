@@ -18,6 +18,8 @@ import Scene from "./Scene";
 import Entity from "./Entity";
 import MarkerLineEntity from "./MarkerLineEntity";
 import TextEntity from "./TextEntity";
+import PinEntity from "./PinEntity";
+import ImageIconEntity from "./ImageIconEntity"
 import SceneLoader from "./SceneLoader";
 import GeoJSONLoader from "./GeoJSONLoader";
 import DebugStats from "./DebugStats";
@@ -46,10 +48,12 @@ var mapray = {
     StandardImageProvider: StandardImageProvider,
     Scene: Scene,
     Entity: Entity,
-    MarkerLineEntity, MarkerLineEntity,
-    TextEntity, TextEntity,
-    SceneLoader, SceneLoader,
-    GeoJSONLoader, GeoJSONLoader,
+    MarkerLineEntity: MarkerLineEntity,
+    PinEntity: PinEntity,
+    ImageIconEntity: ImageIconEntity,
+    TextEntity: TextEntity,
+    SceneLoader: SceneLoader,
+    GeoJSONLoader: GeoJSONLoader,
     DebugStats: DebugStats
 };
 
