@@ -20,6 +20,8 @@ import MarkerLineEntity from "./MarkerLineEntity";
 import TextEntity from "./TextEntity";
 import ModelEntity from "./ModelEntity";
 import PolygonEntity from "./PolygonEntity";
+import PinEntity from "./PinEntity";
+import ImageIconEntity from "./ImageIconEntity"
 import SceneLoader from "./SceneLoader";
 import GeoJSONLoader from "./GeoJSONLoader";
 import DebugStats from "./DebugStats";
@@ -52,6 +54,8 @@ var mapray = {
     TextEntity,
     ModelEntity,
     PolygonEntity,
+    PinEntity: PinEntity,
+    ImageIconEntity: ImageIconEntity,
     SceneLoader,
     GeoJSONLoader,
     DebugStats
