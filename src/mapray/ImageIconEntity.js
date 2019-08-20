@@ -226,7 +226,7 @@ class ImageIconEntity extends Entity {
                 { name: "a_position", size: 3 },
                 { name: "a_offset",   size: 2 },
                 { name: "a_texcoord", size: 2 },
-                { name: "a_texmaskcoord", size: 2 },
+                // { name: "a_texmaskcoord", size: 2 },
                 { name: "a_fg_color", size: 3 },
                 { name: "a_bg_color", size: 3 },
             ],
@@ -776,15 +776,16 @@ class Layout {
         var map = new Map();
 
         var items = [];
+        var counter = 0;
         for ( var i = 0; i < entries.length; ++i ) {
             var entry = entries[i];
             if ( entry.isLoaded() ) {
                 var item = map.get( entry.icon );
                 if ( !item ) {
-                    map.set(entry.icon, item = new LItem( this ) );
+                    map.set( entry.icon, item = new LItem( this ) );
                     items.push( item );
                 }
-                item.add( i, entry );
+                item.add( counter++, entry );
             }
         }
 
@@ -904,7 +905,7 @@ class Layout {
                 vertices.push( xm, ym, zm );                                     // a_position
                 vertices.push( -origin[0]*size[0], (origin[1])*size[1] );        // a_offset
                 vertices.push( xc * xn, 1.0 - yc * yn );                         // a_texcoord
-                vertices.push( 1.0 / 3.0, 2.0 / 3.0 );                           // a_texcoord
+                // vertices.push( 1.0 / 3.0, 2.0 / 3.0 );                           // a_texcoord
                 vertices.push( ...fg_color );
                 vertices.push( ...bg_color );
 
@@ -912,7 +913,7 @@ class Layout {
                 vertices.push( xm, ym, zm );                                    // a_position
                 vertices.push( -origin[0]*size[0], -(1-origin[1])*size[1] );    // a_offset
                 vertices.push( xc * xn, 1 - (yc + ysize) * yn );                // a_texcoord
-                vertices.push( 1.0 / 3.0, 2.0 / 3.0 );                          // a_texcoord
+                // vertices.push( 1.0 / 3.0, 2.0 / 3.0 );                          // a_texcoord
                 vertices.push( ...fg_color );
                 vertices.push( ...bg_color );
 
@@ -920,7 +921,7 @@ class Layout {
                 vertices.push( xm, ym, zm );            // a_position
                 vertices.push( (1-origin[0])*size[0], -(1-origin[1])*size[1] );               // a_offset
                 vertices.push( (xc + xsize) * xn, 1 - (yc + ysize) * yn );    // a_texcoord
-                vertices.push( 2.0 / 3.0, 1.0 / 3.0 );              // a_texcoord
+                // vertices.push( 2.0 / 3.0, 1.0 / 3.0 );              // a_texcoord
                 vertices.push( ...fg_color );
                 vertices.push( ...bg_color );
 
@@ -928,7 +929,7 @@ class Layout {
                 vertices.push( xm, ym, zm );            // a_position
                 vertices.push( (1-origin[0])*size[0], origin[1]*size[1] );         // a_offset
                 vertices.push( (xc + xsize) * xn, 1 - yc * yn );              // a_texcoord
-                vertices.push( 2.0 / 3.0, 2.0 / 3.0 );              // a_texcoord
+                // vertices.push( 2.0 / 3.0, 2.0 / 3.0 );              // a_texcoord
                 vertices.push( ...fg_color );
                 vertices.push( ...bg_color );
             }
