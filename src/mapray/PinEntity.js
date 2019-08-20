@@ -2,47 +2,68 @@ import Entity from "./Entity";
 import Primitive from "./Primitive";
 import Mesh from "./Mesh";
 import Texture from "./Texture";
-import TextMaterial from "./TextMaterial";
+import PinMaterial from "./PinMaterial";
 import GeoMath from "./GeoMath";
 import GeoPoint from "./GeoPoint";
 import AltitudeMode from "./AltitudeMode";
 import EntityRegion from "./EntityRegion";
-
+import Dom from "./util/Dom";
 
 /**
- * @summary ピン立てエンティティ
+ * @summary ピンエンティティ
  * @memberof mapray
  * @extends mapray.Entity
+ * @example
+ * var pin = new mapray.PinEntity(viewer.scene);
+ * pin.addTextPin( "32", new mapray.GeoPoint(139.768, 35.635) );
+ * pin.addTextPin( "A", new mapray.GeoPoint(139.768, 35.636), { fg_color: [0.0, 0.0, 1.0], bg_color: [1.0, 0.0, 0.0] } );
+ * pin.addTextPin( "始", new mapray.GeoPoint(139.768, 35.637), { size: 50 } );
+ * pin.addTextPin( "終", new mapray.GeoPoint(139.768, 35.639), { size: 50, fontFamily: "Georgia" } );
+ * pin.addPin( new mapray.GeoPoint(139.766, 35.6361) );
+ * pin.addMakiIconPin( "ferry-15", new mapray.GeoPoint(139.764, 35.6361), { size: 150, fg_color: [0.2, 0.2, 0.2], bg_color: [1.0, 1.0, 1.0] } );
+ * pin.addMakiIconPin( "car-15",   new mapray.GeoPoint(139.762, 35.6361), { size: 60, fg_color: [1.0, 1.0, 1.0], bg_color: [0.2, 0.2, 0.2] } );
+ * pin.addMakiIconPin( "bus-15",   new mapray.GeoPoint(139.760, 35.6361), { size: 40, fg_color: [1.0, 0.3, 0.1], bg_color: [0.1, 0.3, 1.0] } );
+ * pin.addMakiIconPin( "bus-15",   new mapray.GeoPoint(139.759, 35.6361) );
+ * pin.addMakiIconPin( "car-15",   new mapray.GeoPoint(139.758, 35.6361) );
+ * viewer.scene.addEntity(pin);
  */
 class PinEntity extends Entity {
 
     /**
-     * @param {mapray.Scene} scene        所属可能シーン
-     * @param {object}       [opts]       オプション集合
-     * @param {object}       [opts.json]  生成情報
-     * @param {object}       [opts.refs]  参照辞書
+     * @param {mapray.Scene}    scene        所属可能シーン
+     * @param {object}   [opts]       オプション集合
+     * @param {object}   [opts.json]  生成情報
+     * @param {object}   [opts.refs]  参照辞書
      */
     constructor( scene, opts )
     {
         super( scene, opts );
 
-        // テキスト管理
+        /**
+         * @type {AbstractEntry[]}
+         */
         this._entries = [];
         this._dirty   = true;
-
 
         // プリミティブの要素
         this._transform  = GeoMath.setIdentity( GeoMath.createMatrix() );
         this._properties = {
-            image: null  // テキスト画像
+            image: null,       // アイコン画像
+            image_mask: null,  // アイコンマスク画像
         };
 
         // プリミティブ
-        var primitive = new Primitive( scene.glenv, null, this._getTextMaterial(), this._transform );
+        var primitive = new Primitive( scene.glenv, null, this._getPinMaterial(), this._transform );
         primitive.properties = this._properties;
+
+        /**
+         * @type {Primitive}
+         */
         this._primitive = primitive;
 
-        // プリミティブ配列
+        /**
+         * @type {Primitive[]}z
+         */
         this._primitives = [];
     }
 
@@ -76,21 +97,55 @@ class PinEntity extends Entity {
 
 
     /**
-     * @summary テキストを追加
-     * @param {string}          text      テキスト
+     * Add Pin
      * @param {mapray.GeoPoint} position  位置
      * @param {object}          [props]   プロパティ
-     * @param {float} [props.size]        テキストの色
-     * @param {mapray.Vector3} [props.color]        テキストの色
+     * @param {float} [props.size]        アイコンサイズ
+     * @param {mapray.Vector3} [props.fg_color]        アイコン色
+     * @param {mapray.Vector3} [props.bg_color]        背景色
      */
-    addPinFromIcon( id, position, props )
+    addPin( position, props )
     {
-        this._entries.push( new MakiEntry( this, id, position, props ) );
+        this.addTextPin( "", position, props );
+    }
+
+    /**
+     * Add Maki Icon Pin
+     * @param {string}          id      　       ID of Maki Icon
+     * @param {mapray.GeoPoint} position         位置
+     * @param {object}          [props]          プロパティ
+     * @param {float}           [props.size]     アイコンサイズ
+     * @param {mapray.Vector3}  [props.fg_color] アイコン色
+     * @param {mapray.Vector3}  [props.bg_color] 背景色
+     */
+    addMakiIconPin( id, position, props )
+    {
+        this._entries.push( new MakiIconPinEntry( this, id, position, props ) );
 
         // 変化した可能性がある
         this.needToCreateRegions();
         this._dirty = true;
     }
+
+    /**
+     * Add Text Pin
+     * @param {string}          text    　         ピンに表示されるテキスト
+     * @param {mapray.GeoPoint} position           位置
+     * @param {object}          [props]            プロパティ
+     * @param {float}           [props.size]       アイコンサイズ
+     * @param {mapray.Vector3}  [props.fg_color]   アイコン色
+     * @param {mapray.Vector3}  [props.bg_color]   背景色
+     * @param {string}          [props.fontFamily] フォントファミリー
+     */
+    addTextPin( text, position, props )
+    {
+        this._entries.push( new TextPinEntry( this, text, position, props ) );
+
+        // 変化した可能性がある
+        this.needToCreateRegions();
+        this._dirty = true;
+    }
+
 
 
     /**
@@ -121,17 +176,17 @@ class PinEntity extends Entity {
 
 
     /**
-     * @summary 専用マテリアルを取得
+     * Pin専用マテリアルを取得
      * @private
      */
-    _getTextMaterial()
+    _getPinMaterial()
     {
         var scene = this.scene;
-        if ( !scene._PinEntity_text_material ) {
+        if ( !scene._PinEntity_pin_material ) {
             // scene にマテリアルをキャッシュ
-            scene._PinEntity_text_material = new TextMaterial( scene.glenv );
+            scene._PinEntity_pin_material = new PinMaterial( scene.glenv );
         }
-        return scene._PinEntity_text_material;
+        return scene._PinEntity_pin_material;
     }
 
 
@@ -211,13 +266,20 @@ class PinEntity extends Entity {
         }
         properties.image = layout.texture;
 
+        if ( properties.image_mask ) {
+            properties.image_mask.dispose();
+        }
+        properties.image_mask = layout.texture_mask;
+
         // メッシュ生成
         var mesh_data = {
             vtype: [
                 { name: "a_position", size: 3 },
                 { name: "a_offset",   size: 2 },
                 { name: "a_texcoord", size: 2 },
-                { name: "a_color",    size: 4 }
+                { name: "a_texmaskcoord", size: 2 },
+                { name: "a_fg_color", size: 3 },
+                { name: "a_bg_color", size: 3 },
             ],
             vertices: layout.vertices,
             indices:  layout.indices
@@ -339,32 +401,31 @@ class PinEntity extends Entity {
     PinEntity.DEFAULT_COLOR       = GeoMath.createVector3f( [1, 1, 1] );
     PinEntity.SAFETY_PIXEL_MARGIN = 1;
     PinEntity.MAX_IMAGE_WIDTH     = 4096;
+    PinEntity.CIRCLE_SEP_LENGTH   = 32;
+    PinEntity.DEFAULT_ICON_SIZE   = GeoMath.createVector2f( [30, 30] );
+    PinEntity.DEFAULT_FG_COLOR    = [1.0, 1.0, 1.0];
+    PinEntity.DEFAULT_BG_COLOR    = [0.35, 0.61, 0.81];
+    PinEntity.DEFAULT_MAKI_ICON   = "circle-15";
+
+    PinEntity.SAFETY_PIXEL_MARGIN = 1;
+    PinEntity.MAX_IMAGE_WIDTH     = 4096;
 }
 
 
-/**
- * @summary MakiIcon要素
- * @memberof mapray.PinEntity
- * @private
- */
-class MakiEntry {
+class AbstractPinEntry {
 
-    /**
-     * @param {mapray.PinEntity}  owner                所有者
-     * @param {string}            id                   MakiアイコンのID
-     * @param {mapray.GeoPoint}   position             位置
-     * @param {object}            [props]              プロパティ
-     * @param {float} [props.size]        アイコンサイズ
-     * @param {mapray.Vector3} [props.color]        アイコンの色
-     */
-    constructor( owner, id, position, props )
-    {
+    constructor( owner, position, props ) {
         this._owner = owner;
-        this._id = id;
         this._position = position.clone();
 
         this._props = Object.assign( {}, props );  // props の複製
-        this._copyPropertyVector3f( "color" );     // deep copy
+        this._copyPropertyVector3f( "fg_color" );  // deep copy
+        this._copyPropertyVector3f( "bg_color" );  // deep copy
+        this._copyPropertyVector2f( "size" );      // deep copy
+    }
+
+    _loadIcon() {
+        throw new Error("loadIcon() is not implemented: " + this.constructor.name);
     }
 
     /**
@@ -377,28 +438,50 @@ class MakiEntry {
         return this._position;
     }
 
+    get status() {
+        return this._icon.status;
+    }
+
+    get icon() {
+        return this._icon;
+    }
 
     /**
      * @summary アイコンサイズ (Pixels)
-     * @type {number}
+     * @type {mapray.Vector2}
      * @readonly
      */
     get size()
     {
         var props  = this._props;
-        return props.size;
+        if (props.size) {
+            return props.size;
+        }
+        else {
+            return GeoMath.createVector2f( [ this._icon.width, this._icon.height ] );
+        }
     }
 
-
     /**
-     * @summary テキストの色
+     * @summary アイコン色
      * @type {mapray.Vector3}
      * @readonly
      */
-    get color()
+    get fg_color()
     {
         var props  = this._props;
-        return props.color;
+        return props.fg_color || PinEntity.DEFAULT_FG_COLOR;
+    }
+
+    /**
+     * @summary 背景色
+     * @type {mapray.Vector3}
+     * @readonly
+     */
+    get bg_color()
+    {
+        var props  = this._props;
+        return props.bg_color || PinEntity.DEFAULT_BG_COLOR;
     }
 
     /**
@@ -411,7 +494,224 @@ class MakiEntry {
             props[name] = GeoMath.createVector3f( props[name] );
         }
     }
+
+    /**
+     * @private
+     */
+    _copyPropertyVector2f( name )
+    {
+        var props = this._props;
+        if ( props.hasOwnProperty( name ) ) {
+            if ( typeof( props[name] ) === 'number' ) {
+                props[name] = GeoMath.createVector2f( [ props[name], props[name] ] );
+            }
+            else {
+                props[name] = GeoMath.createVector2f( props[name] );
+            }
+        }
+    }
+
+    draw( context, x, y, w, h ) {
+        this._icon.draw( context, x, y, w, h );
+    }
 }
+
+/**
+ * @summary MakiIcon要素
+ * @memberof mapray.PinEntity
+ * @private
+ */
+class MakiIconPinEntry extends AbstractPinEntry {
+
+    /**
+     * @param {mapray.PinEntity}  owner                所有者
+     * @param {string}            id                   MakiアイコンのID
+     * @param {mapray.GeoPoint}   position             位置
+     * @param {object}            [props]              プロパティ
+     * @param {float} [props.size]                     アイコンサイズ
+     * @param {mapray.Vector3} [props.fg_color]        アイコン色
+     * @param {mapray.Vector3} [props.bg_color]        背景色
+     */
+    constructor( owner, id, position, props )
+    {
+        super( owner, position, props );
+        this._id = id;
+        this._icon = MakiIconPinEntry.makiIconLoader.loadById( id );
+        this._icon.onEnd(item => {
+                this._owner._dirty = true;
+        });
+    }
+}
+
+/**
+ * @summary MakiIcon要素
+ * @memberof mapray.PinEntity
+ * @private
+ */
+class TextPinEntry extends AbstractPinEntry {
+
+    /**
+     * @param {mapray.PinEntity}  owner                所有者
+     * @param {string}            id                   MakiアイコンのID
+     * @param {mapray.GeoPoint}   position             位置
+     * @param {object}            [props]              プロパティ
+     * @param {float} [props.size]                     アイコンサイズ
+     * @param {mapray.Vector3} [props.fg_color]        アイコン色
+     * @param {mapray.Vector3} [props.bg_color]        背景色
+     */
+    constructor( owner, text, position, props )
+    {
+        super( owner, position, props );
+        this._text = text;
+        this._icon = TextPinEntry.textIconLoader.load( this._text, this._props );
+        this._icon.onEnd(item => {
+                this._owner._dirty = true;
+        });
+    }
+}
+
+
+class URLTemplateIconLoader {
+    constructor( urlPrefix, urlSuffix ) {
+        this._cache = {};
+        this.urlPrefix = urlPrefix;
+        this.urlSuffix = urlSuffix;
+    }
+    createById( id ) {
+        return this._cache[id] || (this._cache[id] = new URLIconLoaderItem( this.urlPrefix + id + this.urlSuffix ));
+    }
+    loadById( id ) {
+        var item = this.createById( id );
+        item.load();
+        return item;
+    }
+}
+
+class TextIconLoader {
+    constructor() {
+        this._cache = {};
+    }
+    create( text, props ) {
+        return this._cache[text] || (this._cache[text] = new TextIconLoaderItem( text, props ));
+    }
+    load( text, props ) {
+        var item = this.create( text, props );
+        item.load();
+        return item;
+    }
+}
+
+
+class IconLoaderItem {
+    constructor() {
+        this._status = IconLoaderItem.Status.NOT_LOADED;
+        this.funcs = [];
+    }
+    get status() {
+        return this._status;
+    }
+    onEnd( func ) {
+        if ( this._status === IconLoaderItem.Status.LOADED || this._status === IconLoaderItem.Status.ABORTED ) {
+            func(this);
+        }
+        else {
+            this.funcs.push( func );
+        }
+    }
+    load() {
+        if ( this._status === IconLoaderItem.Status.NOT_LOADED ) {
+            this._status = IconLoaderItem.Status.LOADING;
+            this.doLoad(
+                () => {
+                    this._status = IconLoaderItem.Status.LOADED;
+                    for (var i = 0; i < this.funcs.length; i++) {
+                        this.funcs[i]( this );
+                    }
+                    this.funcs.length = 0;
+                },
+                () => {
+                    this._status = IconLoaderItem.Status.ABORTED;
+                    for (var i = 0; i < this.funcs.length; i++) {
+                        this.funcs[i]( this );
+                    }
+                    this.funcs.length = 0;
+                }
+            );
+        }
+    }
+    doLoad( onload, onerror ) {
+        throw new Error("doLoad() is not implemented in: " + this.constructor.name);
+    }
+}
+
+class URLIconLoaderItem extends IconLoaderItem {
+    constructor( url ) {
+        super();
+        this.url = url;
+    }
+
+    doLoad( onload, onerror ) {
+        var image = new Image();
+        image.onload = event => {
+            this.icon = event.target;
+            this.width = event.target.width;
+            this.height = event.target.height;
+            onload();
+        };
+        image.onerror = event => {
+            onerror();
+            this.icon = this.width = this.height = null;
+        };
+        image.crossOrigin = "anonymous";
+        image.src = this.url;
+    }
+
+    draw( context, x, y, w, h ) {
+        context.drawImage( this.icon, x, y, w, h );
+    }
+}
+
+class TextIconLoaderItem extends IconLoaderItem {
+    constructor( text, props = {} ) {
+        super();
+        this.text = text;
+        this.props = props;
+    }
+
+    doLoad( onload, onerror ) {
+        var props = this.props;
+        var size = props.size ? props.size[0] : 20;
+        var fontFamily = props.fontFamily ? ("'" + props.fontFamily + "'") : Dom.SYSTEM_FONT_FAMILY;
+        var context = Dom.createCanvasContext( size, size );
+        context.textAlign    = "center";
+        context.textBaseline = "alphabetic";
+        context.font = (size * 0.6756756757) + "px " + fontFamily;
+        context.fillText( this.text, size * 0.5, size * 0.7432432432 );
+        this.icon = context.canvas;
+        this.width = context.canvas.width;
+        this.height = context.canvas.height;
+        onload();
+    }
+
+    draw( context, x, y, w, h ) {
+        context.drawImage( this.icon, x, y, w, h );
+    }
+}
+
+IconLoaderItem.Status = {
+    NOT_LOADED: "not loaded",
+    LOADING: "loading",
+    LOADED: "loaded",
+    ABORTED: "aborted"
+};
+
+
+{
+    MakiIconPinEntry.makiIconLoader = new URLTemplateIconLoader( "https://api.mapray.com/styles/v1/icons/maki/", ".svg" );
+    TextPinEntry.textIconLoader = new TextIconLoader();
+}
+
+
 
 
 /**
@@ -437,10 +737,74 @@ class Layout {
         this._items = this._createItemList();
         this._is_valid = true;
 
+        var row_layouts = this._createRowLayouts();
+        if ( row_layouts.length == 0 ) {
+            // 有効なテキストが1つも無い
+            this._is_valid = false;
+            return;
+        }
+
         // アイテムの配置の設定とキャンバスサイズの決定
-        this._texture  = this._createTexture( 85, 40 );
-        this._vertices = this._createVertices( 85, 40, gocs_array );
+        var size = this._setupLocation( row_layouts );
+
+        // アイテムの配置の設定とキャンバスサイズの決定
+        this._texture  = this._createTexture( size.width, size.height );
+        this._texture_mask = this._createTextureMask();
+        this._vertices = this._createVertices( size.width, size.height, gocs_array );
         this._indices  = this._createIndices();
+        this._position = [];
+    }
+
+    /**
+     * @summary RowLayout のリストを生成
+     * @return {array.<mapray.PinEntity.RowLayout>}
+     * @private
+     */
+    _createRowLayouts()
+    {
+        // アイテムリストの複製
+        var items = [].concat( this._items );
+
+        // RowLayout 内であまり高さに差が出ないように、アイテムリストを高さで整列
+        items.sort( function( a, b ) { return a.height_pixel - b.height_pixel; } );
+
+        // リストを生成
+        var row_layouts = [];
+        while ( items.length > 0 ) {
+            var row_layout = new RowLayout( items );
+            if ( row_layout.isValid() ) {
+                row_layouts.push( row_layout );
+            }
+        }
+
+        return row_layouts;
+    }
+
+
+    /**
+     * @summary アイテムの配置を設定
+     * @param  {array.<mapray.TextEntity.RowLayout>} row_layouts
+     * @return {object}                              キャンバスサイズ
+     * @private
+     */
+    _setupLocation( row_layouts )
+    {
+        var width  = 0;
+        var height = 0;
+
+        height += PinEntity.SAFETY_PIXEL_MARGIN;
+
+        for ( var i = 0; i < row_layouts.length; ++i ) {
+            var row_layout = row_layouts[i];
+            row_layout.locate( height );
+            width   = Math.max( row_layout.width_assumed, width );
+            height += row_layout.height_pixel + PinEntity.SAFETY_PIXEL_MARGIN;
+        }
+
+        return {
+            width:  width,
+            height: height
+        };
     }
 
 
@@ -464,6 +828,16 @@ class Layout {
     get texture()
     {
         return this._texture;
+    }
+
+    /**
+     * @summary テクスチャマスク
+     * @type {mapray.Texture}
+     * @readonly
+     */
+    get texture_mask()
+    {
+        return this._texture_mask;
     }
 
 
@@ -503,31 +877,23 @@ class Layout {
     _createItemList()
     {
         var entries = this._owner._entries;
+        var map = new Map();
 
         var items = [];
         for ( var i = 0; i < entries.length; ++i ) {
-            items.push( new LItem( this, entries[i] ) );
+            var entry = entries[i];
+            if (entry.status === "loaded") {
+                var item = map.get( entry.icon );
+                if ( !item ) {
+                    map.set(entry.icon, item = new LItem( this ));
+                    items.push( item );
+                }
+                item.add( i, entry );
+            }
         }
 
         return items;
     }
-
-
-    /**
-     * @summary 測定用コンテキストを生成
-     * @param  {number} width
-     * @param  {number} height
-     * @return {CanvasRenderingcontext}
-     * @private
-     */
-    static _createCanvasContext( width, height )
-    {
-        var canvas = document.createElement( "canvas" );
-        canvas.width  = width;
-        canvas.height = height;
-        return canvas.getContext( "2d" );
-    }
-
 
     /**
      * @summary テクスチャを生成
@@ -538,17 +904,33 @@ class Layout {
      */
     _createTexture( width, height )
     {
-        var context = Layout._createCanvasContext( width, height );
+        var context = Dom.createCanvasContext( width, height );
 
-        this._drawPin( context );
+        var items = this._items;
+        for ( var i = 0; i < items.length; ++i ) {
+            var item = items[i];
+            if ( item.is_canceled ) continue;
+            item.draw( context );
+        }
 
         var glenv = this._owner.scene.glenv;
-        var  opts = {
-            usage: Texture.Usage.TEXT
+        var opts = {
+            usage: Texture.Usage.ICON
         };
         return new Texture( glenv, context.canvas, opts );
     }
 
+    _createTextureMask()
+    {
+        var context = Dom.createCanvasContext( 3, 3 );
+        context.fillRect( 1, 1, 1, 1 );
+        var glenv = this._owner.scene.glenv;
+        var opts = {
+            usage: Texture.Usage.ICON,
+            mag_filter: glenv.context.NEAREST
+        };
+        return new Texture( glenv, context.canvas, opts );
+    }
 
     /**
      * @summary 頂点配列を生成
@@ -570,51 +952,119 @@ class Layout {
         var yo = transform[13];
         var zo = transform[14];
 
+        /*
+             |<size.x->|               
+             |         |               
+             |    |<--rx--->|          
+            ___-------___     ----     
+           /             \      ^      
+         /                 \    ry     
+        |                   |   |  ----
+        |                   |   v    ^ 
+        |         c         | ----  size.y
+        |                   |   ^    V 
+        |                   |   |  ----
+         \                 /    |      
+          '----_0___3_----'     |      
+                |   |           |      
+                |   |           h      
+                |   |           |      
+                |   |           |      
+                |   |           |      
+                |   |           v      
+                1---2 ------------     
+                                       
+               >| w |<                 
+        */
+
+        var xn = 1 / width;
+        var yn = 1 / height;
+
         var items = this._items;
         for ( var i = 0; i < items.length; ++i ) {
             var item = items[i];
             if ( item.is_canceled ) continue;
 
-            var entry = item.entry;
+            for ( var ie = 0; ie < item.entries.length; ie++ ) {
+                var eitem = item.entries[ie];
+                var entry = eitem.entry;
+                var size = entry.size;
+                var rx = size[0] * 1.5 / 2;
+                var ry = size[1] * 1.5 / 2;
+                var h = ry * 2;
+                var w = Math.max(2, rx / 10);
 
-            // テキストの色
-            var color = entry.color;
+                // Relativize based on (xo, yo, zo)
+                var ibase = eitem.index * 3;
+                var xm = gocs_array[ibase]     - xo;
+                var ym = gocs_array[ibase + 1] - yo;
+                var zm = gocs_array[ibase + 2] - zo;
 
-            // テキストの位置 (モデル座標系)
-            var ibase = 3 * i;
-            var xm = gocs_array[ibase]     - xo;
-            var ym = gocs_array[ibase + 1] - yo;
-            var zm = gocs_array[ibase + 2] - zo;
+                var fg_color = entry.fg_color;
+                var bg_color = entry.bg_color;
 
-            var xsize = item.width;
-            var ysize = item.height;
+                // Image dimensions (Image Coordinate)
+                var xc = item.pos_x;
+                var yc = item.pos_y;
+                var xsize = item.width;
+                var ysize = item.height;
 
-            var xn = 1 / width;
-            var yn = 1 / height;
+                var vertices_push_texture = ( px, py ) => {
+                    vertices.push( (xc + xsize * px) * xn, 1 - (yc + ysize * py) * yn );
+                };
 
-            // 左下
-            vertices.push( xm, ym, zm );                                // a_position
-            vertices.push( -xsize / 2, -ysize / 2 );                        // a_offset
-            vertices.push( 0.0, 1.0 );            // a_texcoord
-            vertices.push( color[0], color[1], color[2], 1 );           // a_color
+                // p0
+                vertices.push( xm, ym, zm );                            // a_position
+                vertices.push( -w / 2, h - ry );                        // a_offset
+                vertices_push_texture( 0.5 - (w/2/rx), 1.5/2 + 0.5 );   // a_texcoord
+                vertices.push( -0.25 + 0.5, -0.25 + 0.5 );              // a_texmaskcoord
+                vertices.push( ...fg_color );
+                vertices.push( ...bg_color );
 
-            // 右下
-            vertices.push( xm, ym, zm );                                // a_position
-            vertices.push( xsize / 2, -ysize / 2 );                         // a_offset
-            vertices.push( 1.0, 1.0 );  // a_texcoord
-            vertices.push( color[0], color[1], color[2], 1 );           // a_color
+                // p1
+                vertices.push( xm, ym, zm );                            // a_position
+                vertices.push( -w / 2, 0 );                             // a_offset
+                vertices_push_texture( 0.5 - (w/2/rx), 1.5/2 + 0.5 );   // a_texcoord
+                vertices.push( -0.25 + 0.5, -0.25 + 0.5 );              // a_texmaskcoord
+                vertices.push( ...fg_color );
+                vertices.push( ...bg_color );
 
-            // 左上
-            vertices.push( xm, ym, zm );                                // a_position
-            vertices.push( -xsize / 2, ysize / 2 );                         // a_offset
-            vertices.push( 0.0, 0.0 );            // a_texcoord
-            vertices.push( color[0], color[1], color[2], 1 );           // a_color
+                // p2
+                vertices.push( xm, ym, zm );                            // a_position
+                vertices.push( w / 2, 0 );                              // a_offset
+                vertices_push_texture( 0.5 + (w/2/rx), 1.5/2 + 0.5 );   // a_texcoord
+                vertices.push( -0.25 + 0.5, -0.25 + 0.5 );              // a_texmaskcoord
+                vertices.push( ...fg_color );
+                vertices.push( ...bg_color );
 
-            // 右上
-            vertices.push( xm, ym, zm );                                // a_position
-            vertices.push( xsize / 2, ysize / 2 );                          // a_offset
-            vertices.push( 1.0, 0.0 );  // a_texcoord
-            vertices.push( color[0], color[1], color[2], 1 );           // a_color
+                // p3
+                vertices.push( xm, ym, zm );                            // a_position
+                vertices.push( w / 2, h - ry );                         // a_offset
+                vertices_push_texture( 0.5 + (w/2/rx), 1.5/2 + 0.5 );   // a_texcoord
+                vertices.push( -0.25 + 0.5, -0.25 + 0.5 );              // a_texmaskcoord
+                vertices.push( ...fg_color );
+                vertices.push( ...bg_color );
+
+                // c
+                vertices.push( xm, ym, zm );                            // a_position
+                vertices.push( 0, h );                                  // a_offset
+                vertices_push_texture( 0.5, 0.5 );                      // a_texcoord
+                vertices.push( 0.5, 0.5 );                              // a_texmaskcoord
+                vertices.push( ...fg_color );
+                vertices.push( ...bg_color );
+
+                for ( var k = 1; k < PinEntity.CIRCLE_SEP_LENGTH; k++ ) {
+                    var th = (k / PinEntity.CIRCLE_SEP_LENGTH * 2 - 0.5) * Math.PI;
+                    var cos_th = Math.cos(th);
+                    var sin_th = Math.sin(th);
+                    vertices.push( xm, ym, zm );                                              // a_position
+                    vertices.push( rx * cos_th, ry * sin_th + h );                            // a_offset
+                    vertices_push_texture( 1.5 * cos_th / 2 + 0.5, -1.5 * sin_th / 2 + 0.5 ); // a_texcoord
+                    vertices.push( cos_th * 0.25 + 0.5 , sin_th * 0.25 + 0.5 );               // a_texmaskcoord
+                    vertices.push( ...fg_color );
+                    vertices.push( ...bg_color );
+                }
+            }
         }
 
         return vertices;
@@ -635,62 +1085,178 @@ class Layout {
             var item = items[i];
             if ( item.is_canceled ) continue;
 
-            var b = 4 * i;
-            indices.push( b, b + 1, b + 2, b + 2, b + 1 , b + 3 );
+            for ( var ie = 0; ie < item.entries.length; ie++ ) {
+                var eitem = item.entries[ie];
+                var base = ( 4 + 1 + PinEntity.CIRCLE_SEP_LENGTH - 1 ) * eitem.index;
+
+                var p = base;
+                var p0 = p;
+                var p3 = p + 3;
+                indices.push( p, p+1, p+2 );
+                indices.push( p, p+2, p+3 );
+                p += 4;
+
+                var centerPos = p++;
+                indices.push( centerPos, p0, p3 );
+                indices.push( centerPos, p3, p );
+                for ( var j = 1; j < PinEntity.CIRCLE_SEP_LENGTH - 1; j++ ) {
+                    indices.push( centerPos, p++, p );
+                }
+                indices.push( centerPos, p++, p0 );
+            }
         }
 
         return indices;
     }
+}
 
-    _drawPin( context ) {
-        context.save();
-        context.beginPath();
-        context.moveTo(0,0);
-        context.lineTo(80, 40);
-        context.lineTo(80, 10);
-        context.closePath();
-        context.stroke();
-        context.restore();
+
+/**
+ * @summary 水平レイアウト
+ * @memberof mapray.PinEntity
+ * @private
+ */
+class RowLayout {
+
+    /**
+     * @desc
+     * <p>レイアウトされた、またはレイアウトに失敗したアイテムは src_items から削除される。</p>
+     * <p>レイアウトに失敗したアイテムは取り消し (is_canceled) になる。</p>
+     * @param {array.<mapray.TextEntity.LItem>} src_items  アイテムリスト
+     */
+    constructor( src_items )
+    {
+        var width_assumed_total = 0;
+        var height_pixel_max    = 0;
+        var row_items           = [];
+
+        width_assumed_total += PinEntity.SAFETY_PIXEL_MARGIN;  // 左マージン
+
+        while ( src_items.length > 0 ) {
+            var item          = src_items.shift();
+            var width_assumed = item.width_pixel + PinEntity.SAFETY_PIXEL_MARGIN;  // テキスト幅 + 右マージン
+
+            if ( width_assumed_total + width_assumed <= PinEntity.MAX_IMAGE_WIDTH ) {
+                // 行にアイテムを追加
+                row_items.push( item );
+                width_assumed_total += width_assumed;
+                height_pixel_max = Math.max( item.height_pixel, height_pixel_max );
+            }
+            else {
+                if ( row_items.length == 0 ) {
+                    // テキストが長すぎて表示できない
+                    item.cancel();
+                }
+                else {
+                    // 次の行になるため差し戻して終了
+                    src_items.unshift( item );
+                    break;
+                }
+            }
+        }
+
+        this._items         = row_items;
+        this._width_assumed = width_assumed_total;
+        this._height_pixel  = height_pixel_max;
+    }
+
+
+    /**
+     * @summary 有効なオブジェクトか？
+     * @desc
+     * <p>無効のとき、他のメソッドは呼び出せない。</p>
+     * @return {boolean}  有効のとき true, 無効のとき false
+     */
+    isValid()
+    {
+        return this._items.length > 0;
+    }
+
+
+    /**
+     * 
+     * @type {array.<mapray.TextEntity.LItem>}
+     * @readonly
+     */
+    get items()
+    {
+        return this._items;
+    }
+
+
+    /**
+     * キャンバス上での行の横占有画素数
+     * @type {number}
+     * @readonly
+     */
+    get width_assumed()
+    {
+        return this._width_assumed;
+    }
+
+
+    /**
+     * キャンバス上での行の縦画素数
+     * @type {number}
+     * @readonly
+     */
+    get height_pixel()
+    {
+        return this._height_pixel;
+    }
+
+
+    /**
+     * @summary レイアウトの配置を決定
+     * @param {number} y  テキスト矩形上辺の Y 座標 (キャンバス座標系)
+     */
+    locate( y )
+    {
+        var items = this._items;
+        var x = 0;
+
+        x += PinEntity.SAFETY_PIXEL_MARGIN;  // 左マージン
+
+        for ( var i = 0; i < items.length; ++i ) {
+            var item = items[i];
+            item.locate( x, y );
+            x += item.width_pixel + PinEntity.SAFETY_PIXEL_MARGIN;  // テキスト幅 + 右マージン
+        }
     }
 
 }
 
+
+/**
+ * @summary レイアウト対象
+ * @memberof mapray.PinEntity
+ * @private
+ */
+class LItem {
     /**
-     * @summary レイアウト対象
-     * @memberof mapray.PinEntity
-     * @private
+     * @param {mapray.PinEntity.Layout} layout   所有者
+     * @param {mapray.PinEntity.Entry}  entry    PinEntityのエントリ
      */
-    class LItem {
-
-        /**
-         * @param {mapray.PinEntity.Layout} layout   所有者
-         * @param {mapray.PinEntity.Entry}  entry    PinEntityのエントリ
-         */
-        constructor( layout, entry )
-        {
-            this._entry = entry;
-
-            // テキストの基点
-            this._pos_x = 0;  // 左端
-            this._pos_y = 0;  // ベースライン位置
-
-
-            this._width = 100;
-            this._height = 100;
-            // テキストの上下範囲
-            var entity = layout._owner;
-            this._is_canceled = false;
-        }
-
-          /**
-     * @type {mapray.TextEntity.Entry}
-     * @readonly
-     */
-    get entry()
+    constructor( layout )
     {
-        return this._entry;
+        this.entries = [];
+
+        // テキストの基点
+        this._pos_x = 0;  // 左端
+        this._pos_y = 0;  // ベースライン位置
+
+        this._height = this._width = null;
+
+        this._is_canceled = false;
     }
 
+    add( index, entry ) {
+        // if (entry.status !== "loaded") throw new Error();
+        var size = entry.size;
+        if (this._width === null || this._width < size[0]) this._width = size[0];
+        if (this._height === null || this._height < size[1]) this._height = size[1];
+        this.entries.push( { index, entry } );
+    }
 
     /**
      * @type {number}
@@ -728,26 +1294,6 @@ class Layout {
 
 
     /**
-     * @type {number}
-     * @readonly
-     */
-    get upper()
-    {
-        return this._upper;
-    }
-
-
-    /**
-     * @type {number}
-     * @readonly
-     */
-    get lower()
-    {
-        return this._lower;
-    }
-
-
-    /**
      * キャンバス上でのテキストの横画素数
      * @type {number}
      * @readonly
@@ -765,7 +1311,7 @@ class Layout {
      */
     get height_pixel()
     {
-        return Math.ceil( this._upper ) + Math.ceil( this._lower );
+        return Math.ceil( this._height );
     }
 
 
@@ -798,6 +1344,25 @@ class Layout {
     {
         this._pos_x = x;
         this._pos_y = y;
+    }
+
+    draw( context ) {
+        context.save();
+
+        this.entries[0].entry.draw( context, this._pos_x, this.pos_y, this.width, this.height ); // @Todo: fix this
+
+        var RENDER_BOUNDS = false;
+        if ( RENDER_BOUNDS ) {
+            context.beginPath();
+            context.moveTo( this._pos_x             , this._pos_y );
+            context.lineTo( this._pos_x + this.width, this._pos_y );
+            context.lineTo( this._pos_x + this.width, this._pos_y + this.height );
+            context.lineTo( this._pos_x             , this._pos_y + this.height );
+            context.closePath();
+            context.stroke();
+        }
+        
+        context.restore();
     }
 }
 
