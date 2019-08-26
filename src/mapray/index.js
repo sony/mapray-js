@@ -25,6 +25,7 @@ import ImageIconEntity from "./ImageIconEntity"
 import SceneLoader from "./SceneLoader";
 import GeoJSONLoader from "./GeoJSONLoader";
 import DebugStats from "./DebugStats";
+import MaprayApi from "./MaprayApi";
 
 
 /**
@@ -54,10 +55,11 @@ var mapray = {
     TextEntity,
     ModelEntity,
     PolygonEntity,
-    PinEntity: PinEntity,
-    ImageIconEntity: ImageIconEntity,
+    PinEntity,
+    ImageIconEntity,
     SceneLoader,
     GeoJSONLoader,
+    MaprayApi,
     DebugStats
 };
 
