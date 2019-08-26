@@ -23,6 +23,7 @@ import ImageIconEntity from "./ImageIconEntity"
 import SceneLoader from "./SceneLoader";
 import GeoJSONLoader from "./GeoJSONLoader";
 import DebugStats from "./DebugStats";
+import MaprayApi from "./MaprayApi";
 
 
 /**
@@ -54,7 +55,8 @@ var mapray = {
     TextEntity: TextEntity,
     SceneLoader: SceneLoader,
     GeoJSONLoader: GeoJSONLoader,
-    DebugStats: DebugStats
+    DebugStats: DebugStats,
+    MaprayApi: MaprayApi
 };
 
 

@@ -1,107 +1,70 @@
+import Loader from "./Loader"
 import GeoMath from "./GeoMath";
 import GeoPoint from "./GeoPoint";
 import CredentialMode from "./CredentialMode";
 import MarkerLineEntity from "./MarkerLineEntity";
 import PinEntity from "./PinEntity";
+import Resource, { URLResource } from "./Resource";
 
 /**
  * GeoJSON形式（<a href="https://tools.ietf.org/html/rfc7946">rfc7946</a>）のデータをシーンに読み込みます。
  * @memberof mapray
  */
-class GeoJSONLoader {
+class GeoJSONLoader extends Loader {
 
     /**
      * @desc
      * <p>url で指定したシーンデータの読み込みを開始し、scene にエンティティを構築する。</p>
      * <p>読み込みが終了したとき options.callback を呼び出す。</p>
      * @param {mapray.Scene} scene      読み込み先のシーン
-     * @param {string}       url        シーンファイルの URL
+     * @param {string}       resource        シーンファイルの URL
      * @param {object}       [options]  オプション集合
      * @param {mapray.GeoJSONLoader.TransformCallback} [options.transform]  リソース要求変換関数
      * @param {mapray.GeoJSONLoader.FinishCallback}    [options.callback]   終了コールバック関数
      */
-    constructor( scene, url, options )
+    constructor( scene, resource, options={} )
     {
-        var opts = options || {};
+        if (resource instanceof Resource) {
+            // OK
+        }
+        else if ( typeof resource === "string" ) {
+            resource = new URLResource(resource, {
+                    type: "json",
+                    transform: options.transform
+            });
+        }
+        else {
+            throw new Error( "Unsupported Resource: " + resource);
+       }
 
-        this._scene      = scene;
-        this._url        = url;
-        this._onLoad   = opts.onLoad  || defaultOnLoadCallback;
-        this._getLineColor = opts.getLineColor || defaultGetLineColorCallback;
-        this._getLineWidth = opts.getLineWidth || defaultGetLineWidthCallback;
-        this._getRadius = opts.getRadius || defaultGetRadiusCallback;
-        this._getFillColor = opts.getFillColor || defaultGetFillColorCallback;
-        this._getElevation = opts.getElevation || defaultGetElevationCallback;
-        this._transform  = opts.transform || defaultTransformCallback;
-        this._getExtrudedMode = opts.getExtrudedMode || defaultExtrudedModeCallback;
+        super( scene, resource, {
+                onLoad: options.onLoad
+        } );
+
+        this._getLineColor = options.getLineColor || defaultGetLineColorCallback;
+        this._getLineWidth = options.getLineWidth || defaultGetLineWidthCallback;
+        this._getRadius = options.getRadius || defaultGetRadiusCallback;
+        this._getFillColor = options.getFillColor || defaultGetFillColorCallback;
+        this._getElevation = options.getElevation || defaultGetElevationCallback;
+        this._transform  = options.transform || defaultTransformCallback;
+        this._getExtrudedMode = options.getExtrudedMode || defaultExtrudedModeCallback;
         this._glenv      = scene.glenv;
         this._references = {};
         this._cancelled  = false;
         this._finished   = false;
-        this._abort_ctrl = new AbortController();
-        this._loadFile();
-
-        scene.addLoader( this );
     }
 
 
-    /**
-     * @summary 読み込み先のシーン
-     * @type {mapray.Scene}
-     * @readonly
-     */
-    get scene() { return this._scene; }
-
-
-    /**
-     * @summary シーンファイルの URL
-     * @type {string}
-     * @readonly
-     */
-    get url() { return this._url; }
-
-
-    /**
-     * @summary 読み込みの取り消し
-     * @desc
-     * <p>終了コールバック関数は isSuccess == false で呼び出される。</p>
-     */
-    cancel()
+    _load()
     {
-        if ( this._cancelled ) return;
-
-        this._abort_ctrl.abort();  // 取り消したので、すべての要求を中止
-        this._cancelled = true;    // 取り消し中、または取り消しされた
-        this._scene.removeLoader( this );
-        Promise.resolve().then( () => { this._cancel_callback(); } );
-    }
-
-    /**
-     * @private
-     */
-    _loadFile()
-    {
-        var tr = this._transform( this._url );
-
-        fetch( tr.url, this._make_fetch_params( tr ) )
-            .then( response => {
-                this._check_cancel();
-                return response.ok ?
-                    response.json() : Promise.reject( Error( response.statusText ) );
+        return (
+            this._resource.load()
+            .then( geoJson => {
+                    // JSON データの取得に成功
+                    this._check_cancel();
+                    this._load_geojson_object( geoJson );
             } )
-            .then( json => {
-                // JSON データの取得に成功
-                this._check_cancel();
-                if (!this._load_geojson_object( json )) {
-                    return reject( json )
-                }
-                this._success_callback();
-                return json;
-            } )
-            .catch( ( e ) => {
-                // JSON データの取得に失敗
-                this._fail_callback( "mapray: failed to retrieve: " + tr.url, e );
-            } );
+        );
     }
 
 
@@ -116,7 +79,9 @@ class GeoJSONLoader {
             var features = geojson.features;
             success = false;
             for ( var i = 0, len = features.length; i < len; i++ ) {
-                var s = this._load_geojson_object(features[i]);
+                var feature = features[i];
+                var s = this._load_geojson_object( feature.featureId ? feature.feature : feature ); // @ToDo: Unknown
+                // var s = this._load_geojson_object( feature );
                 if (s && !success) success = s;
             }
         }
@@ -190,56 +155,6 @@ class GeoJSONLoader {
         return init;
     }
 
-
-    /**
-     * 取り消し状態のとき例外を投げる
-     * @private
-     */
-    _check_cancel()
-    {
-        if ( this._cancelled ) {
-            throw new Error( "canceled" );
-        }
-    }
-
-
-    /**
-     * @private
-     */
-    _cancel_callback()
-    {
-        if ( this._finished ) return;
-
-        this._onLoad( this, false );
-    }
-
-
-    /**
-     * @private
-     */
-    _success_callback()
-    {
-        if ( this._cancelled ) return;
-
-        this._finished = true;
-        this._scene.removeLoader( this );
-        this._onLoad( this, true );
-    }
-
-
-    /**
-     * @private
-     */
-    _fail_callback( msg, e )
-    {
-        if ( this._cancelled ) return;
-
-        console.error( msg + "\n", e );
-        this._finished = true;
-        this._scene.removeLoader( this );
-        this._onLoad( this, false );
-    }
-
     _loadLines( geometry, color4, width, extruded, elevation ) 
     {
         if ( !geometry || color4.length !== 4 ) {
@@ -268,7 +183,7 @@ class GeoJSONLoader {
 
     _genereteLine( points, width, color, opaticy, extruded, elevation ) 
     {
-        if ( !points )  {
+        if ( !points ) {
             return false;
         }
 
@@ -353,17 +268,6 @@ class GeoJSONLoader {
 }
 
 /**
- * @summary 終了コールバック
- * @callback FinishCallback
- * @desc
- * <p>シーンの読み込みが終了したときに呼び出される関数の型である。</p>
- * @param {mapray.GeoJSONLoader} loader     読み込みを実行したローダー
- * @param {boolean}            isSuccess  成功したとき true, 失敗したとき false
- * @memberof mapray.GeoJSONLoader
- */
-
-
-/**
  * @summary リソース要求変換関数
  * @callback TransformCallback
  * @desc
@@ -410,9 +314,7 @@ class GeoJSONLoader {
     GeoJSONLoader.defaultExtrudedMode = false;
 }
 
-function defaultOnLoadCallback( loader, isSuccess )
-{
-}
+
 
 function defaultGetLineColorCallback( geojson )
 {
