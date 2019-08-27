@@ -7,12 +7,14 @@ import GeoMath from "./GeoMath";
 import GeoPoint from "./GeoPoint";
 import AltitudeMode from "./AltitudeMode";
 import EntityRegion from "./EntityRegion";
+import IconLoader, { URLTemplateIconLoader, TextIconLoader } from "./IconLoader";
 import Dom from "./util/Dom";
 
 /**
  * @summary ピンエンティティ
  * @memberof mapray
  * @extends mapray.Entity
+ *
  * @example
  * var pin = new mapray.PinEntity(viewer.scene);
  * pin.addTextPin( "32", new mapray.GeoPoint(139.768, 35.635) );
@@ -26,54 +28,39 @@ import Dom from "./util/Dom";
  * pin.addMakiIconPin( "bus-15",   new mapray.GeoPoint(139.759, 35.6361) );
  * pin.addMakiIconPin( "car-15",   new mapray.GeoPoint(139.758, 35.6361) );
  * viewer.scene.addEntity(pin);
+ *
  */
 class PinEntity extends Entity {
 
     /**
-     * @param {mapray.Scene}    scene        所属可能シーン
-     * @param {object}   [opts]       オプション集合
-     * @param {object}   [opts.json]  生成情報
-     * @param {object}   [opts.refs]  参照辞書
+     * @param {mapray.Scene} scene        所属可能シーン
+     * @param {object}       [opts]       オプション集合
+     * @param {object}       [opts.json]  生成情報
+     * @param {object}       [opts.refs]  参照辞書
      */
     constructor( scene, opts )
     {
         super( scene, opts );
 
-        /**
-         * @type {AbstractEntry[]}
-         */
+        // 要素管理
         this._entries = [];
-        this._dirty   = true;
 
-        // プリミティブの要素
-        this._transform  = GeoMath.setIdentity( GeoMath.createMatrix() );
-        this._properties = {
-            image: null,       // アイコン画像
-            image_mask: null,  // アイコンマスク画像
-        };
+        // Entity.PrimitiveProducer インスタンス
+        this._primitive_producer = new PrimitiveProducer( this );
 
-        // プリミティブ
-        var primitive = new Primitive( scene.glenv, null, this._getPinMaterial(), this._transform );
-        primitive.properties = this._properties;
-
-        /**
-         * @type {Primitive}
-         */
-        this._primitive = primitive;
-
-        /**
-         * @type {Primitive[]}z
-         */
-        this._primitives = [];
+        // 生成情報から設定
+        if ( opts && opts.json ) {
+            this._setupByJson( opts.json );
+        }
     }
 
 
     /**
      * @override
      */
-    getPrimitives( stage )
+    getPrimitiveProducer()
     {
-        return this._updatePrimitive();
+        return this._primitive_producer;
     }
 
 
@@ -82,27 +69,37 @@ class PinEntity extends Entity {
      */
     onChangeAltitudeMode( prev_mode )
     {
-        this._dirty = true;
+        this._primitive_producer.onChangeAltitudeMode();
     }
 
 
     /**
-     * @summary テキストの色を設定
-     * @param {mapray.Vector3} color  テキストの色
+     * @summary アイコンの色を設定
+     * @param {mapray.Vector3} color  アイコンの色
      */
-    setColor( color )
+    setFGColor( color )
     {
-        this._setVector3Property( "color", color );
+        this._setVector3Property( "fg_color", color );
+    }
+
+
+    /**
+     * @summary アイコン背景の色を設定
+     * @param {mapray.Vector3} color  アイコン背景の色
+     */
+    setBGColor( color )
+    {
+        this._setVector3Property( "bg_color", color );
     }
 
 
     /**
      * Add Pin
-     * @param {mapray.GeoPoint} position  位置
-     * @param {object}          [props]   プロパティ
-     * @param {float} [props.size]        アイコンサイズ
-     * @param {mapray.Vector3} [props.fg_color]        アイコン色
-     * @param {mapray.Vector3} [props.bg_color]        背景色
+     * @param {mapray.GeoPoint} position         位置
+     * @param {object}          [props]          プロパティ
+     * @param {float}           [props.size]     アイコンサイズ
+     * @param {mapray.Vector3}  [props.fg_color] アイコン色
+     * @param {mapray.Vector3}  [props.bg_color] 背景色
      */
     addPin( position, props )
     {
@@ -121,10 +118,7 @@ class PinEntity extends Entity {
     addMakiIconPin( id, position, props )
     {
         this._entries.push( new MakiIconPinEntry( this, id, position, props ) );
-
-        // 変化した可能性がある
-        this.needToCreateRegions();
-        this._dirty = true;
+        this._primitive_producer.onAddEntry();
     }
 
     /**
@@ -140,46 +134,15 @@ class PinEntity extends Entity {
     addTextPin( text, position, props )
     {
         this._entries.push( new TextPinEntry( this, text, position, props ) );
-
-        // 変化した可能性がある
-        this.needToCreateRegions();
-        this._dirty = true;
-    }
-
-
-
-    /**
-     * @override
-     */
-    createRegions()
-    {
-        const region = new EntityRegion();
-
-        const entries = this._entries;
-        const length  = entries.length;
-
-        for ( let i = 0; i < length; ++i ) {
-            region.addPoint( entries[i].position );
-        }
-
-        return [region];
+        this._primitive_producer.onAddEntry();
     }
 
 
     /**
-     * @override
-     */
-    onChangeElevation( regions )
-    {
-        this._dirty = true;
-    }
-
-
-    /**
-     * Pin専用マテリアルを取得
+     * @summary 専用マテリアルを取得
      * @private
      */
-    _getPinMaterial()
+    _getMaterial()
     {
         var scene = this.scene;
         if ( !scene._PinEntity_pin_material ) {
@@ -198,7 +161,7 @@ class PinEntity extends Entity {
         var props = this._text_parent_props;
         if ( props[name] != value ) {
             props[name] = value;
-            this._dirty = true;
+            this._primitive_producer.onChangeParentProperty();
         }
     }
 
@@ -211,16 +174,144 @@ class PinEntity extends Entity {
         var dst = this._text_parent_props[name];
         if ( dst[0] != value[0] || dst[1] != value[1] || dst[2] != value[2] ) {
             GeoMath.copyVector3( value, dst );
-            this._dirty = true;
+            this._primitive_producer.onChangeParentProperty();
         }
     }
 
 
     /**
+     * @private
+     */
+    _setupByJson( json )
+    {
+        throw new Error( "Not implemented" ); // @ToDo
+    }
+
+}
+
+
+// クラス定数の定義
+{
+    PinEntity.DEFAULT_COLOR       = GeoMath.createVector3f( [1, 1, 1] );
+    PinEntity.SAFETY_PIXEL_MARGIN = 1;
+    PinEntity.MAX_IMAGE_WIDTH     = 4096;
+    PinEntity.CIRCLE_SEP_LENGTH   = 32;
+    PinEntity.DEFAULT_ICON_SIZE   = GeoMath.createVector2f( [30, 30] );
+    PinEntity.DEFAULT_FG_COLOR    = [1.0, 1.0, 1.0];
+    PinEntity.DEFAULT_BG_COLOR    = [0.35, 0.61, 0.81];
+    PinEntity.DEFAULT_MAKI_ICON   = "circle-15";
+
+    PinEntity.SAFETY_PIXEL_MARGIN = 1;
+    PinEntity.MAX_IMAGE_WIDTH     = 4096;
+}
+
+
+
+/**
+ * @summary PrimitiveProducer
+ *
+ * TODO: relative で標高の変化のたびにテクスチャを生成する必要はないので
+ *       Layout でのテクスチャの生成とメッシュの生成を分離する
+ *
+ * @private
+ */
+class PrimitiveProducer extends Entity.PrimitiveProducer {
+
+    /**
+     * @param {mapray.TextEntity} entity
+     */
+    constructor( entity )
+    {
+        super( entity );
+
+        this._glenv = entity.scene.glenv;
+        this._dirty = true;
+
+        // プリミティブの要素
+        this._transform  = GeoMath.setIdentity( GeoMath.createMatrix() );
+        this._properties = {
+            image: null,       // 画像
+            image_mask: null,  // マスク画像
+        };
+
+        // プリミティブ
+        var primitive = new Primitive( this._glenv, null, entity._getMaterial(), this._transform );
+        primitive.properties = this._properties;
+        this._primitive = primitive;
+
+        // プリミティブ配列
+        this._primitives = [];
+    }
+
+
+    /**
+     * @override
+     */
+    createRegions()
+    {
+        const region = new EntityRegion();
+
+        for ( let {position} of this.entity._entries ) {
+            region.addPoint( position );
+        }
+
+        return [region];
+    }
+
+
+    /**
+     * @override
+     */
+    onChangeElevation( regions )
+    {
+        this._dirty = true;
+    }
+
+
+    /**
+     * @override
+     */
+    getPrimitives( stage )
+    {
+        return this._updatePrimitive();
+    }
+
+
+    /**
+     * @summary 親プロパティが変更されたことを通知
+     */
+    onChangeParentProperty()
+    {
+        this._dirty = true;
+    }
+
+
+    /**
+     * @summary 高度モードが変更されたことを通知
+     */
+    onChangeAltitudeMode()
+    {
+        this._dirty = true;
+    }
+
+
+    /**
+     * @summary エントリが追加されたことを通知
+     */
+    onAddEntry()
+    {
+        // 変化した可能性がある
+        this.needToCreateRegions();
+        this._dirty = true;
+    }
+
+
+    /**
      * @summary プリミティブの更新
+     *
      * @desc
      * 入力:
-     *   this._entries
+     *   this.entity._entries
      *   this._dirty
      * 出力:
      *   this._transform
@@ -228,7 +319,9 @@ class PinEntity extends Entity {
      *   this._primitive.mesh
      *   this._primitives
      *   this._dirty
+     *
      * @return {array.<mapray.Prmitive>}  this._primitives
+     *
      * @private
      */
     _updatePrimitive()
@@ -238,7 +331,7 @@ class PinEntity extends Entity {
             return this._primitives;
         }
 
-        if ( this._entries.length == 0 ) {
+        if ( this.entity._entries.length == 0 ) {
             this._primitives = [];
             this._dirty = false;
             return this._primitives;
@@ -284,7 +377,7 @@ class PinEntity extends Entity {
             vertices: layout.vertices,
             indices:  layout.indices
         };
-        var mesh = new Mesh( this.scene.glenv, mesh_data );
+        var mesh = new Mesh( this._glenv, mesh_data );
 
         // メッシュ設定
         //   primitive.mesh
@@ -302,71 +395,13 @@ class PinEntity extends Entity {
 
 
     /**
-     * @summary GOCS 平坦化配列を取得
-     *
-     * 入力: this._entries
-     *
-     * @return {number[]}  GOCS 平坦化配列
-     * @private
-     */
-    _createFlatGocsArray()
-    {
-        const num_points = this._entries.length;
-        return GeoPoint.toGocsArray( this._getFlatGeoPoints_with_Absolute(), num_points,
-            new Float64Array( 3 * num_points ) );
-    }
-
-
-    /**
-     * @summary GeoPoint 平坦化配列を取得 (絶対高度)
-     *
-     * 入力: this._entries
-     *
-     * @return {number[]}  GeoPoint 平坦化配列
-     * @private
-     */
-    _getFlatGeoPoints_with_Absolute()
-    {
-        const entries    = this._entries;
-        const num_points = entries.length;
-        const flat_array = new Float64Array( 3 * num_points );
-
-        // flat_array[] に経度要素と緯度要素を設定
-        for ( let i = 0; i < num_points; ++i ) {
-            let pos = entries[i].position;
-            flat_array[3*i]     = pos.longitude;
-            flat_array[3*i + 1] = pos.latitude;
-        }
-
-        switch ( this.altitude_mode ) {
-            case AltitudeMode.RELATIVE:
-                // flat_array[] の高度要素に現在の標高を設定
-                this.scene.viewer.getExistingElevations( num_points, flat_array, 0, 3, flat_array, 2, 3 );
-                // flat_array[] の高度要素に絶対高度を設定
-                for ( let i = 0; i < num_points; ++i ) {
-                    flat_array[3*i + 2] += entries[i].position.altitude;
-                }
-                break;
-
-            default: // AltitudeMode.ABSOLUTE
-                // flat_array[] の高度要素に絶対高度を設定
-                for ( let i = 0; i < num_points; ++i ) {
-                    flat_array[3*i + 2] = entries[i].position.altitude;
-                }
-                break;
-        }
-
-        return flat_array;
-    }
-
-
-    /**
      * @summary プリミティブの更新
+     *
      * @desc
      * 条件:
-     *   this._entries.length > 0
+     *   this.entity._entries.length > 0
      * 入力:
-     *   this._entries.length
+     *   this.entity._entries.length
      * 出力:
      *   this._transform
      *
@@ -376,7 +411,7 @@ class PinEntity extends Entity {
      */
     _updateTransform( gocs_array )
     {
-        var num_entries = this._entries.length;
+        var num_entries = this.entity._entries.length;
         var        xsum = 0;
         var        ysum = 0;
         var        zsum = 0;
@@ -394,24 +429,76 @@ class PinEntity extends Entity {
         transform[13] = ysum / num_entries;
         transform[14] = zsum / num_entries;
     }
+
+
+    /**
+     * @summary GOCS 平坦化配列を取得
+     *
+     * 入力: this.entity._entries
+     *
+     * @return {number[]}  GOCS 平坦化配列
+     * @private
+     */
+    _createFlatGocsArray()
+    {
+        const num_points = this.entity._entries.length;
+        return GeoPoint.toGocsArray( this._getFlatGeoPoints_with_Absolute(), num_points,
+                                     new Float64Array( 3 * num_points ) );
+    }
+
+
+    /**
+     * @summary GeoPoint 平坦化配列を取得 (絶対高度)
+     *
+     * 入力: this.entity._entries
+     *
+     * @return {number[]}  GeoPoint 平坦化配列
+     * @private
+     */
+    _getFlatGeoPoints_with_Absolute()
+    {
+        const owner      = this.entity;
+        const entries    = owner._entries;
+        const num_points = entries.length;
+        const flat_array = new Float64Array( 3 * num_points );
+
+        // flat_array[] に経度要素と緯度要素を設定
+        for ( let i = 0; i < num_points; ++i ) {
+            let pos = entries[i].position;
+            flat_array[3*i]     = pos.longitude;
+            flat_array[3*i + 1] = pos.latitude;
+        }
+
+        switch ( owner.altitude_mode ) {
+        case AltitudeMode.RELATIVE:
+            // flat_array[] の高度要素に現在の標高を設定
+            owner.scene.viewer.getExistingElevations( num_points, flat_array, 0, 3, flat_array, 2, 3 );
+            // flat_array[] の高度要素に絶対高度を設定
+            for ( let i = 0; i < num_points; ++i ) {
+                flat_array[3*i + 2] += entries[i].position.altitude;
+            }
+            break;
+
+        default: // AltitudeMode.ABSOLUTE
+            // flat_array[] の高度要素に絶対高度を設定
+            for ( let i = 0; i < num_points; ++i ) {
+                flat_array[3*i + 2] = entries[i].position.altitude;
+            }
+            break;
+        }
+
+        return flat_array;
+    }
+
 }
 
-// クラス定数の定義
-{
-    PinEntity.DEFAULT_COLOR       = GeoMath.createVector3f( [1, 1, 1] );
-    PinEntity.SAFETY_PIXEL_MARGIN = 1;
-    PinEntity.MAX_IMAGE_WIDTH     = 4096;
-    PinEntity.CIRCLE_SEP_LENGTH   = 32;
-    PinEntity.DEFAULT_ICON_SIZE   = GeoMath.createVector2f( [30, 30] );
-    PinEntity.DEFAULT_FG_COLOR    = [1.0, 1.0, 1.0];
-    PinEntity.DEFAULT_BG_COLOR    = [0.35, 0.61, 0.81];
-    PinEntity.DEFAULT_MAKI_ICON   = "circle-15";
-
-    PinEntity.SAFETY_PIXEL_MARGIN = 1;
-    PinEntity.MAX_IMAGE_WIDTH     = 4096;
-}
 
 
+/**
+ * @summary ピン要素
+ * @memberof mapray.PinEntity
+ * @private
+ */
 class AbstractPinEntry {
 
     constructor( owner, position, props ) {
@@ -438,14 +525,6 @@ class AbstractPinEntry {
         return this._position;
     }
 
-    get status() {
-        return this._icon.status;
-    }
-
-    get icon() {
-        return this._icon;
-    }
-
     /**
      * @summary アイコンサイズ (Pixels)
      * @type {mapray.Vector2}
@@ -453,8 +532,8 @@ class AbstractPinEntry {
      */
     get size()
     {
-        var props  = this._props;
-        if (props.size) {
+        var props = this._props;
+        if ( props.size ) {
             return props.size;
         }
         else {
@@ -474,7 +553,7 @@ class AbstractPinEntry {
     }
 
     /**
-     * @summary 背景色
+     * @summary アイコン背景色
      * @type {mapray.Vector3}
      * @readonly
      */
@@ -511,10 +590,20 @@ class AbstractPinEntry {
         }
     }
 
-    draw( context, x, y, w, h ) {
-        this._icon.draw( context, x, y, w, h );
+    isLoaded() {
+        return this._icon.isLoaded();
+    }
+
+    get icon() {
+        return this._icon;
+    }
+
+    draw( context, x, y, width, height ) {
+        this._icon.draw( context, x, y, width, height );
     }
 }
+
+
 
 /**
  * @summary MakiIcon要素
@@ -536,12 +625,20 @@ class MakiIconPinEntry extends AbstractPinEntry {
     {
         super( owner, position, props );
         this._id = id;
-        this._icon = MakiIconPinEntry.makiIconLoader.loadById( id );
+        this._icon = MakiIconPinEntry.makiIconLoader.load( id );
         this._icon.onEnd(item => {
-                this._owner._dirty = true;
+                this._owner.getPrimitiveProducer()._dirty = true;
         });
     }
 }
+
+
+{
+    MakiIconPinEntry.makiIconLoader = new URLTemplateIconLoader( "https://api.mapray.com/styles/v1/icons/maki/", ".svg" );
+}
+
+
+
 
 /**
  * @summary MakiIcon要素
@@ -563,151 +660,18 @@ class TextPinEntry extends AbstractPinEntry {
     {
         super( owner, position, props );
         this._text = text;
-        this._icon = TextPinEntry.textIconLoader.load( this._text, this._props );
+        this._icon = TextPinEntry.textIconLoader.load( {
+                text:  this._text,
+                props: this._props
+        } );
         this._icon.onEnd(item => {
-                this._owner._dirty = true;
+                this._owner.getPrimitiveProducer()._dirty = true;
         });
     }
 }
 
 
-class URLTemplateIconLoader {
-    constructor( urlPrefix, urlSuffix ) {
-        this._cache = {};
-        this.urlPrefix = urlPrefix;
-        this.urlSuffix = urlSuffix;
-    }
-    createById( id ) {
-        return this._cache[id] || (this._cache[id] = new URLIconLoaderItem( this.urlPrefix + id + this.urlSuffix ));
-    }
-    loadById( id ) {
-        var item = this.createById( id );
-        item.load();
-        return item;
-    }
-}
-
-class TextIconLoader {
-    constructor() {
-        this._cache = {};
-    }
-    create( text, props ) {
-        return this._cache[text] || (this._cache[text] = new TextIconLoaderItem( text, props ));
-    }
-    load( text, props ) {
-        var item = this.create( text, props );
-        item.load();
-        return item;
-    }
-}
-
-
-class IconLoaderItem {
-    constructor() {
-        this._status = IconLoaderItem.Status.NOT_LOADED;
-        this.funcs = [];
-    }
-    get status() {
-        return this._status;
-    }
-    onEnd( func ) {
-        if ( this._status === IconLoaderItem.Status.LOADED || this._status === IconLoaderItem.Status.ABORTED ) {
-            func(this);
-        }
-        else {
-            this.funcs.push( func );
-        }
-    }
-    load() {
-        if ( this._status === IconLoaderItem.Status.NOT_LOADED ) {
-            this._status = IconLoaderItem.Status.LOADING;
-            this.doLoad(
-                () => {
-                    this._status = IconLoaderItem.Status.LOADED;
-                    for (var i = 0; i < this.funcs.length; i++) {
-                        this.funcs[i]( this );
-                    }
-                    this.funcs.length = 0;
-                },
-                () => {
-                    this._status = IconLoaderItem.Status.ABORTED;
-                    for (var i = 0; i < this.funcs.length; i++) {
-                        this.funcs[i]( this );
-                    }
-                    this.funcs.length = 0;
-                }
-            );
-        }
-    }
-    doLoad( onload, onerror ) {
-        throw new Error("doLoad() is not implemented in: " + this.constructor.name);
-    }
-}
-
-class URLIconLoaderItem extends IconLoaderItem {
-    constructor( url ) {
-        super();
-        this.url = url;
-    }
-
-    doLoad( onload, onerror ) {
-        var image = new Image();
-        image.onload = event => {
-            this.icon = event.target;
-            this.width = event.target.width;
-            this.height = event.target.height;
-            onload();
-        };
-        image.onerror = event => {
-            onerror();
-            this.icon = this.width = this.height = null;
-        };
-        image.crossOrigin = "anonymous";
-        image.src = this.url;
-    }
-
-    draw( context, x, y, w, h ) {
-        context.drawImage( this.icon, x, y, w, h );
-    }
-}
-
-class TextIconLoaderItem extends IconLoaderItem {
-    constructor( text, props = {} ) {
-        super();
-        this.text = text;
-        this.props = props;
-    }
-
-    doLoad( onload, onerror ) {
-        var props = this.props;
-        var size = props.size ? props.size[0] : 20;
-        var fontFamily = props.fontFamily ? ("'" + props.fontFamily + "'") : Dom.SYSTEM_FONT_FAMILY;
-        var context = Dom.createCanvasContext( size, size );
-        context.textAlign    = "center";
-        context.textBaseline = "alphabetic";
-        context.font = (size * 0.6756756757) + "px " + fontFamily;
-        context.fillText( this.text, size * 0.5, size * 0.7432432432 );
-        this.icon = context.canvas;
-        this.width = context.canvas.width;
-        this.height = context.canvas.height;
-        onload();
-    }
-
-    draw( context, x, y, w, h ) {
-        context.drawImage( this.icon, x, y, w, h );
-    }
-}
-
-IconLoaderItem.Status = {
-    NOT_LOADED: "not loaded",
-    LOADING: "loading",
-    LOADED: "loaded",
-    ABORTED: "aborted"
-};
-
-
 {
-    MakiIconPinEntry.makiIconLoader = new URLTemplateIconLoader( "https://api.mapray.com/styles/v1/icons/maki/", ".svg" );
     TextPinEntry.textIconLoader = new TextIconLoader();
 }
 
@@ -715,7 +679,8 @@ IconLoaderItem.Status = {
 
 
 /**
- * @summary Pin画像を Canvas 上にレイアウト
+ * @summary 要素を Canvas 上にレイアウト
+ *
  * @memberof mapray.PinEntity
  * @private
  */
@@ -724,11 +689,11 @@ class Layout {
     /**
      * @desc
      * 入力:
-     *   owner.scene.glenv
-     *   owner._entries
+     *   owner._glenv
+     *   owner.entity._entries
      *   owner._transform
      *
-     * @param {mapray.PinEntity} owner       所有者
+     * @param {PrimitiveProducer} owner       所有者
      * @param {number[]}          gocs_array  GOCS 平坦化配列
      */
     constructor( owner, gocs_array )
@@ -747,64 +712,10 @@ class Layout {
         // アイテムの配置の設定とキャンバスサイズの決定
         var size = this._setupLocation( row_layouts );
 
-        // アイテムの配置の設定とキャンバスサイズの決定
         this._texture  = this._createTexture( size.width, size.height );
         this._texture_mask = this._createTextureMask();
         this._vertices = this._createVertices( size.width, size.height, gocs_array );
         this._indices  = this._createIndices();
-        this._position = [];
-    }
-
-    /**
-     * @summary RowLayout のリストを生成
-     * @return {array.<mapray.PinEntity.RowLayout>}
-     * @private
-     */
-    _createRowLayouts()
-    {
-        // アイテムリストの複製
-        var items = [].concat( this._items );
-
-        // RowLayout 内であまり高さに差が出ないように、アイテムリストを高さで整列
-        items.sort( function( a, b ) { return a.height_pixel - b.height_pixel; } );
-
-        // リストを生成
-        var row_layouts = [];
-        while ( items.length > 0 ) {
-            var row_layout = new RowLayout( items );
-            if ( row_layout.isValid() ) {
-                row_layouts.push( row_layout );
-            }
-        }
-
-        return row_layouts;
-    }
-
-
-    /**
-     * @summary アイテムの配置を設定
-     * @param  {array.<mapray.TextEntity.RowLayout>} row_layouts
-     * @return {object}                              キャンバスサイズ
-     * @private
-     */
-    _setupLocation( row_layouts )
-    {
-        var width  = 0;
-        var height = 0;
-
-        height += PinEntity.SAFETY_PIXEL_MARGIN;
-
-        for ( var i = 0; i < row_layouts.length; ++i ) {
-            var row_layout = row_layouts[i];
-            row_layout.locate( height );
-            width   = Math.max( row_layout.width_assumed, width );
-            height += row_layout.height_pixel + PinEntity.SAFETY_PIXEL_MARGIN;
-        }
-
-        return {
-            width:  width,
-            height: height
-        };
     }
 
 
@@ -876,17 +787,15 @@ class Layout {
      */
     _createItemList()
     {
-        var entries = this._owner._entries;
-        var map = new Map();
+        const map = new Map();
 
-        var items = [];
-        var counter = 0;
-        for ( var i = 0; i < entries.length; ++i ) {
-            var entry = entries[i];
-            if (entry.status === "loaded") {
-                var item = map.get( entry.icon );
+        const items = [];
+        let counter = 0;
+        for ( let entry of this._owner.entity._entries ) {
+            if ( entry.isLoaded() ) {
+                let item = map.get( entry.icon );
                 if ( !item ) {
-                    map.set(entry.icon, item = new LItem( this ));
+                    map.set( entry.icon, item = new LItem( this ) );
                     items.push( item );
                 }
                 item.add( counter++, entry );
@@ -895,6 +804,32 @@ class Layout {
 
         return items;
     }
+
+    /**
+     * @summary RowLayout のリストを生成
+     * @return {array.<mapray.PinEntity.RowLayout>}
+     * @private
+     */
+    _createRowLayouts()
+    {
+        // アイテムリストの複製
+        var items = [].concat( this._items );
+
+        // RowLayout 内であまり高さに差が出ないように、アイテムリストを高さで整列
+        items.sort( function( a, b ) { return a.height_pixel - b.height_pixel; } );
+
+        // リストを生成
+        var row_layouts = [];
+        while ( items.length > 0 ) {
+            var row_layout = new RowLayout( items );
+            if ( row_layout.isValid() ) {
+                row_layouts.push( row_layout );
+            }
+        }
+
+        return row_layouts;
+    }
+
 
     /**
      * @summary テクスチャを生成
@@ -914,7 +849,7 @@ class Layout {
             item.draw( context );
         }
 
-        var glenv = this._owner.scene.glenv;
+        var glenv = this._owner._glenv;
         var opts = {
             usage: Texture.Usage.ICON
         };
@@ -925,7 +860,7 @@ class Layout {
     {
         var context = Dom.createCanvasContext( 3, 3 );
         context.fillRect( 1, 1, 1, 1 );
-        var glenv = this._owner.scene.glenv;
+        var glenv = this._owner._glenv;
         var opts = {
             usage: Texture.Usage.ICON,
             mag_filter: glenv.context.NEAREST
@@ -1109,7 +1044,174 @@ class Layout {
 
         return indices;
     }
+
+
+    /**
+     * @summary アイテムの配置を設定
+     * @param  {array.<mapray.TextEntity.RowLayout>} row_layouts
+     * @return {object}                              キャンバスサイズ
+     * @private
+     */
+    _setupLocation( row_layouts )
+    {
+        var width  = 0;
+        var height = 0;
+
+        height += PinEntity.SAFETY_PIXEL_MARGIN;
+
+        for ( var i = 0; i < row_layouts.length; ++i ) {
+            var row_layout = row_layouts[i];
+            row_layout.locate( height );
+            width   = Math.max( row_layout.width_assumed, width );
+            height += row_layout.height_pixel + PinEntity.SAFETY_PIXEL_MARGIN;
+        }
+
+        return {
+            width:  width,
+            height: height
+        };
+    }
+
 }
+
+
+
+/**
+ * @summary レイアウト対象
+ * @memberof mapray.PinEntity
+ * @private
+ */
+class LItem {
+
+    /**
+     * @param {mapray.PinEntity.Layout} layout   所有者
+     * @param {mapray.PinEntity.Entry}  entry    PinEntityのエントリ
+     */
+    constructor( layout )
+    {
+        this.entries = [];
+
+        // テキストの基点
+        this._pos_x = 0;  // 左端
+        this._pos_y = 0;  // ベースライン位置
+
+        this._height = this._width = null;
+
+        this._is_canceled = false;
+    }
+
+    add( index, entry ) {
+        var size = entry.size;
+        if ( this._width === null || this._width < size[0] ) this._width = size[0];
+        if ( this._height === null || this._height < size[1] ) this._height = size[1];
+        this.entries.push( { index, entry } );
+    }
+
+    /**
+     * @type {number}
+     * @readonly
+     */
+    get pos_x()
+    {
+        return this._pos_x;
+    }
+
+
+    /**
+     * @type {number}
+     * @readonly
+     */
+    get pos_y()
+    {
+        return this._pos_y;
+    }
+
+
+    /**
+     * @type {number}
+     * @readonly
+     */
+    get width()
+    {
+        return this._width;
+    }
+
+    get height()
+    {
+        return this._height;
+    }
+
+
+    /**
+     * キャンバス上でのテキストの横画素数
+     * @type {number}
+     * @readonly
+     */
+    get width_pixel()
+    {
+        return Math.ceil( this._width );
+    }
+
+
+    /**
+     * キャンバス上でのテキストの縦画素数
+     * @type {number}
+     * @readonly
+     */
+    get height_pixel()
+    {
+        return Math.ceil( this._height );
+    }
+
+
+    /**
+     * 取り消し状態か？
+     * @type {boolean}
+     * @readonly
+     */
+    get is_canceled()
+    {
+        return this._is_canceled;
+    }
+
+
+    /**
+     * @summary 取り消し状態に移行
+     */
+    cancel()
+    {
+        this._is_canceled = true;
+    }
+
+
+    /**
+     * @summary 配置を決定
+     * @param {number} x  テキスト矩形左辺の X 座標 (キャンバス座標系)
+     * @param {number} y  テキスト矩形上辺の Y 座標 (キャンバス座標系)
+     */
+    locate( x, y )
+    {
+        this._pos_x = x;
+        this._pos_y = y;
+    }
+
+    draw( context ) {
+
+        this.entries[0].entry.draw( context, this._pos_x, this.pos_y, this.width, this.height );
+
+        var RENDER_BOUNDS = false;
+        if ( RENDER_BOUNDS ) {
+            context.beginPath();
+            context.moveTo( this._pos_x             , this._pos_y );
+            context.lineTo( this._pos_x + this.width, this._pos_y );
+            context.lineTo( this._pos_x + this.width, this._pos_y + this.height );
+            context.lineTo( this._pos_x             , this._pos_y + this.height );
+            context.closePath();
+            context.stroke();
+        }
+    }
+}
+
 
 
 /**
@@ -1228,143 +1330,5 @@ class RowLayout {
 }
 
 
-/**
- * @summary レイアウト対象
- * @memberof mapray.PinEntity
- * @private
- */
-class LItem {
-    /**
-     * @param {mapray.PinEntity.Layout} layout   所有者
-     * @param {mapray.PinEntity.Entry}  entry    PinEntityのエントリ
-     */
-    constructor( layout )
-    {
-        this.entries = [];
-
-        // テキストの基点
-        this._pos_x = 0;  // 左端
-        this._pos_y = 0;  // ベースライン位置
-
-        this._height = this._width = null;
-
-        this._is_canceled = false;
-    }
-
-    add( index, entry ) {
-        // if (entry.status !== "loaded") throw new Error();
-        var size = entry.size;
-        if (this._width === null || this._width < size[0]) this._width = size[0];
-        if (this._height === null || this._height < size[1]) this._height = size[1];
-        this.entries.push( { index, entry } );
-    }
-
-    /**
-     * @type {number}
-     * @readonly
-     */
-    get pos_x()
-    {
-        return this._pos_x;
-    }
-
-
-    /**
-     * @type {number}
-     * @readonly
-     */
-    get pos_y()
-    {
-        return this._pos_y;
-    }
-
-
-    /**
-     * @type {number}
-     * @readonly
-     */
-    get width()
-    {
-        return this._width;
-    }
-
-    get height()
-    {
-        return this._height;
-    }
-
-
-    /**
-     * キャンバス上でのテキストの横画素数
-     * @type {number}
-     * @readonly
-     */
-    get width_pixel()
-    {
-        return Math.ceil( this._width );
-    }
-
-
-    /**
-     * キャンバス上でのテキストの縦画素数
-     * @type {number}
-     * @readonly
-     */
-    get height_pixel()
-    {
-        return Math.ceil( this._height );
-    }
-
-
-    /**
-     * 取り消し状態か？
-     * @type {boolean}
-     * @readonly
-     */
-    get is_canceled()
-    {
-        return this._is_canceled;
-    }
-
-
-    /**
-     * @summary 取り消し状態に移行
-     */
-    cancel()
-    {
-        this._is_canceled = true;
-    }
-
-
-    /**
-     * @summary 配置を決定
-     * @param {number} x  テキスト矩形左辺の X 座標 (キャンバス座標系)
-     * @param {number} y  テキスト矩形上辺の Y 座標 (キャンバス座標系)
-     */
-    locate( x, y )
-    {
-        this._pos_x = x;
-        this._pos_y = y;
-    }
-
-    draw( context ) {
-        context.save();
-
-        this.entries[0].entry.draw( context, this._pos_x, this.pos_y, this.width, this.height ); // @Todo: fix this
-
-        var RENDER_BOUNDS = false;
-        if ( RENDER_BOUNDS ) {
-            context.beginPath();
-            context.moveTo( this._pos_x             , this._pos_y );
-            context.lineTo( this._pos_x + this.width, this._pos_y );
-            context.lineTo( this._pos_x + this.width, this._pos_y + this.height );
-            context.lineTo( this._pos_x             , this._pos_y + this.height );
-            context.closePath();
-            context.stroke();
-        }
-        
-        context.restore();
-    }
-}
 
 export default PinEntity;
