@@ -18,6 +18,8 @@ import Scene from "./Scene";
 import Entity from "./Entity";
 import MarkerLineEntity from "./MarkerLineEntity";
 import TextEntity from "./TextEntity";
+import ModelEntity from "./ModelEntity";
+import PolygonEntity from "./PolygonEntity";
 import SceneLoader from "./SceneLoader";
 import DebugStats from "./DebugStats";
 
@@ -47,6 +49,8 @@ var mapray = {
     Entity,
     MarkerLineEntity,
     TextEntity,
+    ModelEntity,
+    PolygonEntity,
     SceneLoader,
     DebugStats
 };
