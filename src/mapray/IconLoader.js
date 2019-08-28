@@ -269,9 +269,9 @@ class TextIconLoader extends IconLoader {
 class TextIconLoaderItem extends IconLoaderItem {
 
     /**
-     * @param {string} text text
-     * @param {mapray.Vector2} [props.size] size in pixel
-     * @param {string} [props.fontFamily] font family
+     * @param {string}         text                text
+     * @param {mapray.Vector2} [props.size]        size in pixel
+     * @param {string}         [props.font_family] font family
      */
     constructor( text, props = {} ) {
         super();
@@ -286,7 +286,7 @@ class TextIconLoaderItem extends IconLoaderItem {
     doLoad( onload, onerror ) {
         var props = this.props;
         var size = props.size ? props.size[0] : 20;
-        var fontFamily = props.fontFamily ? ("'" + props.fontFamily + "'") : Dom.SYSTEM_FONT_FAMILY;
+        var fontFamily = props.font_family ? ("'" + props.font_family + "'") : Dom.SYSTEM_FONT_FAMILY;
         var context = Dom.createCanvasContext( size, size );
         context.textAlign    = "center";
         context.textBaseline = "alphabetic";
