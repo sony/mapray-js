@@ -1,23 +1,6 @@
 import HTTP from "./HTTP";
 import Resource from "./Resource";
-
-
-class FetchError extends Error {
-    constructor( message, response, cause )
-    {
-        super( message );
-        if ( Error.captureStackTrace ) {
-            Error.captureStackTrace( this, FetchError );
-        }
-        this.name = "FetchError";
-        this.response = response;
-        this.cause = cause;
-        if ( cause ) {
-            this.stack += "\nCausedBy: " + cause.stack;
-        }
-    }
-}
-
+import { FetchError } from "./HTTP";
 
 
 class MaprayApiError extends FetchError {
@@ -32,7 +15,7 @@ class MaprayApiError extends FetchError {
         this.resonse = response;
         this.cause = cause;
         if (cause) {
-            this.stack += "\nCausedBy: " + cause.stack;
+            this.stack += "\nCaused-By: " + cause.stack;
         }
     }
 }
@@ -194,20 +177,22 @@ class MaprayApi extends HTTP {
                     }
             })
             .catch( error => {
-                    if ( error.name === "FetchError" ) {
+                    if ( error.name === "FetchError" && error.response ) {
                         return (
                             error.response.json()
                             .catch( additionalError => {
                                     // Couldn't get additional info of the error.
                                     // throw original error.
-                                    throw error;
+                                    throw new MaprayApiError( -1, "Failed to fetch", null, error );
                             } )
                             .then( errorObject => {
                                     throw new MaprayApiError( errorObject.code, errorObject.error, error.response, error );
                             } )
                         );
                     }
-                    throw error;
+                    else {
+                        throw new MaprayApiError( -1, "Failed to fetch", null, error );
+                    }
             } )
         );
     }
