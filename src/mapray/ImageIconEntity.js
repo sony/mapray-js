@@ -30,6 +30,12 @@ class ImageIconEntity extends Entity {
         // 要素管理
         this._entries = [];
 
+        // 親プロパティ
+        this._parent_props = {
+            size: null,
+            origin: null,
+        };
+
         // Entity.PrimitiveProducer インスタンス
         this._primitive_producer = new PrimitiveProducer( this );
 
@@ -109,7 +115,16 @@ class ImageIconEntity extends Entity {
      */
     _setupByJson( json )
     {
-        throw new Error( "Not implemented" ); // @ToDo
+        var position = new GeoPoint();
+
+        for ( let entry of json.entries ) {
+            position.setFromArray( entry.position );
+            this.addImageIcon( position, entry );
+        }
+        
+        if ( json.size )     this.setSize( json.size );
+        if ( json.fg_color ) this.setFGColor( json.fg_color );
+        if ( json.bg_color ) this.setBGColor( json.bg_color );
     }
 
 }
@@ -122,6 +137,7 @@ class ImageIconEntity extends Entity {
     ImageIconEntity.MAX_IMAGE_WIDTH     = 4096;
     ImageIconEntity.CIRCLE_SEP_LENGTH   = 32;
     ImageIconEntity.DEFAULT_ICON_SIZE   = GeoMath.createVector2f( [30, 30] );
+    ImageIconEntity.DEFAULT_ORIGIN      = GeoMath.createVector2f( [ 0.5, 0.5 ] );
 
     ImageIconEntity.SAFETY_PIXEL_MARGIN = 1;
     ImageIconEntity.MAX_IMAGE_WIDTH     = 4096;
@@ -454,13 +470,12 @@ class ImageEntry {
      */
     get size()
     {
-        var props = this._props;
-        if ( props.size ) {
-            return props.size;
-        }
-        else {
-            return GeoMath.createVector2f( [ this._icon.width, this._icon.height ] );
-        }
+        const props = this._props;
+        const parent = this._owner._parent_props;
+        return (
+            props.size || parent.size ||
+            GeoMath.createVector2f( [ this._icon.width, this._icon.height ] )
+        );
     }
 
     /**
@@ -470,13 +485,9 @@ class ImageEntry {
      */
     get origin()
     {
-        var props = this._props;
-        if ( props.origin ) {
-            return props.origin;
-       }
-        else {
-            return GeoMath.createVector2f( [ 0.5, 0.5 ] );
-        }
+        const props = this._props;
+        const parent = this._owner._parent_props;
+        return props.origin || parent.origin || ImageIconEntity.DEFAULT_ORIGIN;
     }
 
     /**

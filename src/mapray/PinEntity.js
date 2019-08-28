@@ -20,7 +20,7 @@ import Dom from "./util/Dom";
  * pin.addTextPin( "32", new mapray.GeoPoint(139.768, 35.635) );
  * pin.addTextPin( "A", new mapray.GeoPoint(139.768, 35.636), { fg_color: [0.0, 0.0, 1.0], bg_color: [1.0, 0.0, 0.0] } );
  * pin.addTextPin( "始", new mapray.GeoPoint(139.768, 35.637), { size: 50 } );
- * pin.addTextPin( "終", new mapray.GeoPoint(139.768, 35.639), { size: 50, fontFamily: "Georgia" } );
+ * pin.addTextPin( "終", new mapray.GeoPoint(139.768, 35.639), { size: 50, font_family: "Georgia" } );
  * pin.addPin( new mapray.GeoPoint(139.766, 35.6361) );
  * pin.addMakiIconPin( "ferry-15", new mapray.GeoPoint(139.764, 35.6361), { size: 150, fg_color: [0.2, 0.2, 0.2], bg_color: [1.0, 1.0, 1.0] } );
  * pin.addMakiIconPin( "car-15",   new mapray.GeoPoint(139.762, 35.6361), { size: 60, fg_color: [1.0, 1.0, 1.0], bg_color: [0.2, 0.2, 0.2] } );
@@ -44,6 +44,14 @@ class PinEntity extends Entity {
 
         // 要素管理
         this._entries = [];
+
+        // 親プロパティ
+        this._parent_props = {
+            fg_color: null,
+            bg_color: null,
+            size: null,
+            font_family: null,
+        };
 
         // Entity.PrimitiveProducer インスタンス
         this._primitive_producer = new PrimitiveProducer( this );
@@ -74,6 +82,16 @@ class PinEntity extends Entity {
 
 
     /**
+     * @summary アイコンのピクセルサイズを指定
+     * @param {mapray.Vector3} color  アイコンのピクセルサイズ
+     */
+    setSize( size )
+    {
+        this._setVector2Property( "size", size );
+    }
+
+
+    /**
      * @summary アイコンの色を設定
      * @param {mapray.Vector3} color  アイコンの色
      */
@@ -90,6 +108,16 @@ class PinEntity extends Entity {
     setBGColor( color )
     {
         this._setVector3Property( "bg_color", color );
+    }
+
+
+    /**
+     * @summary テキストアイコンのフォントを設定
+     * @param {string} font_family  フォントファミリー
+     */
+    setBGColor( font_family )
+    {
+        this._setValueProperty( "font_family", font_family );
     }
 
 
@@ -129,7 +157,7 @@ class PinEntity extends Entity {
      * @param {float}           [props.size]       アイコンサイズ
      * @param {mapray.Vector3}  [props.fg_color]   アイコン色
      * @param {mapray.Vector3}  [props.bg_color]   背景色
-     * @param {string}          [props.fontFamily] フォントファミリー
+     * @param {string}          [props.font_family] フォントファミリー
      */
     addTextPin( text, position, props )
     {
@@ -158,7 +186,7 @@ class PinEntity extends Entity {
      */
     _setValueProperty( name, value )
     {
-        var props = this._text_parent_props;
+        var props = this._parent_props;
         if ( props[name] != value ) {
             props[name] = value;
             this._primitive_producer.onChangeParentProperty();
@@ -171,8 +199,27 @@ class PinEntity extends Entity {
      */
     _setVector3Property( name, value )
     {
-        var dst = this._text_parent_props[name];
-        if ( dst[0] != value[0] || dst[1] != value[1] || dst[2] != value[2] ) {
+        var dst = this._parent_props[name];
+        if ( !dst ) {
+            dst = this._parent_props[name] = GeoMath.createVector2f( value );
+        }
+        else if ( dst[0] !== value[0] || dst[1] !== value[1] || dst[2] !== value[2] ) {
+            GeoMath.copyVector3( value, dst );
+            this._primitive_producer.onChangeParentProperty();
+        }
+    }
+
+
+    /**
+     * @private
+     */
+    _setVector2Property( name, value )
+    {
+        var dst = this._parent_props[name];
+        if ( !dst ) {
+            dst = this._parent_props[name] = GeoMath.createVector2f( value );
+        }
+        else if ( dst[0] !== value[0] || dst[1] !== value[1] ) {
             GeoMath.copyVector3( value, dst );
             this._primitive_producer.onChangeParentProperty();
         }
@@ -184,7 +231,17 @@ class PinEntity extends Entity {
      */
     _setupByJson( json )
     {
-        throw new Error( "Not implemented" ); // @ToDo
+        var position = new GeoPoint();
+
+        for ( let entry of json.entries ) {
+            position.setFromArray( entry.position );
+            this.addPin( position, entry );
+        }
+        
+        if ( json.size )     this.setSize( json.size );
+        if ( json.fg_color ) this.setFGColor( json.fg_color );
+        if ( json.bg_color ) this.setBGColor( json.bg_color );
+        if ( json.font_family ) this.setBGColor( json.font_family );
     }
 
 }
@@ -192,14 +249,13 @@ class PinEntity extends Entity {
 
 // クラス定数の定義
 {
-    PinEntity.DEFAULT_COLOR       = GeoMath.createVector3f( [1, 1, 1] );
     PinEntity.SAFETY_PIXEL_MARGIN = 1;
     PinEntity.MAX_IMAGE_WIDTH     = 4096;
     PinEntity.CIRCLE_SEP_LENGTH   = 32;
-    PinEntity.DEFAULT_ICON_SIZE   = GeoMath.createVector2f( [30, 30] );
-    PinEntity.DEFAULT_FG_COLOR    = [1.0, 1.0, 1.0];
-    PinEntity.DEFAULT_BG_COLOR    = [0.35, 0.61, 0.81];
-    PinEntity.DEFAULT_MAKI_ICON   = "circle-15";
+    PinEntity.DEFAULT_SIZE        = GeoMath.createVector2f( [30, 30] );
+    PinEntity.DEFAULT_FONT_FAMILY = "sans-serif";
+    PinEntity.DEFAULT_FG_COLOR    = GeoMath.createVector3f( [1.0, 1.0, 1.0] );
+    PinEntity.DEFAULT_BG_COLOR    = GeoMath.createVector3f( [0.35, 0.61, 0.81] );
 
     PinEntity.SAFETY_PIXEL_MARGIN = 1;
     PinEntity.MAX_IMAGE_WIDTH     = 4096;
@@ -218,7 +274,7 @@ class PinEntity extends Entity {
 class PrimitiveProducer extends Entity.PrimitiveProducer {
 
     /**
-     * @param {mapray.TextEntity} entity
+     * @param {mapray.PinEntity} entity
      */
     constructor( entity )
     {
@@ -532,13 +588,15 @@ class AbstractPinEntry {
      */
     get size()
     {
-        var props = this._props;
-        if ( props.size ) {
-            return props.size;
-        }
-        else {
-            return GeoMath.createVector2f( [ this._icon.width, this._icon.height ] );
-        }
+        const props = this._props;
+        const parent = this._owner._parent_props;
+        return (
+            props.size || parent.size ||
+            (
+                this.icon ? GeoMath.createVector2f( [ this.icon.width, this.icon.height ] ):
+                PinEntity.DEFAULT_SIZE
+            )
+        );
     }
 
     /**
@@ -548,8 +606,9 @@ class AbstractPinEntry {
      */
     get fg_color()
     {
-        var props  = this._props;
-        return props.fg_color || PinEntity.DEFAULT_FG_COLOR;
+        const props  = this._props;
+        const parent = this._owner._parent_props;
+        return props.fg_color || parent.fg_color || PinEntity.DEFAULT_FG_COLOR;
     }
 
     /**
@@ -559,9 +618,11 @@ class AbstractPinEntry {
      */
     get bg_color()
     {
-        var props  = this._props;
-        return props.bg_color || PinEntity.DEFAULT_BG_COLOR;
+        const props  = this._props;
+        const parent = this._owner._parent_props;
+        return props.bg_color || parent.bg_color || PinEntity.DEFAULT_BG_COLOR;
     }
+
 
     /**
      * @private
@@ -573,6 +634,7 @@ class AbstractPinEntry {
             props[name] = GeoMath.createVector3f( props[name] );
         }
     }
+
 
     /**
      * @private
@@ -649,24 +711,42 @@ class TextPinEntry extends AbstractPinEntry {
 
     /**
      * @param {mapray.PinEntity}  owner                所有者
-     * @param {string}            id                   MakiアイコンのID
+     * @param {string}            text                 テキスト
      * @param {mapray.GeoPoint}   position             位置
      * @param {object}            [props]              プロパティ
-     * @param {float} [props.size]                     アイコンサイズ
-     * @param {mapray.Vector3} [props.fg_color]        アイコン色
-     * @param {mapray.Vector3} [props.bg_color]        背景色
+     * @param {float}             [props.size]         アイコンピクセルサイズ
+     * @param {mapray.Vector3}    [props.fg_color]     アイコン色
+     * @param {mapray.Vector3}    [props.bg_color]     背景色
+     * @param {string}            [props.font_family]  フォントファミリー
      */
     constructor( owner, text, position, props )
     {
         super( owner, position, props );
         this._text = text;
+
         this._icon = TextPinEntry.textIconLoader.load( {
                 text:  this._text,
-                props: this._props
+                props: {
+                    size: this.size,
+                    font_family: this.font_family,
+                }
         } );
         this._icon.onEnd(item => {
                 this._owner.getPrimitiveProducer()._dirty = true;
         });
+    }
+
+
+    /**
+     * @summary フォントファミリー
+     * @type {string}
+     * @readonly
+     */
+    get font_family()
+    {
+        const props  = this._props;
+        const parent = this._owner._parent_props;
+        return props.font_family || parent.font_family || PinEntity.DEFAULT_FONT_FAMILY;
     }
 }
 
@@ -1048,7 +1128,7 @@ class Layout {
 
     /**
      * @summary アイテムの配置を設定
-     * @param  {array.<mapray.TextEntity.RowLayout>} row_layouts
+     * @param  {array.<mapray.PinEntity.RowLayout>} row_layouts
      * @return {object}                              キャンバスサイズ
      * @private
      */
@@ -1225,7 +1305,7 @@ class RowLayout {
      * @desc
      * <p>レイアウトされた、またはレイアウトに失敗したアイテムは src_items から削除される。</p>
      * <p>レイアウトに失敗したアイテムは取り消し (is_canceled) になる。</p>
-     * @param {array.<mapray.TextEntity.LItem>} src_items  アイテムリスト
+     * @param {array.<mapray.PinEntity.LItem>} src_items  アイテムリスト
      */
     constructor( src_items )
     {
@@ -1278,7 +1358,7 @@ class RowLayout {
 
     /**
      * 
-     * @type {array.<mapray.TextEntity.LItem>}
+     * @type {array.<mapray.PinEntity.LItem>}
      * @readonly
      */
     get items()
