@@ -61,19 +61,26 @@ class Loader {
                     return this._load();
             } )
             .catch( error => {
-                    this._setStatus( Loader.Status.ABORTED );
-                    // JSON データの取得に失敗
+                    // JSON データの取得に失敗 (キャンセルによる失敗の可能性あり)
                     console.log( error );
                     this._scene.removeLoader( this );
                     this._onLoad( this, false );
+                    if ( this._status !== Loader.Status.CANCELED ) {
+                        this._setStatus( Loader.Status.ABORTED );
+                    }
                     throw error;
             } )
             .then( value => {
-                    this._check_cancel();
-                    this._setStatus( Loader.Status.LOADED );
                     this._scene.removeLoader( this );
-                    this._onLoad( this, true );
-                    return value;
+                    if ( this._status === Loader.Status.CANCELED ) {
+                        this._onLoad( this, false );
+                        throw new Error( "canceled" );
+                    }
+                    else {
+                        this._setStatus( Loader.Status.LOADED );
+                        this._onLoad( this, true );
+                        return value;
+                    }
             } )
         );
     }
@@ -92,7 +99,7 @@ class Loader {
     cancel()
     {
         if ( this._status === Loader.Status.LOADING || this._status === Loader.Status.LOADED ) {
-            this._setStatus( Loader.Status.CANCELLED );
+            this._setStatus( Loader.Status.CANCELED );
             this._resource.cancel();
             this._cancel();
             // this._scene.removeLoader( this );
@@ -112,7 +119,7 @@ class Loader {
      */
     _check_cancel()
     {
-        if ( this.status === Loader.Status.CANCELLED ) {
+        if ( this.status === Loader.Status.CANCELED ) {
             throw new Error( "canceled" );
         }
     }
@@ -122,7 +129,7 @@ Loader.Status = {
     NOT_LOADED : "Not Loaded",
     LOADING    : "Loading",
     LOADED     : "Loaded",
-    CANCELLED  : "Cancelled",
+    CANCELED   : "Canceled",
     ERROR      : "ERROR"
 };
 

@@ -28,15 +28,25 @@ class Buffer {
 
             if ( jbuffer.uri !== undefined ) {
                 // URI が相対パスの場合は glTF ファイルから、データ URI も可能
-                this._uri = ctx.solveResourceUri( jbuffer.uri );
-                this._load_binary( ctx, this._uri );
+                // this._uri = ctx.solveResourceUri( jbuffer.uri );
+                // this._load_binary( ctx, this._uri );
+                ctx.onStartLoadBuffer();
+                ctx.loadBinary( jbuffer.uri )
+                .then( buffer => {
+                        // バイナリデータの取得に成功
+                        this._binary = buffer;
+                        ctx.onFinishLoadBuffer();
+                } )
+                .catch( error => {
+                        // バイナリデータの取得に失敗
+                        ctx.onFinishLoadBuffer( new Error( "Failed to load binary in glTF" ) );
+                } );
             }
             else {
                 // todo: GLB-stored Buffer
                 this._uri = null;
+                this._binary = null;
             }
-
-            this._binary = null;
         }
     }
 
@@ -80,37 +90,6 @@ class Buffer {
         subBuffer._binary     = this._binary.slice( first, last );
 
         return subBuffer;
-    }
-
-
-    /**
-     * バッファデータの読み込みを開始
-     * @param {mapray.gltf.Context} ctx  読み込みコンテキスト
-     * @param {string}              url  バッファデータの URL
-     * @private
-     */
-    _load_binary( ctx, url )
-    {
-        const params = ctx.makeBinaryFetchParams( url );
-
-        fetch( params.url, params.init )
-            .then( response => {
-                if ( response.ok )
-                    return response.arrayBuffer();
-                else
-                    return Promise.reject( Error( response.statusText ) );
-            } )
-            .then( buffer => {
-                // バイナリデータの取得に成功
-                this._binary = buffer;
-                ctx.onFinishLoadBuffer();
-            } )
-            .catch( error => {
-                // バイナリデータの取得に失敗
-                ctx.onFinishLoadBuffer( new Error( "Failed to load binary in glTF" ) );
-            } );
-
-        ctx.onStartLoadBuffer();
     }
 
 }

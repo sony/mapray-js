@@ -21,10 +21,19 @@ class Image {
         var jimage = ctx.gjson.images[index];
 
         if ( jimage.uri !== undefined ) {
+            ctx.onStartLoadImage();
+            ctx.loadImage( jimage.uri )
+            .then( image => {
+                    this._image = image;
+                    ctx.onFinishLoadImage();
+            } )
+            .catch( error => {
+                    ctx.onFinishLoadImage( error );
+            } );
             // URI が相対パスの場合は glTF ファイルから、データ URI も可能
             // 画像形式は JPEG または PNG でなければならない
-            this._uri = ctx.solveResourceUri( jimage.uri );
-            this._load_image( ctx, this._uri );
+            // this._uri = ctx.solveResourceUri( jimage.uri );
+            // this._load_image( ctx, this._uri );
         }
         else if ( jimage.bufferView !== undefined ) {
             this._bufferView = new BufferView( ctx, jimage.bufferView );
@@ -52,38 +61,6 @@ class Image {
      * @readonly
      */
     get image() { return this._image; }
-
-
-    /**
-     * 画像データの読み込みを開始
-     * @param {mapray.gltf.Context} ctx  読み込みコンテキスト
-     * @param {string}              url  画像データの URL
-     * @private
-     */
-    _load_image( ctx, url )
-    {
-        var image = document.createElement( "img" );
-
-        image.onload = () => {
-            // 画像データの取得に成功
-            this._image = image;
-            ctx.onFinishLoadImage();
-        };
-
-        image.onerror = () => {
-            // 画像データの取得に失敗
-            ctx.onFinishLoadImage( new Error( "Failed to load image in glTF" ) );
-        };
-
-        const params = ctx.makeImageLoadParams( url );
-
-        if ( params.crossOrigin ) {
-            image.crossOrigin = params.crossOrigin;
-        }
-        image.src = params.url;
-
-        ctx.onStartLoadImage();
-    }
 
 }
 

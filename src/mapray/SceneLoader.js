@@ -28,7 +28,7 @@ class SceneLoader extends Loader {
      */
     constructor( scene, resource, options={} )
     {
-        if (resource instanceof Resource) {
+        if ( resource instanceof Resource ) {
             // OK
         }
         else if ( typeof resource === "string" ) {
@@ -38,8 +38,9 @@ class SceneLoader extends Loader {
             });
         }
         else {
-            throw new Error( "Unsupported Resource: " + resource);
-       }
+            throw new Error( "Unsupported Resource: " + resource );
+        }
+
         super( scene, resource, {
                 onLoad: options.callback
         } );
@@ -90,10 +91,6 @@ class SceneLoader extends Loader {
                     this._check_cancel();
                     return this._load_object( oscene );
             } )
-            .catch(e => {
-                    console.log(e);
-                    throw e;
-            })
         );
     }
 
@@ -104,16 +101,12 @@ class SceneLoader extends Loader {
      */
     _load_object( oscene )
     {
-        oscene.req_count = 0;
-        oscene.req_ended = false;
-
-        return this._load_model_register( oscene )
-        .then( () => {
-                if ( oscene.req_count == 0 ) {
-                    this._postload_object( oscene );
-                }
-                oscene.req_ended = true;
-        });
+        return (
+            this._load_model_register( oscene )
+            .then( () => {
+                    return this._postload_object( oscene );
+            })
+        );
     }
 
 
@@ -124,21 +117,7 @@ class SceneLoader extends Loader {
     _postload_object( oscene )
     {
         if ( this.status !== Loader.Status.LOADING ) return;
-
         this._load_entity_list( oscene );
-    }
-
-
-    /**
-     * もうリクエストがないとき、残りのオブジェクトを読み込む
-     * @private
-     */
-    _postload_object_ifNoReq( oscene )
-    {
-        --oscene.req_count;
-        if ( (oscene.req_count == 0) && oscene.req_ended ) {
-            this._postload_object( oscene );
-        }
     }
 
 
@@ -151,13 +130,13 @@ class SceneLoader extends Loader {
         if ( !model_register ) return;
 
         var keys = Object.keys( model_register );
-        var tasks = [];
+        var asyncTasks = [];
         for ( var i = 0; i < keys.length; ++i ) {
             var    id = keys[i];
             var model = model_register[id];
-            tasks.push(this._load_model_container( oscene, id, model ));
+            asyncTasks.push( this._load_model_container( oscene, id, model ) );
         }
-        return Promise.all(tasks);
+        return Promise.all( asyncTasks );
     }
 
 
@@ -168,17 +147,20 @@ class SceneLoader extends Loader {
     {
         var url = model.link;
         if ( !this._resource.isSubResourceSupported() ) return Promise.reject(new Error("Sub Resource is not supported"));
-        ++oscene.req_count;
         return (
             this._resource.loadSubResource( url, ResourceType.MODEL )
             .then( json => {
                     // モデルデータの取得に成功
                     this._check_cancel();
+                    // 現時点ではURLリソースのみ対応
+                    const gltf_resource = new URLResource( url, {
+                            transform: this._resource.transform
+                    } );
                     // データを解析して gltf.Content を構築
                     return GltfTool.load( json, {
-                            base_uri:         url,
-                            transform_binary: uri => this._transform( uri, ResourceType.BINARY ),
-                            transform_image:  uri => this._transform( uri, ResourceType.IMAGE )
+                            base_resource: gltf_resource,
+                              binary_type: ResourceType.BINARY,
+                               image_type: ResourceType.IMAGE
                     } );
             } )
             .then( content => {
@@ -189,9 +171,6 @@ class SceneLoader extends Loader {
                         container.setOffsetTransform( matrix );
                     }
                     this._setReference( id, container );
-            } )
-            .then( () => {
-                    this._postload_object_ifNoReq( oscene );
             } )
         );
     }

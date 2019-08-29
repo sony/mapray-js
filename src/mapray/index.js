@@ -16,6 +16,7 @@ import RenderCallback from "./RenderCallback";
 import StandardImageProvider from "./StandardImageProvider";
 import Scene from "./Scene";
 import Entity from "./Entity";
+import PolygonEntity from "./PolygonEntity";
 import MarkerLineEntity from "./MarkerLineEntity";
 import TextEntity from "./TextEntity";
 import PinEntity from "./PinEntity";
@@ -24,6 +25,7 @@ import SceneLoader from "./SceneLoader";
 import GeoJSONLoader from "./GeoJSONLoader";
 import DebugStats from "./DebugStats";
 import MaprayApi from "./MaprayApi";
+import Resource, { URLResource } from "./Resource";
 
 
 /**
@@ -49,6 +51,7 @@ var mapray = {
     StandardImageProvider: StandardImageProvider,
     Scene: Scene,
     Entity: Entity,
+    PolygonEntity: PolygonEntity,
     MarkerLineEntity: MarkerLineEntity,
     PinEntity: PinEntity,
     ImageIconEntity: ImageIconEntity,
@@ -56,7 +59,8 @@ var mapray = {
     SceneLoader: SceneLoader,
     GeoJSONLoader: GeoJSONLoader,
     DebugStats: DebugStats,
-    MaprayApi: MaprayApi
+    MaprayApi: MaprayApi,
+    URLResource: URLResource
 };
 
 
