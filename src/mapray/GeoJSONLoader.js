@@ -35,7 +35,7 @@ class GeoJSONLoader extends Loader {
         }
         else {
             throw new Error( "Unsupported Resource: " + resource);
-       }
+        }
 
         super( scene, resource, {
                 onLoad: options.onLoad

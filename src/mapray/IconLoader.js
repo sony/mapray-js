@@ -106,22 +106,22 @@ class IconLoaderItem {
     load() {
         if ( this._status === IconLoaderItem.Status.NOT_LOADED ) {
             this._status = IconLoaderItem.Status.LOADING;
-            this.doLoad(
-                () => {
+            return this.doLoad()
+            .then( image => {
+                    this._icon = image;
                     this._status = IconLoaderItem.Status.LOADED;
                     for ( var i = 0; i < this.funcs.length; i++ ) {
                         this.funcs[ i ]( this );
                     }
                     this.funcs.length = 0;
-                },
-                () => {
+            } )
+            .catch( error => {
                     this._status = IconLoaderItem.Status.ABORTED;
                     for ( var i = 0; i < this.funcs.length; i++ ) {
                         this.funcs[ i ]( this );
                     }
                     this.funcs.length = 0;
-                }
-            );
+            } );
         }
     }
 
@@ -132,7 +132,7 @@ class IconLoaderItem {
      * @param {function} onerror 失敗時のコールバック
      */
     doLoad( onload, onerror ) {
-        throw new Error( "doLoad() is not implemented in: " + this.constructor.name );
+        return Promise.reject( new Error( "doLoad() is not implemented in: " + this.constructor.name ) );
     }
 
 
@@ -216,17 +216,7 @@ class URLIconLoaderItem extends IconLoaderItem {
 
 
     doLoad( onload, onerror ) {
-        var image = new Image();
-        image.onload = event => {
-            this._icon = event.target;
-            onload();
-        };
-        image.onerror = event => {
-            this._icon = null;
-            onerror();
-        };
-        image.crossOrigin = "anonymous";
-        image.src = this.url;
+        return Dom.loadImage( this.url, { crossOrigin: "anonymous" } );
     }
 
 }
@@ -292,8 +282,7 @@ class TextIconLoaderItem extends IconLoaderItem {
         context.textBaseline = "alphabetic";
         context.font = (size * 0.6756756757) + "px " + fontFamily;
         context.fillText( this.text, size * 0.5, size * 0.7432432432 );
-        this._icon = context.canvas;
-        onload();
+        return Promise.resolve( context.canvas );
     }
 
 
@@ -347,47 +336,13 @@ class ImageIconLoaderItem extends IconLoaderItem {
      * @override
      */
     doLoad( onload, onerror ) {
-        var image_src = this._image_src;
-        if ( typeof( image_src ) === "string" ) {
-            var url = image_src;
-            var image = new Image();
-            image.onload = event => {
-                this._icon = event.target;
-                onload();
-            };
-            image.onerror = event => {
-                this._icon = null;
-                onerror();
-            };
-            image.src = url;
-        }
-        else if ( image_src instanceof HTMLImageElement ) {
-            var image = image_src;
-            if ( image.complete ) {
-                this._icon = image;
-                onload();
-            }
-            else {
-                if ( image.onload !== null ) throw new Error();
-                if ( image.onerror !== null ) throw new Error();
-                image.onload = event => {
-                    this._icon = event.target;
-                    onload();
-                };
-                image.onerror = event => {
-                    this._icon = null;
-                    onerror();
-                };
-            }
-        }
-        else if ( image_src instanceof HTMLCanvasElement ) {
-            var canvas = image_src;
-            this._icon = canvas;
-            onload();
-        }
-        else {
-            onerror( new Error( "not supported: " + image_src ) );
-        }
+        const image_src = this._image_src;
+        return (
+            typeof( image_src ) === "string"       ? Dom.loadImage( image_src ):
+            image_src instanceof HTMLImageElement  ? Dom.waitForLoad( image_src ):
+            image_src instanceof HTMLCanvasElement ? Promise.resolve( image_src ):
+            Promise.reject( new Error( "not supported: " + image_src ) )
+        );
     }
 
 }

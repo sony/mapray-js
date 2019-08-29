@@ -4,7 +4,7 @@ import BufferEntry from "./BufferEntry";
 import ImageEntry from "./ImageEntry";
 import Buffer from "./Buffer";
 import Image from "./Image";
-import CredentialMode from "../CredentialMode";
+
 
 
 /**
@@ -23,11 +23,10 @@ class Context {
     {
         var opts = options || {};
 
-        this._transform_binary = opts.transform_binary || defaultTransformCallback;
-        this._transform_image  = opts.transform_image  || defaultTransformCallback;
-
         this._gjson    = body;
-        this._base_uri = (opts.base_uri !== undefined) ? opts.base_uri : "";
+        this._base_resource = opts.base_resource;
+        this._binary_type = opts.binary_type;
+        this._image_type = opts.image_type;
 
         this._resolve  = null;  // Promise の resolve() 関数
         this._reject   = null;  // Promise の reject() 関数
@@ -135,79 +134,20 @@ class Context {
 
 
     /**
-     * glTF でのリソース URI からリクエストする URI を解決
-     *
-     * @param  {string} uri  glTF でのリソース URI
-     * @return {string}      リクエストする URI
-     * @see https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#uris
+     * バッファデータの読み込みを開始
+     * @param {mapray.gltf.Context} ctx  読み込みコンテキスト
+     * @param {string}              url  バッファデータの URL
+     * @private
      */
-    solveResourceUri( uri )
+    loadBinary( path )
     {
-        var re_dat = /^data:/;
-        var re_abs = /^[a-z][-+.0-9a-z]*:\/\//;
-
-        if ( re_dat.test( uri ) || re_abs.test( uri ) ) {
-            // uri がデータ URI または絶対 URI のときは
-            // そのまま uri をリクエスト
-            return uri;
-        }
-        else {
-            // それ以外のときは uri を相対 URI と解釈し
-            // 基底 URI と結合した URI をリクエスト
-            var     last = this._base_uri.lastIndexOf( '/' );
-            var base_uri = (last >= 0) ? this._base_uri.substr( 0 , last + 1 ) : "";
-            return base_uri + uri;
-        }
+        return this._base_resource.loadSubResourceAsArrayBuffer( path, this._binary_type );
     }
 
 
-    /**
-     * バイナリを取得するときの fetch 関数のパラメータを取得
-     *
-     * @param  {string} url  バイナリの URL
-     * @return {object}      { url: URL, init: fetch() に与える init オブジェクト }
-     */
-    makeBinaryFetchParams( url )
+    loadImage( path )
     {
-        const tr = this._transform_binary( url );
-
-        var init = {
-            credentials: (tr.credentials || CredentialMode.OMIT).credentials
-        };
-        if ( tr.headers ) {
-            init.headers = tr.headers;
-        }
-
-        return {
-            url:  tr.url,
-            init: init
-        };
-    }
-
-
-    /**
-     * イメージを取得するときの Image のプロパティを取得
-     *
-     * @param  {string} url  バイナリの URL
-     * @return {object}      { url: URL, crossOrigin: Image#crossOrigin }
-     */
-    makeImageLoadParams( url )
-    {
-        const tr = this._transform_image( url );
-
-        const params = {
-            url: tr.url
-        };
-
-        // crossorigin 属性の値
-        if ( tr.credentials === CredentialMode.SAME_ORIGIN ) {
-            params.crossOrigin = "anonymous";
-        }
-        else if ( tr.credentials === CredentialMode.INCLUDE ) {
-            params.crossOrigin = "use-credentials";
-        }
-
-        return params;
+        return this._base_resource.loadSubResourceAsImage( path, this._image_type );
     }
 
 
@@ -402,11 +342,6 @@ class Context {
 
 }
 
-
-function defaultTransformCallback( url )
-{
-    return { url: url };
-}
 
 
 export default Context;

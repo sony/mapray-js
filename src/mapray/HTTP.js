@@ -23,12 +23,12 @@ class HTTP {
             fetch( url, option )
             .then( response => {
                     if ( !response.ok ) {
-                        throw new FetchError( "Failed to fetch: " + response.statusText, response );
+                        throw new FetchError( "Failed to fetch: " + response.statusText, url, response );
                     }
                     return response;
             } )
             .catch( error => {
-                    throw new FetchError( "Failed to fetch: ", null, error );
+                    throw new FetchError( "Failed to fetch: ", url, null, error );
             } )
         );
     }
@@ -70,13 +70,14 @@ HTTP.CREDENTIAL_MODE = {
 };
 
 class FetchError extends Error {
-    constructor( message, response, cause )
+    constructor( message, url, response, cause )
     {
         super( message );
         if ( Error.captureStackTrace ) {
             Error.captureStackTrace( this, FetchError );
         }
         this.name = "FetchError";
+        this.url = url;
         this.response = response;
         this.cause = cause;
         if ( cause ) {

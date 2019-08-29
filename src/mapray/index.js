@@ -26,6 +26,7 @@ import SceneLoader from "./SceneLoader";
 import GeoJSONLoader from "./GeoJSONLoader";
 import DebugStats from "./DebugStats";
 import MaprayApi from "./MaprayApi";
+import Resource, { URLResource } from "./Resource";
 
 
 /**
@@ -59,6 +60,7 @@ var mapray = {
     ImageIconEntity,
     SceneLoader,
     GeoJSONLoader,
+    URLResource,
     MaprayApi,
     DebugStats
 };

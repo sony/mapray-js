@@ -4,9 +4,9 @@ import { FetchError } from "./HTTP";
 
 
 class MaprayApiError extends FetchError {
-    constructor( code, message, response, cause )
+    constructor( code, message, url, response, cause )
     {
-        super( message + " [" + code + "]" );
+        super( message + " [" + code + "]", url );
         if ( Error.captureStackTrace ) {
             Error.captureStackTrace( this, MaprayApiError );
         }
@@ -183,15 +183,15 @@ class MaprayApi extends HTTP {
                             .catch( additionalError => {
                                     // Couldn't get additional info of the error.
                                     // throw original error.
-                                    throw new MaprayApiError( -1, "Failed to fetch", null, error );
+                                    throw new MaprayApiError( -1, "Failed to fetch", url, null, error );
                             } )
                             .then( errorObject => {
-                                    throw new MaprayApiError( errorObject.code, errorObject.error, error.response, error );
+                                    throw new MaprayApiError( errorObject.code, errorObject.error, url, error.response, error );
                             } )
                         );
                     }
                     else {
-                        throw new MaprayApiError( -1, "Failed to fetch", null, error );
+                        throw new MaprayApiError( -1, "Failed to fetch", url, null, error );
                     }
             } )
         );
