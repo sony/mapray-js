@@ -28,7 +28,7 @@ class HTTP {
                     return response;
             } )
             .catch( error => {
-                    throw new FetchError( "Failed to fetch: ", url, null, error );
+                    throw new FetchError( "Failed to fetch", url, null, error );
             } )
         );
     }
@@ -72,7 +72,7 @@ HTTP.CREDENTIAL_MODE = {
 class FetchError extends Error {
     constructor( message, url, response, cause )
     {
-        super( message );
+        super( message + " " + url );
         if ( Error.captureStackTrace ) {
             Error.captureStackTrace( this, FetchError );
         }
