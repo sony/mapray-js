@@ -29,7 +29,7 @@ class Dom {
                 image.onload  = event => resolve( event.target );
                 image.onerror = event => reject( new Error("Failed to load image") );
                 if ( options.crossOrigin !== undefined ) {
-                    image.crossOrigin = crossOrigin;
+                    image.crossOrigin = options.crossOrigin;
                 }
                 image.src = src;
         } );

@@ -216,7 +216,7 @@ class URLIconLoaderItem extends IconLoaderItem {
 
 
     doLoad( onload, onerror ) {
-        return Dom.loadImage( this.url, { crossOrigin: "anonymous" } );
+        return Dom.loadImage( this.url, { crossOrigin: "Anonymous" } );
     }
 
 }
