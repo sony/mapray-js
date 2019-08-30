@@ -3,6 +3,7 @@ import GeoMath from "./GeoMath";
 import GeoPoint from "./GeoPoint";
 import CredentialMode from "./CredentialMode";
 import MarkerLineEntity from "./MarkerLineEntity";
+import PolygonEntity from "./PolygonEntity";
 import PinEntity from "./PinEntity";
 import Resource, { URLResource } from "./Resource";
 
@@ -43,8 +44,15 @@ class GeoJSONLoader extends Loader {
 
         this._getLineColor = options.getLineColor || defaultGetLineColorCallback;
         this._getLineWidth = options.getLineWidth || defaultGetLineWidthCallback;
+
         this._getRadius = options.getRadius || defaultGetRadiusCallback;
         this._getFillColor = options.getFillColor || defaultGetFillColorCallback;
+
+        this._getPointFGColor = options.getPointFGColor || defaultGetPointFGColorCallback;
+        this._getPointBGColor = options.getPointBGColor || defaultGetPointBGColorCallback;
+        this._getPointSize = options.getPointSize || defaultGetPointSizeCallback;
+        this._getPointIconId = options.getPointIconId || defaultGetPointIconIdCallback;
+
         this._getElevation = options.getElevation || defaultGetElevationCallback;
         this._transform  = options.transform || defaultTransformCallback;
         this._getExtrudedMode = options.getExtrudedMode || defaultExtrudedModeCallback;
@@ -75,7 +83,7 @@ class GeoJSONLoader extends Loader {
     _load_geojson_object( geojson )
     {
         var success;
-        if ( geojson.type === "FeatureCollection" ) {
+        if ( geojson.type === TYPES.FEATURE_COLLECTION ) {
             var features = geojson.features;
             success = false;
             for ( var i = 0, len = features.length; i < len; i++ ) {
@@ -85,7 +93,7 @@ class GeoJSONLoader extends Loader {
                 if (s && !success) success = s;
             }
         }
-        else if ( geojson.type === "Feature" ) {
+        else if ( geojson.type === TYPES.FEATURE ) {
             var geometry = geojson.geometry;
             success = this._load_geometry_object( geometry, geojson );
         }
@@ -93,7 +101,7 @@ class GeoJSONLoader extends Loader {
             success = this._load_geometry_object( geojson, null );
         }
         else {
-            throw new Error("Unnsupported Type: " + geojson.type);
+            throw new Error( "Unnsupported Type: " + geojson.type );
         }
         
         if ( this._cancelled ) return false;
@@ -114,27 +122,25 @@ class GeoJSONLoader extends Loader {
         }
         
         switch ( geometry.type ) {
-          case "Point":
-          case "MultiPoint":
-                return this._loadPoint( geometry, this._getLineColor(geojson), this._getLineWidth(geojson), this._getExtrudedMode(geojson), this._getElevation(geojson) );
+          case GEOMETRY_TYPES.POINT:
+          case GEOMETRY_TYPES.MULTI_POINT:
+              return this._loadPoint( geometry, geojson );
 
-          case "LineString":
-          case "MultiLineString":
-                console.log( "GeoJSON LineString or MultiString" );
-                return this._loadLines( geometry, this._getLineColor(geojson), this._getLineWidth(geojson), this._getExtrudedMode(geojson), this._getElevation(geojson) );
+          case GEOMETRY_TYPES.LINE_STRING:
+          case GEOMETRY_TYPES.MULTI_LINE_STRING:
+              return this._loadLines( geometry, geojson );
 
-          case "Polygon":
-          case "MultiPolygon":
-                console.log( "GeoJSON Polygon or MultiPolgon");
-                return false;
+          case GEOMETRY_TYPES.POLYGON:
+          case GEOMETRY_TYPES.MULTI_POLYGON:
+              return this._loadPolygons( geometry, geojson );
 
-          case "GeometryCollection":
-                return false;
+          case GEOMETRY_TYPES.GEOMETRY_COLLECTION:
+              return true;
 
           default:
-                throw new Error( "Invalid GeoJSON type: " + geometry.type );
+              throw new Error( "Invalid GeoJSON type: " + geometry.type );
         }
-    }
+      }
 
 
     /**
@@ -155,8 +161,14 @@ class GeoJSONLoader extends Loader {
         return init;
     }
 
-    _loadLines( geometry, color4, width, extruded, elevation ) 
+
+    _loadLines( geometry, geojson ) 
     {
+        const color4 = this._getLineColor( geojson );
+        const width = this._getLineWidth( geojson );
+        const extruded = this._getExtrudedMode( geojson );
+        const elevation = this._getElevation( geojson );
+        
         if ( !geometry || color4.length !== 4 ) {
             return false;
         }
@@ -166,22 +178,21 @@ class GeoJSONLoader extends Loader {
         var alpha = color4[3];
 
         // If multiline, split entity
-        if ( type === "MultiLineString" ) {
+        if ( type === GEOMETRY_TYPES.MULTI_LINE_STRING ) {
             coords.forEach( points => {
-                if ( !this._genereteLine( points, width, rgb, alpha, extruded, elevation ) ) {
+                if ( !this._generateLine( points, width, rgb, alpha, extruded, elevation ) ) {
                     return false;
                 }
             });
-        } else if ( type === "LineString" ) {
-            if ( !this._genereteLine( coords, width, rgb, alpha, extruded, elevation ) ) {
-                return false;
-            }
+            return true;
         }
-        
-        return true;
+        else { // type === GEOMETRY_TYPES.LINE_STRING
+            return this._generateLine( coords, width, rgb, alpha, extruded, elevation )
+        }
     }
 
-    _genereteLine( points, width, color, opaticy, extruded, elevation ) 
+
+    _generateLine( points, width, color, opaticy, extruded, elevation ) 
     {
         if ( !points ) {
             return false;
@@ -190,7 +201,8 @@ class GeoJSONLoader extends Loader {
         var h = 0;
         if ( !extruded ) {
             h = 0;
-        } else if ( extruded ) {
+        }
+        else if ( extruded ) {
             h = elevation;
         }
 
@@ -199,72 +211,131 @@ class GeoJSONLoader extends Loader {
         if ( !fp ) {
             return false;
         }
-        entity.addPoints(fp);
-        entity.setLineWidth(width);
-        entity.setColor(color);
-        entity.setOpacity(opaticy);
+        entity.addPoints( fp );
+        entity.setLineWidth( width );
+        entity.setColor( color );
+        entity.setOpacity( opaticy );
+        this._scene.addEntity( entity );
+        
+        return true;
+    }
+
+
+    _loadPoint( geometry, geojson )
+    {
+        const fgColor = this._getPointFGColor( geojson );
+        const bgColor = this._getPointBGColor( geojson );
+        const iconId = this._getPointIconId( geojson );
+        const size = this._getPointSize( geojson );
+        const extruded = this._getExtrudedMode( geojson );
+        const elevation = this._getElevation( geojson );
+        
+        if ( !geometry ) {
+            return false;
+        }
+        var type = geometry.type;
+        // TO do: height is fake.
+
+
+        var props = {
+            "fg_color": fgColor.slice( 0, 3 ),
+            "bg_color": bgColor.slice( 0, 3 ),
+            size: size,
+        };
+
+        // If multiline, split entity
+        if ( type === GEOMETRY_TYPES.POINT ) {
+            var entity = new PinEntity( this._scene );
+            var coords = new GeoPoint( geometry.coordinates[0], geometry.coordinates[1], geometry.coordinates[2] );
+            if ( iconId !== null ) {
+                entity.addMakiIconPin( iconId, coords, props );
+            }
+            else {
+                entity.addPin( coords, props );
+            }
+            this._scene.addEntity( entity );
+        }
+        else { // type === GEOMETRY_TYPES.MULTI_POINT
+            var entity = new PinEntity( this._scene );
+            for ( var i = 0; i < geometry.coordinates.length; i++ ) {
+                var targetCoordinates = geometry.coordinates[i];
+                var coords = new GeoPoint( targetCoordinates[0], targetCoordinates[1], targetCoordinates[2] );
+                if ( iconId !== null ) {
+                    entity.addMakiIconPin( iconId, coords, props );
+                    // entity.addPin( coords, props );
+                }
+                else {
+                    entity.addPin( coords, props );
+                }
+            }
+            this._scene.addEntity( entity );
+        }
+
+        return true;
+    }
+
+
+    _loadPolygons( geometry, geojson )
+    {
+        const color4 = this._getFillColor( geojson );
+        const extruded = this._getExtrudedMode( geojson );
+        const elevation = this._getElevation( geojson );
+
+        if ( !geometry || color4.length !== 4 ) {
+            return false;
+        }
+        var type = geometry.type;
+        var coords = geometry.coordinates;
+        var rgb = color4.slice(0, 3);
+        var alpha = color4[3];
+
+        // If multiline, split entity
+        if ( type === GEOMETRY_TYPES.MULTI_POLYGON ) {
+            coords.forEach( points => {
+                if ( !this._generatePolygon( points, rgb, alpha, extruded, elevation ) ) {
+                    return false;
+                }
+            });
+            return true;
+        }
+        else { // type === GEOMETRY_TYPES.POLYGON
+            return this._generatePolygon( coords, rgb, alpha, extruded, elevation )
+        }
+    }
+
+
+    _generatePolygon( pointsList, color, opaticy, extruded, elevation ) 
+    {
+        if ( !pointsList ) {
+            return false;
+        }
+
+        var h = extruded ? elevation : 0;
+        const entity = new PolygonEntity( this._scene );
+        entity.setColor( color );
+        entity.setOpacity( opaticy );
+        for ( let i=0; i< pointsList.length; i++ ) {
+            const fp = this._flatten( pointsList[ i ], h, pointsList[ i ].length-1 );
+            if ( !fp ) return false;
+            if (i === 0) entity.addOuterBoundary( fp );
+            else entity.addInnerBoundary( fp );
+        }
         this._scene.addEntity(entity);
         
         return true;
     }
 
-    _loadPoint( geometry, color4, width, extruded, elevation )
+
+    _flatten( ary, h, len=ary.length )
     {
-        if ( !geometry || color4.length !== 4 ) {
-            return false;
-        }
-        var type = geometry.type;
-        // TO do: height is fake.
-        var rgb = color4.slice( 0, 3 );
-        var alpha = color4[3];
-
-        var props = {
-            // "fg_color": [1.0, 0.0, 0.0],
-            // "bg_color": [0.0, 0.0, 1.0],
-            size: 30,
-        };
-
-        // If multiline, split entity
-        if ( type === "Point" ) {
-            var entity = new PinEntity( this._scene );
-            var coords = new GeoPoint( geometry.coordinates[0], geometry.coordinates[1], geometry.coordinates[2] );
-            entity.addPin( coords, props );
-            this._scene.addEntity( entity );
-        }
-        else if ( type === "MultiPoint" ) {
-            var entity = new PinEntity( this._scene );
-            for ( var i = 0; i < geometry.coordinates.length; i++ ) {
-                var targetCoordinates = geometry.coordinates[i];
-                var coords = new GeoPoint( targetCoordinates[0], targetCoordinates[1], targetCoordinates[2] );
-                entity.addPin( coords, props );
-            }
-            this._scene.addEntity( entity );
-        }
-        else {
-            throw new Error( "Unsupported Geometry Type: " + type );
-        }
-
-        return true;
-    }
-
-    _flatten( ary, h )
-    {
-        return ary.reduce((p, c) => {
-          return c.length === 2 ? p.concat(c, h) : p.concat(c);
+        return ary.reduce( (p, c, i) => {
+                return (
+                    i >= len ? p:
+                    c.length === 2 ? p.concat(c, h) :
+                    p.concat(c)
+                );
         }, []);
     };
-
-    _generateFeature( geojson ) {
-        if ( geojson.type === "Feature" || geojson.type === "FeatureCollection" ) {
-            return geojson;
-        }
-
-        return {
-            type: "Feature",
-            properties: {},
-            geometry: geojson
-        }
-    }
 }
 
 /**
@@ -307,11 +378,15 @@ class GeoJSONLoader extends Loader {
 
 {
     GeoJSONLoader._defaultHeaders = {};
-    GeoJSONLoader.defaultLineColor = [0, 0, 0, 255];
-    GeoJSONLoader.defaultFillColor = [0, 0, 0, 255];
+    GeoJSONLoader.defaultLineColor = [0, 0, 0, 1];
+    GeoJSONLoader.defaultFillColor = [0, 0, 0, 1];
     GeoJSONLoader.defaultLineWidth = 1;
     GeoJSONLoader.defaultRadius = 10;
-    GeoJSONLoader.defaultExtrudedMode = false;
+    GeoJSONLoader.defaultExtrudedMode = true;
+    GeoJSONLoader.defaultPointFGColor = [1, 0, 0];
+    GeoJSONLoader.defaultPointBGColor = [0, 0, 1];
+    GeoJSONLoader.defaultPointSize = 30;
+    GeoJSONLoader.defaultPointIconId = null;
 }
 
 
@@ -336,6 +411,28 @@ function defaultGetFillColorCallback( geojson )
     return GeoJSONLoader.defaultFillColor;
 }
 
+
+function defaultGetPointFGColorCallback( geojson )
+{
+    return GeoJSONLoader.defaultPointFGColor;
+}
+
+function defaultGetPointBGColorCallback( geojson )
+{
+    return GeoJSONLoader.defaultPointBGColor;
+}
+
+function defaultGetPointSizeCallback( geojson )
+{
+    return GeoJSONLoader.defaultPointSize;
+}
+
+function defaultGetPointIconIdCallback( geojson )
+{
+    return GeoJSONLoader.defaultPointIconId;
+}
+
+
 function defaultGetElevationCallback( geojson )
 {
     return 100;
@@ -349,15 +446,15 @@ function defaultExtrudedModeCallback( geojson )
 
     var geometry = geojson.type === "Feature" ? geojson.geometry : geojson;
     switch (geometry.type) {
-        case "Point":
-        case "MultiPoint":
+        case GEOMETRY_TYPES.POINT:
+        case GEOMETRY_TYPES.MULTI_POINT:
             return true;
-        case "LineString":
-        case "MultiLineString":
+        case GEOMETRY_TYPES.LINE_STRING:
+        case GEOMETRY_TYPES.MULTI_LINE_STRING:
             return true;
-        case "Polygon":
-        case "MultiPolygon":
-            return false;
+        case GEOMETRY_TYPES.POLYGON:
+        case GEOMETRY_TYPES.MULTI_POLYGON:
+            return true;
         default:
             throw new Error('Invalid GeoJSON: unknown type: ' + geometry.type);
     }
@@ -369,7 +466,22 @@ function defaultTransformCallback( url )
     return { url: url };
 }
 
-var SUPPORTED_GEOMETRY_TYPES = ["Point", "MultiPoint", "LineString", "MultiLineString", "Polygon", "MultiPolygon", "GeometryCollection", "Feature"];
+var TYPES = {
+    FEATURE: "Feature",
+    FEATURE_COLLECTION: "FeatureCollection",
+};
 
+var GEOMETRY_TYPES = {
+    POINT: "Point",
+    MULTI_POINT: "MultiPoint",
+    LINE_STRING: "LineString",
+    MULTI_LINE_STRING: "MultiLineString",
+    POLYGON: "Polygon",
+    MULTI_POLYGON: "MultiPolygon",
+    GEOMETRY_COLLECTION: "GeometryCollection",
+    FEATURE: "Feature"
+};
+
+var SUPPORTED_GEOMETRY_TYPES = Object.values( GEOMETRY_TYPES );
 
 export default GeoJSONLoader;
