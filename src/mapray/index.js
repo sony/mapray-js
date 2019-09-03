@@ -18,6 +18,8 @@ import Scene from "./Scene";
 import Entity from "./Entity";
 import MarkerLineEntity from "./MarkerLineEntity";
 import TextEntity from "./TextEntity";
+import ModelEntity from "./ModelEntity";
+import PolygonEntity from "./PolygonEntity";
 import SceneLoader from "./SceneLoader";
 import DebugStats from "./DebugStats";
 
@@ -27,28 +29,30 @@ import DebugStats from "./DebugStats";
  * @namespace mapray
  */
 var mapray = {
-    Viewer: Viewer,
-    Camera: Camera,
-    GeoMath: GeoMath,
-    GeoPoint: GeoPoint,
-    Orientation: Orientation,
-    Ray: Ray,
-    AltitudeMode: AltitudeMode,
-    CredentialMode: CredentialMode,
-    Layer: Layer,
-    LayerCollection: LayerCollection,
-    DemProvider: DemProvider,
-    StandardDemProvider: StandardDemProvider,
-    CloudDemProvider: CloudDemProvider,
-    ImageProvider: ImageProvider,
-    RenderCallback: RenderCallback,
-    StandardImageProvider: StandardImageProvider,
-    Scene: Scene,
-    Entity: Entity,
-    MarkerLineEntity, MarkerLineEntity,
-    TextEntity, TextEntity,
-    SceneLoader, SceneLoader,
-    DebugStats: DebugStats
+    Viewer,
+    Camera,
+    GeoMath,
+    GeoPoint,
+    Orientation,
+    Ray,
+    AltitudeMode,
+    CredentialMode,
+    Layer,
+    LayerCollection,
+    DemProvider,
+    StandardDemProvider,
+    CloudDemProvider,
+    ImageProvider,
+    RenderCallback,
+    StandardImageProvider,
+    Scene,
+    Entity,
+    MarkerLineEntity,
+    TextEntity,
+    ModelEntity,
+    PolygonEntity,
+    SceneLoader,
+    DebugStats
 };
 
 
