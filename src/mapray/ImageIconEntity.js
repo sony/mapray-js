@@ -2,20 +2,20 @@ import Entity from "./Entity";
 import Primitive from "./Primitive";
 import Mesh from "./Mesh";
 import Texture from "./Texture";
-import TextMaterial from "./TextMaterial";
+import ImageIconMaterial from "./ImageIconMaterial";
 import GeoMath from "./GeoMath";
 import GeoPoint from "./GeoPoint";
 import AltitudeMode from "./AltitudeMode";
 import EntityRegion from "./EntityRegion";
+import IconLoader, { ImageIconLoader } from "./IconLoader";
 import Dom from "./util/Dom";
 
 /**
- * @summary テキストエンティティ
- *
+ * @summary 画像アイコンエンティティ
  * @memberof mapray
  * @extends mapray.Entity
  */
-class TextEntity extends Entity {
+class ImageIconEntity extends Entity {
 
     /**
      * @param {mapray.Scene} scene        所属可能シーン
@@ -27,16 +27,13 @@ class TextEntity extends Entity {
     {
         super( scene, opts );
 
-        // テキスト管理
+        // 要素管理
         this._entries = [];
 
-        // テキストの親プロパティ
-        this._text_parent_props = {
-            font_style:  "normal",
-            font_weight: "normal",
-            font_size:   TextEntity.DEFAULT_FONT_SIZE,
-            font_family: TextEntity.DEFAULT_FONT_FAMILY,
-            color: GeoMath.createVector3f( TextEntity.DEFAULT_COLOR )
+        // 親プロパティ
+        this._parent_props = {
+            size: null,
+            origin: null,
         };
 
         // Entity.PrimitiveProducer インスタンス
@@ -59,80 +56,16 @@ class TextEntity extends Entity {
 
 
     /**
-     * @override
-     */
-    onChangeAltitudeMode( prev_mode )
-    {
-        this._primitive_producer.onChangeAltitudeMode();
-    }
-
-
-    /**
-     * @summary フォントスタイルを設定
-     * @param {string} style  フォントスタイル ("normal" | "italic" | "oblique")
-     */
-    setFontStyle( style )
-    {
-        this._setValueProperty( "font_style", style );
-    }
-
-
-    /**
-     * @summary フォントの太さを設定
-     * @param {string} weight  フォントの太さ ("normal" | "bold")
-     */
-    setFontWeight( weight )
-    {
-        this._setValueProperty( "font_weight", weight );
-    }
-
-
-    /**
-     * @summary フォントの大きさを設定
-     * @param {number} size  フォントの大きさ (Pixels)
-     */
-    setFontSize( size )
-    {
-        this._setValueProperty( "font_size", size );
-    }
-
-
-    /**
-     * @summary フォントファミリーを設定
-     * @param {string} family  フォントファミリー
-     * @see https://developer.mozilla.org/ja/docs/Web/CSS/font-family
-     */
-    setFontFamily( family )
-    {
-        this._setValueProperty( "font_family", family );
-    }
-
-
-    /**
-     * @summary テキストの色を設定
-     * @param {mapray.Vector3} color  テキストの色
-     */
-    setColor( color )
-    {
-        this._setVector3Property( "color", color );
-    }
-
-
-    /**
-     * @summary テキストを追加
-     * @param {string}          text      テキスト
+     * @summary Add Image Icon
+     * @param {URL|HTMLImageElement|HTMLCanvasElement} image_src      画像
      * @param {mapray.GeoPoint} position  位置
      * @param {object}          [props]   プロパティ
-     * @param {string}         [props.font_style]   フォントスタイル ("normal" | "italic" | "oblique")
-     * @param {string}         [props.font_weight]  フォントの太さ   ("normal" | "bold")
-     * @param {number}         [props.font_size]    フォントの大きさ (Pixels)
-     * @param {string}         [props.font_family]  フォントファミリー
-     * @param {mapray.Vector3} [props.color]        テキストの色
+     * @param {mapray.Vector2} [props.size]              アイコンサイズ
      */
-    addText( text, position, props )
+    addImageIcon( image_src, position, props ) 
     {
-        this._entries.push( new Entry( this, text, position, props ) );
-        this._primitive_producer.onAddTextEntry();
+        this._entries.push( new ImageEntry( this, image_src, position, props ) );
+        this._primitive_producer.onAddEntry();
     }
 
 
@@ -140,14 +73,14 @@ class TextEntity extends Entity {
      * @summary 専用マテリアルを取得
      * @private
      */
-    _getTextMaterial()
+    _getMaterial()
     {
         var scene = this.scene;
-        if ( !scene._TextEntity_text_material ) {
+        if ( !scene._ImageEntity_image_material ) {
             // scene にマテリアルをキャッシュ
-            scene._TextEntity_text_material = new TextMaterial( scene.glenv );
+            scene._ImageEntity_image_material = new ImageIconMaterial( scene.glenv );
         }
-        return scene._TextEntity_text_material;
+        return scene._ImageEntity_image_material;
     }
 
 
@@ -186,14 +119,12 @@ class TextEntity extends Entity {
 
         for ( let entry of json.entries ) {
             position.setFromArray( entry.position );
-            this.addText( entry.text, position, entry );
+            this.addImageIcon( position, entry );
         }
-
-        if ( json.font_style  !== undefined ) this.setFontStyle( json.font_style );
-        if ( json.font_weight !== undefined ) this.setFontWeight( json.font_weight );
-        if ( json.font_size   !== undefined ) this.setFontSize( json.font_size );
-        if ( json.font_family !== undefined ) this.setFontFamily( json.font_family );
-        if ( json.color       !== undefined ) this.setColor( json.color );
+        
+        if ( json.size )     this.setSize( json.size );
+        if ( json.fg_color ) this.setFGColor( json.fg_color );
+        if ( json.bg_color ) this.setBGColor( json.bg_color );
     }
 
 }
@@ -201,19 +132,21 @@ class TextEntity extends Entity {
 
 // クラス定数の定義
 {
-    TextEntity.DEFAULT_FONT_SIZE   = 16;
-    TextEntity.DEFAULT_FONT_FAMILY = "sans-serif";
-    TextEntity.DEFAULT_COLOR       = GeoMath.createVector3f( [1, 1, 1] );
+    ImageIconEntity.DEFAULT_COLOR       = GeoMath.createVector3f( [1, 1, 1] );
+    ImageIconEntity.SAFETY_PIXEL_MARGIN = 1;
+    ImageIconEntity.MAX_IMAGE_WIDTH     = 4096;
+    ImageIconEntity.CIRCLE_SEP_LENGTH   = 32;
+    ImageIconEntity.DEFAULT_ICON_SIZE   = GeoMath.createVector2f( [30, 30] );
+    ImageIconEntity.DEFAULT_ORIGIN      = GeoMath.createVector2f( [ 0.5, 0.5 ] );
 
-    TextEntity.DEFAULT_TEXT_UPPER  = 1.1;
-    TextEntity.DEFAULT_TEXT_LOWER  = 0.38;
-    TextEntity.SAFETY_PIXEL_MARGIN = 1;
-    TextEntity.MAX_IMAGE_WIDTH     = 4096;
+    ImageIconEntity.SAFETY_PIXEL_MARGIN = 1;
+    ImageIconEntity.MAX_IMAGE_WIDTH     = 4096;
 }
 
 
+
 /**
- * @summary TextEntity の PrimitiveProducer
+ * @summary PrimitiveProducer
  *
  * TODO: relative で標高の変化のたびにテクスチャを生成する必要はないので
  *       Layout でのテクスチャの生成とメッシュの生成を分離する
@@ -235,11 +168,11 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         // プリミティブの要素
         this._transform  = GeoMath.setIdentity( GeoMath.createMatrix() );
         this._properties = {
-            image: null  // テキスト画像
+            image: null,       // アイコン画像
         };
 
         // プリミティブ
-        var primitive = new Primitive( this._glenv, null, entity._getTextMaterial(), this._transform );
+        var primitive = new Primitive( this._glenv, null, entity._getMaterial(), this._transform );
         primitive.properties = this._properties;
         this._primitive = primitive;
 
@@ -300,9 +233,9 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
 
     /**
-     * @summary テキストが追加されたことを通知
+     * @summary エントリが追加されたことを通知
      */
-    onAddTextEntry()
+    onAddEntry()
     {
         // 変化した可能性がある
         this.needToCreateRegions();
@@ -369,7 +302,6 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
                 { name: "a_position", size: 3 },
                 { name: "a_offset",   size: 2 },
                 { name: "a_texcoord", size: 2 },
-                { name: "a_color",    size: 4 }
             ],
             vertices: layout.vertices,
             indices:  layout.indices
@@ -490,45 +422,36 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 }
 
 
+
 /**
- * @summary テキスト要素
- * @memberof mapray.TextEntity
+ * @summary 要素
+ * @memberof mapray.ImageIconEntity
  * @private
  */
-class Entry {
+class ImageEntry {
 
     /**
-     * @param {mapray.TextEntity} owner                所有者
-     * @param {string}            text                 テキスト
-     * @param {mapray.GeoPoint}   position             位置
-     * @param {object}            [props]              プロパティ
-     * @param {string}            [props.font_style]   フォントスタイル ("normal" | "italic" | "oblique")
-     * @param {string}            [props.font_weight]  フォントの太さ   ("normal" | "bold")
-     * @param {number}            [props.font_size]    フォントの大きさ (Pixels)
-     * @param {string}            [props.font_family]  フォントファミリー
-     * @param {mapray.Vector3}    [props.color]        テキストの色
+     * @param {mapray.ImageIconEntity} owner        所有者
+     * @param {string}                 image_src    アイコン画像
+     * @param {mapray.GeoPoint}        position     位置
+     * @param {object}                 [props]      プロパティ
+     * @param {mapray.Vector2}         [props.size] アイコンサイズ
      */
-    constructor( owner, text, position, props )
+    constructor( owner, image_src, position, props )
     {
-        this._owner    = owner;
-        this._text     = text;
+        this._owner = owner;
+        this._image_src = image_src;
         this._position = position.clone();
 
         this._props = Object.assign( {}, props );  // props の複製
-        this._copyPropertyVector3f( "color" );     // deep copy
+        this._copyPropertyVector2f( "size" );      // deep copy
+        this._copyPropertyVector2f( "origin" );    // deep copy
+
+        this._icon = ImageEntry.iconLoader.load( image_src );
+        this._icon.onEnd(item => {
+                this._owner.getPrimitiveProducer()._dirty = true;
+        });
     }
-
-
-    /**
-     * @summary テキスト
-     * @type {string}
-     * @readonly
-     */
-    get text()
-    {
-        return this._text;
-    }
-
 
     /**
      * @summary 位置
@@ -540,52 +463,32 @@ class Entry {
         return this._position;
     }
 
-
     /**
-     * @summary フォントサイズ (Pixels)
-     * @type {number}
+     * @summary アイコンサイズ (Pixels)
+     * @type {mapray.Vector2}
      * @readonly
      */
     get size()
     {
-        var props  = this._props;
-        var parent = this._owner._text_parent_props;
-        return props.font_size || parent.font_size;
+        const props = this._props;
+        const parent = this._owner._parent_props;
+        return (
+            props.size || parent.size ||
+            GeoMath.createVector2f( [ this._icon.width, this._icon.height ] )
+        );
     }
-
 
     /**
-     * @summary テキストの色
-     * @type {mapray.Vector3}
+     * @summary アイコンオリジン位置 (左上を(0, 0)、右下を(1, 1)としする数字を指定する。)
+     * @type {mapray.Vector2}
      * @readonly
      */
-    get color()
+    get origin()
     {
-        var props  = this._props;
-        var parent = this._owner._text_parent_props;
-        return props.color || parent.color;
+        const props = this._props;
+        const parent = this._owner._parent_props;
+        return props.origin || parent.origin || ImageIconEntity.DEFAULT_ORIGIN;
     }
-
-
-    /**
-     * @summary フォント
-     * @type {string}
-     * @readonly
-     * @see https://developer.mozilla.org/ja/docs/Web/CSS/font
-     */
-    get font()
-    {
-        var props  = this._props;
-        var parent = this._owner._text_parent_props;
-
-        var   style = props.font_style  || parent.font_style;
-        var variant = "normal";
-        var  weight = props.font_weight || parent.font_weight;
-        var  family = props.font_family || parent.font_family;
-
-        return style + " " + variant + " " + weight + " " + this.size + "px " + family;
-    }
-
 
     /**
      * @private
@@ -598,13 +501,45 @@ class Entry {
         }
     }
 
+    /**
+     * @private
+     */
+    _copyPropertyVector2f( name )
+    {
+        var props = this._props;
+        if ( props.hasOwnProperty( name ) ) {
+            if ( typeof( props[name] ) === 'number' ) {
+                props[name] = GeoMath.createVector2f( [ props[name], props[name] ] );
+            }
+            else {
+                props[name] = GeoMath.createVector2f( props[name] );
+            }
+        }
+    }
+
+    isLoaded() {
+        return this._icon.isLoaded();
+    }
+
+    get icon() {
+        return this._icon;
+    }
+
+    draw( context, x, y, width, height ) {
+        this._icon.draw( context, x, y, width, height );
+    }
 }
 
 
+{
+    ImageEntry.iconLoader = new ImageIconLoader();
+}
+
+
+
 /**
- * @summary テキスト画像を Canvas 上にレイアウト
- *
- * @memberof mapray.TextEntity
+ * @summary Pin画像を Canvas 上にレイアウト
+ * @memberof mapray.ImageIconEntity
  * @private
  */
 class Layout {
@@ -663,7 +598,6 @@ class Layout {
         return this._texture;
     }
 
-
     /**
      * @summary 頂点配列
      * @desc
@@ -694,26 +628,32 @@ class Layout {
 
     /**
      * @summary レイアウトアイテムのリストを生成
-     * @return {array.<mapray.TextEntity.LItem>}
+     * @return {array.<mapray.ImageIconEntity.LItem>}
      * @private
      */
     _createItemList()
     {
-        var entries = this._owner._entries;
-        var context = Dom.createCanvasContext( 1, 1 );
+        const map = new Map();
 
-        var items = [];
+        const items = [];
+        let counter = 0;
         for ( let entry of this._owner.entity._entries ) {
-            items.push( new LItem( this, entry, context ) );
+            if ( entry.isLoaded() ) {
+                let item = map.get( entry.icon );
+                if ( !item ) {
+                    map.set( entry.icon, item = new LItem( this ) );
+                    items.push( item );
+                }
+                item.add( counter++, entry );
+            }
         }
 
         return items;
     }
 
-
     /**
      * @summary RowLayout のリストを生成
-     * @return {array.<mapray.TextEntity.RowLayout>}
+     * @return {array.<mapray.ImageIconEntity.RowLayout>}
      * @private
      */
     _createRowLayouts()
@@ -748,20 +688,16 @@ class Layout {
     {
         var context = Dom.createCanvasContext( width, height );
 
-        context.textAlign    = "left";
-        context.textBaseline = "alphabetic";
-        context.fillStyle    = "rgba( 255, 255, 255, 1.0 )";
-
         var items = this._items;
         for ( var i = 0; i < items.length; ++i ) {
             var item = items[i];
             if ( item.is_canceled ) continue;
-            item.drawText( context );
+            item.draw( context );
         }
 
         var glenv = this._owner._glenv;
-        var  opts = {
-            usage: Texture.Usage.TEXT
+        var opts = {
+            usage: Texture.Usage.ICON
         };
         return new Texture( glenv, context.canvas, opts );
     }
@@ -787,61 +723,76 @@ class Layout {
         var yo = transform[13];
         var zo = transform[14];
 
+        /*
+
+        |<----size[0]px---->|
+
+        0-------------------3 ------------------
+        |                   |  ^              ^ 
+        |                   |  | origin[1]    | 
+        |                   |  |              | 
+        |                   |  v              | size[1]px
+        |           o       | ---             | 
+        |                   |  ^              | 
+        |                   |  | 1-origin[1]  | 
+        |                   |  v              v 
+        1-------------------2 ------------------
+        
+        |           |<----->|    1 - origin[0]
+        |<--------->|            origin[0]
+        */
+
+        var xn = 1 / width;
+        var yn = 1 / height;
+
         var items = this._items;
         for ( var i = 0; i < items.length; ++i ) {
             var item = items[i];
             if ( item.is_canceled ) continue;
 
-            var entry = item.entry;
+            for ( var ie = 0; ie < item.entries.length; ie++ ) {
+                var eitem = item.entries[ie];
+                var entry = eitem.entry;
+                var size = entry.size;
+                var origin = entry.origin;
 
-            // テキストの色
-            var color = entry.color;
+                // Relativize based on (xo, yo, zo)
+                var ibase = eitem.index * 3;
+                var xm = gocs_array[ibase]     - xo;
+                var ym = gocs_array[ibase + 1] - yo;
+                var zm = gocs_array[ibase + 2] - zo;
 
-            // テキストの位置 (モデル座標系)
-            var ibase = 3 * i;
-            var xm = gocs_array[ibase]     - xo;
-            var ym = gocs_array[ibase + 1] - yo;
-            var zm = gocs_array[ibase + 2] - zo;
+                // Image dimensions (Image Coordinate)
+                var xc = item.pos_x;
+                var yc = item.pos_y;
+                var xsize = item.width;
+                var ysize = item.height;
 
-            // ベースライン左端 (キャンバス座標系)
-            var xc = item.pos_x;
-            var yc = item.pos_y;
+                // p0
+                vertices.push( xm, ym, zm );                                     // a_position
+                vertices.push( -origin[0]*size[0], (origin[1])*size[1] );        // a_offset
+                vertices.push( xc * xn, 1.0 - yc * yn );                         // a_texcoord
 
-            var upper = item.upper;
-            var lower = item.lower;
-            var xsize = item.width;
+                // p1
+                vertices.push( xm, ym, zm );                                    // a_position
+                vertices.push( -origin[0]*size[0], -(1-origin[1])*size[1] );    // a_offset
+                vertices.push( xc * xn, 1 - (yc + ysize) * yn );                // a_texcoord
 
-            var xn = 1 / width;
-            var yn = 1 / height;
+                // p2
+                vertices.push( xm, ym, zm );                                    // a_position
+                vertices.push( (1-origin[0])*size[0], -(1-origin[1])*size[1] ); // a_offset
+                vertices.push( (xc + xsize) * xn, 1 - (yc + ysize) * yn );      // a_texcoord
 
-            // 左下
-            vertices.push( xm, ym, zm );                                // a_position
-            vertices.push( -xsize / 2, -lower );                        // a_offset
-            vertices.push( xc * xn, 1 - (yc + lower) * yn );            // a_texcoord
-            vertices.push( color[0], color[1], color[2], 1 );           // a_color
-
-            // 右下
-            vertices.push( xm, ym, zm );                                // a_position
-            vertices.push( xsize / 2, -lower );                         // a_offset
-            vertices.push( (xc + xsize) * xn, 1 - (yc + lower) * yn );  // a_texcoord
-            vertices.push( color[0], color[1], color[2], 1 );           // a_color
-
-            // 左上
-            vertices.push( xm, ym, zm );                                // a_position
-            vertices.push( -xsize / 2, upper );                         // a_offset
-            vertices.push( xc * xn, 1 - (yc - upper) * yn );            // a_texcoord
-            vertices.push( color[0], color[1], color[2], 1 );           // a_color
-
-            // 右上
-            vertices.push( xm, ym, zm );                                // a_position
-            vertices.push( xsize / 2, upper );                          // a_offset
-            vertices.push( (xc + xsize) * xn, 1 - (yc - upper) * yn );  // a_texcoord
-            vertices.push( color[0], color[1], color[2], 1 );           // a_color
+                // p3
+                vertices.push( xm, ym, zm );                                    // a_position
+                vertices.push( (1-origin[0])*size[0], origin[1]*size[1] );      // a_offset
+                vertices.push( (xc + xsize) * xn, 1 - yc * yn );                // a_texcoord
+            }
         }
 
         return vertices;
     }
-    
+
 
     /**
      * @summary インデックス配列を生成
@@ -857,8 +808,14 @@ class Layout {
             var item = items[i];
             if ( item.is_canceled ) continue;
 
-            var b = 4 * i;
-            indices.push( b, b + 1, b + 2, b + 2, b + 1 , b + 3 );
+            for ( var ie = 0; ie < item.entries.length; ie++ ) {
+                var eitem = item.entries[ie];
+                var base = 4 * eitem.index;
+
+                var p = base;
+                indices.push( p, p+1, p+2 );
+                indices.push( p, p+2, p+3 );
+            }
         }
 
         return indices;
@@ -876,13 +833,13 @@ class Layout {
         var width  = 0;
         var height = 0;
 
-        height += TextEntity.SAFETY_PIXEL_MARGIN;
+        height += ImageIconEntity.SAFETY_PIXEL_MARGIN;
 
         for ( var i = 0; i < row_layouts.length; ++i ) {
             var row_layout = row_layouts[i];
             row_layout.locate( height );
             width   = Math.max( row_layout.width_assumed, width );
-            height += row_layout.height_pixel + TextEntity.SAFETY_PIXEL_MARGIN;
+            height += row_layout.height_pixel + ImageIconEntity.SAFETY_PIXEL_MARGIN;
         }
 
         return {
@@ -890,51 +847,40 @@ class Layout {
             height: height
         };
     }
-
 }
+
 
 
 /**
  * @summary レイアウト対象
- * @memberof mapray.TextEntity
+ * @memberof mapray.ImageIconEntity
  * @private
  */
 class LItem {
 
     /**
-     * @param {mapray.TextEntity.Layout} layout   所有者
-     * @param {mapray.TextEntity.Entry}  entry    TextEntity エントリ
-     * @param {CanvasRenderingContext2D} context  測定用コンテキスト
+     * @param {mapray.ImageIconEntity.Layout} layout   所有者
+     * @param {mapray.ImageIconEntity.Entry}  entry    ImageIconEntityのエントリ
      */
-    constructor( layout, entry, context )
+    constructor( layout )
     {
-        this._entry = entry;
+        this.entries = [];
 
         // テキストの基点
         this._pos_x = 0;  // 左端
         this._pos_y = 0;  // ベースライン位置
 
-        // テキストの横幅
-        context.font = entry.font;
-        this._width  = context.measureText( entry.text ).width;
-
-        // テキストの上下範囲
-        this._upper = entry.size * TextEntity.DEFAULT_TEXT_UPPER;
-        this._lower = entry.size * TextEntity.DEFAULT_TEXT_LOWER;
+        this._height = this._width = null;
 
         this._is_canceled = false;
     }
 
-
-    /**
-     * @type {mapray.TextEntity.Entry}
-     * @readonly
-     */
-    get entry()
-    {
-        return this._entry;
+    add( index, entry ) {
+        var size = entry.size;
+        if ( this._width === null || this._width < size[0] ) this._width = size[0];
+        if ( this._height === null || this._height < size[1] ) this._height = size[1];
+        this.entries.push( { index, entry } );
     }
-
 
     /**
      * @type {number}
@@ -965,24 +911,9 @@ class LItem {
         return this._width;
     }
 
-
-    /**
-     * @type {number}
-     * @readonly
-     */
-    get upper()
+    get height()
     {
-        return this._upper;
-    }
-
-
-    /**
-     * @type {number}
-     * @readonly
-     */
-    get lower()
-    {
-        return this._lower;
+        return this._height;
     }
 
 
@@ -1004,7 +935,7 @@ class LItem {
      */
     get height_pixel()
     {
-        return Math.ceil( this._upper ) + Math.ceil( this._lower );
+        return Math.ceil( this._height );
     }
 
 
@@ -1036,34 +967,31 @@ class LItem {
     locate( x, y )
     {
         this._pos_x = x;
-        this._pos_y = y + Math.ceil( this._upper );
+        this._pos_y = y;
     }
 
+    draw( context ) {
 
-    /**
-     * @summary テキストを描画
-     * @desc
-     * <p>context は以下のように設定していること。</p>
-     * <pre>
-     *   context.textAlign    = "left";
-     *   context.textBaseline = "alphabetic";
-     *   context.fillStyle    = "rgba( 255, 255, 255, 1.0 )";
-     * </pre>
-     * @param {CanvasRenderingContext2D} context  描画先コンテキスト
-     */
-    drawText( context )
-    {
-        var entry = this._entry;
-        context.font = entry.font;
-        context.fillText( entry.text, this._pos_x, this._pos_y );
+        this.entries[0].entry.draw( context, this._pos_x, this.pos_y, this.width, this.height ); // @Todo: fix this
+
+        var RENDER_BOUNDS = false;
+        if ( RENDER_BOUNDS ) {
+            context.beginPath();
+            context.moveTo( this._pos_x             , this._pos_y );
+            context.lineTo( this._pos_x + this.width, this._pos_y );
+            context.lineTo( this._pos_x + this.width, this._pos_y + this.height );
+            context.lineTo( this._pos_x             , this._pos_y + this.height );
+            context.closePath();
+            context.stroke();
+        }
     }
-
 }
+
 
 
 /**
  * @summary 水平レイアウト
- * @memberof mapray.TextEntity
+ * @memberof mapray.ImageIconEntity
  * @private
  */
 class RowLayout {
@@ -1080,13 +1008,13 @@ class RowLayout {
         var height_pixel_max    = 0;
         var row_items           = [];
 
-        width_assumed_total += TextEntity.SAFETY_PIXEL_MARGIN;  // 左マージン
+        width_assumed_total += ImageIconEntity.SAFETY_PIXEL_MARGIN;  // 左マージン
 
         while ( src_items.length > 0 ) {
             var item          = src_items.shift();
-            var width_assumed = item.width_pixel + TextEntity.SAFETY_PIXEL_MARGIN;  // テキスト幅 + 右マージン
+            var width_assumed = item.width_pixel + ImageIconEntity.SAFETY_PIXEL_MARGIN;  // テキスト幅 + 右マージン
 
-            if ( width_assumed_total + width_assumed <= TextEntity.MAX_IMAGE_WIDTH ) {
+            if ( width_assumed_total + width_assumed <= ImageIconEntity.MAX_IMAGE_WIDTH ) {
                 // 行にアイテムを追加
                 row_items.push( item );
                 width_assumed_total += width_assumed;
@@ -1165,16 +1093,18 @@ class RowLayout {
         var items = this._items;
         var x = 0;
 
-        x += TextEntity.SAFETY_PIXEL_MARGIN;  // 左マージン
+        x += ImageIconEntity.SAFETY_PIXEL_MARGIN;  // 左マージン
 
         for ( var i = 0; i < items.length; ++i ) {
             var item = items[i];
             item.locate( x, y );
-            x += item.width_pixel + TextEntity.SAFETY_PIXEL_MARGIN;  // テキスト幅 + 右マージン
+            x += item.width_pixel + ImageIconEntity.SAFETY_PIXEL_MARGIN;  // テキスト幅 + 右マージン
         }
     }
 
 }
 
 
-export default TextEntity;
+
+
+export default ImageIconEntity;
