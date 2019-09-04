@@ -91,7 +91,7 @@ class MaprayApi extends HTTP {
     getDatasets()
     {
         var opt = this._option;
-        return this.get( "datasets", [ opt.userId ] );
+        return this.get( "datasets", [ opt.userId ], null );
     }
 
     createDataset( name, description )
@@ -101,7 +101,7 @@ class MaprayApi extends HTTP {
             name,
             description
         };
-        return this.post( "datasets", [ opt.userId ], body );
+        return this.post( "datasets", [ opt.userId ], null, body );
     }
 
     deleteDataset( datasetId )
@@ -117,53 +117,93 @@ class MaprayApi extends HTTP {
 
     insertFeature( datasetId, feature ) {
         var opt = this._option;
-        return this.post( "datasets", [ opt.userId, datasetId, "features" ], feature );
+        return this.post( "datasets", [ opt.userId, datasetId, "features" ], null, feature );
     }
 
     updateFeature( datasetId, featureId, feature )
     {
         var opt = this._option;
-        return this.put( "datasets", [ opt.userId, "features", featureId ], feature );
+        return this.put( "datasets", [ opt.userId, "features", featureId ], null, feature );
+    }
+
+    list3DDatasets() {
+        const opt = this._option;
+        return this.get( "3ddatasets", [ opt.userId ] );
+    }
+
+    create3DDataset( name, description, coordinateSystem ) {
+        const opt = this._option;
+        const body = {
+            name,
+            description,
+            path: coordinateSystem.path,
+            format: coordinateSystem.format,
+            srid: coordinateSystem.srid,
+            x: coordinateSystem.x,
+            y: coordinateSystem.y,
+            z: coordinateSystem.z
+        };
+        return this.post( "3ddatasets", [ opt.userId ], null, body );
+    }
+
+    create3DDatasetUploadUrl( datasetId ) {
+        const opt = this._option;
+        return this.post( "3ddatasets", [ "uploads", opt.userId, datasetId ], null, {} );
+    }
+
+    get3DDataset( datasetId ) {
+        const opt = this._option;
+        return this.get( "3ddatasets", [ opt.userId, datasetId ], null );
+    }
+
+    delete3DDataset( datasetId ) {
+        const opt = this._option;
+        return this.delete( "3ddatasets", [ opt.userId, datasetId ] );
+    }
+
+    get3DDatasetScene( datasetId ) {
+        const opt = this._option;
+        return this.get( "3ddatasets", [ "scene", opt.userId ], { "3DdatasetsID": datasetId } );
     }
 
 // ======
 
-    get( api, args, option={} )
+    get( api, args, query, option={} )
     {
-        return this.fetch( HTTP.METHOD.GET, api, args, null, option );
+        return this.fetch( HTTP.METHOD.GET, api, args, query, null, option );
     }
 
-    post( api, args, body, option={} )
-    {
-        if ( typeof( body ) !== "string" ) {
-            body = JSON.stringify(body);
-        }
-        return this.fetch( HTTP.METHOD.POST, api, args, body, option );
-    }
-
-    put( api, args, body, option={} )
+    post( api, args, query, body, option={} )
     {
         if ( typeof( body ) !== "string" ) {
             body = JSON.stringify(body);
         }
-        return this.fetch( HTTP.METHOD.PUT, api, args, body, option );
+        return this.fetch( HTTP.METHOD.POST, api, args, query, body, option );
     }
 
-    delete( api, args, option={} )
+    put( api, args, query, body, option={} )
     {
-        return this.fetch( HTTP.METHOD.DELETE, api, args, null, option );
+        if ( typeof( body ) !== "string" ) {
+            body = JSON.stringify(body);
+        }
+        return this.fetch( HTTP.METHOD.PUT, api, args, query, body, option );
     }
 
-    fetch( method, api, args, body, option={} )
+    delete( api, args, query, option={} )
+    {
+        return this.fetch( HTTP.METHOD.DELETE, api, args, query, null, option );
+    }
+
+    fetch( method, api, args, query, body, option={} )
     {
         var opt = this._option;
         var headers = option.headers || (option.headers={});
         headers["x-api-key"] = opt.token;
         var url = opt.basePath + "/" + api + "/" + opt.version + (args.length > 0 ? "/" + args.join("/") : "");
         // console.log( "MaprayAPI: " + method + " " + api + " (" + args.join("/") + ")" );
-        console.log( "MaprayAPI: " + method + " " + url );
+        console.log( "MaprayAPI: " + method + " " + url + (query ? "?" + JSON.stringify(query) : "" ) );
         return (
-            HTTP.fetch( method, url, body, option )
+            HTTP.fetch( method, url, query, body, option )
             .then( response => {
                     if ( response.status === HTTP.RESPONSE_STATUS.NO_CONTENT ) {
                         return;

@@ -50,7 +50,7 @@ class URLResource extends Resource {
     load( resourceType ) {
         const tr = this._transform( this._url, resourceType );
         return (
-            HTTP.get( tr.url, this._make_fetch_params( tr ) )
+            HTTP.get( tr.url, null, this._make_fetch_params( tr ) )
             .then( response => {
                     if ( !response.ok ) throw new Error( response.statusText );
                     if ( this._type !== "json" ) {
@@ -73,7 +73,7 @@ class URLResource extends Resource {
         const url = this._resolve_url( subUrl );
         const tr = this._transform( url, resourceType );
         return (
-            HTTP.get( tr.url, this._make_fetch_params( tr ) )
+            HTTP.get( tr.url, null, this._make_fetch_params( tr ) )
             .then( response => {
                     if ( !response.ok ) throw new Error( response.statusText );
                     return response.json();
@@ -85,7 +85,7 @@ class URLResource extends Resource {
         const url = this._resolve_url( subUrl );
         const tr = this.makeBinaryFetchParams( url, resourceType );
         return (
-            HTTP.get( tr.url, tr.init )
+            HTTP.get( tr.url, null, tr.init )
             .then( response => {
                     if ( !response.ok ) throw new Error( response.statusText );
                     return response;
