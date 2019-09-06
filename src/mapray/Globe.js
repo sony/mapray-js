@@ -1,7 +1,10 @@
 import GeoMath from "./GeoMath";
 import DemBinary from "./DemBinary";
 import FlakeMesh from "./FlakeMesh";
+import FlakeRenderObject from "./FlakeRenderObject";
 import UpdatedTileArea from "./UpdatedTileArea";
+import Mesh from "./Mesh";
+import Entity from "./Entity";
 
 
 /**
@@ -21,6 +24,7 @@ class Globe {
         this._dem_provider = dem_provider;
         this._status = Status.NOT_READY;
         this._dem_area_updated = new UpdatedTileArea();
+        this._prev_producers = new Set();
 
         this._ρ        = dem_provider.getResolutionPower();
         this._dem_zbias = GeoMath.LOG2PI - this._ρ + 1;  // b = log2(π) - ρ + 1
@@ -120,6 +124,56 @@ class Globe {
         var flake = this._root_flake;
         flake.touch();
         return flake;
+    }
+
+    /**
+     * @summary エンティティ情報を更新
+     *
+     * <p>getRenderObject() の前にエンティティの情報を更新する。</p>
+     *
+     * @param {iterable.<mapray.Entity.FlakePrimitiveProducer>} producers
+     */
+    putNextEntityProducers( producers )
+    {
+        let next_producers = new Set();
+
+        // 追加、削除、更新のリストを作成
+        let   added_producers = [];
+        let updated_producers = [];
+
+        for ( let prod of producers ) {
+            let updated = prod.checkForUpdate();  // 更新チェックとクリア
+
+            if ( this._prev_producers.has( prod ) ) {
+                if ( updated ) {
+                    // 更新された
+                    updated_producers.push( prod );
+                }
+                this._prev_producers.delete( prod );
+            }
+            else {
+                // 新規追加
+                added_producers.push( prod );
+            }
+
+            next_producers.add( prod );
+        }
+
+        let removed_producers = this._prev_producers;
+
+        // ツリーを更新
+        for ( let prod of removed_producers ) {
+            this._root_flake.removeEntityProducer( prod );
+        }
+        for ( let prod of added_producers ) {
+            this._root_flake.addEntityProducer( prod );
+        }
+        for ( let prod of updated_producers ) {
+            this._root_flake.updateEntityProducer( prod );
+        }
+
+        // 次の prev_producers を設定
+        this._prev_producers = next_producers;
     }
 
     /**
@@ -469,7 +523,10 @@ class Flake {
         this._dem_data  = null;  // DEM バイナリ、または取り消しオブジェクト
         this._dem_state = DemState.NONE;
 
-        // FlakeMesh
+        // エンティティ辞書  Map.<mapray.Entity.FlakePrimitiveProducer, boolean>
+        this._entity_map = null;
+
+        // MeshNode
         this._meshes = [];
 
         // 標高代表値
@@ -535,6 +592,7 @@ class Flake {
         this._globe     = globe;
         this._dem_data  = dem;
         this._dem_state = DemState.LOADED;
+        this._entity_map = new Map();
         this._estimate();
         globe._num_cache_flakes += 1;
     }
@@ -575,11 +633,13 @@ class Flake {
     }
 
     /**
-     * @summary 地表断片メッシュを検索
-     * @param  {number} lod        地表詳細レベル (LOD)
-     * @return {mapray.FlakeMesh}  地表断片メッシュ
+     * @summary レンダリングオブジェクトを検索
+     *
+     * @param {number} lod  地表詳細レベル (LOD)
+     *
+     * @return {mapray.FlakeRenderObject}
      */
-    findMesh( lod )
+    getRenderObject( lod )
     {
         var η = Math.pow( 2, -lod ) * Flake.ε;  // 2^-lod ε
 
@@ -602,7 +662,123 @@ class Flake {
 
         var node = this._getMeshNode( lod, cu, cv );
         node.touch();
-        return node.mesh;
+
+        return node.getRenderObject();
+    }
+
+    /**
+     * @summary this と交差する FlakePrimitiveProducer インスタンスの列挙子を取得
+     *
+     * @return {iterable.<mapray.Entity.FlakePrimitiveProducer>}
+     */
+    getEntityProducers()
+    {
+        let entity_map = this._getEntityMap();
+        return entity_map.keys();
+    }
+
+    /**
+     * @summary Flake ツリーに producer を追加
+     *
+     * 事前条件:
+     *   - this._entity_map !== null
+     *   - this と this の子孫に producer が存在しない
+     *
+     * @param {mapray.Entity.FlakePrimitiveProducer} producer
+     */
+    addEntityProducer( producer )
+    {
+        switch ( producer.getAreaStatus( this ) ) {
+
+        case Entity.AreaStatus.PARTIAL: {
+            // エントリに producer を追加
+            this._entity_map.set( producer, false );
+
+            // this の子孫も同様の処理
+            for ( let child of this._children ) {
+                if ( child !== null && child._entity_map !== null ) {
+                    child.addEntityProducer( producer );
+                }
+            }
+        } break;
+
+        case Entity.AreaStatus.FULL: {
+            this._addEntityFullProducer( producer );
+        } break;
+
+        default: // Entity.AreaStatus.EMPTY
+            break;
+        }
+    }
+
+    /**
+     * @summary Flake ツリーに producer を追加
+     *
+     * 事前条件:
+     *   - producer.getAreaStatus( this ) === Entity.AreaStatus.FULL
+     *   - this._entity_map !== null
+     *   - this と this の子孫に producer が存在しない
+     *
+     * @param {mapray.Entity.FlakePrimitiveProducer} producer
+     *
+     * @private
+     */
+    _addEntityFullProducer( producer )
+    {
+        // エントリに producer を追加
+        this._entity_map.set( producer, true );
+
+        // this の子孫も同様の処理
+        for ( let child of this._children ) {
+            if ( child !== null && child._entity_map !== null ) {
+                child._addEntityFullProducer( producer );
+            }
+        }
+    }
+
+    /**
+     * @summary Flake ツリーから producer を削除
+     *
+     * 事前条件:
+     *   - this._entity_map !== null
+     * 事後条件:
+     *   - this と this の子孫に producer が存在しない
+     *
+     * @param {mapray.Entity.FlakePrimitiveProducer} producer
+     */
+    removeEntityProducer( producer )
+    {
+        if ( !this._entity_map.has( producer ) ) {
+            // もともと producer は this と this の子孫に存在しない
+            return;
+        }
+
+        // エントリから producer を削除
+        this._entity_map.delete( producer );
+
+        // this に producer に対応するメッシュが存在すれば削除
+        this._removeEntityMeshes( producer );
+
+        // this の子孫も同様の処理
+        for ( let child of this._children ) {
+            if ( child !== null && child._entity_map !== null ) {
+                child.removeEntityProducer( producer );
+            }
+        }
+    }
+
+    /**
+     * @summary Flake ツリーの producer を更新
+     *
+     * 事前条件:
+     *   - this._entity_map !== null
+     *
+     * @param {mapray.Entity.FlakePrimitiveProducer} producer
+     */
+    updateEntityProducer( producer )
+    {
+        this.removeEntityProducer( producer );
+        this.addEntityProducer( producer );
     }
 
     /**
@@ -771,10 +947,13 @@ class Flake {
 
     /**
      * @summary メッシュノードを取得
-     * @param  {number} lod        地表詳細レベル (LOD)
-     * @param  {number} cu         水平球面分割レベル
-     * @param  {number} cv         垂直球面分割レベル
-     * @return {mapray.FlakeMesh}  メッシュノード
+     *
+     * @param {number} lod  地表詳細レベル (LOD)
+     * @param {number} cu   水平球面分割レベル
+     * @param {number} cv   垂直球面分割レベル
+     *
+     * @return {mapray.Globe.MeshNode}  メッシュノード
+     *
      * @private
      */
     _getMeshNode( lod, cu, cv )
@@ -1644,6 +1823,62 @@ class Flake {
         return true;
     }
 
+
+    /**
+     * @summary エンティティのメッシュを削除
+     *
+     * @param {mapray.Entity.FlakePrimitiveProducer} producer
+     *
+     * @private
+     */
+    _removeEntityMeshes( producer )
+    {
+        for ( let node of this._meshes ) {
+            node.removeEntityMesh( producer );
+        }
+    }
+
+
+    /**
+     * @summary エンティティ辞書を取得
+     *
+     * @return {Map.<mapray.Entity.FlakePrimitiveProducer, boolean>}
+     *
+     * @private
+     */
+    _getEntityMap()
+    {
+        if ( this._entity_map === null ) {
+            // 存在しないので新たに生成する
+
+            let parent_map = this._parent._getEntityMap();  // 親の辞書
+            let entity_map = new Map();
+
+            for ( let [producer, isfull] of parent_map ) {
+                if ( isfull ) {
+                    // 親が FULL なので、子も FULL
+                    entity_map.set( producer, true );
+                }
+                else {
+                    switch ( producer.getAreaStatus( this ) ) {
+                    case Entity.AreaStatus.PARTIAL:
+                        entity_map.set( producer, false );
+                        break;
+                    case Entity.AreaStatus.FULL:
+                        entity_map.set( producer, true );
+                        break;
+                    default: // Entity.AreaStatus.EMPTY
+                        break;
+                    }
+                }
+            }
+
+            this._entity_map = entity_map;
+        }
+
+        return this._entity_map;
+    }
+
 }
 
 
@@ -1776,13 +2011,57 @@ class MeshNode {
     {
         this._flake  = flake;
         this._dem    = dem;
-        this._pow_u  = dpows[0];
-        this._pow_v  = dpows[1];
+        this._dpows  = Array.from( dpows );
         this._aframe = -1;
-        this.mesh    = new FlakeMesh( flake._globe.glenv, flake, dpows, dem );
+
+        // 地表のメッシュ
+        this._base_mesh = new FlakeMesh( flake._globe.glenv, flake, dpows, dem );
+
+        // エンティティのメッシュ
+        //   key:   FlakePrimitiveProducer
+        //   value: Mesh | CACHED_EMPTY_MESH
+        this._entity_meshes = new Map();
 
         // メッシュ数をカウントアップ
         flake._globe._num_cache_meshes += 1;
+    }
+
+    /**
+     * @summary FlakeRenderObject インスタンスを取得
+     *
+     * @return {mapray.FlakeRenderObject}
+     */
+    getRenderObject()
+    {
+        let flake = this._flake;
+        let   fro = new FlakeRenderObject( flake, flake._globe.glenv, this._base_mesh );
+
+        // fro にエンティティ毎のデータを追加
+        for ( let producer of flake.getEntityProducers() ) {
+            // producer に対応するキャッシュされた Mesh
+            let mesh = this._getEntityMesh( producer );
+
+            if ( mesh === CACHED_EMPTY_MESH ) {
+                // 空メッシュとしてキャッシュされている --> fro に追加しない
+                continue;
+            }
+
+            if ( mesh === null ) {
+                // メッシュがキャッシュに存在しないので、メッシュを生成してキャッシュする
+                mesh = producer.createMesh( flake, this._dpows, this._dem );
+                this._setEntityMesh( producer, mesh );
+
+                if ( mesh === null ) {
+                    // 空メッシュとしてキャッシュされた --> fro に追加しない
+                    continue;
+                }
+            }
+
+            // fro にエンティティを追加
+            fro.addEntityData( mesh, producer );
+        }
+
+        return fro;
     }
 
     /**
@@ -1793,7 +2072,7 @@ class MeshNode {
      */
     match( dem, dpows )
     {
-        return (this._dem === dem) && (this._pow_u === dpows[0]) && (this._pow_v === dpows[1]);
+        return (this._dem === dem) && (this._dpows[0] === dpows[0]) && (this._dpows[1] === dpows[1]);
     }
 
     /**
@@ -1813,7 +2092,7 @@ class MeshNode {
      */
     dispose()
     {
-        if ( this.mesh === null ) {
+        if ( this._base_mesh === null ) {
             // すでに破棄されている
             return;
         }
@@ -1831,8 +2110,14 @@ class MeshNode {
         }
 
         // メッシュを破棄
-        this.mesh.dispose();
-        this.mesh = null;
+        this._base_mesh.dispose();
+        this._base_mesh = null;
+
+        for ( let mesh of this._entity_meshes.values() ) {
+            if ( mesh instanceof Mesh ) {
+                mesh.dispose();
+            }
+        }
 
         // メッシュ数をカウントダウン
         flake._globe._num_cache_meshes -= 1;
@@ -1850,6 +2135,61 @@ class MeshNode {
         var a = this;
         var b = other;
         return b._aframe - a._aframe;
+    }
+
+
+    /**
+     * @summary エンティティのメッシュを削除
+     *
+     * @desc
+     * <p>producer に対応するメッシュが存在すれば削除する。</p>
+     *
+     * @param {mapray.Entity.FlakePrimitiveProducer} producer
+     */
+    removeEntityMesh( producer )
+    {
+        this._entity_meshes.delete( producer );
+    }
+
+
+    /**
+     * @summary エンティティのメッシュを取得
+     *
+     * @desc
+     * <p>producer に対応するメッシュを取得する。</p>
+     * <p>ただし存在しないとき null, 空メッシュが設定されているときは CACHED_EMPTY_MESH を返す。</p>
+     *
+     * @param {mapray.Entity.FlakePrimitiveProducer} producer
+     *
+     * @return {?(mapray.Mesh|CACHED_EMPTY_MESH)}
+     *
+     * @private
+     */
+    _getEntityMesh( producer )
+    {
+        let mesh = this._entity_meshes.get( producer );
+
+        return (mesh !== undefined) ? mesh : null;
+    }
+
+
+    /**
+     * @summary エンティティのメッシュを設定
+     *
+     * @desc
+     * <p>producer に対応するメッシュを設定する。</p>
+     * <p>空メッシュを設定するときは mesh に null を指定する。</p>
+     *
+     * @param {mapray.Entity.FlakePrimitiveProducer} producer
+     * @param {?mapray.Mesh}                         mesh
+     *
+     * @private
+     */
+    _setEntityMesh( producer, mesh )
+    {
+        let value = (mesh !== null) ? mesh : CACHED_EMPTY_MESH;
+
+        this._entity_meshes.set( producer, value );
     }
 
 }
@@ -1882,6 +2222,15 @@ var DemState = {
      */
     FAILED: { id: "FAILED" }
 };
+
+
+/**
+ * @summary キャッシュされた空メッシュを表す
+ *
+ * @memberof mapray.Globe
+ * @constant
+ */
+const CACHED_EMPTY_MESH = { id: "CACHED_EMPTY_MESH" };
 
 
 export default Globe;

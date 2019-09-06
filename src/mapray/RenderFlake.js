@@ -48,13 +48,15 @@ class RenderFlake {
          */
     }
 
+
     /**
-     * @summary 地表断片メッシュを検索
-     * @return {mapray.FlakeMesh}  地表断片メッシュ
+     * @summary レンダリングオブジェクトを検索
+     *
+     * @return {mapray.FlakeRenderObject}
      */
-    findMesh()
+    getRenderObject()
     {
-        return this.flake.findMesh( this.lod );
+        return this.flake.getRenderObject( this.lod );
     }
 
 }

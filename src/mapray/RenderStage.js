@@ -112,26 +112,28 @@ class RenderStage {
             return;
         }
 
-        var flake_list;
-        if ( this._viewer.getVisibility( Viewer.Category.GROUND ) ) {
-            var  collector = new FlakeCollector( this );
-            flake_list = collector.traverse();
-        }
-        else {
-            // 地表が非表示のときは地表断片が 0 個として処理
-            flake_list = [];
-        }
+        let  collector = new FlakeCollector( this );
+        let flake_list = collector.traverse();
+
+        let vis_ground = this._viewer.getVisibility( Viewer.Category.GROUND );
+        let vis_entity = this._viewer.getVisibility( Viewer.Category.ENTITY );
 
         // すべての地表断片を描画
-        gl.enable( gl.BLEND );
-        gl.depthMask( true );
+        this._prepare_draw_flake();
 
-        for ( var i = 0; i < flake_list.length; ++i ) {
-            this._drawFlake( flake_list[i] );
+        for ( let rflake of flake_list ) {
+            let fro = rflake.getRenderObject();
+
+            if ( vis_ground ) {
+                this._draw_flake_base( rflake, fro.getBaseMesh() );
+            }
+            if ( vis_entity ) {
+                this._draw_entities_on_flake( fro );
+            }
         }
 
         // モデルシーン描画
-        if ( this._viewer.getVisibility( Viewer.Category.ENTITY ) ) {
+        if ( vis_entity ) {
             this._scene.draw( this );
         }
 
@@ -149,18 +151,47 @@ class RenderStage {
 
 
     /**
-     * @param {mapray.RenderFlake} rflake  地表断片データ
+     * @summary 地表断片を描画する前の準備
+     *
      * @private
      */
-    _drawFlake( rflake )
+    _prepare_draw_flake()
     {
-        var     mesh = rflake.findMesh();
+        // RenderFlake#getRenderObject() の前に必要な処理
+        let producers = this._scene.getFlakePrimitiveProducers();
+        this._globe.putNextEntityProducers( producers );
+    }
+
+
+    /**
+     * @summary 地表とレイヤーを描画
+     *
+     * @param {mapray.RenderFlake} rflake  地表断片データ
+     * @param {mapray.FlakeMesh}   mesh    地表断片メッシュ
+     *
+     * @private
+     */
+    _draw_flake_base( rflake, mesh )
+    {
+        let gl = this._glenv.context;
         var material = this._flake_material;
 
+        material.bindProgram();
+
         var num_drawings = material.numDrawings();
-        for ( var i = 0; i < num_drawings; ++i ) {
-            material.bindProgram();
+
+        // 一番下の不透明地表
+        if ( material.setFlakeParameter( this, rflake, mesh, 0 ) ) {
+            gl.disable( gl.BLEND );
+            gl.depthMask( true );
+            mesh.draw( material );
+        }
+
+        // レイヤーの地表 (半透明の可能背あり)
+        for ( var i = 1; i < num_drawings; ++i ) {
             if ( material.setFlakeParameter( this, rflake, mesh, i ) ) {
+                gl.enable( gl.BLEND );
+                gl.depthMask( false );
                 mesh.draw( material );
             }
         }
@@ -170,6 +201,50 @@ class RenderStage {
         if ( stats !== null ) {
             stats.num_drawing_flake_vertices += mesh.num_vertices;
         }
+    }
+
+
+    /**
+     * @summary 地表断片上のエンティティを描画
+     *
+     * @param {mapray.FlakeRenderObject} fro  FlakeRenderObject インスタンス
+     *
+     * @private
+     */
+    _draw_entities_on_flake( fro )
+    {
+        let num_entities = fro.num_entities;
+
+        if ( num_entities == 0 ) {
+            // エンティティなし
+            return;
+        }
+
+        let gl = this._glenv.context;
+
+        gl.enable( gl.POLYGON_OFFSET_FILL );
+        gl.depthMask( false );  // 地表に張り付いていることが前提なので深度は変更しない
+
+        // todo: 仮のポリゴンオフセット
+        // 実験で得た適切な値 (Windows, GeForce GT750)
+        //   Chrome+ANGLE: -8, -8
+        //   Chrome+EGL: -40, -40
+        gl.polygonOffset( -8, -8 );
+
+        for ( let i = 0; i < num_entities; ++i ) {
+            let primirive = fro.getEntityPrimitive( i, this );
+
+            if ( primirive.isTranslucent( this ) ) {
+                gl.enable( gl.BLEND );
+            }
+            else {
+                gl.disable( gl.BLEND );
+            }
+
+            primirive.draw( this );
+        }
+
+        gl.disable( gl.POLYGON_OFFSET_FILL );
     }
 
 }
