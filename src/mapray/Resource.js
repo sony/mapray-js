@@ -30,6 +30,10 @@ class Resource {
 
     loadSubResource( url, resourceType ) {
     }
+
+    createSubResource( subUrl ) {
+    }
+
 }
 
 
@@ -69,8 +73,15 @@ class URLResource extends Resource {
         return true;
     }
 
+    createSubResource( subUrl ) {
+        const url = Dom.resolveUrl( this._base_url, subUrl );
+        return new URLResource( url, {
+                transform: this._transform
+        });
+    }
+
     loadSubResource( subUrl, resourceType ) {
-        const url = this._resolve_url( subUrl );
+        const url = Dom.resolveUrl( this._base_url, subUrl );
         const tr = this._transform( url, resourceType );
         return (
             HTTP.get( tr.url, null, this._make_fetch_params( tr ) )
@@ -82,7 +93,7 @@ class URLResource extends Resource {
     }
 
     loadSubResourceAsArrayBuffer( subUrl, resourceType ) {
-        const url = this._resolve_url( subUrl );
+        const url = Dom.resolveUrl( this._base_url, subUrl );
         const tr = this.makeBinaryFetchParams( url, resourceType );
         return (
             HTTP.get( tr.url, null, tr.init )
@@ -95,7 +106,7 @@ class URLResource extends Resource {
     }
 
     loadSubResourceAsImage( subUrl, resourceType ) {
-        const url = this._resolve_url( subUrl );
+        const url = Dom.resolveUrl( this._base_url, subUrl );
         const tr = this._makeImageLoadParams( url, resourceType );
         return Dom.loadImage( tr.url, { crossOrigin: tr.crossOrigin } );
     }
@@ -117,20 +128,6 @@ class URLResource extends Resource {
 
         return init;
     }
-
-    _resolve_url( url ) {
-        if ( DATA_URL_PATTERN.test( url ) || ABSOLUTE_URL_PATTERN.test( url ) ) {
-            // url がデータ url または絶対 url のときは
-            // そのまま url をリクエスト
-            return url;
-        }
-        else {
-            // それ以外のときは url を相対 url と解釈し
-            // 基底 url と結合した url をリクエスト
-            return this._base_url + url;
-        }
-    }
-
 
     /**
      * バイナリを取得するときの fetch 関数のパラメータを取得
@@ -185,8 +182,6 @@ class URLResource extends Resource {
 }
 
 
-const DATA_URL_PATTERN = new RegExp("^data:");
-const ABSOLUTE_URL_PATTERN = new RegExp("^https?://");
 
 
 

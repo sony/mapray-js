@@ -153,9 +153,7 @@ class SceneLoader extends Loader {
                     // モデルデータの取得に成功
                     this._check_cancel();
                     // 現時点ではURLリソースのみ対応
-                    const gltf_resource = new URLResource( url, {
-                            transform: this._resource.transform
-                    } );
+                    const gltf_resource = this._resource.createSubResource( url );
                     // データを解析して gltf.Content を構築
                     return GltfTool.load( json, {
                             base_resource: gltf_resource,

@@ -10,6 +10,11 @@ class HTTP {
         return this.fetch( HTTP.METHOD.POST, url, query, body, option );
     }
 
+    static patch( url, query, body, option={} )
+    {
+        return this.fetch( HTTP.METHOD.PATCH, url, query, body, option );
+    }
+
     static delete( url, query, option={} )
     {
         return this.fetch( HTTP.METHOD.DELETE, url, query, null, option );
@@ -35,13 +40,17 @@ class HTTP {
     }
 
     static isJson( mimeType ) {
-        return mimeType.startsWith( "application/json" );
+        return (
+            mimeType.startsWith( "application/json" ) ||
+            mimeType === "model/gltf+json"
+        );
     }
 }
 
 HTTP.METHOD = {
     GET: "GET",
     POST: "POST",
+    PATCH: "PATCH",
     PUT: "PUT",
     DELETE: "DELETE",
 };
