@@ -36,7 +36,8 @@ class Buffer {
                 } )
                 .catch( error => {
                         // バイナリデータの取得に失敗
-                        ctx.onFinishLoadBuffer( new Error( "Failed to load binary in glTF" ) );
+                        console.error( error );
+                        ctx.onFinishLoadBuffer( error );
                 } );
             }
             else {

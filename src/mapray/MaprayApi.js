@@ -2,6 +2,8 @@ import HTTP from "./HTTP";
 import Resource from "./Resource";
 import Dom from "./util/Dom";
 import { FetchError } from "./HTTP";
+import SceneLoader from "./SceneLoader";
+
 
 
 class MaprayApiError extends FetchError {
@@ -73,19 +75,25 @@ export class Dataset3DSceneResource extends MaprayResource {
         );
     }
 
-    isSubResourceSupported() {
+    loadSubResourceSupported() {
         return true;
     }
 
-    createSubResource( subUrl ) {
+    loadSubResource( subUrl, resourceType ) {
+        const url = Dom.resolveUrl( this._base_url, subUrl );
+        return this._api.fetch( HTTP.METHOD.GET, url )
+    }
+
+    resolveResourceSupported() {
+      return true;
+    }
+
+    resolveResource( subUrl ) {
         return new Dataset3DSceneBlobResource( this._api, subUrl, {
                 transform: this._transform
         });
     }
 
-    loadSubResource( subUrl, resourceType ) {
-        return this._api.fetch( HTTP.METHOD.GET, subUrl )
-    }
 }
 
 
@@ -104,38 +112,36 @@ export class Dataset3DSceneBlobResource extends MaprayResource {
     }
 
     load() {
-        return this._api.fetch( HTTP.METHOD.GET, url );
+        return this._api.fetch( HTTP.METHOD.GET, this._url );
     }
 
-    isSubResourceSupported() {
+    loadSubResourceSupported() {
         return true;
     }
 
     loadSubResource( subUrl, resourceType ) {
+        const url = Dom.resolveUrl( this._base_url, subUrl );
+        
+        if ( resourceType === SceneLoader.ResourceType.BINARY ) {
+            return (
+                this._api.fetch( HTTP.METHOD.GET, url )
+                .then( response => {
+                        if ( !response.ok ) throw new Error( response.statusText );
+                        return response.arrayBuffer();
+                })
+            );
+        }
+        else if ( resourceType === SceneLoader.ResourceType.IMAGE ) {
+            return (
+                this._api.fetch( HTTP.METHOD.GET, url )
+                .then( response => {
+                        if ( !response.ok ) throw new Error( response.statusText );
+                        return response.blob();
+                } )
+                .then( Dom.loadImage )
+            );
+        }
         return this._api.fetch( HTTP.METHOD.GET, subUrl )
-    }
-
-    loadSubResourceAsArrayBuffer( subUrl, resourceType ) {
-        const url = Dom.resolveUrl( this._base_url, subUrl );
-        return (
-            this._api.fetch( HTTP.METHOD.GET, url )
-            .then( response => {
-                    if ( !response.ok ) throw new Error( response.statusText );
-                    return response.arrayBuffer();
-            })
-        );
-    }
-
-    loadSubResourceAsImage( subUrl, resourceType ) {
-        const url = Dom.resolveUrl( this._base_url, subUrl );
-        return (
-            this._api.fetch( HTTP.METHOD.GET, url )
-            .then( response => {
-                    if ( !response.ok ) throw new Error( response.statusText );
-                    return response.blob();
-            } )
-            .then( Dom.loadImage )
-        );
     }
 }
 

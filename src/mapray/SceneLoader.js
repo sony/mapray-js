@@ -146,14 +146,13 @@ class SceneLoader extends Loader {
     _load_model_container( oscene, id, model )
     {
         var url = model.link;
-        if ( !this._resource.isSubResourceSupported() ) return Promise.reject(new Error("Sub Resource is not supported"));
+        if ( !this._resource.resolveResourceSupported() ) return Promise.reject(new Error("Sub Resource is not supported"));
+        const gltf_resource = this._resource.resolveResource( url, ResourceType.MODEL );
         return (
-            this._resource.loadSubResource( url, ResourceType.MODEL )
+            gltf_resource.load( url, ResourceType.MODEL )
             .then( json => {
                     // モデルデータの取得に成功
                     this._check_cancel();
-                    // 現時点ではURLリソースのみ対応
-                    const gltf_resource = this._resource.createSubResource( url );
                     // データを解析して gltf.Content を構築
                     return GltfTool.load( json, {
                             base_resource: gltf_resource,

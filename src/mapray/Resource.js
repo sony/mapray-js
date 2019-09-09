@@ -1,6 +1,7 @@
 import HTTP from "./HTTP";
 import Dom from "./util/Dom";
 import CredentialMode from "./CredentialMode";
+import SceneLoader from "./SceneLoader";
 
 
 
@@ -24,14 +25,20 @@ class Resource {
     cancel() {
     }
 
-    isSubResourceSupported() {
+    loadSubResourceSupported( resourceType ) {
         return false;
     }
 
     loadSubResource( url, resourceType ) {
+        return Promise.reject( new Error( "Not Supported" ) );
     }
 
-    createSubResource( subUrl ) {
+    resolveResourceSupported( resourceType ) {
+      return false;
+    }
+
+    resolveResource( url, resourceType ) {
+        return Promise.reject( new Error( "Not Supported" ) );
     }
 
 }
@@ -69,46 +76,47 @@ class URLResource extends Resource {
         this._abort_ctrl.abort();
     }
 
-    isSubResourceSupported() {
+    loadSubResourceSupported() {
         return true;
-    }
-
-    createSubResource( subUrl ) {
-        const url = Dom.resolveUrl( this._base_url, subUrl );
-        return new URLResource( url, {
-                transform: this._transform
-        });
     }
 
     loadSubResource( subUrl, resourceType ) {
         const url = Dom.resolveUrl( this._base_url, subUrl );
         const tr = this._transform( url, resourceType );
-        return (
-            HTTP.get( tr.url, null, this._make_fetch_params( tr ) )
-            .then( response => {
-                    if ( !response.ok ) throw new Error( response.statusText );
-                    return response.json();
-            })
-        );
+
+        if ( resourceType === SceneLoader.ResourceType.BINARY ) {
+            return (
+                HTTP.get( tr.url, null, tr.init )
+                .then( response => {
+                        if ( !response.ok ) throw new Error( response.statusText );
+                        return response;
+                })
+                .then( response => response.arrayBuffer() )
+            );
+        }
+        else if ( resourceType === SceneLoader.ResourceType.IMAGE ) {
+            return Dom.loadImage( tr.url, { crossOrigin: tr.crossOrigin } );
+        }
+        else {
+            return (
+                HTTP.get( tr.url, null, this._make_fetch_params( tr ) )
+                .then( response => {
+                        if ( !response.ok ) throw new Error( response.statusText );
+                        return response.json();
+                })
+            );
+        }
     }
 
-    loadSubResourceAsArrayBuffer( subUrl, resourceType ) {
-        const url = Dom.resolveUrl( this._base_url, subUrl );
-        const tr = this.makeBinaryFetchParams( url, resourceType );
-        return (
-            HTTP.get( tr.url, null, tr.init )
-            .then( response => {
-                    if ( !response.ok ) throw new Error( response.statusText );
-                    return response;
-            })
-            .then( response => response.arrayBuffer() )
-        );
+    resolveResourceSupported() {
+      return true;
     }
 
-    loadSubResourceAsImage( subUrl, resourceType ) {
+    resolveResource( subUrl ) {
         const url = Dom.resolveUrl( this._base_url, subUrl );
-        const tr = this._makeImageLoadParams( url, resourceType );
-        return Dom.loadImage( tr.url, { crossOrigin: tr.crossOrigin } );
+        return new URLResource( url, {
+                transform: this._transform
+        });
     }
 
     /**
