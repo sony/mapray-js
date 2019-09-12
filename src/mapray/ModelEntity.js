@@ -143,6 +143,19 @@ class ModelEntity extends Entity {
         GeoMath.copyVector3( value, this._scale );
     }
 
+
+    /**
+     * @summary モデル位置の標高を取得
+     *
+     * @return {number} 標高値
+     *
+     * @private
+     */
+    _getElevation()
+    {
+        return this.scene.viewer.getExistingElevation( this._position );
+    }
+
 }
 
 
@@ -279,7 +292,11 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
         switch ( entity.altitude_mode ) {
         case AltitudeMode.RELATIVE:
-            this._abs_position.altitude += entity.scene.viewer.getExistingElevation( entity._position );
+            this._abs_position.altitude += entity._getElevation();
+            break;
+
+        case AltitudeMode.CLAMP:
+            this._abs_position.altitude = entity._getElevation();
             break;
 
         default: // AltitudeMode.ABSOLUTE
