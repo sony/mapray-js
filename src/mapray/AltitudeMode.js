@@ -20,7 +20,13 @@ var AltitudeMode = {
     /**
      * 地表からの相対値
      */
-    RELATIVE: { id: "RELATIVE" }
+    RELATIVE: { id: "RELATIVE" },
+
+
+    /**
+     * 地表と同じ高さ (高度値を無視)
+     */
+    CLAMP: { id: "CLAMP" }
 
 };
 

@@ -133,6 +133,9 @@ class Entity {
             case "relative":
                 this._altitude_mode = AltitudeMode.RELATIVE;
                 break;
+            case "clamp":
+                this._altitude_mode = AltitudeMode.CLAMP;
+                break;
             default:
                 console.error( "unrecognized altitude_mode: " + json.altitude_mode );
             }
