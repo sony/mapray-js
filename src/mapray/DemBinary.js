@@ -228,6 +228,17 @@ class DemBinary {
 
 
     /**
+     * @summary 線形 DEM サンプラーを生成
+     *
+     * @return {mapray.DemSamplerLinear}  DEM サンプラー
+     */
+    newLinearSampler()
+    {
+        return new DemSamplerLinear( this, this._ρ, this._body );
+    }
+
+
+    /**
      * @summary 平均標高マップを生成
      * @return {mapray.AvgHeightMaps}  平均標高マップ
      */
