@@ -696,7 +696,7 @@ class MakiIconPinEntry extends AbstractPinEntry {
 
 
 {
-    MakiIconPinEntry.makiIconLoader = new URLTemplateIconLoader( "https://api.mapray.com/styles/v1/icons/maki/", ".svg" );
+    MakiIconPinEntry.makiIconLoader = new URLTemplateIconLoader( "https://resource.mapray.com/styles/v1/icons/maki/", ".svg" );
 }
 
 
