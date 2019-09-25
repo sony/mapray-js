@@ -1,26 +1,32 @@
 class HTTP {
 
-    static get( url, option={} )
+    static get( url, query, option={} )
     {
-        return this.fetch( HTTP.METHOD.GET, url, null, option );
+        return this.fetch( HTTP.METHOD.GET, url, query, null, option );
     }
 
-    static post( url, body, option={} )
+    static post( url, query, body, option={} )
     {
-        return this.fetch( HTTP.METHOD.POST, url, body, option );
+        return this.fetch( HTTP.METHOD.POST, url, query, body, option );
     }
 
-    static delete( url, option={} )
+    static patch( url, query, body, option={} )
     {
-        return this.fetch( HTTP.METHOD.DELETE, url, null, option );
+        return this.fetch( HTTP.METHOD.PATCH, url, query, body, option );
     }
 
-    static fetch( method, url, body, option={} )
+    static delete( url, query, option={} )
     {
+        return this.fetch( HTTP.METHOD.DELETE, url, query, null, option );
+    }
+
+    static fetch( method, url, query, body, option={} )
+    {
+        const queryText = !query ? "" : "?" + Object.keys( query ).map( k => k + "=" + query[k] ).join("&");
         option.method = method;
         if (body) option.body = body;
         return (
-            fetch( url, option )
+            fetch( url + queryText, option )
             .then( response => {
                     if ( !response.ok ) {
                         throw new FetchError( "Failed to fetch: " + response.statusText, url, response );
@@ -34,13 +40,17 @@ class HTTP {
     }
 
     static isJson( mimeType ) {
-        return mimeType.startsWith( "application/json" );
+        return (
+            mimeType.startsWith( "application/json" ) ||
+            mimeType === "model/gltf+json"
+        );
     }
 }
 
 HTTP.METHOD = {
     GET: "GET",
     POST: "POST",
+    PATCH: "PATCH",
     PUT: "PUT",
     DELETE: "DELETE",
 };

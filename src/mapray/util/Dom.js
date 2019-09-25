@@ -1,3 +1,8 @@
+
+const DATA_URL_PATTERN = new RegExp("^data:");
+const ABSOLUTE_URL_PATTERN = new RegExp("^https?://");
+
+
 /**
  * @summary Utility Class for DOM
  * @memberof mapray
@@ -19,7 +24,7 @@ class Dom {
 
     /**
      * 画像を読み込みます。
-     * @param  {string}  src
+     * @param  {string|Blob}  src
      * @param  {string}  options.crossOrigin
      */
     static loadImage( src, options={} )
@@ -31,7 +36,12 @@ class Dom {
                 if ( options.crossOrigin !== undefined ) {
                     image.crossOrigin = options.crossOrigin;
                 }
-                image.src = src;
+                if ( src instanceof Blob ) {
+                    image.src = URL.createObjectURL( src );
+                }
+                else {
+                    image.src = src;
+                }
         } );
     }
 
@@ -57,6 +67,19 @@ class Dom {
                     reject( new Error("Failed to load image") );
                 };
         } );
+    }
+
+    static resolveUrl( baseUrl, url ) {
+        if ( DATA_URL_PATTERN.test( url ) || ABSOLUTE_URL_PATTERN.test( url ) ) {
+            // url がデータ url または絶対 url のときは
+            // そのまま url をリクエスト
+            return url;
+        }
+        else {
+            // それ以外のときは url を相対 url と解釈し
+            // 基底 url と結合した url をリクエスト
+            return baseUrl + url;
+        }
     }
 
 }

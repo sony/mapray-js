@@ -141,13 +141,13 @@ class Context {
      */
     loadBinary( path )
     {
-        return this._base_resource.loadSubResourceAsArrayBuffer( path, this._binary_type );
+        return this._base_resource.loadSubResource( path, this._binary_type );
     }
 
 
     loadImage( path )
     {
-        return this._base_resource.loadSubResourceAsImage( path, this._image_type );
+        return this._base_resource.loadSubResource( path, this._image_type );
     }
 
 

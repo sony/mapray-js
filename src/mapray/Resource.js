@@ -1,6 +1,7 @@
 import HTTP from "./HTTP";
 import Dom from "./util/Dom";
 import CredentialMode from "./CredentialMode";
+import SceneLoader from "./SceneLoader";
 
 
 
@@ -24,12 +25,22 @@ class Resource {
     cancel() {
     }
 
-    isSubResourceSupported() {
+    loadSubResourceSupported( resourceType ) {
         return false;
     }
 
     loadSubResource( url, resourceType ) {
+        return Promise.reject( new Error( "Not Supported" ) );
     }
+
+    resolveResourceSupported( resourceType ) {
+      return false;
+    }
+
+    resolveResource( url, resourceType ) {
+        return Promise.reject( new Error( "Not Supported" ) );
+    }
+
 }
 
 
@@ -50,7 +61,7 @@ class URLResource extends Resource {
     load( resourceType ) {
         const tr = this._transform( this._url, resourceType );
         return (
-            HTTP.get( tr.url, this._make_fetch_params( tr ) )
+            HTTP.get( tr.url, null, this._make_fetch_params( tr ) )
             .then( response => {
                     if ( !response.ok ) throw new Error( response.statusText );
                     if ( this._type !== "json" ) {
@@ -65,39 +76,47 @@ class URLResource extends Resource {
         this._abort_ctrl.abort();
     }
 
-    isSubResourceSupported() {
+    loadSubResourceSupported() {
         return true;
     }
 
     loadSubResource( subUrl, resourceType ) {
-        const url = this._resolve_url( subUrl );
+        const url = Dom.resolveUrl( this._base_url, subUrl );
         const tr = this._transform( url, resourceType );
-        return (
-            HTTP.get( tr.url, this._make_fetch_params( tr ) )
-            .then( response => {
-                    if ( !response.ok ) throw new Error( response.statusText );
-                    return response.json();
-            })
-        );
+
+        if ( resourceType === SceneLoader.ResourceType.BINARY ) {
+            return (
+                HTTP.get( tr.url, null, tr.init )
+                .then( response => {
+                        if ( !response.ok ) throw new Error( response.statusText );
+                        return response;
+                })
+                .then( response => response.arrayBuffer() )
+            );
+        }
+        else if ( resourceType === SceneLoader.ResourceType.IMAGE ) {
+            return Dom.loadImage( tr.url, { crossOrigin: tr.crossOrigin } );
+        }
+        else {
+            return (
+                HTTP.get( tr.url, null, this._make_fetch_params( tr ) )
+                .then( response => {
+                        if ( !response.ok ) throw new Error( response.statusText );
+                        return response.json();
+                })
+            );
+        }
     }
 
-    loadSubResourceAsArrayBuffer( subUrl, resourceType ) {
-        const url = this._resolve_url( subUrl );
-        const tr = this.makeBinaryFetchParams( url, resourceType );
-        return (
-            HTTP.get( tr.url, tr.init )
-            .then( response => {
-                    if ( !response.ok ) throw new Error( response.statusText );
-                    return response;
-            })
-            .then( response => response.arrayBuffer() )
-        );
+    resolveResourceSupported() {
+      return true;
     }
 
-    loadSubResourceAsImage( subUrl, resourceType ) {
-        const url = this._resolve_url( subUrl );
-        const tr = this._makeImageLoadParams( url, resourceType );
-        return Dom.loadImage( tr.url, { crossOrigin: tr.crossOrigin } );
+    resolveResource( subUrl ) {
+        const url = Dom.resolveUrl( this._base_url, subUrl );
+        return new URLResource( url, {
+                transform: this._transform
+        });
     }
 
     /**
@@ -117,20 +136,6 @@ class URLResource extends Resource {
 
         return init;
     }
-
-    _resolve_url( url ) {
-        if ( DATA_URL_PATTERN.test( url ) || ABSOLUTE_URL_PATTERN.test( url ) ) {
-            // url がデータ url または絶対 url のときは
-            // そのまま url をリクエスト
-            return url;
-        }
-        else {
-            // それ以外のときは url を相対 url と解釈し
-            // 基底 url と結合した url をリクエスト
-            return this._base_url + url;
-        }
-    }
-
 
     /**
      * バイナリを取得するときの fetch 関数のパラメータを取得
@@ -185,8 +190,6 @@ class URLResource extends Resource {
 }
 
 
-const DATA_URL_PATTERN = new RegExp("^data:");
-const ABSOLUTE_URL_PATTERN = new RegExp("^https?://");
 
 
 
