@@ -151,20 +151,26 @@ export class Dataset3DSceneBlobResource extends MaprayResource {
  * MaprayApi
  * 
  * @classdesc
- * <p>視点を表現するカメラである。</p>
- * <p>インスタンスは {@link mapray.Viewer#camera} から得ることができる。</p>
+ * <p>MaprayApiへアクセスする手段を提供します。</p>
  *
- * @hideconstructor
  * @memberof mapray
- * @see mapray.Viewer
  * @example
- * var api = new mapray.MaprayApi( { token: "..." } );
- * api.
+ * const maprayApi = new mapray.MaprayApi({
+ *         basePath: "https://api.mapray.com",
+ *         version: "v1",
+ *         userId: "...",
+ *         token: "..."
+ * });
+ * maprayApi.getDatasets();
  */
 class MaprayApi extends HTTP {
 
     /**
-     * 
+     * @param {object} option Option
+     * @param {object} option.basePath
+     * @param {object} option.version
+     * @param {object} option.userId
+     * @param {object} option.token
      */
     constructor( option = {} )
     {
@@ -186,14 +192,31 @@ class MaprayApi extends HTTP {
         return new Dataset3DSceneResource( this, datasetIds );
     }
 
-// =====
 
+
+    /**
+     * List datasets
+     */
     getDatasets()
     {
         var opt = this._option;
         return this.get( "datasets", [ opt.userId ], null );
     }
 
+    /**
+     * Get dataset
+     */
+    getDataset( datasetId )
+    {
+        var opt = this._option;
+        return this.get( "datasets", [ opt.userId, datasetId ], null );
+    }
+
+    /**
+     * create a dataset
+     * @param {string} name
+     * @param {string} description
+     */
     createDataset( name, description )
     {
         var opt = this._option;
@@ -204,12 +227,18 @@ class MaprayApi extends HTTP {
         return this.post( "datasets", [ opt.userId ], null, body );
     }
 
-    deleteDataset( datasetId )
+    /**
+     * Delete a dataset
+     */
+    deleteDataset( datasetId/*, option={ wait: true }*/ )
     {
         var opt = this._option;
         return this.delete( "datasets", [ opt.userId, datasetId ] );
     }
 
+    /**
+     * List Features
+     */
     listFeatures( datasetId ) {
         var opt = this._option;
         return this.get( "datasets", [ opt.userId, datasetId, "features" ] );
@@ -225,6 +254,7 @@ class MaprayApi extends HTTP {
         var opt = this._option;
         return this.put( "datasets", [ opt.userId, "features", featureId ], null, feature );
     }
+
 
     list3DDatasets() {
         const opt = this._option;
@@ -278,10 +308,20 @@ class MaprayApi extends HTTP {
 
     get3DDatasetScene( datasetIds ) {
         const opt = this._option;
-        return this.get( "3ddatasets", [ "scene", opt.userId ], { "3ddatasets_ids": Array.isArray(datasetIds) ? datasetIds.join(",") : datasetIds } );
+        return this.get( "3ddatasets", [ "scene", opt.userId ], { "3ddatasets_ids": Array.isArray(datasetIds) ? datasetIds.join(",") : datasetIds } )
+        .then(response => {
+            response.entity_list.forEach(entity => {
+                const indexStr = entity.index;
+                const index = parseInt(indexStr);
+                if (index.toString() !== indexStr) {
+                  throw new Error("Internal Error: ID couldn't be convert to 'number'");
+                }
+                entity.index = index;
+            });
+            return response;
+        });
     }
 
-// ======
 
     /**
      * @protected
@@ -332,7 +372,7 @@ class MaprayApi extends HTTP {
         return this.fetchAPI( HTTP.METHOD.DELETE, api, args, query, null, option );
     }
 
-// ======
+
 
     /**
      * @protected

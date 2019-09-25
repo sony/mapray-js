@@ -15,6 +15,11 @@ class HTTP {
         return this.fetch( HTTP.METHOD.PATCH, url, query, body, option );
     }
 
+    static put( url, query, body, option={} )
+    {
+        return this.fetch( HTTP.METHOD.PUT, url, query, body, option );
+    }
+
     static delete( url, query, option={} )
     {
         return this.fetch( HTTP.METHOD.DELETE, url, query, null, option );
@@ -27,14 +32,14 @@ class HTTP {
         if (body) option.body = body;
         return (
             fetch( url + queryText, option )
+            .catch( error => {
+                    throw new FetchError( "Failed to fetch", url, null, error );
+            } )
             .then( response => {
                     if ( !response.ok ) {
                         throw new FetchError( "Failed to fetch: " + response.statusText, url, response );
                     }
                     return response;
-            } )
-            .catch( error => {
-                    throw new FetchError( "Failed to fetch", url, null, error );
             } )
         );
     }
