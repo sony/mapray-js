@@ -102,7 +102,10 @@ class SceneLoader extends Loader {
     _load_object( oscene )
     {
         return (
-            this._load_model_register( oscene )
+            Promise.resolve()
+            .then( () => {
+                    return this._load_model_register( oscene );
+            } )
             .then( () => {
                     return this._postload_object( oscene );
             })
