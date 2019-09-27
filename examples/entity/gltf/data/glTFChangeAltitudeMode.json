@@ -1,0 +1,11 @@
+{
+  "model_register": { "model-0": { "link": "http://localhost/glTF/plane/scene.gltf" } },
+  "entity_list": [{
+    "type": "model",
+    "mode": "basic",
+    "transform": { "position": [140.379528, 35.758832, 40.0] },
+    "ref_model": "model-0",
+    "altitude_mode": "absolute"
+    }
+  ]
+}

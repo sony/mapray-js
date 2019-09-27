@@ -1,0 +1,44 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>LoadglTFModelSample</title>
+    <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+    <script src="LoadglTFModel.js"></script>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+
+        div#mapray-container {
+            display: flex;
+            height: 94%;
+        }
+
+        div#mapInfo{
+            display: flex;
+            width: 50px;
+            height: 25px;
+            margin-left: auto;
+            margin-right: 10px;
+            align-items: center;
+        }
+        
+        div#modelInfo{
+            display: flex;
+            width: 520px;
+            height: 25px;
+            margin-left: auto;
+            margin-right: 10px;
+            align-items: center;
+        }
+    </style>
+</head>
+
+<body onload="new LoadModel('mapray-container');">
+    <div id="mapray-container"></div>
+    <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
+    <div id="modelInfo"><a href="https://b2b.partcommunity.com/community/knowledge/ja/detail/435/Yakushi-ji" style="font-size: 9px">Yakushiji Temple by Daily CAD is licensed under: Creative Commons - Attribution-ShareAlike International</a></div>
+</body>
+</html>
