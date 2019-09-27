@@ -1,104 +1,103 @@
 ﻿<!DOCTYPE html>
 <html>
-<head>
-    <meta charset="utf-8">
-    <title>CreateDeleteLayerChangeOpacitySample</title>
-    <script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
-    <script src="CreateDeleteLayerChangeOpacity.js"></script>
-    <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-            background-color: #E0E0E0;
-        }
+    <head>
+        <meta charset="utf-8">
+        <title>CreateDeleteLayerChangeOpacitySample</title>
+        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="CreateDeleteLayerChangeOpacity.js"></script>
+        <style>
+            html, body {
+                height: 100%;
+                margin: 0;
+                background-color: #E0E0E0;
+            }
 
-        select {
-            height: 22px;
-            vertical-align: middle;
-            font-size: 13px;
-            margin-left: 10px;
-        }
+            select {
+                height: 22px;
+                vertical-align: middle;
+                font-size: 13px;
+                margin-left: 10px;
+            }
 
-        p {
-            font-size: 13px;
-            margin-left:5px;
-        }
+            p {
+                font-size: 13px;
+                margin-left:5px;
+            }
 
-        input{
-            margin-left:10px;
-            font-size: 13px;
-            width: 90px;
-        }
+            input{
+                margin-left:10px;
+                font-size: 13px;
+                width: 90px;
+            }
 
-        div#mapray-container {
-            display: flex;
-            height: 96%;
-        }
+            div#mapray-container {
+                display: flex;
+                height: 96%;
+            }
 
-        div#CreateLayerBox {
-            display: flex;
-            background-color: #E0E0E0;
-            height: 32px;
-            width: 110px;
-            float: left;
-            border: inset 1px #000000;
-            align-items: center;
-        }
+            div#CreateLayerBox {
+                display: flex;
+                background-color: #E0E0E0;
+                height: 32px;
+                width: 110px;
+                float: left;
+                border: inset 1px #000000;
+                align-items: center;
+            }
 
-        div#DeleteLayerBox {
-            display: flex;
-            background-color: #E0E0E0;
-            height: 32px;
-            width: 110px;
-            float: left;
-            border: inset 1px #000000;
-            align-items: center;
-        }
+            div#DeleteLayerBox {
+                display: flex;
+                background-color: #E0E0E0;
+                height: 32px;
+                width: 110px;
+                float: left;
+                border: inset 1px #000000;
+                align-items: center;
+            }
 
-        div#LayerOpacityBox {
-            display: flex;
-            background-color: #E0E0E0;
-            height: 32px;
-            width: 170px;
-            float: left;
-            border: inset 1px #000000;
-            align-items: center;
-        }
+            div#LayerOpacityBox {
+                display: flex;
+                background-color: #E0E0E0;
+                height: 32px;
+                width: 170px;
+                float: left;
+                border: inset 1px #000000;
+                align-items: center;
+            }
 
-        div#mapInfo{
-            display: flex;
-            width: 50px;
-            height: 32px;
-            margin-left: auto;
-            margin-right: 10px;
-            align-items: center;
-        }
+            div#mapInfo{
+                display: flex;
+                width: 50px;
+                height: 32px;
+                margin-left: auto;
+                margin-right: 10px;
+                align-items: center;
+            }
+        </style>
+    </head>
 
-    </style>
-</head>
+    <body onload="CreateLayerControlInstance('mapray-container');">
+        <div id="mapray-container"></div>
 
-<body onload="CreateLayerControlInstance('mapray-container');">
-    <div id="mapray-container"></div>
+        <div id="CreateLayerBox">
+            <input type="button" value="Create Layer" onclick="CreateLayerButtonClicked()">
+        </div>
 
-    <div id="CreateLayerBox">
-        <input type="button" value="Create Layer" onclick="CreateLayerButtonClicked()">
-    </div>
+        <div id="DeleteLayerBox">
+            <input type="button" value="Delete Layer" onclick="DeleteLayerButtonClicked()">
+        </div>
 
-    <div id="DeleteLayerBox">
-        <input type="button" value="Delete Layer" onclick="DeleteLayerButtonClicked()">
-    </div>
+        <div id="LayerOpacityBox">
+            <p>Layer Opacity</p>
+            <select name="LayerOpacityPullDown" id="LayerOpacityPullDown" onchange="LayerOpacityValueChanged()">
+                <option value=1.0>100%</option>
+                <option value=0.75>75%</option>
+                <option value=0.5>50%</option>
+                <option value=0.25>25%</option>
+                <option value=0.001>0%</option>
+            </select>
+        </div>
 
-    <div id="LayerOpacityBox">
-        <p>Layer Opacity</p>
-        <select name="LayerOpacityPullDown" id="LayerOpacityPullDown" onchange="LayerOpacityValueChanged()">
-            <option value=1.0>100%</option>
-            <option value=0.75>75%</option>
-            <option value=0.5>50%</option>
-            <option value=0.25>25%</option>
-            <option value=0.001>0%</option>
-        </select>
-    </div>
-
-    <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
-</body>
+        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
+    </body>
 </html>

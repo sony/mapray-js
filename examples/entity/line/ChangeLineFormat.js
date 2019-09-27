@@ -4,7 +4,6 @@ var change_Line_Format;
 class ChangeLineFormat {
 
     constructor(container) {
-
         // Access Tokenを設定
         var accessToken = "<your access token here>";
 
@@ -16,11 +15,11 @@ class ChangeLineFormat {
             }
         );
 
-        this.SetCamera()
+        this.SetCamera();
 
-        this.MakeUIFormatLine()
+        this.MakeUIFormatLine();
 
-        this.SetLinePointStr()
+        this.SetLinePointStr();
     }
 
     // 画像プロバイダを生成
@@ -43,7 +42,7 @@ class ChangeLineFormat {
         var cam_end_pos = mapray.GeoMath.createVector3([0, 0, 0]);
         var cam_up = mapray.GeoMath.createVector3([0, 1, 0]);
 
-        //ビュー変換行列を作成
+        // ビュー変換行列を作成
         var view_to_home = mapray.GeoMath.createMatrix();
         mapray.GeoMath.lookat_matrix(cam_pos, cam_end_pos, cam_up, view_to_home);
 
@@ -51,99 +50,94 @@ class ChangeLineFormat {
         var view_to_gocs = this.viewer.camera.view_to_gocs;
         mapray.GeoMath.mul_AA(home_view_to_gocs, view_to_home, view_to_gocs);
 
-        // カメラのnear  farの設定
+        // カメラのnear、farの設定
         this.viewer.camera.near = 30;
         this.viewer.camera.far = 500000;
     }
 
     MakeUIFormatLine() {
-        //直線のエンティティを作成
+        // 直線のエンティティを作成
         var entity = new mapray.MarkerLineEntity(this.viewer.scene);
 
-        //皇居の座標を求める
-        var line_Fast_Pos = { longitude: 139.7528, latitude: 35.685175, height: 350 }
-        var line_Fast_View_To_Gocs = mapray.GeoMath.iscs_to_gocs_matrix(line_Fast_Pos, mapray.GeoMath.createMatrix());
+        // 皇居の座標を設定
+        var line_fast_position = { longitude: 139.7528, latitude: 35.685175, height: 350 };
 
-        //東京タワーの座標を求める
-        var line_Second_Pos = { longitude: 139.745433, latitude: 35.658581, height: 350 }
-        var line_Second_View_To_Gocs = mapray.GeoMath.iscs_to_gocs_matrix(line_Second_Pos, mapray.GeoMath.createMatrix());
+        // 東京タワーの座標を設定
+        var line_second_position = { longitude: 139.745433, latitude: 35.658581, height: 350 };
 
-        var points = [line_Fast_View_To_Gocs[12], line_Fast_View_To_Gocs[13], line_Fast_View_To_Gocs[14],
-                      line_Second_View_To_Gocs[12], line_Second_View_To_Gocs[13], line_Second_View_To_Gocs[14]]
+        // 各座標を配列に保存して、直線を追加
+        var position_array = [line_fast_position.longitude, line_fast_position.latitude, line_fast_position.height,
+                              line_second_position.longitude, line_second_position.latitude, line_second_position.height];
+        entity.addPoints(position_array);
 
-        entity.addPoints(points)
-
-        //プルダウンの値取得
+        // プルダウンの値取得
         var line_Width_Value = parseFloat(document.getElementById("LineWidthPullDown").value);
         var line_CollarChord = document.getElementById("LineCollarPallet").value;
 
-        //CollarChordをRBGに変換
+        // CollarChordをRBGに変換
         var RGBArray = this.convertCollarChordToRGB(line_CollarChord);
 
-        //プルダウンの値を設定
+        // プルダウンの値を設定
         entity.setLineWidth(line_Width_Value);
         entity.setColor(RGBArray);
 
-        //エンティティをシーンに追加
+        // エンティティをシーンに追加
         this.viewer.scene.addEntity(entity);
     }
 
     SetLinePointStr() {
-        //文字のエンティティを作成
+        // 文字のエンティティを作成
         var entity = new mapray.TextEntity(this.viewer.scene);
-        //皇居より400mほど東の場所
-        var fast_Font_Pos = { longitude: 139.758503, latitude: 35.685030, height: 350 }
 
-        var fast_Font_View_To_Gocs = mapray.GeoMath.iscs_to_gocs_matrix(fast_Font_Pos, mapray.GeoMath.createMatrix());
+        // 皇居より400mほど東の場所を設定
+        var fast_font_position = { longitude: 139.758503, latitude: 35.685030, height: 350 };
 
-        entity.addText("The Imperial Palace",
-                 [fast_Font_View_To_Gocs[12], fast_Font_View_To_Gocs[13], fast_Font_View_To_Gocs[14]],
-                 { color: [1, 1, 0], font_size: 25 });
-        //東京タワーより300mほど東の場所
-        var second_Font_Pos = { longitude: 139.749169, latitude: 35.658252, height: 350 }
+        // GeoPointクラスを生成して、テキストを追加
+        var fast_font_geopoint = new mapray.GeoPoint(fast_font_position.longitude, fast_font_position.latitude, fast_font_position.height);
+        entity.addText( "The Imperial Palace", fast_font_geopoint, { color: [1, 1, 0], font_size: 25 } );
 
-        var second_Font_View_To_Gocs = mapray.GeoMath.iscs_to_gocs_matrix(second_Font_Pos, mapray.GeoMath.createMatrix());
+        // 東京タワーより300mほど東の場所を設定
+        var second_font_position = { longitude: 139.749169, latitude: 35.658252, height: 350 };
 
-        entity.addText("Tokyo Tower",
-                 [second_Font_View_To_Gocs[12], second_Font_View_To_Gocs[13], second_Font_View_To_Gocs[14]],
-                 { color: [1, 1, 0], font_size: 25 });
+        // GeoPointクラスを生成して、テキストを追加
+        var second_font_geopoint = new mapray.GeoPoint(second_font_position.longitude, second_font_position.latitude, second_font_position.height);
+        entity.addText( "Tokyo Tower", second_font_geopoint, { color: [1, 1, 0], font_size: 25 } );
 
-        //エンティティをシーンに追加
+        // エンティティをシーンに追加
         this.viewer.scene.addEntity(entity);
     }
 
     ChangeLineWidth() {
-        //プルダウンの値取得
+        // プルダウンの値取得
         var line_Width_Value = parseFloat(document.getElementById("LineWidthPullDown").value);
 
-        //プルダウンの値を設定
+        // プルダウンの値を設定
         var lineEntity = this.viewer.scene.getEntity(0);
         lineEntity.setLineWidth(line_Width_Value);
-
     }
 
     ChangeLineCollar() {
-        //プルダウンの値取得
+        // プルダウンの値取得
         var line_CollarChord = document.getElementById("LineCollarPallet").value;
 
-        //CollarChordをRBGに変換
+        // CollarChordをRBGに変換
         var RGBArray = this.convertCollarChordToRGB(line_CollarChord);
 
-        //プルダウンの値を設定
+        // プルダウンの値を設定
         var lineEntity = this.viewer.scene.getEntity(0);
         lineEntity.setColor(RGBArray);
-
     }
 
     convertCollarChordToRGB(collarChord) {
-        var collarChordChars = collarChord.split('')
+        var collarChordChars = collarChord.split('');
 
         var r = parseInt(collarChordChars[1].toString() + collarChordChars[2].toString(), 16) / 255;
         var g = parseInt(collarChordChars[3].toString() + collarChordChars[4].toString(), 16) / 255;
         var b = parseInt(collarChordChars[5].toString() + collarChordChars[6].toString(), 16) / 255;
 
-        return [r, g, b]
+        return [r, g, b];
     }
+
 }
 
 function CreateChangeLineFormatInstance(container) {
@@ -151,9 +145,9 @@ function CreateChangeLineFormatInstance(container) {
 }
 
 function LineWidthValueChanged() {
-    change_Line_Format.ChangeLineWidth()
+    change_Line_Format.ChangeLineWidth();
 }
 
 function LineCollarValueChanged() {
-    change_Line_Format.ChangeLineCollar()
+    change_Line_Format.ChangeLineCollar();
 }
