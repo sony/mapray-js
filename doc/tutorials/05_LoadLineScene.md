@@ -12,43 +12,44 @@ mapray.SceneLoaderを使って線を表示する**LoadLineScene.html**及び**Lo
 ```HTML
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <title>LoadLineSceneSample</title>
-    <script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
-    <script src="LoadLineScene.js" charset="utf-8"></script>
-    <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-        }
+    <head>
+        <meta charset="UTF-8">
+        <title>LoadLineSceneSample</title>
+        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="LoadLineScene.js" charset="utf-8"></script>
+        <style>
+            html, body {
+                height: 100%;
+                margin: 0;
+            }
 
-        div#mapray-container {
-            display: flex;
-            height: 97%;
-        }
+            div#mapray-container {
+                display: flex;
+                height: 97%;
+            }
 
-        div#mapInfo{
-            display: flex;
-            width: 50px;
-            height: 25px;
-            margin-left: auto;
-            margin-right: 10px;
-            align-items: center;
-        }
-    </style>
-</head>
+            div#mapInfo{
+                display: flex;
+                width: 50px;
+                height: 25px;
+                margin-left: auto;
+                margin-right: 10px;
+                align-items: center;
+            }
+        </style>
+    </head>
 
-<body onload="new LoadLine('mapray-container');">
-    <div id="mapray-container"></div>
-    <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
-</body>
+    <body onload="new LoadLine('mapray-container');">
+        <div id="mapray-container"></div>
+        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
+    </body>
 </html>
 ```
 #### LoadLineScene.js
 
 ```JavaScript
- class LoadLine {
+class LoadLine {
+
     constructor(container) {
         // Access Tokenを設定
         var accessToken = "<your access token here>";
@@ -86,7 +87,7 @@ mapray.SceneLoaderを使って線を表示する**LoadLineScene.html**及び**Lo
         var cam_end_pos = mapray.GeoMath.createVector3([0, 0, 0]);
         var cam_up = mapray.GeoMath.createVector3([0, 1, 0]);
 
-        //ビュー変換行列を作成
+        // ビュー変換行列を作成
         var view_to_home = mapray.GeoMath.createMatrix();
         mapray.GeoMath.lookat_matrix(cam_pos, cam_end_pos, cam_up, view_to_home);
 
@@ -94,30 +95,30 @@ mapray.SceneLoaderを使って線を表示する**LoadLineScene.html**及び**Lo
         var view_to_gocs = this.viewer.camera.view_to_gocs;
         mapray.GeoMath.mul_AA(home_view_to_gocs, view_to_home, view_to_gocs);
 
-        // カメラのnear  farの設定
+        // カメラのnear、farの設定
         this.viewer.camera.near = 30;
         this.viewer.camera.far = 500000;
     }
 
     LoadScene() {
-        var scene_File_URL = "http://localhost/line/line.json";
+        var scene_File_URL = "https://storage.googleapis.com/mapray-examples/line/line.json";
+
         //シーンを読み込む
         var loader = new mapray.SceneLoader(this.viewer.scene, scene_File_URL, {
             callback: (loader, isSuccess) => { this.onLoadScene(loader, isSuccess); }
         });
+
+        loader.load();
     }
 
     onLoadScene(loader, isSuccess) {
-        //読み込みに成功
+        // 読み込みに成功
         if (isSuccess) {
-            //追加するラインポイントの座標を求める。座標はスカイツリー
+            // 追加するラインポイントの座標を求める。座標はスカイツリー
             var point = { longitude: 139.8107, latitude: 35.710063, height: 350 };
+            var points = [point.longitude, point.latitude, point.height];
 
-            var point_Gocs = mapray.GeoMath.iscs_to_gocs_matrix(point, mapray.GeoMath.createMatrix());
-
-            var points = [point_Gocs[12], point_Gocs[13], point_Gocs[14]];
-
-            //sceneのラインEntityにポイントを追加する
+            // sceneのラインEntityにポイントを追加する
             var lineEntity = this.viewer.scene.getEntity(0);
             lineEntity.addPoints(points);
 
@@ -127,37 +128,34 @@ mapray.SceneLoaderを使って線を表示する**LoadLineScene.html**及び**Lo
     }
 
     SetLinePointStr() {
-        //文字のエンティティを作成
+        // 文字のエンティティを作成
         var entity = new mapray.TextEntity(this.viewer.scene);
-        //皇居より100mほど北の場所
-        var fast_Font_Pos = { longitude: 139.7528, latitude: 35.685947, height: 350 }
 
-        var fast_Font_View_To_Gocs = mapray.GeoMath.iscs_to_gocs_matrix(fast_Font_Pos, mapray.GeoMath.createMatrix());
+        // 皇居より100mほど北の場所を設定
+        var fast_font_position = { longitude: 139.7528, latitude: 35.685947, height: 350 };
 
-        entity.addText("The Imperial Palace",
-                 [fast_Font_View_To_Gocs[12], fast_Font_View_To_Gocs[13], fast_Font_View_To_Gocs[14]],
-                 { color: [1, 1, 0], font_size: 25 });
-        //東京タワーより200mほど南の場所
-        var second_Font_Pos = { longitude: 139.745433, latitude: 35.656687, height: 350 }
+        // GeoPointクラスを生成して、テキストを追加
+        var fast_font_geopoint = new mapray.GeoPoint(fast_font_position.longitude, fast_font_position.latitude, fast_font_position.height);
+        entity.addText("The Imperial Palace", fast_font_geopoint, { color: [1, 1, 0], font_size: 25 } );
 
-        var second_Font_View_To_Gocs = mapray.GeoMath.iscs_to_gocs_matrix(second_Font_Pos, mapray.GeoMath.createMatrix());
+        // 東京タワーより200mほど南の場所を設定
+        var second_font_position = { longitude: 139.745433, latitude: 35.656687, height: 350 };
 
-        entity.addText("Tokyo Tower",
-                 [second_Font_View_To_Gocs[12], second_Font_View_To_Gocs[13], second_Font_View_To_Gocs[14]],
-                 { color: [1, 1, 0], font_size: 25 });
+    　  // GeoPointクラスを生成して、テキストを追加
+        var second_font_geopoint = new mapray.GeoPoint(second_font_position.longitude, second_font_position.latitude, second_font_position.height);
+        entity.addText("Tokyo Tower", second_font_geopoint, { color: [1, 1, 0], font_size: 25 } );
 
-        //東京スカイツリーより100mほど北の場所
-        var third_Font_Pos = { longitude: 139.8107, latitude: 35.710934, height: 350 }
+        // 東京スカイツリーより100mほど北の場所を設定
+        var third_font_position = { longitude: 139.8107, latitude: 35.710934, height: 350 };
 
-        var third_Font_View_To_Gocs = mapray.GeoMath.iscs_to_gocs_matrix(third_Font_Pos, mapray.GeoMath.createMatrix());
+    　  // GeoPointクラスを生成して、テキストを追加
+        var third_font_geopoint = new mapray.GeoPoint(third_font_position.longitude, third_font_position.latitude, third_font_position.height);
+        entity.addText("TOKYO SKYTREE", third_font_geopoint, { color: [1, 1, 0], font_size: 25 } );
 
-        entity.addText("TOKYO SKYTREE",
-                 [third_Font_View_To_Gocs[12], third_Font_View_To_Gocs[13], third_Font_View_To_Gocs[14]],
-                 { color: [1, 1, 0], font_size: 25 });
-
-        //エンティティをシーンに追加
+        // エンティティをシーンに追加
         this.viewer.scene.addEntity(entity);
     }
+
 }
 ```
 #### シーンファイル（line.json）
@@ -166,17 +164,8 @@ mapray.SceneLoaderを使って線を表示する**LoadLineScene.html**及び**Lo
   "entity_list": [
     {
       "type": "markerline",
-      "points": {
-        "type": "cartographic",
-        "coords": [
-            139.7528,
-            35.685175,
-            350,
-            139.745433,
-            35.658581,
-            350
-        ]
-      },
+      "points": [139.7528, 35.685175, 350,
+                 139.745433, 35.658581, 350],
       "line_width": 1,
       "color": [1, 1, 1]
     }
@@ -200,9 +189,9 @@ htmlのサンプルコードの詳細を以下で解説します。
 ```
 
 #### JavaScriptファイルのパス設定
-6、7行目で参照するJavaScripのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイルと線のシーンを読み込むJavaScriptファイル（**LoadLineScene.js**）を設定します。線のシーンを読み込むJavaScriptファイルは文字コードをutf-8に設定します。
+6～7行目で参照するJavaScripのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイルと線のシーンを読み込むJavaScriptファイル（**LoadLineScene.js**）を設定します。線のシーンを読み込むJavaScriptファイルは文字コードをutf-8に設定します。
 ```HTML
-<script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
+<script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
 <script src="LoadLineScene.js" charset="utf-8"></script>
 ```
 
@@ -242,7 +231,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 ```
 
 #### 地図表示部分と出典表示部分の指定
-31、32行目で表示する要素を記述します。
+31～32行目で表示する要素を記述します。
 要素の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```HTML
@@ -254,7 +243,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 JavaScriptのサンプルコードの詳細を以下で解説します。
 
 #### クラス
-1～111行目で線シーンを読み込み、表示するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
+1～109行目で線シーンを読み込み、表示するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
 
 ```JavaScript
 class LoadLine {
@@ -265,7 +254,7 @@ class LoadLine {
 ```
 
 #### コンストラクタ
-2～17行目が線のシーンを読み込み表示するクラスのコンストラクタです。引数として渡されるブロックのidに対して、mapray.Viewerを作成し、カメラの位置・向きの設定メソッドを呼び出します。その後、シーンのロードメソッドを呼び出します。viewerを作成する際の画像プロバイダは画像プロバイダの生成メソッドから取得します。
+3～18行目が線のシーンを読み込み表示するクラスのコンストラクタです。引数として渡されるブロックのidに対して、mapray.Viewerを作成し、カメラの位置・向きの設定メソッドを呼び出します。その後、シーンのロードメソッドを呼び出します。viewerを作成する際の画像プロバイダは画像プロバイダの生成メソッドから取得します。
 mapray.Viewerの作成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -288,7 +277,7 @@ constructor(container) {
 ```
 
 #### 画像プロバイダの生成
-19～23行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
+21～24行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
 画像プロバイダの生成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -300,113 +289,109 @@ createImageProvider() {
 ```
 
 #### カメラの位置・向きの設定
-25～50行目がカメラの位置・向きの設定メソッドです。
+26～51行目がカメラの位置・向きの設定メソッドです。
 カメラの位置・向きの設定は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
 SetCamera() {
-        // カメラ位置の設定
+    // カメラ位置の設定
 
-        // 球面座標系（経度、緯度、高度）で視点を設定。座標は東京タワーとスカイツリーの中間付近
-        var home_pos = { longitude: 139.783217, latitude: 35.685173, height: 50 };
+    // 球面座標系（経度、緯度、高度）で視点を設定。座標は東京タワーとスカイツリーの中間付近
+    var home_pos = { longitude: 139.783217, latitude: 35.685173, height: 50 };
 
-        // 球面座標から地心直交座標へ変換
-        var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+    // 球面座標から地心直交座標へ変換
+    var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
 
-        // 視線方向を定義
-        var cam_pos = mapray.GeoMath.createVector3([0, 0, 16000]);
-        var cam_end_pos = mapray.GeoMath.createVector3([0, 0, 0]);
-        var cam_up = mapray.GeoMath.createVector3([0, 1, 0]);
+    // 視線方向を定義
+    var cam_pos = mapray.GeoMath.createVector3([0, 0, 16000]);
+    var cam_end_pos = mapray.GeoMath.createVector3([0, 0, 0]);
+    var cam_up = mapray.GeoMath.createVector3([0, 1, 0]);
 
-        //ビュー変換行列を作成
-        var view_to_home = mapray.GeoMath.createMatrix();
-        mapray.GeoMath.lookat_matrix(cam_pos, cam_end_pos, cam_up, view_to_home);
+    // ビュー変換行列を作成
+    var view_to_home = mapray.GeoMath.createMatrix();
+    mapray.GeoMath.lookat_matrix(cam_pos, cam_end_pos, cam_up, view_to_home);
 
-        // カメラの位置と視線方向からカメラの姿勢を変更
-        var view_to_gocs = this.viewer.camera.view_to_gocs;
-        mapray.GeoMath.mul_AA(home_view_to_gocs, view_to_home, view_to_gocs);
+    // カメラの位置と視線方向からカメラの姿勢を変更
+    var view_to_gocs = this.viewer.camera.view_to_gocs;
+    mapray.GeoMath.mul_AA(home_view_to_gocs, view_to_home, view_to_gocs);
 
-        // カメラのnear  farの設定
-        this.viewer.camera.near = 30;
-        this.viewer.camera.far = 500000;
+    // カメラのnear、farの設定
+    this.viewer.camera.near = 30;
+    this.viewer.camera.far = 500000;
 }
 ```
 
 #### シーンのロード
-52～58行目がシーンのロードメソッドです。mapray.SceneLoaderでシーンを読み込みます。
-SceneLoaderの引数は、シーンファイルのエンティティを追加するシーン、読み込むシーンファイルのURL、オプション集合の順に指定します。このサンプルコードでは、viewerのシーン、53行目で設定したURL、シーンのロードが終了した時のコールバック関数の順に指定します。読み込むシーンのURLはhttpもしくはhttpsでアクセスできるURLを指定します。
+53～62行目がシーンのロードメソッドです。mapray.SceneLoaderでシーンを読み込みます。
+SceneLoaderの引数は、シーンファイルのエンティティを追加するシーン、読み込むシーンファイルのURL、オプション集合の順に指定します。このサンプルコードでは、viewerのシーン、54行目で設定したURL、シーンのロードが終了した時のコールバック関数の順に指定します。読み込むシーンのURLはhttpもしくはhttpsでアクセスできるURLを指定します。最後に、61行目のload関数を呼び出すことでシーンの読み込みができます。
 
 ```JavaScript
 LoadScene() {
-    var scene_File_URL = "http://localhost/line/line.json";
+    var scene_File_URL = "https://storage.googleapis.com/mapray-examples/line/line.json";
+
     //シーンを読み込む
-        var loader = new mapray.SceneLoader(this.viewer.scene, scene_File_URL, {
+    var loader = new mapray.SceneLoader(this.viewer.scene, scene_File_URL, {
         callback: (loader, isSuccess) => { this.onLoadScene(loader, isSuccess); }
     });
+
+    loader.load();
 }
 ```
 
 #### シーンのロード終了イベント
-60～77行目がシーンのロード終了イベントメソッドです。引数のisSuccessには、読み込み結果が格納されており、trueの場合のみ追加の線を作成します。最後に、場所の説明用の文字を表示するメソッドを呼び出します。
-なお、ラインエンティティは、addPoints関数で追加した頂点を順に線で結ばれます。そのため、このサンプルコードでは、71行目で取得したラインエンティティに対して頂点を追加することで、シーンファイルで読み込んだ頂点及び後から追加した頂点が結ばれた線が表示されます。
+64～78行目がシーンのロード終了イベントメソッドです。引数のisSuccessには、読み込み結果が格納されており、trueの場合のみ追加の線を作成します。最後に、場所の説明用の文字を表示するメソッドを呼び出します。
+なお、ラインエンティティは、addPoints関数で追加した頂点を順に線で結ばれます。そのため、このサンプルコードでは、73行目で取得したラインエンティティに対して頂点を追加することで、シーンファイルで読み込んだ頂点及び後から追加した頂点が結ばれた線が表示されます。
 線の座標の追加は、ヘルプページ『**線の表示（addPointsを使った表示）**』を参照してください。
 
 ```JavaScript
 onLoadScene(loader, isSuccess) {
-        //読み込みに成功
-        if (isSuccess) {
-            //追加するラインポイントの座標を求める。座標はスカイツリー
-            var point = { longitude: 139.8107, latitude: 35.710063, height: 350 };
+    // 読み込みに成功
+    if (isSuccess) {
+        // 追加するラインポイントの座標を求める。座標はスカイツリー
+        var point = { longitude: 139.8107, latitude: 35.710063, height: 350 };
+        var points = [point.longitude, point.latitude, point.height];
 
-            var point_Gocs = mapray.GeoMath.iscs_to_gocs_matrix(point, mapray.GeoMath.createMatrix());
+        // sceneのラインEntityにポイントを追加する
+        var lineEntity = this.viewer.scene.getEntity(0);
+        lineEntity.addPoints(points);
 
-            var points = [point_Gocs[12], point_Gocs[13], point_Gocs[14]];
-
-            //sceneのラインEntityにポイントを追加する
-            var lineEntity = this.viewer.scene.getEntity(0);
-            lineEntity.addPoints(points);
-
-            //ラインポイントの場所名表示
-            this.SetLinePointStr();
-        }
+        //ラインポイントの場所名表示
+        this.SetLinePointStr();
     }
+}
 ```
 
 #### 文字の表示
-79～110行目が文字の表示メソッドです。皇居、東京タワー、東京スカイツリーの文字を表示します。
+80～107行目が文字の表示メソッドです。皇居、東京タワー、東京スカイツリーの文字を表示します。
 文字の表示は、ヘルプページ『**文字の表示（addTextを使った表示）**』のヘルプページを参照してください。
 
 ```JavaScript
 SetLinePointStr() {
-    //文字のエンティティを作成
+    // 文字のエンティティを作成
     var entity = new mapray.TextEntity(this.viewer.scene);
-    //皇居より100mほど北の場所
-    var fast_Font_Pos = { longitude: 139.7528, latitude: 35.685947, height: 350 }
 
-    var fast_Font_View_To_Gocs = mapray.GeoMath.iscs_to_gocs_matrix(fast_Font_Pos, mapray.GeoMath.createMatrix());
+    // 皇居より100mほど北の場所を設定
+    var fast_font_position = { longitude: 139.7528, latitude: 35.685947, height: 350 };
 
-    entity.addText("The Imperial Palace",
-             [fast_Font_View_To_Gocs[12], fast_Font_View_To_Gocs[13], fast_Font_View_To_Gocs[14]],
-             { color: [1, 1, 0], font_size: 25 });
-    //東京タワーより200mほど南の場所
-    var second_Font_Pos = { longitude: 139.745433, latitude: 35.656687, height: 350 }
+    // GeoPointクラスを生成して、テキストを追加
+    var fast_font_geopoint = new mapray.GeoPoint(fast_font_position.longitude, fast_font_position.latitude, fast_font_position.height);
+    entity.addText("The Imperial Palace", fast_font_geopoint, { color: [1, 1, 0], font_size: 25 } );
 
-    var second_Font_View_To_Gocs = mapray.GeoMath.iscs_to_gocs_matrix(second_Font_Pos, mapray.GeoMath.createMatrix());
+    // 東京タワーより200mほど南の場所を設定
+    var second_font_position = { longitude: 139.745433, latitude: 35.656687, height: 350 };
 
-    entity.addText("Tokyo Tower",
-             [second_Font_View_To_Gocs[12], second_Font_View_To_Gocs[13], second_Font_View_To_Gocs[14]],
-             { color: [1, 1, 0], font_size: 25 });
+　  // GeoPointクラスを生成して、テキストを追加
+    var second_font_geopoint = new mapray.GeoPoint(second_font_position.longitude, second_font_position.latitude, second_font_position.height);
+    entity.addText("Tokyo Tower", second_font_geopoint, { color: [1, 1, 0], font_size: 25 } );
 
-    //東京スカイツリーより100mほど北の場所
-    var third_Font_Pos = { longitude: 139.8107, latitude: 35.710934, height: 350 }
+    // 東京スカイツリーより100mほど北の場所を設定
+    var third_font_position = { longitude: 139.8107, latitude: 35.710934, height: 350 };
 
-    var third_Font_View_To_Gocs = mapray.GeoMath.iscs_to_gocs_matrix(third_Font_Pos, mapray.GeoMath.createMatrix());
+　  // GeoPointクラスを生成して、テキストを追加
+    var third_font_geopoint = new mapray.GeoPoint(third_font_position.longitude, third_font_position.latitude, third_font_position.height);
+    entity.addText("TOKYO SKYTREE", third_font_geopoint, { color: [1, 1, 0], font_size: 25 } );
 
-    entity.addText("TOKYO SKYTREE",
-             [third_Font_View_To_Gocs[12], third_Font_View_To_Gocs[13], third_Font_View_To_Gocs[14]],
-             { color: [1, 1, 0], font_size: 25 });
-
-    //エンティティをシーンに追加
+    // エンティティをシーンに追加
     this.viewer.scene.addEntity(entity);
 }
 ```
@@ -431,23 +416,14 @@ SetLinePointStr() {
 ```
 
 #### ライン情報の設定
-5～17行目で線の情報を記述します。線の情報は、線の座標（points）、線の幅（line_width）、線の色（color）があり、線の座標の中には、座標の種類（type）と座標値（coords）があります。
-このシーンファイルでは、線の座標の種類（type）にはcartographicを、線の座標値（coords）には、経度・緯度・高度を始点、終点の順に指定します。また、線の幅（line_width）には1を、線の色（color）には白を、それぞれ指定します。
+5～8行目で線の情報を記述します。線の情報は、線の座標（points）、線の幅（line_width）、線の色（color）があります。
+このシーンファイルでは、線の座標に始点と終点にあたる皇居と東京タワーの経度・緯度・高度を指定します。また、線の幅（line_width）には1を、線の色（color）には白を、それぞれ指定します。
 
 ```json
-"points": {
-    "type": "cartographic",
-    "coords": [
-        139.7528,
-        35.685175,
-        350,
-        139.745433,
-        35.658581,
-        350
-    ]
-  },
-  "line_width": 1,
-  "color": [1, 1, 1]
+"points": [139.7528, 35.685175, 350,
+           139.745433, 35.658581, 350],
+"line_width": 1,
+"color": [1, 1, 1]
 ```
 
 ### 出力イメージ

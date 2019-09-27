@@ -10,36 +10,37 @@
 ```HTML
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="utf-8">
-    <title>VirtualPathCameraAnimationSample</title>
-    <script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
-    <script src="VirtualPathCameraAnimation.js"></script>
-    <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-        }
+    <head>
+        <meta charset="utf-8">
+        <title>VirtualPathCameraAnimationSample</title>
+        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="VirtualPathCameraAnimation.js"></script>
+        <style>
+            html, body {
+                height: 100%;
+                margin: 0;
+            }
 
-        div#mapray-container {
-            display: flex;
-            height: 97%;
-        }
+            div#mapray-container {
+                display: flex;
+                height: 97%;
+            }
 
-        div#mapInfo{
-            display: flex;
-            width: 50px;
-            height: 25px;
-            margin-left: auto;
-            margin-right: 10px;
-            align-items: center;
-        }
-    </style>
-</head>
-<body onload="new VirtualPathCameraAnimation('mapray-container');">
-    <div id="mapray-container"></div>
-    <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
-</body>
+            div#mapInfo{
+                display: flex;
+                width: 50px;
+                height: 25px;
+                margin-left: auto;
+                margin-right: 10px;
+                align-items: center;
+            }
+        </style>
+    </head>
+
+    <body onload="new VirtualPathCameraAnimation('mapray-container');">
+        <div id="mapray-container"></div>
+        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
+    </body>
 </html>
 ```
 
@@ -63,16 +64,16 @@ class VirtualPathCameraAnimation extends mapray.RenderCallback {
             dem_provider: new mapray.CloudDemProvider(accessToken)
         });
 
-        this.path_Pos_Array = [{ longitude: 139.7528, latitude: 35.685175, height: 50.0 },     //仮想パスの終点(皇居)
-                               { longitude: 139.745433, latitude: 35.658581, height: 50.0 },     //仮想パスの終点(東京タワー)
-                               { longitude: 139.8107, latitude: 35.710063, height: 50.0 },     //仮想パスの終点(スカイツリー)
-                               { longitude: 139.751891, latitude: 35.70564, height: 50.0 },     //仮想パスの終点(東京ドーム)
-                               { longitude: 139.7528, latitude: 35.685175, height: 50.0 }]//仮想パスの始点(皇居)
-        this.distance = 3000.0;        //基準点からの距離
-        this.pitch_angle = -30.0;       //仰俯角
-        this.ratio_Increment = 0.15;    //毎フレームの線形補間割合増加分
-        this.ratio = 0.0;            //線形補間の割合
-        this.path_Pos_Index = 0
+        this.path_Pos_Array = [{ longitude: 139.7528, latitude: 35.685175, height: 50.0 },      // 仮想パスの終点(皇居)
+                               { longitude: 139.745433, latitude: 35.658581, height: 50.0 },    // 仮想パスの終点(東京タワー)
+                               { longitude: 139.8107, latitude: 35.710063, height: 50.0 },      // 仮想パスの終点(スカイツリー)
+                               { longitude: 139.751891, latitude: 35.70564, height: 50.0 },     // 仮想パスの終点(東京ドーム)
+                               { longitude: 139.7528, latitude: 35.685175, height: 50.0 }]      // 仮想パスの始点(皇居)
+        this.distance = 3000.0;         // 基準点からの距離
+        this.pitch_angle = -30.0;       // 仰俯角
+        this.ratio_Increment = 0.15;    // 毎フレームの線形補間割合増加分
+        this.ratio = 0.0;               // 線形補間の割合
+        this.path_Pos_Index = 0;
     }
 
     onStart()  // override
@@ -81,14 +82,13 @@ class VirtualPathCameraAnimation extends mapray.RenderCallback {
         this.ratio = 0.0;
     }
 
-    //フレーム毎に呼ばれるメソッド
+    // フレーム毎に呼ばれるメソッド
     onUpdateFrame(delta_time)  // override
     {
         var camera = this.viewer.camera;
 
         // カメラに変換行列を設定
-        GeoMath.mul_AA(this.createInterpolationBaseToGocsMatrix(), this.createViewToBaseMatrix(),
-                        camera.view_to_gocs);
+        GeoMath.mul_AA(this.createInterpolationBaseToGocsMatrix(), this.createViewToBaseMatrix(), camera.view_to_gocs);
 
         // カメラに近接遠方平面を設定
         camera.near = this.distance / 2;
@@ -99,11 +99,11 @@ class VirtualPathCameraAnimation extends mapray.RenderCallback {
 
         if (this.ratio > 1.0) {
             this.ratio = 0.0;
-            this.path_Pos_Index += 1
+            this.path_Pos_Index += 1;
         }
 
         if (this.path_Pos_Index == this.path_Pos_Array.length - 1) {
-            this.path_Pos_Index = 0
+            this.path_Pos_Index = 0;
         }
     }
 
@@ -114,7 +114,6 @@ class VirtualPathCameraAnimation extends mapray.RenderCallback {
 
     // 2点の間を線形保管し、基準座標系から GOCS への変換行列を生成
     createInterpolationBaseToGocsMatrix() {
-
         var interpolation_Pos = {
             longitude: this.path_Pos_Array[this.path_Pos_Index].longitude * (1 - this.ratio) + this.path_Pos_Array[this.path_Pos_Index + 1].longitude * this.ratio,
             latitude: this.path_Pos_Array[this.path_Pos_Index].latitude * (1 - this.ratio) + this.path_Pos_Array[this.path_Pos_Index + 1].latitude * this.ratio,
@@ -127,6 +126,7 @@ class VirtualPathCameraAnimation extends mapray.RenderCallback {
             latitude: interpolation_Pos.latitude,
             height: interpolation_Pos.height
         }, base_to_gocs);
+
         return base_to_gocs;
     }
 
@@ -138,11 +138,14 @@ class VirtualPathCameraAnimation extends mapray.RenderCallback {
 
         var camera_pos_mat = GeoMath.createMatrix();
         GeoMath.setIdentity(camera_pos_mat);
-        //カメラの位置をY軸方向に距離分移動させる
+
+        // カメラの位置をY軸方向に距離分移動させる
         camera_pos_mat[13] = -d;
-        //x軸でpitch_angle分回転させる回転行列を求める
+
+        // x軸でpitch_angle分回転させる回転行列を求める
         var pitch_Mat = GeoMath.rotation_matrix([1, 0, 0], this.pitch_angle, GeoMath.createMatrix());
-        //カメラの位置にX軸の回転行列をかける
+
+        // カメラの位置にX軸の回転行列をかける
         GeoMath.mul_AA(pitch_Mat, camera_pos_mat, camera_pos_mat);
 
         // 視線方向を定義
@@ -150,7 +153,7 @@ class VirtualPathCameraAnimation extends mapray.RenderCallback {
         var cam_end_pos = mapray.GeoMath.createVector3([0, 0, 0]);
         var cam_up = mapray.GeoMath.createVector3([0, 0, 1]);
 
-        //ビュー変換行列を作成
+        // ビュー変換行列を作成
         mapray.GeoMath.lookat_matrix(cam_pos, cam_end_pos, cam_up, mat);
 
         return mat;
@@ -177,10 +180,10 @@ htmlのサンプルコードの詳細を以下で解説します。
 ```
 
 #### JavaScriptファイルのパス設定
-6、7行目で参照するJavaScripのパスを設定します。このサンプルコードでは、maprayとパスに沿ってカメラアニメーションするJavaScriptファイル（**VirtualPathCameraAnimation.js**）を設定します。
+6～7行目で参照するJavaScripのパスを設定します。このサンプルコードでは、maprayとパスに沿ってカメラアニメーションするJavaScriptファイル（**VirtualPathCameraAnimation.js**）を設定します。
 
 ```HTML
-<script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
+<script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
 <script src="VirtualPathCameraAnimation.js"></script>
 ```
 
@@ -211,7 +214,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 ```
 
 #### loadイベントの処理
-画面を表示するときに、パスに沿ったカメラアニメーションクラスを生成します。そのため、29行目でページの読み込み時に、地図表示部分のブロックのidからパスに沿ったカメラアニメーションクラスのインスタンスを生成します。
+画面を表示するときに、パスに沿ったカメラアニメーションクラスを生成します。そのため、30行目でページの読み込み時に、地図表示部分のブロックのidからパスに沿ったカメラアニメーションクラスのインスタンスを生成します。
 パスに沿ったカメラアニメーションクラスはJavaScriptのサンプルコードの詳細で説明します。
 
 ```HTML
@@ -219,7 +222,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 ```
 
 #### 地図表示部分と出典表示部分の指定
-30、31行目で表示する要素を記述します。
+31、32行目で表示する要素を記述します。
 要素の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```HTML
@@ -231,7 +234,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 JavaScriptのサンプルコードの詳細を以下で解説します。
 
 #### クラスとグローバル変数の説明
-3～111行目でパスに沿ったカメラアニメーションクラスを定義します。アニメーションを表現するために、パスに沿ったカメラアニメーションクラスは、mapray.RenderCallbackクラスを継承します。
+3～114行目でパスに沿ったカメラアニメーションクラスを定義します。アニメーションを表現するために、パスに沿ったカメラアニメーションクラスは、mapray.RenderCallbackクラスを継承します。
 また、1行目で数学関連の関数または定数を定義するユーティリティークラスのグローバル変数を定義します。
 
 ```JavaScript
@@ -268,16 +271,16 @@ constructor(container) {
         dem_provider: new mapray.CloudDemProvider(accessToken)
     });
 
-    this.path_Pos_Array = [{ longitude: 139.7528, latitude: 35.685175, height: 50.0 },     //仮想パスの終点(皇居)
-                           { longitude: 139.745433, latitude: 35.658581, height: 50.0 },     //仮想パスの終点(東京タワー)
-                           { longitude: 139.8107, latitude: 35.710063, height: 50.0 },     //仮想パスの終点(スカイツリー)
-                           { longitude: 139.751891, latitude: 35.70564, height: 50.0 },     //仮想パスの終点(東京ドーム)
-                           { longitude: 139.7528, latitude: 35.685175, height: 50.0 }]//仮想パスの始点(皇居)
-    this.distance = 3000.0;        //基準点からの距離
-    this.pitch_angle = -30.0;       //仰俯角
-    this.ratio_Increment = 0.15;    //毎フレームの線形補間割合増加分
-    this.ratio = 0.0;            //線形補間の割合
-    this.path_Pos_Index = 0
+    this.path_Pos_Array = [{ longitude: 139.7528, latitude: 35.685175, height: 50.0 },      // 仮想パスの終点(皇居)
+                           { longitude: 139.745433, latitude: 35.658581, height: 50.0 },    // 仮想パスの終点(東京タワー)
+                           { longitude: 139.8107, latitude: 35.710063, height: 50.0 },      // 仮想パスの終点(スカイツリー)
+                           { longitude: 139.751891, latitude: 35.70564, height: 50.0 },     // 仮想パスの終点(東京ドーム)
+                           { longitude: 139.7528, latitude: 35.685175, height: 50.0 }]      // 仮想パスの始点(皇居)
+    this.distance = 3000.0;         // 基準点からの距離
+    this.pitch_angle = -30.0;       // 仰俯角
+    this.ratio_Increment = 0.15;    // 毎フレームの線形補間割合増加分
+    this.ratio = 0.0;               // 線形補間の割合
+    this.path_Pos_Index = 0;
 }
 ```
 
@@ -294,19 +297,18 @@ onStart()  // override
 ```
 
 #### フレームレンダリング前のコールバックメソッド（カメラ位置の更新処理）
-36～60行目がフレームレンダリング前のコールバックメソッドです。このサンプルコードでは、カメラ位置の更新処理を行います。
+37～59行目がフレームレンダリング前のコールバックメソッドです。このサンプルコードでは、カメラ位置の更新処理を行います。
 まず、現在の線形補間状態からカメラ位置を表す変換行列を求めるメソッド、カメラの視線方向を表すビュー変換行列を求めるメソッドを用いて、現時点のカメラ姿勢を反映します。そして、カメラの設定範囲（近接遠方平面）を設定し、現在の線形補間の割合および線形補間の対象区間を更新します。
 カメラ位置を表す変換行列を求めるメソッド、カメラの視線方向を表すビュー変換行列を求めるメソッドの詳細については後述します。
 
 ```JavaScript
-//フレーム毎に呼ばれるメソッド
+// フレーム毎に呼ばれるメソッド
 onUpdateFrame(delta_time)  // override
 {
     var camera = this.viewer.camera;
 
     // カメラに変換行列を設定
-    GeoMath.mul_AA(this.createInterpolationBaseToGocsMatrix(), this.createViewToBaseMatrix(),
-                    camera.view_to_gocs);
+    GeoMath.mul_AA(this.createInterpolationBaseToGocsMatrix(), this.createViewToBaseMatrix(), camera.view_to_gocs);
 
     // カメラに近接遠方平面を設定
     camera.near = this.distance / 2;
@@ -317,17 +319,17 @@ onUpdateFrame(delta_time)  // override
 
     if (this.ratio > 1.0) {
         this.ratio = 0.0;
-        this.path_Pos_Index += 1
+        this.path_Pos_Index += 1;
     }
 
     if (this.path_Pos_Index == this.path_Pos_Array.length - 1) {
-        this.path_Pos_Index = 0
+        this.path_Pos_Index = 0;
     }
 }
 ```
 
 #### 画像プロバイダの生成
-62～65行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
+62～64行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
 画像プロバイダの生成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -338,12 +340,11 @@ createImageProvider() {
 ```
 
 #### カメラ位置を表す変換行列の取得
-67～83行目がカメラ位置を表す変換行列の取得メソッドです。まず、70～74行目で、線形補間対象となる区間番号に対応する経由点間に対して、現在の線形補間の割合で線形補間し、カメラの緯度・経度・高度を求めます。そして、76～81行目で、その緯度・経度・高度の座標を地心直交座標系に変換することで、カメラ位置を表す変換行列を求めます。
+67～82行目がカメラ位置を表す変換行列の取得メソッドです。まず、68～72行目で、線形補間対象となる区間番号に対応する経由点間に対して、現在の線形補間の割合で線形補間し、カメラの緯度・経度・高度を求めます。そして、74～79行目で、その緯度・経度・高度の座標を地心直交座標系に変換することで、カメラ位置を表す変換行列を求めます。
 
 ```JavaScript
 // 2点の間を線形保管し、基準座標系から GOCS への変換行列を生成
 createInterpolationBaseToGocsMatrix() {
-
     var interpolation_Pos = {
         longitude: this.path_Pos_Array[this.path_Pos_Index].longitude * (1 - this.ratio) + this.path_Pos_Array[this.path_Pos_Index + 1].longitude * this.ratio,
         latitude: this.path_Pos_Array[this.path_Pos_Index].latitude * (1 - this.ratio) + this.path_Pos_Array[this.path_Pos_Index + 1].latitude * this.ratio,
@@ -356,12 +357,13 @@ createInterpolationBaseToGocsMatrix() {
         latitude: interpolation_Pos.latitude,
         height: interpolation_Pos.height
     }, base_to_gocs);
+
     return base_to_gocs;
 }
 ```
 
 #### カメラの視線方向を表すビュー変換行列の取得
-85～109行目がカメラの視線方向を表すビュー変換行列の取得メソッドです。まず、91～93行目で、相対視点位置を表す変換行列を単位行列に初期化し、注視点からの距離を設定した値になるように、相対視点位置をY軸方向に移動します。その後、94行目でカメラの仰俯角に対応する回転行列（X軸回りの回転行列）を生成し、98行目で相対視点位置を表す変換行列に回転行列を掛け合わせることで、相対視点位置を表す変換行列を作成します。最後に、101～106行目で、求めた相対視点位置、注視点、カメラの上方向ベクトルを利用して、最終的なビュー変換行列を求めます。
+85～111行目がカメラの視線方向を表すビュー変換行列の取得メソッドです。まず、90～94行目で、相対視点位置を表す変換行列を単位行列に初期化し、注視点からの距離を設定した値になるように、相対視点位置をY軸方向に移動します。その後、97行目でカメラの仰俯角に対応する回転行列（X軸回りの回転行列）を生成し、100行目で相対視点位置を表す変換行列に回転行列を掛け合わせることで、相対視点位置を表す変換行列を作成します。最後に、103～108行目で、求めた相対視点位置、注視点、カメラの上方向ベクトルを利用して、最終的なビュー変換行列を求めます。
 
 ```JavaScript
 // カメラの相対位置を計算し、姿勢を決める
@@ -372,11 +374,14 @@ createViewToBaseMatrix() {
 
     var camera_pos_mat = GeoMath.createMatrix();
     GeoMath.setIdentity(camera_pos_mat);
-    //カメラの位置をY軸方向に距離分移動させる
+
+    // カメラの位置をY軸方向に距離分移動させる
     camera_pos_mat[13] = -d;
-    //x軸でpitch_angle分回転させる回転行列を求める
+
+    // x軸でpitch_angle分回転させる回転行列を求める
     var pitch_Mat = GeoMath.rotation_matrix([1, 0, 0], this.pitch_angle, GeoMath.createMatrix());
-    //カメラの位置にX軸の回転行列をかける
+
+    // カメラの位置にX軸の回転行列をかける
     GeoMath.mul_AA(pitch_Mat, camera_pos_mat, camera_pos_mat);
 
     // 視線方向を定義
@@ -384,7 +389,7 @@ createViewToBaseMatrix() {
     var cam_end_pos = mapray.GeoMath.createVector3([0, 0, 0]);
     var cam_up = mapray.GeoMath.createVector3([0, 0, 1]);
 
-    //ビュー変換行列を作成
+    // ビュー変換行列を作成
     mapray.GeoMath.lookat_matrix(cam_pos, cam_end_pos, cam_up, mat);
 
     return mat;

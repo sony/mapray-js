@@ -10,36 +10,37 @@ mapray.Viewerクラスの画角を指定する**ChangeAngleOfView30.html**のサ
 ```HTML
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <title>ChangeAngleOfView30Sample</title>
-    <script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
-    <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-        }
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>ChangeAngleOfView30Sample</title>
+        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <style>
+            html, body {
+                height: 100%;
+                margin: 0;
+            }
 
-        div#mapray-container {
-            display: flex;
-            height: 97%;
-        }
+            div#mapray-container {
+                display: flex;
+                height: 97%;
+            }
 
-        div#mapInfo{
-            display: flex;
-            width: 50px;
-            height: 25px;
-            margin-left: auto;
-            margin-right: 10px;
-            align-items: center;
-        }
-    </style>
-</head>
+            div#mapInfo{
+                display: flex;
+                width: 50px;
+                height: 25px;
+                margin-left: auto;
+                margin-right: 10px;
+                align-items: center;
+            }
+        </style>
+    </head>
 
-<body>
-    <div id="mapray-container"></div>
-    <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
-</body>
+    <body>
+        <div id="mapray-container"></div>
+        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
+    </body>
 </html>
 
 <script>
@@ -67,7 +68,7 @@ mapray.Viewerクラスの画角を指定する**ChangeAngleOfView30.html**のサ
     var cam_end_pos = mapray.GeoMath.createVector3([0, 0, 0]);
     var cam_up = mapray.GeoMath.createVector3([0, 0, 1]);
 
-    //ビュー変換行列を作成
+    // ビュー変換行列を作成
     var view_to_home = mapray.GeoMath.createMatrix();
     mapray.GeoMath.lookat_matrix(cam_pos, cam_end_pos, cam_up, view_to_home);
 
@@ -75,13 +76,12 @@ mapray.Viewerクラスの画角を指定する**ChangeAngleOfView30.html**のサ
     var view_to_gocs = viewer.camera.view_to_gocs;
     mapray.GeoMath.mul_AA(home_view_to_gocs, view_to_home, view_to_gocs);
 
-    // カメラのnear  farの設定
+    // カメラのnear、farの設定
     viewer.camera.near = 30;
     viewer.camera.far = 500000;
 
-    //カメラの画角を30°に設定
+    // カメラの画角を30°に設定
     viewer.camera.fov = 30;
-
 </script>
 ```
 
@@ -94,41 +94,41 @@ mapray.Viewerクラスの画角を指定する**ChangeAngleOfView30.html**のサ
 ```HTML
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <title>ChangeAngleOfView30Sample</title>
-    <script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
-    <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-        }
+    <head>
+        <meta charset="UTF-8">
+        <title>ChangeAngleOfView30Sample</title>
+        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <style>
+            html, body {
+                height: 100%;
+                margin: 0;
+            }
 
-        div#mapray-container {
-            display: flex;
-            height: 97%;
-        }
+            div#mapray-container {
+                display: flex;
+                height: 97%;
+            }
 
-        div#mapInfo{
-            display: flex;
-            width: 50px;
-            height: 25px;
-            margin-left: auto;
-            margin-right: 10px;
-            align-items: center;
-        }
-    </style>
-</head>
+            div#mapInfo{
+                display: flex;
+                width: 50px;
+                height: 25px;
+                margin-left: auto;
+                margin-right: 10px;
+                align-items: center;
+            }
+        </style>
+    </head>
 
-<body>
-    <div id="mapray-container"></div>
-    <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
-</body>
+    <body>
+        <div id="mapray-container"></div>
+        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
+    </body>
 </html>
 ```
 
 #### カメラ位置・向きの設定
-26～60行目でmapray.Viewerクラスを作成し、カメラ位置・向きを設定します。
+37～70行目でmapray.Viewerクラスを作成し、カメラ位置・向きを設定します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -156,7 +156,7 @@ var cam_pos = mapray.GeoMath.createVector3([-3000, 2600, 1000]);
 var cam_end_pos = mapray.GeoMath.createVector3([0, 0, 0]);
 var cam_up = mapray.GeoMath.createVector3([0, 0, 1]);
 
-//ビュー変換行列を作成
+// ビュー変換行列を作成
 var view_to_home = mapray.GeoMath.createMatrix();
 mapray.GeoMath.lookat_matrix(cam_pos, cam_end_pos, cam_up, view_to_home);
 
@@ -164,16 +164,16 @@ mapray.GeoMath.lookat_matrix(cam_pos, cam_end_pos, cam_up, view_to_home);
 var view_to_gocs = viewer.camera.view_to_gocs;
 mapray.GeoMath.mul_AA(home_view_to_gocs, view_to_home, view_to_gocs);
 
-// カメラのnear  farの設定
+// カメラのnear、farの設定
 viewer.camera.near = 30;
 viewer.camera.far = 500000;
 ```
 
 #### カメラの画角の指定
-62、63行目で画角を指定します。設定する値は正の角度（度）です。
+73行目で画角を指定します。設定する値は正の角度（度）です。
 
 ```JavaScript
-//カメラの画角を30°に設定
+// カメラの画角を30°に設定
 viewer.camera.fov = 30;
 ```
 

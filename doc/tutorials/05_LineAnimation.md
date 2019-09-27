@@ -10,37 +10,37 @@
 ```HTML
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="utf-8">
-    <title>LineAnimationSample</title>
-    <script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
-    <script src="LineAnimation.js"></script>
-    <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-        }
+    <head>
+        <meta charset="utf-8">
+        <title>LineAnimationSample</title>
+        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="LineAnimation.js"></script>
+        <style>
+            html, body {
+                height: 100%;
+                margin: 0;
+            }
 
-        div#mapray-container {
-            display: flex;
-            height: 97%;
-        }
+            div#mapray-container {
+                display: flex;
+                height: 97%;
+            }
 
-        div#mapInfo{
-            display: flex;
-            width: 50px;
-            height: 25px;
-            margin-left: auto;
-            margin-right: 10px;
-            align-items: center;
-        }
+            div#mapInfo{
+                display: flex;
+                width: 50px;
+                height: 25px;
+                margin-left: auto;
+                margin-right: 10px;
+                align-items: center;
+            }
+        </style>
+    </head>
 
-    </style>
-</head>
-<body onload="new LineAnimation('mapray-container');">
-    <div id="mapray-container"></div>
-    <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
-</body>
+    <body onload="new LineAnimation('mapray-container');">
+        <div id="mapray-container"></div>
+        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
+    </body>
 </html>
 ```
 
@@ -66,14 +66,14 @@ class LineAnimation extends mapray.RenderCallback {
 
         this.SetCamera();
 
-        this.line_Pos_Array = [{ longitude: 139.7528, latitude: 35.685175, height: 500.0 },     //仮想パスの終点(皇居)
-                               { longitude: 139.745433, latitude: 35.658581, height: 500.0 },     //仮想パスの終点(東京タワー)
-                               { longitude: 139.8107, latitude: 35.710063, height: 500.0 },     //仮想パスの終点(スカイツリー)
-                               { longitude: 139.751891, latitude: 35.70564, height: 500.0 },     //仮想パスの終点(東京ドーム)
-                               { longitude: 139.7528, latitude: 35.685175, height: 500.0 }]//仮想パスの始点(皇居)
+        this.line_Pos_Array = [{ longitude: 139.7528, latitude: 35.685175, height: 500.0 },     // 仮想パスの終点(皇居)
+                               { longitude: 139.745433, latitude: 35.658581, height: 500.0 },   // 仮想パスの終点(東京タワー)
+                               { longitude: 139.8107, latitude: 35.710063, height: 500.0 },     // 仮想パスの終点(スカイツリー)
+                               { longitude: 139.751891, latitude: 35.70564, height: 500.0 },    // 仮想パスの終点(東京ドーム)
+                               { longitude: 139.7528, latitude: 35.685175, height: 500.0 }]     // 仮想パスの始点(皇居)
 
-        this.ratio_Increment = 0.15;    //毎フレームの線形補間割合増加分
-        this.ratio = 0.0;            //線形補間の割合
+        this.ratio_Increment = 0.15;    // 毎フレームの線形補間割合増加分
+        this.ratio = 0.0;               // 線形補間の割合
         this.line_Pos_Index = 0;
 
         this.CreateMarkerLineEntityAndAddLineStartPoint();
@@ -99,7 +99,7 @@ class LineAnimation extends mapray.RenderCallback {
         var cam_end_pos = mapray.GeoMath.createVector3([0, 0, 0]);
         var cam_up = mapray.GeoMath.createVector3([0, 1, 0]);
 
-        //ビュー変換行列を作成
+        // ビュー変換行列を作成
         var view_to_home = mapray.GeoMath.createMatrix();
         mapray.GeoMath.lookat_matrix(cam_pos, cam_end_pos, cam_up, view_to_home);
 
@@ -107,35 +107,24 @@ class LineAnimation extends mapray.RenderCallback {
         var view_to_gocs = this.viewer.camera.view_to_gocs;
         mapray.GeoMath.mul_AA(home_view_to_gocs, view_to_home, view_to_gocs);
 
-        // カメラのnear  farの設定
+        // カメラのnear、farの設定
         this.viewer.camera.near = 30;
         this.viewer.camera.far = 1000000;
     }
 
     CreateMarkerLineEntityAndAddLineStartPoint() {
-        //直線のエンティティを作成
+        // 直線のエンティティを作成
         var entity = new mapray.MarkerLineEntity(this.viewer.scene);
 
-        var line_Point_Gocs = this.createPointToGocsMatrix(this.line_Pos_Array[0]);
-
-        var points = [line_Point_Gocs[12], line_Point_Gocs[13], line_Point_Gocs[14]];
-
+        // 仮想パスの1点目を直線に追加
+        var points = [this.line_Pos_Array[0].latitude, this.line_Pos_Array[0].longitude, this.line_Pos_Array[0].height];
         entity.addPoints(points);
 
-        entity.setLineWidth(11)
+        // 線幅を設定
+        entity.setLineWidth(11);
 
         //エンティティをシーンに追加
         this.viewer.scene.addEntity(entity);
-    }
-
-    createPointToGocsMatrix(point) {
-        var point_To_Gocs = GeoMath.createMatrix();
-        GeoMath.iscs_to_gocs_matrix({
-            longitude: point.longitude,
-            latitude: point.latitude,
-            height: point.height
-        }, point_To_Gocs);
-        return point_To_Gocs;
     }
 
     onStart()  // override
@@ -144,7 +133,7 @@ class LineAnimation extends mapray.RenderCallback {
         this.ratio = 0.0;
     }
 
-    //フレーム毎に呼ばれるメソッド
+    // フレーム毎に呼ばれるメソッド
     onUpdateFrame(delta_time)  // override
     {
         // 次の線形補間の割合
@@ -163,31 +152,29 @@ class LineAnimation extends mapray.RenderCallback {
             this.CreateMarkerLineEntityAndAddLineStartPoint();
         }
 
-        //始点終点間の緯度経度高度のベクトル作成
+        // 始点終点間の緯度経度高度のベクトル作成
         var vec = [this.line_Pos_Array[this.line_Pos_Index + 1].longitude - this.line_Pos_Array[this.line_Pos_Index].longitude,
                    this.line_Pos_Array[this.line_Pos_Index + 1].latitude - this.line_Pos_Array[this.line_Pos_Index].latitude,
                    this.line_Pos_Array[this.line_Pos_Index + 1].height - this.line_Pos_Array[this.line_Pos_Index].height];
         GeoMath.normalize3(vec, vec);
-        //外積で補正方向算出
+
+        // 外積で補正方向算出
         var closs_Vec = GeoMath.cross3(vec, [0, 0, 1], GeoMath.createVector3());
 
-        //次のラインの緯度経度高度を算出
+        // 次のラインの緯度経度高度を算出
         var line_Point = {longitude: (this.line_Pos_Array[this.line_Pos_Index].longitude * (1 - this.ratio) + this.line_Pos_Array[this.line_Pos_Index + 1].longitude * this.ratio) + (closs_Vec[0] * 0.02) * Math.sin(this.ratio * 180 * GeoMath.DEGREE),
                           latitude: (this.line_Pos_Array[this.line_Pos_Index].latitude * (1 - this.ratio) + this.line_Pos_Array[this.line_Pos_Index + 1].latitude * this.ratio) + (closs_Vec[1] * 0.02) * Math.sin(this.ratio * 180 * GeoMath.DEGREE),
-                          height: this.line_Pos_Array[this.line_Pos_Index].height * (1 - this.ratio) + this.line_Pos_Array[this.line_Pos_Index + 1].height * this.ratio}
+                          height: this.line_Pos_Array[this.line_Pos_Index].height * (1 - this.ratio) + this.line_Pos_Array[this.line_Pos_Index + 1].height * this.ratio};
 
-        //球面座標系から地心座標系に変換
-        var line_Point_Gocs = this.createPointToGocsMatrix(line_Point);
-
-        this.AddLinePoint([line_Point_Gocs[12], line_Point_Gocs[13], line_Point_Gocs[14]]);
-
+        // 次の点を追加
+        this.AddLinePoint([line_Point.longitude, line_Point.latitude, line_Point.height]);
     }
 
-    AddLinePoint(point_xyz)
+    AddLinePoint(points)
     {
         //ラインの点を追加する
         var line_Entity = this.viewer.scene.getEntity(0);
-        line_Entity.addPoints(point_xyz);
+        line_Entity.addPoints(points);
     }
 
 }
@@ -211,15 +198,15 @@ htmlのサンプルコードの詳細を以下で解説します。
 ```
 
 #### JavaScriptファイルのパス設定
-6、7行目で参照するJavaScriptのパスを設定します。このサンプルコードでは、maprayとラインのアニメーションを作成するJavaScriptファイル（**LineAnimation.js**）を設定します。
+6～7行目で参照するJavaScriptのパスを設定します。このサンプルコードでは、maprayとラインのアニメーションを作成するJavaScriptファイル（**LineAnimation.js**）を設定します。
 
 ```HTML
-<script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
+<script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
 <script src="LineAnimation.js"></script>
 ```
 
 #### スタイルの設定
-8～28行目で表示する要素のスタイルを設定します。
+8～27行目で表示する要素のスタイルを設定します。
 スタイルの詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```HTML
@@ -242,7 +229,6 @@ htmlのサンプルコードの詳細を以下で解説します。
         margin-right: 10px;
         align-items: center;
     }
-
 </style>
 ```
 
@@ -267,7 +253,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 JavaScriptのサンプルコードの詳細を以下で解説します。
 
 #### クラスとグローバル変数の説明
-3～144行目でラインのアニメーションを作成するクラスを定義します。アニメーションを表現するために、ラインアニメーション作成クラスは、mapray.RenderCallbackクラスを継承します。
+3～131行目でラインのアニメーションを作成するクラスを定義します。アニメーションを表現するために、ラインアニメーション作成クラスは、mapray.RenderCallbackクラスを継承します。
 また、1行目で数学関連の関数または定数を定義するユーティリティークラスのグローバル変数を定義します。
 
 ```JavaScript
@@ -300,14 +286,14 @@ constructor(container) {
 
     this.SetCamera();
 
-    this.line_Pos_Array = [{ longitude: 139.7528, latitude: 35.685175, height: 500.0 },     //仮想パスの終点(皇居)
-                           { longitude: 139.745433, latitude: 35.658581, height: 500.0 },     //仮想パスの終点(東京タワー)
-                           { longitude: 139.8107, latitude: 35.710063, height: 500.0 },     //仮想パスの終点(スカイツリー)
-                           { longitude: 139.751891, latitude: 35.70564, height: 500.0 },     //仮想パスの終点(東京ドーム)
-                           { longitude: 139.7528, latitude: 35.685175, height: 500.0 }]//仮想パスの始点(皇居)
+    this.line_Pos_Array = [{ longitude: 139.7528, latitude: 35.685175, height: 500.0 },     // 仮想パスの終点(皇居)
+                           { longitude: 139.745433, latitude: 35.658581, height: 500.0 },   // 仮想パスの終点(東京タワー)
+                           { longitude: 139.8107, latitude: 35.710063, height: 500.0 },     // 仮想パスの終点(スカイツリー)
+                           { longitude: 139.751891, latitude: 35.70564, height: 500.0 },    // 仮想パスの終点(東京ドーム)
+                           { longitude: 139.7528, latitude: 35.685175, height: 500.0 }]     // 仮想パスの始点(皇居)
 
-    this.ratio_Increment = 0.15;    //毎フレームの線形補間割合増加分
-    this.ratio = 0.0;            //線形補間の割合
+    this.ratio_Increment = 0.15;    // 毎フレームの線形補間割合増加分
+    this.ratio = 0.0;               // 線形補間の割合
     this.line_Pos_Index = 0;
 
     this.CreateMarkerLineEntityAndAddLineStartPoint();
@@ -315,7 +301,7 @@ constructor(container) {
 ```
 
 #### 画像プロバイダの生成
-33～38行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
+34～37行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
 画像プロバイダの生成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -345,7 +331,7 @@ SetCamera() {
     var cam_end_pos = mapray.GeoMath.createVector3([0, 0, 0]);
     var cam_up = mapray.GeoMath.createVector3([0, 1, 0]);
 
-    //ビュー変換行列を作成
+    // ビュー変換行列を作成
     var view_to_home = mapray.GeoMath.createMatrix();
     mapray.GeoMath.lookat_matrix(cam_pos, cam_end_pos, cam_up, view_to_home);
 
@@ -353,51 +339,35 @@ SetCamera() {
     var view_to_gocs = this.viewer.camera.view_to_gocs;
     mapray.GeoMath.mul_AA(home_view_to_gocs, view_to_home, view_to_gocs);
 
-    // カメラのnear  farの設定
+    // カメラのnear、farの設定
     this.viewer.camera.near = 30;
     this.viewer.camera.far = 1000000;
 }
 ```
 
 #### 線のエンティティ作成
-66～80行目が線のエンティティ作成メソッドです。線のエンティティを作成し、皇居の地心直交座標を追加します。
+66～79行目が線のエンティティ作成メソッドです。線のエンティティを作成し、皇居の座標を追加します。
 線の頂点を設定する方法は、ヘルプページ『**線の表示（addPointsを使った表示）**』を参照してください。
 
 ```JavaScript
 CreateMarkerLineEntityAndAddLineStartPoint() {
-    //直線のエンティティを作成
+    // 直線のエンティティを作成
     var entity = new mapray.MarkerLineEntity(this.viewer.scene);
 
-    var line_Point_Gocs = this.createPointToGocsMatrix(this.line_Pos_Array[0]);
-
-    var points = [line_Point_Gocs[12], line_Point_Gocs[13], line_Point_Gocs[14]];
-
+    // 仮想パスの1点目を直線に追加
+    var points = [this.line_Pos_Array[0].latitude, this.line_Pos_Array[0].longitude, this.line_Pos_Array[0].height];
     entity.addPoints(points);
 
-    entity.setLineWidth(11)
+    // 線幅を設定
+    entity.setLineWidth(11);
 
     //エンティティをシーンに追加
     this.viewer.scene.addEntity(entity);
 }
 ```
 
-#### 球面座標系から地心直交座標系への変換
-82～91行目が球面座標系から地心直交座標系への変換メソッドです。iscs_to_gocs_matrix関数で、引数の緯度・経度・高度を地心直交座標に変換して返します。
-
-```JavaScript
-createPointToGocsMatrix(point) {
-    var point_To_Gocs = GeoMath.createMatrix();
-    GeoMath.iscs_to_gocs_matrix({
-        longitude: point.longitude,
-        latitude: point.latitude,
-        height: point.height
-    }, point_To_Gocs);
-    return point_To_Gocs;
-}
-```
-
 #### レンダリングループの開始時のコールバックメソッド
-92～96行目がレンダリングループの開始時のコールバックメソッドです。
+81～85行目がレンダリングループの開始時のコールバックメソッドです。
 レンダリングループの開始時のコールバックメソッドの詳細は、ヘルプページ『**パスに沿ったカメラアニメーション**』を参照してください。
 
 ```JavaScript
@@ -409,13 +379,13 @@ onStart()  // override
 ```
 
 #### フレームレンダリング前のコールバックメソッド（線エンティティの更新処理）
-98～135行目がフレームレンダリング前のコールバックメソッドです。このサンプルコードでは、線のエンティティの更新処理を行います。
-まず、引数の経過時間をもとに、線形補間時の現在の割合を計算します。その際、現在の割合が1より大きくなった場合は、線形補間対象となる区間番号を1つ増やし、現在の割合を0に設定します。また、全ての区間を補間し終えた場合は、clearEntities関数で線のエンティティを削除し、各メンバ変数及び線の表示状態を初期状態に戻します。また、線形補間の対象区間を曲線で表現するため、118～131行目で対象区間を球面座標系上のサインカーブで表現し、地心直交座標系に変換します。
-そして、133行目で線の頂点追加メソッドに地心直交座標系の平行移動成分を指定し、曲線の構成点を追加します。
+88～122行目がフレームレンダリング前のコールバックメソッドです。このサンプルコードでは、線のエンティティの更新処理を行います。
+まず、引数の経過時間をもとに、線形補間時の現在の割合を計算します。その際、現在の割合が1より大きくなった場合は、線形補間対象となる区間番号を1つ増やし、現在の割合を0に設定します。また、全ての区間を補間し終えた場合は、clearEntities関数で線のエンティティを削除し、各メンバ変数及び線の表示状態を初期状態に戻します。また、線形補間の対象区間を曲線で表現するため、107～118行目で対象区間を球面座標系上のサインカーブで表現し、地心直交座標系に変換します。
+そして、121行目で線の頂点追加メソッドに地心直交座標系の平行移動成分を指定し、曲線の構成点を追加します。
 線の頂点追加メソッドは以下で説明します。
 
 ```JavaScript
-//フレーム毎に呼ばれるメソッド
+// フレーム毎に呼ばれるメソッド
 onUpdateFrame(delta_time)  // override
 {
     // 次の線形補間の割合
@@ -434,37 +404,35 @@ onUpdateFrame(delta_time)  // override
         this.CreateMarkerLineEntityAndAddLineStartPoint();
     }
 
-    //始点終点間の緯度経度高度のベクトル作成
+    // 始点終点間の緯度経度高度のベクトル作成
     var vec = [this.line_Pos_Array[this.line_Pos_Index + 1].longitude - this.line_Pos_Array[this.line_Pos_Index].longitude,
                this.line_Pos_Array[this.line_Pos_Index + 1].latitude - this.line_Pos_Array[this.line_Pos_Index].latitude,
                this.line_Pos_Array[this.line_Pos_Index + 1].height - this.line_Pos_Array[this.line_Pos_Index].height];
     GeoMath.normalize3(vec, vec);
-    //外積で補正方向算出
+
+    // 外積で補正方向算出
     var closs_Vec = GeoMath.cross3(vec, [0, 0, 1], GeoMath.createVector3());
 
-    //次のラインの緯度経度高度を算出
+    // 次のラインの緯度経度高度を算出
     var line_Point = {longitude: (this.line_Pos_Array[this.line_Pos_Index].longitude * (1 - this.ratio) + this.line_Pos_Array[this.line_Pos_Index + 1].longitude * this.ratio) + (closs_Vec[0] * 0.02) * Math.sin(this.ratio * 180 * GeoMath.DEGREE),
                       latitude: (this.line_Pos_Array[this.line_Pos_Index].latitude * (1 - this.ratio) + this.line_Pos_Array[this.line_Pos_Index + 1].latitude * this.ratio) + (closs_Vec[1] * 0.02) * Math.sin(this.ratio * 180 * GeoMath.DEGREE),
-                      height: this.line_Pos_Array[this.line_Pos_Index].height * (1 - this.ratio) + this.line_Pos_Array[this.line_Pos_Index + 1].height * this.ratio}
+                      height: this.line_Pos_Array[this.line_Pos_Index].height * (1 - this.ratio) + this.line_Pos_Array[this.line_Pos_Index + 1].height * this.ratio};
 
-    //球面座標系から地心座標系に変換
-    var line_Point_Gocs = this.createPointToGocsMatrix(line_Point);
-
-    this.AddLinePoint([line_Point_Gocs[12], line_Point_Gocs[13], line_Point_Gocs[14]]);
-
+    // 次の点を追加
+    this.AddLinePoint([line_Point.longitude, line_Point.latitude, line_Point.height]);
 }
 ```
 
 #### 線の頂点追加
-137～142行目が線の座標追加メソッドです。getEntity関数で取得した線のエンティティに引数の頂点を追加します。
+124～129行目が線の座標追加メソッドです。getEntity関数で取得した線のエンティティに引数の頂点を追加します。
 線の頂点を設定する方法は、ヘルプページ『**線の表示（addPointsを使った表示）**』を参照してください。
 
 ```JavaScript
-AddLinePoint(point_xyz)
+AddLinePoint(points)
 {
     //ラインの点を追加する
     var line_Entity = this.viewer.scene.getEntity(0);
-    line_Entity.addPoints(point_xyz);
+    line_Entity.addPoints(points);
 }
 ```
 
