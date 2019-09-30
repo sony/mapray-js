@@ -72,7 +72,7 @@ class LoadGeoJSON extends mapray.RenderCallback {
 
     // シーンの読み込み
     LoadScene() {
-        var loader = new mapray.GeoJSONLoader( this._viewer.scene, "http://localhost/RouteLine.json", {
+        var loader = new mapray.GeoJSONLoader( this._viewer.scene, "/data/RouteLine.json", {
             onLoad: (loader, isSuccess) => { console.log("success load geojson") },
             getLineColor: d => d.properties && d.properties.color ? d.properties.color : [0, 0, 255, 1.0],
             getLineWidth: d => d.properties && d.properties.width ? d.properties.width : 3,

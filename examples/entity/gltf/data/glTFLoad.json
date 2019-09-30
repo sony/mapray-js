@@ -1,5 +1,5 @@
 {
-  "model_register": { "model-0": { "link": "http://localhost/glTF/Yakushiji_Temple/Yakushiji_Temple.gltf" } },
+  "model_register": { "model-0": { "link": "./Yakushiji_Temple/Yakushiji_Temple.gltf" } },
   "entity_list": [{
     "type": "model",
     "mode": "basic",

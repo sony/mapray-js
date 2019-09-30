@@ -51,7 +51,7 @@ class LoadModel {
 
     // シーンの読み込み
     LoadScene() {
-        var scene_File_URL = "http://localhost/glTF/glTFLoad.json";
+        var scene_File_URL = "./data/glTFLoad.json";
 
         // シーンを読み込む
         var loader = new mapray.SceneLoader(this.viewer.scene, scene_File_URL, {
@@ -81,4 +81,5 @@ class LoadModel {
             entity.setOrientation(new mapray.Orientation(180, 0, 0));
         }
     }
+    
 }

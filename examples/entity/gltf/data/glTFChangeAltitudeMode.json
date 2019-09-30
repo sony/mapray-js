@@ -1,5 +1,5 @@
 {
-  "model_register": { "model-0": { "link": "http://localhost/glTF/plane/scene.gltf" } },
+  "model_register": { "model-0": { "link": "./plane/scene.gltf" } },
   "entity_list": [{
     "type": "model",
     "mode": "basic",

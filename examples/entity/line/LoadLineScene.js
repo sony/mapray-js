@@ -52,7 +52,7 @@ class LoadLine {
     }
 
     LoadScene() {
-        var scene_File_URL = "https://storage.googleapis.com/mapray-examples/line/line.json";
+        var scene_File_URL = "./data/line.json";
 
         //シーンを読み込む
         var loader = new mapray.SceneLoader(this.viewer.scene, scene_File_URL, {

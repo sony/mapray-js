@@ -56,7 +56,7 @@ class ChangeAltitudeMode {
 
     // シーンの読み込み
     LoadScene() {
-        var scene_File_URL = "http://localhost/glTF/glTFChangeAltitudeMode.json";
+        var scene_File_URL = "./data/glTFChangeAltitudeMode.json";
 
         // シーンを読み込む
         var loader = new mapray.SceneLoader(this.viewer.scene, scene_File_URL, {

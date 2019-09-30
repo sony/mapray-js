@@ -99,7 +99,7 @@ class ModelAnimation extends mapray.RenderCallback {
 
     // シーンの読み込み
     LoadScene() {
-        var scene_File_URL = "http://localhost/glTF/glTFAnimation.json";
+        var scene_File_URL = "./data/glTFAnimation.json";
         
         // シーンを読み込む
         var loader = new mapray.SceneLoader(this.viewer.scene, scene_File_URL, {

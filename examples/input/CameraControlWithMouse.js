@@ -1,4 +1,4 @@
-﻿// JavaScript source code
+// JavaScript source code
 var GeoMath = mapray.GeoMath;
 
 class CameraControl extends mapray.RenderCallback{
