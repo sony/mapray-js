@@ -15,7 +15,7 @@ mapray.SceneLoaderを使って線を表示する**LoadLineScene.html**及び**Lo
     <head>
         <meta charset="UTF-8">
         <title>LoadLineSceneSample</title>
-        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
         <script src="LoadLineScene.js" charset="utf-8"></script>
         <style>
             html, body {
@@ -191,7 +191,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### JavaScriptファイルのパス設定
 6～7行目で参照するJavaScripのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイルと線のシーンを読み込むJavaScriptファイル（**LoadLineScene.js**）を設定します。線のシーンを読み込むJavaScriptファイルは文字コードをutf-8に設定します。
 ```HTML
-<script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+<script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
 <script src="LoadLineScene.js" charset="utf-8"></script>
 ```
 

@@ -14,7 +14,7 @@ mapray.SceneLoaderを使って文字を表示する**WriteStringWithSceneLoder.h
     <head>
         <meta charset="UTF-8">
         <title>WriteStringWithSceneLoderSample</title>
-        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
         <style>
             html, body {
                 height: 100%;
@@ -120,7 +120,7 @@ htmlのサンプルコードの詳細を以下で解説します。
     <head>
         <meta charset="UTF-8">
         <title>WriteStringWithSceneLoderSample</title>
-        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
         <style>
             html, body {
                 height: 100%;

@@ -14,7 +14,7 @@
     <head>
         <meta charset="utf-8">
         <title>glTFModelControllerSample</title>
-        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
         <script src="glTFModelController.js"></script>
         <style>
             html, body {
@@ -346,7 +346,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### JavaScriptファイルのパス設定
 6～7行目でhtmlで参照するJavaScriptのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイルとglTFモデルを操作するJavaScriptファイル（**glTFModelController.js**）を設定します。
 ```HTML
-<script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+<script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
 <script src="glTFModelController.js"></script>
 ```
 

@@ -12,7 +12,7 @@ mapray.PinEntityを使ってピンを表示する**AddPin.html**のサンプル�
     <head>
         <meta charset="UTF-8">
         <title>AddPinSample</title>
-        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
         <style>
             html, body {
                 height: 100%;
@@ -114,7 +114,7 @@ mapray.PinEntityを使ってピンを表示する**AddPin.html**のサンプル�
     <head>
         <meta charset="UTF-8">
         <title>AddPinSample</title>
-        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
         <style>
             html, body {
                 height: 100%;

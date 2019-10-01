@@ -15,7 +15,7 @@
     <head>
         <meta charset="utf-8">
         <title>ChangeAltitudeModeSample</title>
-        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
         <script src="ChangeAltitudeMode.js" charset="utf-8"></script>
         <style>
             html, body {
@@ -295,7 +295,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 6～7行目でで参照するJavaScriptのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイルと高度モードを変えるJavaScriptファイル（**ChangeAltitudeMode.js**）を設定します。高度モードを変えるJavaScriptファイルの文字コードはutf-8に設定します。
 
 ```HTML
-<script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+<script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
 <script src="ChangeAltitudeMode.js" charset="utf-8"></script>
 ```
 

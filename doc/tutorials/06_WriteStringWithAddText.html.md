@@ -14,7 +14,7 @@ mapray.TextEntityのaddTextを使って文字を表示する**WriteStringWithAdd
     <head>
         <meta charset="UTF-8">
         <title>WriteStringWithAddTextSample</title>
-        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
         <style>
             html, body {
                 height: 100%;
@@ -108,7 +108,7 @@ mapray.TextEntityのaddTextを使って文字を表示する**WriteStringWithAdd
     <head>
         <meta charset="UTF-8">
         <title>WriteStringWithAddTextSample</title>
-        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
         <style>
             html, body {
                 height: 100%;

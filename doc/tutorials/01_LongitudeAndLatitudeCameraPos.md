@@ -13,7 +13,7 @@ Mapray.Viewerクラスのカメラ位置を緯度・経度で指定する**Longi
     <head>
         <meta charset="UTF-8">
         <title>LongitudeAndLatitudeCameraPosSample</title>
-        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
         <style>
             html, body {
                 height: 100%;
@@ -100,7 +100,7 @@ Mapray.Viewerクラスのカメラ位置を緯度・経度で指定する**Longi
 6行目でhtmlで参照するJavaScriptのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイルを設定します。
 
 ```HTML
-<script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+<script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
 ```
 
 #### スタイルの設定

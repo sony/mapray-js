@@ -13,7 +13,7 @@
     <head>
         <meta charset="utf-8">
         <title>glTFModelAnimationSample</title>
-        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
         <script src="glTFModelAnimation.js"></script>
         <style>
             html, body {
@@ -239,7 +239,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 6～7行目で参照するJavaScripのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイルとモデルのアニメーションJavaScriptファイル（**glTFModelAnimation.js**）を設定します。
 
 ```HTML
-<script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+<script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
 <script src="glTFModelAnimation.js"></script>
 ```
 

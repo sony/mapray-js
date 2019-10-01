@@ -13,7 +13,7 @@
     <head>
         <meta charset="utf-8">
         <title>CameraControlWithMouseSample</title>
-        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
         <script src="CameraControlWithMouse.js"></script>
         <script src="CheckInputKeyAndMouse.js"></script>
         <style>
@@ -502,7 +502,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 6～8行目で参照するJavaScriptのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、カメラを操作するJavaScriptファイル（**CameraControlWithMouse.js**）、マウスの入力を検知するJavaScriptファイル（**CheckInputKeyAndMouse.js**）を設定します。
 
 ```HTML
-<script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+<script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
 <script src="CameraControlWithMouse.js"></script>
 <script src="CheckInputKeyAndMouse.js"></script>
 ```
