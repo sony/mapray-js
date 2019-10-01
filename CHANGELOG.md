@@ -1,5 +1,17 @@
 # Change Log
 
+## 0.7.0
+### Added
+- Altitude mode for each entites and schema of scene file [#49](https://github.com/sony/mapray-js/issues/49)
+- GeoJSON Loader [#46](https://github.com/sony/mapray-js/issues/46)
+- Support Polygon Entity [#35](https://github.com/sony/mapray-js/issues/35)
+- Support Pin Entity [#34](https://github.com/sony/mapray-js/issues/34)
+- Support MaprayAPI [#52](https://github.com/sony/mapray-js/issues/52)
+- Support Model entity [#50](https://github.com/sony/mapray-js/issues/50)
+
+### Breaking changes
+- Change the coordination for mapray scene file and API [#50](https://github.com/sony/mapray-js/issues/50)
+- Remove Generic Entity [#50](https://github.com/sony/mapray-js/issues/50
 
 ## 0.6.0
 ### Added
