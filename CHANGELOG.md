@@ -6,7 +6,8 @@
 - GeoJSON Loader [#46](https://github.com/sony/mapray-js/issues/46)
 - Support Polygon Entity [#35](https://github.com/sony/mapray-js/issues/35)
 - Support Pin Entity [#34](https://github.com/sony/mapray-js/issues/34)
-- Support MaprayAPI [#52](https://github.com/sony/mapray-js/issues/52)
+- Support ImageIcon Entity [#56](https://github.com/sony/mapray-js/issues/56)
+- Support Mapray API [#52](https://github.com/sony/mapray-js/issues/52)
 - Support Model entity [#50](https://github.com/sony/mapray-js/issues/50)
 
 ### Breaking changes
