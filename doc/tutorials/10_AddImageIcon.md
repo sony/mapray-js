@@ -12,7 +12,7 @@ mapray.ImageIconEntityのaddImageIconを使ってイメージアイコンを表�
     <head>
         <meta charset="UTF-8">
         <title>AddImageIconSample</title>
-        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
         <style>
             html, body {
                 height: 100%;
@@ -102,7 +102,7 @@ mapray.ImageIconEntityのaddImageIconを使ってイメージアイコンを表�
     <head>
         <meta charset="UTF-8">
         <title>AddImageIconSample</title>
-        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
         <style>
             html, body {
                 height: 100%;

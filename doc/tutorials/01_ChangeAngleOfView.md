@@ -14,7 +14,7 @@ mapray.Viewerクラスの画角を指定する**ChangeAngleOfView30.html**のサ
     <head>
         <meta charset="UTF-8">
         <title>ChangeAngleOfView30Sample</title>
-        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
         <style>
             html, body {
                 height: 100%;
@@ -97,7 +97,7 @@ mapray.Viewerクラスの画角を指定する**ChangeAngleOfView30.html**のサ
     <head>
         <meta charset="UTF-8">
         <title>ChangeAngleOfView30Sample</title>
-        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
         <style>
             html, body {
                 height: 100%;
