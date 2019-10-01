@@ -246,7 +246,7 @@ class GeoJSONLoader extends Loader {
         // If multiline, split entity
         if ( type === GEOMETRY_TYPES.POINT ) {
             var entity = new PinEntity( this._scene );
-            var coords = new GeoPoint( geometry.coordinates[0], geometry.coordinates[1], geometry.coordinates[2] );
+            var coords = new GeoPoint( geometry.coordinates[0], geometry.coordinates[1], geometry.coordinates[2] || elevation );
             if ( iconId !== null ) {
                 entity.addMakiIconPin( iconId, coords, props );
             }
@@ -259,7 +259,7 @@ class GeoJSONLoader extends Loader {
             var entity = new PinEntity( this._scene );
             for ( var i = 0; i < geometry.coordinates.length; i++ ) {
                 var targetCoordinates = geometry.coordinates[i];
-                var coords = new GeoPoint( targetCoordinates[0], targetCoordinates[1], targetCoordinates[2] );
+                var coords = new GeoPoint( targetCoordinates[0], targetCoordinates[1], targetCoordinates[2] || elevation );
                 if ( iconId !== null ) {
                     entity.addMakiIconPin( iconId, coords, props );
                     // entity.addPin( coords, props );
