@@ -1,6 +1,6 @@
 {
   "name": "mapray-js",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "3D Rendering Engine for GIS",
   "keywords": [
     "3D",
@@ -32,6 +32,9 @@
     {
       "name": "Daisuke Matsumoto",
       "url": "https://github.com/daisuke201"
+    },
+    {
+      "name": "masa-sony"
     }
   ],
   "license": "MIT",
