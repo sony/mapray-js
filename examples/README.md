@@ -10,7 +10,7 @@ const accessToken = "<your access token here>";
 
 ## Sample List
 
-| Section  | Summary                              | Detail                                                      | HTML file                           | JavaScript                                        | Scene file |
+| Section  | Summary                              | Detail                                                      | HTML file                           | JavaScript                                        | data file |
 |----------|--------------------------------------|-------------------------------------------------------------|-------------------------------------|---------------------------------------------------|-------------|
 | Camera   | Camera position                      | View Mt. Fuji from Mt. Kitadake                             | LongitudeAndLatitudeCameraPos.html  | -                                                 | -           |
 |          | Camera animation                     | Rotate the camera around Mt. Fuji                           | CameraAnimation.html                | CameraAnimation.js                                | -           |
@@ -38,6 +38,10 @@ const accessToken = "<your access token here>";
 |              | Change a font size                 |                                                                  |                                     |                                            |             |
 |              | Change a font color                |                                                                  |                                     |                                            |             |
 |              | Change a font family               |                                                                  |                                     |                                            |             |
-| Entity/Model | Add a 3D model with SceneLoader    | Display 3D model from SceneLoader                                | Load3DModel.html                    | Load3DModel.js                             | bus.json    |
-|              | Move a 3D model                    | Move and rotate a 3D model by the button                         | ModelController.html                | ModelController.js                         | bus.json    |
-|              | Animate a 3D model                 | Move along the road around Kyoto Imperial Palace                 | ModelAnimation.html                 | ModelAnimation.js                          | bus.json    |
+| Entity/gltf | Add a 3D model(glTF) with SceneLoader    | Display 3D model from SceneLoader                                | LoadglTFModel.html                    | LoadglTFModel.js                             | glTFLoad.json    |
+|              | Move a 3D model(glTF)                   | Move and rotate a 3D model by the button                         | glTFModelController.html                | glTFModelController.js                         | glTFController.json    |
+|              | Animate a 3D model(glTF)                 | Move along the road around Kyoto Imperial Palace                 | glTFModelAnimation.html                 |glTFModelAnimation.js                          | glTFAnimation.json    |
+|              | Change altitude mode of 3D model(glTF)                 | Change altitude mode from Button              | ChangeAltitudeMode.html                 |ChangeAltitudeMode.js                          | glTFChangeAltitudeMode.json    |
+|  Entity/geojson      | Load GeoJSON  | Load and Dislay GeoJSON from GeoJSONLoader              | LoadGeoJSON.html                 | LoadGeoJSON.js                          | RouteLine.json    |
+|        | Change data properties  | Change data properties when loading file and push button     | ChangeGeoJsonFormat.html                 | ChangeGeoJsonFormat.js                          | RouteLine.json    |
+|  Entity/icon      | Add image icon  | Load and Dislay image icon entity        | AddImageIcon.html                 |                       | TokyoTower.jpg    |
