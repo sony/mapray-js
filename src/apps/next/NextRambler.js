@@ -7,7 +7,7 @@ var Viewer  = mapray.Viewer;
 var GeoMath = mapray.GeoMath;
 var CloudDemPrivider = mapray.CloudDemProvider;
 
-const accessToken = "<your access token here>";
+const accessToken = "";
 const NATS_JSON_URL = "https://firebasestorage.googleapis.com/v0/b/ino-sandbox.appspot.com/o/inousample%2FthreeDModel%2FNATS%2FNATS.json?alt=media&token=081ad161-ad70-449e-b279-c2ea2beb109b";
 const NATS_MARKER_JSON_URL = "https://firebasestorage.googleapis.com/v0/b/ino-sandbox.appspot.com/o/inousample%2Fmarker%2FDemoNATS.json?alt=media&token=ba0298fb-042a-4ae0-b0fd-3427b457cf8a";
 const AED_JSON_URL = "https://firebasestorage.googleapis.com/v0/b/ino-sandbox.appspot.com/o/inousample%2Fmarker%2FDemoAED.json?alt=media&token=04715b01-d890-4f18-b22f-aa831598ab39";
@@ -122,7 +122,7 @@ class Rambler extends mapray.RenderCallback {
     {
         // シーンの読み込みを開始
         // 3D
-        new mapray.SceneLoader( this._viewer.scene, NATS_JSON_URL, {
+      /*  new mapray.SceneLoader( this._viewer.scene, NATS_JSON_URL, {
             transform: (url, type) => this._onTransform( url, type ),
             callback: (loader, isSuccess) => {
                 this._onLoadScene( loader, isSuccess );
@@ -143,6 +143,15 @@ class Rambler extends mapray.RenderCallback {
         // Mountain
         new mapray.SceneLoader( this._viewer.scene, MOUNTAIN_JSON_URL, {
             callback: (loader, isSuccess) => { this._onLoadScene( loader, isSuccess ); }
+        } ); */
+
+        // GeoJSON
+        new mapray.GeoJSONLoader( this._viewer.scene, "./shinjuku_linestring.json", {
+            onLoad: (loader, isSuccess) => { console.log("success load geojson") },
+            getLineColor: d => d.properties && d.properties.color ? d.properties.color : [0, 255, 255, 255],
+            getLineWidth: d => d.properties && d.properties.width ? d.properties.width : 3,
+            getExtrudedMode: () => true,
+            getElevation: () => 40
         } );
     }
 

@@ -27,7 +27,7 @@ class MarkerLineMaterial extends EntityMaterial {
     isTranslucent( stage, primitive )
     {
         var   props = primitive.properties;
-        var opacity = props.opacity || MarkerLineMaterial.DEFAULT_OPACITY;
+        var opacity = (props.opacity !== undefined) ? props.opacity : MarkerLineMaterial.DEFAULT_OPACITY;
         return opacity < 1.0;
     }
 
@@ -61,8 +61,8 @@ class MarkerLineMaterial extends EntityMaterial {
 
         // 線の基本色
         // vec4 u_color
-        var param_color   = props.color   || MarkerLineMaterial.DEFAULT_COLOR;
-        var param_opacity = props.opacity || MarkerLineMaterial.DEFAULT_OPACITY;
+        var param_color   = (props.color   !== undefined) ? props.color   : MarkerLineMaterial.DEFAULT_COLOR;
+        var param_opacity = (props.opacity !== undefined) ? props.opacity : MarkerLineMaterial.DEFAULT_OPACITY;
 
         var color = MarkerLineMaterial._color;
         GeoMath.copyVector3( param_color, color );

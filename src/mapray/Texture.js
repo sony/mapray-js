@@ -127,6 +127,11 @@ class Texture {
             params.mag_filter = gl.NEAREST;
             params.min_filter = gl.NEAREST;
         }
+        else if ( opts.usage === Texture.Usage.ICON ) {
+            params.min_filter = gl.LINEAR;
+            params.wrap_s     = gl.CLAMP_TO_EDGE;
+            params.wrap_t     = gl.CLAMP_TO_EDGE;
+        }
 
         // オプション指定による上書き
         if (opts.mag_filter !== undefined) {
@@ -206,7 +211,12 @@ var Usage = {
     /**
      * テキスト表示
      */
-    TEXT: { id: "TEXT" }
+    TEXT: { id: "TEXT" },
+
+    /**
+     * アイコン
+     */
+    ICON: { id: "ICON" }
 
 };
 

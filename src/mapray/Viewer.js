@@ -56,7 +56,7 @@ class Viewer {
         this._layers             = this._createLayerCollection( options );
         this._globe              = new Globe( this._glenv, this._dem_provider );
         this._tile_texture_cache = new TileTextureCache( this._glenv, this._image_provider );
-        this._scene              = new Scene( this._glenv );
+        this._scene              = new Scene( this, this._glenv );
         this._ground_visibility  = Viewer._getBoolOption( options, "ground_visibility", true );
         this._entity_visibility  = Viewer._getBoolOption( options, "entity_visibility", true );
         this._render_mode        = (options && options.render_mode) || RenderMode.SURFACE;
@@ -430,6 +430,60 @@ class Viewer {
         var    s = uf - ui;
         var    t = vf - vi;
         return (h00 * (1 - s) + h10 * s) * (1 - t) + (h01 * (1 - s) + h11 * s) * t;
+    }
+
+
+    /**
+     * @summary 現行の標高を取得
+     *
+     * @desc
+     * <p>現在メモリーにある最高精度の標高値を取得する。</p>
+     * <p>まだ DEM データが存在しない、または経度, 緯度が範囲外の場所は標高を 0 とする。</p>
+     *
+     * <p>このメソッドは DEM のリクエストは発生しない。また DEM のキャッシュには影響を与えない。</p>
+     *
+     * <p>一般的に画面に表示されていない場所は標高の精度が低い。</p>
+     *
+     * @param  {mapray.GeoPoint} position  位置 (高度は無視される)
+     * @return {number}                    標高
+     *
+     * @see mapray.Viewer#getExistingElevations
+     */
+    getExistingElevation( position )
+    {
+        const array = [position.longitude, position.latitude, 0];
+
+        this._globe.getExistingElevations( 1, array, 0, 3, array, 2, 3 );
+
+        return array[2];
+    }
+
+
+    /**
+     * @summary 現行の標高 (複数) を取得
+     *
+     * @desc
+     * <p>現在メモリーにある最高精度の標高値を一括で取得する。</p>
+     * <p>まだ DEM データが存在しない、または経度, 緯度が範囲外の場所は標高を 0 とする。</p>
+     *
+     * <p>このメソッドは DEM のリクエストは発生しない。また DEM のキャッシュには影響を与えない。</p>
+     *
+     * <p>一般的に画面に表示されていない場所は標高の精度が低い。</p>
+     *
+     * @param  {number}   num_points  入出力データ数
+     * @param  {number[]} src_array   入力配列 (経度, 緯度, ...)
+     * @param  {number}   src_offset  入力データの先頭インデックス
+     * @param  {number}   src_stride  入力データのストライド
+     * @param  {number[]} dst_array   出力配列 (標高, ...)
+     * @param  {number}   dst_offset  出力データの先頭インデックス
+     * @param  {number}   dst_stride  出力データのストライド
+     * @return {number[]}             dst_array
+     *
+     * @see mapray.Viewer#getExistingElevation
+     */
+    getExistingElevations( num_points, src_array, src_offset, src_stride, dst_array, dst_offset, dst_stride )
+    {
+        return this._globe.getExistingElevations( num_points, src_array, src_offset, src_stride, dst_array, dst_offset, dst_stride );
     }
 
 

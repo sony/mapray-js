@@ -1,80 +1,56 @@
+import Loader from "./Loader"
 import GeoMath from "./GeoMath";
+import Orientation from "./Orientation";
 import CredentialMode from "./CredentialMode";
-import Mesh from "./Mesh";
-import Texture from "./Texture";
 import ModelContainer from "./ModelContainer";
-import GenericEntity from "./GenericEntity";
 import MarkerLineEntity from "./MarkerLineEntity";
 import TextEntity from "./TextEntity";
 import ModelEntity from "./ModelEntity";
+import PolygonEntity from "./PolygonEntity";
 import GltfTool from "./gltf/Tool";
-
+import Resource, { URLResource } from "./Resource";
 
 /**
  * @summary シーンの読み込み
  * @memberof mapray
  */
-class SceneLoader {
+class SceneLoader extends Loader {
 
     /**
      * @desc
      * <p>url で指定したシーンデータの読み込みを開始し、scene にエンティティを構築する。</p>
      * <p>読み込みが終了したとき options.callback を呼び出す。</p>
      * @param {mapray.Scene} scene      読み込み先のシーン
-     * @param {string}       url        シーンファイルの URL
+     * @param {string}       resource        シーンリソース
      * @param {object}       [options]  オプション集合
      * @param {mapray.SceneLoader.TransformCallback} [options.transform]  リソース要求変換関数
      * @param {mapray.SceneLoader.FinishCallback}    [options.callback]   終了コールバック関数
      */
-    constructor( scene, url, options )
+    constructor( scene, resource, options={} )
     {
-        var opts = options || {};
+        if ( resource instanceof Resource ) {
+            // OK
+        }
+        else if ( typeof resource === "string" ) {
+            resource = new URLResource(resource, {
+                    type: "json",
+                    transform: options.transform
+            });
+        }
+        else {
+            throw new Error( "Unsupported Resource: " + resource );
+        }
 
-        this._scene      = scene;
-        this._url        = url;
-        this._callback   = opts.callback  || defaultFinishCallback;
-        this._transform  = opts.transform || defaultTransformCallback;
+        super( scene, resource, {
+                onLoad: options.callback
+        } );
+
+        this._transform  = options.transform || defaultTransformCallback;
         this._glenv      = scene.glenv;
         this._references = {};
-        this._cancelled  = false;
         this._finished   = false;
-        this._abort_ctrl = new AbortController();
-        this._loadFile();
-
-        scene.addLoader( this );
     }
 
-
-    /**
-     * @summary 読み込み先のシーン
-     * @type {mapray.Scene}
-     * @readonly
-     */
-    get scene() { return this._scene; }
-
-
-    /**
-     * @summary シーンファイルの URL
-     * @type {string}
-     * @readonly
-     */
-    get url() { return this._url; }
-
-
-    /**
-     * @summary 読み込みの取り消し
-     * @desc
-     * <p>終了コールバック関数は isSuccess == false で呼び出される。</p>
-     */
-    cancel()
-    {
-        if ( this._cancelled ) return;
-
-        this._abort_ctrl.abort();  // 取り消したので、すべての要求を中止
-        this._cancelled = true;    // 取り消し中、または取り消しされた
-        this._scene.removeLoader( this );
-        Promise.resolve().then( () => { this._cancel_callback(); } );
-    }
 
 
     /**
@@ -82,7 +58,7 @@ class SceneLoader {
      * @desc
      * <p>注意: シーンの読み込みが終了したことを確認してからこのメソッドを呼び出すこと。</p>
      * @param  {string}                                   id  識別子
-     * @return {?(mapray.Mesh|mapray.Texture|mapray.ModelContainer|mapray.Entity)}  オブジェクト
+     * @return {?(mapray.ModelContainer|mapray.Entity)}  オブジェクト
      */
     getReference( id )
     {
@@ -96,7 +72,7 @@ class SceneLoader {
      * @desc
      * <p>オブジェクト item を識別子 id で参照できるように this に設定する。</p>
      * @param {string}                                   id    識別子
-     * @param {mapray.Mesh|mapray.Texture|mapray.ModelContainer|mapray.Entity} item  オブジェクト
+     * @param {mapray.ModelContainer|mapray.Entity} item  オブジェクト
      * @private
      */
     _setReference( id, item )
@@ -106,28 +82,16 @@ class SceneLoader {
     }
 
 
-    /**
-     * @private
-     */
-    _loadFile()
+    _load()
     {
-        var tr = this._transform( this._url, ResourceType.SCENE );
-
-        fetch( tr.url, this._make_fetch_params( tr ) )
-            .then( response => {
-                this._check_cancel();
-                return response.ok ?
-                    response.json() : Promise.reject( Error( response.statusText ) );
-            } )
+        return (
+            this._resource.load( ResourceType.SCENE )
             .then( oscene => {
-                // JSON データの取得に成功
-                this._check_cancel();
-                this._load_object( oscene );
+                    // JSON データの取得に成功
+                    this._check_cancel();
+                    return this._load_object( oscene );
             } )
-            .catch( ( e ) => {
-                // JSON データの取得に失敗
-                this._fail_callback( "mapray: failed to retrieve: " + tr.url );
-            } );
+        );
     }
 
 
@@ -137,17 +101,15 @@ class SceneLoader {
      */
     _load_object( oscene )
     {
-        oscene.req_count = 0;
-        oscene.req_ended = false;
-
-        this._load_mesh_register( oscene );
-        this._load_texture_register( oscene );
-        this._load_model_register( oscene );
-
-        if ( oscene.req_count == 0 ) {
-            this._postload_object( oscene );
-        }
-        oscene.req_ended = true;
+        return (
+            Promise.resolve()
+            .then( () => {
+                    return this._load_model_register( oscene );
+            } )
+            .then( () => {
+                    return this._postload_object( oscene );
+            })
+        );
     }
 
 
@@ -157,45 +119,8 @@ class SceneLoader {
      */
     _postload_object( oscene )
     {
-        if ( this._cancelled ) return;
-
+        if ( this.status !== Loader.Status.LOADING ) return;
         this._load_entity_list( oscene );
-        this._success_callback();
-    }
-
-
-    /**
-     * もうリクエストがないとき、残りのオブジェクトを読み込む
-     * @private
-     */
-    _postload_object_ifNoReq( oscene )
-    {
-        --oscene.req_count;
-        if ( (oscene.req_count == 0) && oscene.req_ended ) {
-            this._postload_object( oscene );
-        }
-    }
-
-
-    /**
-     * @private
-     */
-    _load_mesh_register( oscene )
-    {
-        var mesh_register = oscene["mesh_register"];
-        if ( !mesh_register ) return;
-
-        var keys = Object.keys( mesh_register );
-        for ( var i = 0; i < keys.length; ++i ) {
-            var   id = keys[i];
-            var mesh = mesh_register[id];
-            if ( mesh.binary ) {
-                this._load_mesh_binary( oscene, id, mesh.binary );
-            }
-            else if ( mesh.vertices ) {
-                this._setReference( id, new Mesh( this._glenv, mesh ) );
-            }
-        }
     }
 
 
@@ -208,11 +133,13 @@ class SceneLoader {
         if ( !model_register ) return;
 
         var keys = Object.keys( model_register );
+        var asyncTasks = [];
         for ( var i = 0; i < keys.length; ++i ) {
             var    id = keys[i];
             var model = model_register[id];
-            this._load_model_container( oscene, id, model );
+            asyncTasks.push( this._load_model_container( oscene, id, model ) );
         }
+        return Promise.all( asyncTasks );
     }
 
 
@@ -222,125 +149,30 @@ class SceneLoader {
     _load_model_container( oscene, id, model )
     {
         var url = model.link;
-        var  tr = this._transform( url, ResourceType.MODEL );
-
-        fetch( tr.url, this._make_fetch_params( tr ) )
-            .then( response => {
-                this._check_cancel();
-                return response.ok ?
-                    response.json() : Promise.reject( Error( response.statusText ) );
-            } )
+        if ( !this._resource.resolveResourceSupported() ) return Promise.reject(new Error("Sub Resource is not supported"));
+        const gltf_resource = this._resource.resolveResource( url, ResourceType.MODEL );
+        return (
+            gltf_resource.load( url, ResourceType.MODEL )
             .then( json => {
-                // モデルデータの取得に成功
-                this._check_cancel();
-                // データを解析して gltf.Content を構築
-                return GltfTool.load( json, {
-                    base_uri:         url,
-                    transform_binary: uri => this._transform( uri, ResourceType.BINARY ),
-                    transform_image:  uri => this._transform( uri, ResourceType.IMAGE )
-                } );
+                    // モデルデータの取得に成功
+                    this._check_cancel();
+                    // データを解析して gltf.Content を構築
+                    return GltfTool.load( json, {
+                            base_resource: gltf_resource,
+                              binary_type: ResourceType.BINARY,
+                               image_type: ResourceType.IMAGE
+                    } );
             } )
             .then( content => {
-                // モデルデータの構築に成功
-                var container = new ModelContainer( this._scene, content );
-                if ( model.offset_transform ) {
-                    var matrix = SceneLoader.parseOffsetTransform( model.offset_transform );
-                    container.setOffsetTransform( matrix );
-                }
-                this._setReference( id, container );
+                    // モデルデータの構築に成功
+                    var container = new ModelContainer( this._scene, content );
+                    if ( model.offset_transform ) {
+                        var matrix = SceneLoader.parseOffsetTransform( model.offset_transform );
+                        container.setOffsetTransform( matrix );
+                    }
+                    this._setReference( id, container );
             } )
-            .catch( () => {
-                // モデルデータの取得に失敗
-                console.error( "mapray: failed to retrieve: " + tr.url );
-            } )
-            .then( () => {
-                this._postload_object_ifNoReq( oscene );
-            } );
-
-        ++oscene.req_count;
-    }
-
-
-    /**
-     * @private
-     */
-    _load_mesh_binary( oscene, id, url )
-    {
-        var tr = this._transform( url, ResourceType.MESH );
-
-        fetch( tr.url, this._make_fetch_params( tr ) )
-            .then( response => {
-                this._check_cancel();
-                return response.ok ?
-                    response.arrayBuffer() : Promise.reject( Error( response.statusText ) );
-            } )
-            .then( buffer => {
-                // バイナリデータの取得に成功
-                this._check_cancel();
-                this._setReference( id, new Mesh( this._glenv, buffer ) );
-            } )
-            .catch( () => {
-                // バイナリデータの取得に失敗
-                console.error( "mapray: failed to retrieve: " + tr.url );
-            } )
-            .then( () => {
-                this._postload_object_ifNoReq( oscene );
-            } );
-
-        ++oscene.req_count;
-    }
-
-
-    /**
-     * @private
-     */
-    _load_texture_register( oscene )
-    {
-        var texture_register = oscene["texture_register"];
-        if ( !texture_register ) return;
-
-        var keys = Object.keys( texture_register );
-        for ( var i = 0; i < keys.length; ++i ) {
-            var      id = keys[i];
-            var texture = texture_register[id];
-            if ( texture.image ) {
-                this._load_texture_image( oscene, id, texture.image );
-            }
-        }
-    }
-
-
-    /**
-     * @private
-     */
-    _load_texture_image( oscene, id, url )
-    {
-        var image = new Image();
-        var    tr = this._transform( url, ResourceType.IMAGE );
-
-        image.onload = () => {
-            if ( !this._cancelled ) {
-                this._setReference( id, new Texture( this._glenv, image ) );
-            }
-            this._postload_object_ifNoReq( oscene );
-        };
-
-        image.onerror = () => {
-            console.error( "mapray: failed to retrieve: " + tr.url );
-            this._postload_object_ifNoReq( oscene );
-        };
-
-        // crossorigin 属性の値
-        if ( tr.credentials === CredentialMode.SAME_ORIGIN ) {
-            image.crossOrigin = "anonymous";
-        }
-        else if ( tr.credentials === CredentialMode.INCLUDE ) {
-            image.crossOrigin = "use-credentials";
-        }
-
-        // 画像リクエスト
-        ++oscene.req_count;
-        image.src = tr.url;
+        );
     }
 
 
@@ -356,13 +188,10 @@ class SceneLoader {
 
         for ( var i = 0; i < entity_list.length; ++i ) {
             var   item = entity_list[i];
-            var   type = item.type || "generic";
+            var   type = item.type;
             var entity = null;
 
             switch ( type ) {
-            case "generic":
-                entity = new GenericEntity( scene, { json: item, refs: this._references } );
-                break;
             case "markerline":
                 entity = new MarkerLineEntity( scene, { json: item, refs: this._references } );
                 break;
@@ -371,6 +200,9 @@ class SceneLoader {
                 break;
             case "model":
                 entity = new ModelEntity( scene, { json: item, refs: this._references } );
+                break;
+            case "polygon":
+                entity = new PolygonEntity( scene, { json: item, refs: this._references } );
                 break;
             default:
                 console.error( "mapray: unknown entity type: " + type );
@@ -387,73 +219,6 @@ class SceneLoader {
         }
     }
 
-    /**
-     * fetch() の init 引数に与えるオブジェクトを生成
-     * @private
-     */
-    _make_fetch_params( tr )
-    {
-        var init = {
-            signal:      this._abort_ctrl.signal,
-            credentials: (tr.credentials || CredentialMode.OMIT).credentials
-        };
-
-        if ( tr.headers ) {
-            init.headers = (tr.headers || SceneLoader._defaultHeaders);
-        }
-
-        return init;
-    }
-
-
-    /**
-     * 取り消し状態のとき例外を投げる
-     * @private
-     */
-    _check_cancel()
-    {
-        if ( this._cancelled ) {
-            throw new Error( "canceled" );
-        }
-    }
-
-
-    /**
-     * @private
-     */
-    _cancel_callback()
-    {
-        if ( this._finished ) return;
-
-        this._callback( this, false );
-    }
-
-
-    /**
-     * @private
-     */
-    _success_callback()
-    {
-        if ( this._cancelled ) return;
-
-        this._finished = true;
-        this._scene.removeLoader( this );
-        this._callback( this, true );
-    }
-
-
-    /**
-     * @private
-     */
-    _fail_callback( msg )
-    {
-        if ( this._cancelled ) return;
-
-        console.error( msg );
-        this._finished = true;
-        this._scene.removeLoader( this );
-        this._callback( this, false );
-    }
 
 
     /**
@@ -466,32 +231,26 @@ class SceneLoader {
     static
     parseOffsetTransform( offset_transform )
     {
-        var     ot = offset_transform;
-        var result = GeoMath.createMatrix();
+        var ot = offset_transform;
 
-        if ( ot.matrix ) {
-            // <TRANSFORM-MATRIX>
-            return GeoMath.copyMatrix( ot.matrix, result );
+        // <OFFSET-TRANSFORM-PARAMS>
+        var   translate = ot.translate || [0, 0, 0];
+        var orientation = new Orientation( ot.heading, ot.tilt, ot.roll );
+        var       scale = (ot.scale !== undefined) ? ot.scale : [1, 1, 1];  // <PARAM-SCALE3>
+        if ( typeof scale == 'number' ) {
+            // スケールをベクトルに正規化
+            scale = [scale, scale, scale];
         }
-        else {
-            // <OFFSET-TRANSFORM-PARAMS>
-            var translate = ot.translate || [0, 0, 0];
-            var heading   = ot.heading   || 0;
-            var tilt      = ot.tilt      || 0;
-            var roll      = ot.roll      || 0;
-            var scale     = (ot.scale !== undefined) ? ot.scale : [1, 1, 1];  // <PARAM-SCALE3>
-            if ( typeof scale == 'number' ) {
-                // スケールをベクトルに正規化
-                scale = [scale, scale, scale];
-            }
 
-            // KML 互換のモデル変換行列 + 平行移動
-            GeoMath.kml_model_matrix( heading, tilt, roll, scale, result );
-            result[12] = translate[0];
-            result[13] = translate[1];
-            result[14] = translate[2];
-            return result;
-        }
+        // scale -> orientation -> translate 順の変換
+        var matrix = GeoMath.createMatrix();
+
+        orientation.getTransformMatrix( scale, matrix );
+        matrix[12] = translate[0];
+        matrix[13] = translate[1];
+        matrix[14] = translate[2];
+
+        return matrix;
     }
 
 }
@@ -561,16 +320,6 @@ var ResourceType = {
     SCENE: { id: "SCENE" },
 
     /**
-     * テクスチャ画像ファイル
-     */
-    IMAGE: { id: "IMAGE" },
-
-    /**
-     * メッシュファイル
-     */
-    MESH: { id: "MESH" },
-
-    /**
      * モデルファイル
      */
     MODEL: { id: "MODEL" },
@@ -578,20 +327,20 @@ var ResourceType = {
     /**
      * バイナリファイル
      */
-    BINARY: { id: "BINARY" }
+    BINARY: { id: "BINARY" },
+
+    /**
+     * テクスチャ画像ファイル
+     */
+    IMAGE: { id: "IMAGE" }
 
 };
 
 
 SceneLoader.ResourceType = ResourceType;
-
-
 SceneLoader._defaultHeaders = {};
 
 
-function defaultFinishCallback( loader, isSuccess )
-{
-}
 
 
 function defaultTransformCallback( url, type )

@@ -1,7 +1,10 @@
 import Viewer from "./Viewer";
 import Camera from "./Camera";
 import GeoMath from "./GeoMath";
+import GeoPoint from "./GeoPoint";
+import Orientation from "./Orientation";
 import Ray from "./Ray";
+import AltitudeMode from "./AltitudeMode";
 import CredentialMode from "./CredentialMode";
 import Layer from "./Layer";
 import LayerCollection from "./LayerCollection";
@@ -13,11 +16,17 @@ import RenderCallback from "./RenderCallback";
 import StandardImageProvider from "./StandardImageProvider";
 import Scene from "./Scene";
 import Entity from "./Entity";
-import GenericEntity from "./GenericEntity";
 import MarkerLineEntity from "./MarkerLineEntity";
 import TextEntity from "./TextEntity";
+import ModelEntity from "./ModelEntity";
+import PolygonEntity from "./PolygonEntity";
+import PinEntity from "./PinEntity";
+import ImageIconEntity from "./ImageIconEntity"
 import SceneLoader from "./SceneLoader";
+import GeoJSONLoader from "./GeoJSONLoader";
 import DebugStats from "./DebugStats";
+import MaprayApi from "./MaprayApi";
+import Resource, { URLResource } from "./Resource";
 
 
 /**
@@ -25,26 +34,35 @@ import DebugStats from "./DebugStats";
  * @namespace mapray
  */
 var mapray = {
-    Viewer: Viewer,
-    Camera: Camera,
-    GeoMath: GeoMath,
-    Ray: Ray,
-    CredentialMode: CredentialMode,
-    Layer: Layer,
-    LayerCollection: LayerCollection,
-    DemProvider: DemProvider,
-    StandardDemProvider: StandardDemProvider,
-    CloudDemProvider: CloudDemProvider,
-    ImageProvider: ImageProvider,
-    RenderCallback: RenderCallback,
-    StandardImageProvider: StandardImageProvider,
-    Scene: Scene,
-    Entity: Entity,
-    GenericEntity: GenericEntity,
-    MarkerLineEntity, MarkerLineEntity,
-    TextEntity, TextEntity,
-    SceneLoader, SceneLoader,
-    DebugStats: DebugStats
+    Viewer,
+    Camera,
+    GeoMath,
+    GeoPoint,
+    Orientation,
+    Ray,
+    AltitudeMode,
+    CredentialMode,
+    Layer,
+    LayerCollection,
+    DemProvider,
+    StandardDemProvider,
+    CloudDemProvider,
+    ImageProvider,
+    RenderCallback,
+    StandardImageProvider,
+    Scene,
+    Entity,
+    MarkerLineEntity,
+    TextEntity,
+    ModelEntity,
+    PolygonEntity,
+    PinEntity,
+    ImageIconEntity,
+    SceneLoader,
+    GeoJSONLoader,
+    URLResource,
+    MaprayApi,
+    DebugStats
 };
 
 
