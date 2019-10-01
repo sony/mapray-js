@@ -15,9 +15,9 @@ maprayJSはJavaScriptファイルを`<head>`で直接読み込むか(以下CDN�
 #### CDN方式
 HTMLファイルでJavaScriptを読み込みます。`<head>`タグ内で以下のようにインクルードして下さい。
 ```html
-  <script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
+  <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
 ```
-上記はバージョン0.6.0の場合です。`v0.6.0`には任意のバージョンを指定して下さい。
+上記はバージョン0.7.0の場合です。`v0.7.0`には任意のバージョンを指定して下さい。
 リリースされている該当のバージョンがあれば、アクセスすることができます。
 
 #### モジュール形式
@@ -87,7 +87,7 @@ var accessToken = 'AbCdEfGhIjKlMnOpQrStU';
 <head>
     <meta charset="UTF-8">
     <title>Hello Globe</title>
-    <script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
+    <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
 </head>
 <style>
     html, body {
@@ -146,13 +146,36 @@ var accessToken = 'AbCdEfGhIjKlMnOpQrStU';
 </script>
 ```
 <div align="center">
-  <div>
+  <div>v
     <img src="images/cloud-hello-globe.png" />
     <p><i>Hello Globe</i></p>
   </div>
 </div>
 
 ## Example
+### Basic
+基本的なサンプルはWebサイトの[Example](https://mapray.com/documents/examples/index.html)が一覧になります。
+これらはGithub上のリポジトリの[examples](https://github.com/sony/mapray-js/tree/master/examples)と同じものになります。
+#### 動かしてみよう
+##### 1. 各サンプルのアクセストークンを書き換える
+Hello Globe!と同じく、各Exampleの`<your access token here>`を取得したAccess Tokenに置き換えます。
+
+##### 2. ローカルサーバーの起動
+[examples](https://github.com/sony/mapray-js/tree/master/examples)以下で、
+python等でローカルサーバーを起動すると簡単にお試しいただけます。
+以下、examplesをルートとして
+
+```
+ $ python -m SimpleHTTPServer 7777
+```
+
+##### 3. アクセス
+http://localhost:7777
+
+にアクセスしてください。
+リンクをクリックすると各Exampleを参照できます。
+
+### アプリケーションのサンプル
 Github.comのmapray-js[リポジトリ](https://github.com/sony/mapray-js)で公開されています。
 今後さらに追加の予定です。
 - [Fall](https://github.com/sony/mapray-js/tree/master/src/apps/fall):　富士山に向かって滑らかなカメラアニメーションを行うアプリケーションです。
@@ -161,7 +184,7 @@ Github.comのmapray-js[リポジトリ](https://github.com/sony/mapray-js)で公
   [DEMOサイト](https://mapray.com/nextRambler.html)で動作しているアプリケーションです。
   キーボードとマウスで自由にカメラを操作できます。また、クラウドから3Dモデル、文字、ラインのデータを取得して表示できます。
   
-### 動かしてみよう
+#### 動かしてみよう
 mapray-js[リポジトリ](https://github.com/sony/mapray-js)でサンプルを動かす方法を解説します。
 デバッグ情報付きで動作させる方法になりますので、データサイズが大きくなります。
 各説明はルートディレクトリを基点とします。以下の手順の前に一度だけ
@@ -171,36 +194,36 @@ $ npm install
 ```
 を呼び出してセットアップを終了してください。
 
-#### 1. mapray.jsのビルド
+##### 1. mapray.jsのビルド
 ```
 $ npm run mapray-devel
 ```
 buildディレクトリにmapray.jsとmapファイルが生成されます。
 
-#### 2. アクセストークンの設定
-##### Fallの場合
+##### 2. アクセストークンの設定
+###### Fallの場合
 [Fall.js](https://github.com/sony/mapray-js/blob/master/src/apps/fall/Fall.js)の**accessToken**をmapray cloudで取得したTokenで置き換えます。
-##### nextRamblerの場合
+###### nextRamblerの場合
 [NextRambler.js](https://github.com/sony/mapray-js/blob/master/src/apps/next/NextRambler.js)の**accessToken**をmapray cloudで取得したTokenで置き換えます。
-また、Bing Mapsに衛星写真地図を切り替えたい場合(デモ起動後キーボードのBで切り替え)で、かつ、Bing MapsのAPI Keyをお持ちの場合はNextRambler.jsの[\<your Bing Maps Key here\>](https://github.com/sony/mapray-js/blob/master/src/apps/next/NextRambler.js#L642)をBing Mapsで取得したAPI Keyで置き換えます。Bing Mapsを表示しない場合はそのままで結構です。
-#### 3. アプリケーションのビルド
+また、Bing Mapsに衛星写真地図を切り替えたい場合(デモ起動後キーボードのBで切り替え)で、かつ、Bing MapsのAPI Keyをお持ちの場合はNextRambler.jsの[\<your Bing Maps Key here\>](https://github.com/sony/mapray-js/blob/master/src/apps/next/NextRambler.js#L644)をBing Mapsで取得したAPI Keyで置き換えます。Bing Mapsを表示しない場合はそのままで結構です。
+##### 3. アプリケーションのビルド
 ```
 $ npm run apps-devel
 ```
 buildディレクトリにアプリケーションファイルとそのmapファイルが生成されます。
-#### 4. htmlのコピー
+##### 4. htmlのコピー
 build以下にアプリケーションのhtmlファイルをコピーします。
 ```
 $ cp ./html/*.html ./build/
 ```
-#### 5. ローカルサーバーの起動
+##### 5. ローカルサーバーの起動
  お好みのツールでbuild以下のhtml, jsファイルをホストします。
  以下、python2系でローカルサーバーを動かす例です。
  ```
  $ cd build
  $ python -m SimpleHTTPServer 8080
  ``` 
-#### 6. 実行
+##### 6. 実行
 - fall: http://localhost:8080
 - nextRambler: http://localhost:8080/nextRambler.html
  

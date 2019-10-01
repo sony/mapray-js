@@ -16,16 +16,16 @@ class CameraAnimation2 extends mapray.RenderCallback {
             dem_provider: new mapray.CloudDemProvider(accessToken)
         });
 
-        this.longitude = 135.526202;    //大阪城の経度
-        this.latitude = 34.686502;      //大阪城の緯度
-        this.height = 1000;          //大阪城の高度
-        this.distance = 5000.0;        //大阪城からの距離
-        this.pitch_angle = -30.0;       //仰俯角
-        this.angular_velocity = 5.0;    //毎フレームの回転角度
-        this.turn_angle = 0;            //ターン角
-        this.angle_Of_View_min = 30    //最小画角
-        this.angle_Of_View_max = 70    //最大画角
-        this.angle_Of_View = 0          //画角
+        this.longitude = 135.526202;    // 大阪城の経度
+        this.latitude = 34.686502;      // 大阪城の緯度
+        this.height = 1000;             // 大阪城の高度
+        this.distance = 5000.0;         // 大阪城からの距離
+        this.pitch_angle = -30.0;       // 仰俯角
+        this.angular_velocity = 5.0;    // 毎フレームの回転角度
+        this.turn_angle = 0;            // ターン角
+        this.angle_Of_View_min = 30     // 最小画角
+        this.angle_Of_View_max = 70     // 最大画角
+        this.angle_Of_View = 0          // 画角
     }
 
     onStart()  // override
@@ -33,30 +33,29 @@ class CameraAnimation2 extends mapray.RenderCallback {
         // 初期のターン角度
         this.turn_angle = 0;
 
-        //初期の画角
+        // 初期の画角
         this.angle_Of_View = 0
     }
 
-    //フレーム毎に呼ばれるメソッド
+    // フレーム毎に呼ばれるメソッド
     onUpdateFrame(delta_time)  // override
     {
         var camera = this.viewer.camera;
 
         // カメラに変換行列を設定
-        GeoMath.mul_AA(this.createBaseToGocsMatrix(), this.createViewToBaseMatrix(),
-                        camera.view_to_gocs);
+        GeoMath.mul_AA(this.createBaseToGocsMatrix(), this.createViewToBaseMatrix(), camera.view_to_gocs);
 
         // カメラに近接遠方平面を設定
         camera.near = this.distance / 2;
         camera.far = camera.near * 1000;
 
-        //画角を設定
+        // 画角を設定
         camera.fov = this.angle_Of_View;
 
         // 次のターン角度
         this.turn_angle += this.angular_velocity * delta_time;
 
-        //次の画角
+        // 次の画角
         if (this.turn_angle % 360 > 180)
         {
             this.angle_Of_View = this.angle_Of_View_min * (this.turn_angle % 180 / 180) + this.angle_Of_View_max * (1 - (this.turn_angle % 180 / 180));
@@ -65,7 +64,6 @@ class CameraAnimation2 extends mapray.RenderCallback {
         {
             this.angle_Of_View = this.angle_Of_View_min * (1 - (this.turn_angle % 180 / 180)) + this.angle_Of_View_max * (this.turn_angle % 180 / 180);
         }
-
     }
 
     // 画像プロバイダを生成
@@ -76,11 +74,13 @@ class CameraAnimation2 extends mapray.RenderCallback {
     // 基準座標系から GOCS への変換行列を生成
     createBaseToGocsMatrix() {
         var base_to_gocs = GeoMath.createMatrix();
+
         GeoMath.iscs_to_gocs_matrix({
             longitude: this.longitude,
             latitude: this.latitude,
             height: this.height
         }, base_to_gocs);
+        
         return base_to_gocs;
     }
 
@@ -92,15 +92,20 @@ class CameraAnimation2 extends mapray.RenderCallback {
 
         var camera_pos_mat = GeoMath.createMatrix();
         GeoMath.setIdentity(camera_pos_mat);
-        //カメラの位置をY軸方向に距離分移動させる
+
+        // カメラの位置をY軸方向に距離分移動させる
         camera_pos_mat[13] = -d;
-        //z軸でturn_angle分回転させる回転行列を求める
+        
+        // z軸でturn_angle分回転させる回転行列を求める
         var turn_Mat = GeoMath.rotation_matrix([0, 0, 1], this.turn_angle, GeoMath.createMatrix());
-        //x軸でpitch_angle分回転させる回転行列を求める
+        
+        // x軸でpitch_angle分回転させる回転行列を求める
         var pitch_Mat = GeoMath.rotation_matrix([1, 0, 0], this.pitch_angle, GeoMath.createMatrix());
-        //カメラの位置にX軸の回転行列をかける
+        
+        // カメラの位置にX軸の回転行列をかける
         GeoMath.mul_AA(pitch_Mat, camera_pos_mat, camera_pos_mat);
-        //カメラの位置にZ軸の回転行列をかける
+        
+        // カメラの位置にZ軸の回転行列をかける
         GeoMath.mul_AA(turn_Mat, camera_pos_mat, camera_pos_mat);
 
         // 視線方向を定義
@@ -108,7 +113,7 @@ class CameraAnimation2 extends mapray.RenderCallback {
         var cam_end_pos = mapray.GeoMath.createVector3([0, 0, 0]);
         var cam_up = mapray.GeoMath.createVector3([0, 0, 1]);
 
-        //ビュー変換行列を作成
+        // ビュー変換行列を作成
         mapray.GeoMath.lookat_matrix(cam_pos, cam_end_pos, cam_up, mat);
 
         return mat;

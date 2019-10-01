@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>ChangeAltitudeModeSample</title>
+        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="ChangeAltitudeMode.js" charset="utf-8"></script>
+        <style>
+            html, body {
+                height: 100%;
+                margin: 0;
+                background-color:#E0E0E0;
+            }
+
+            select{
+                height:22px;
+                vertical-align:middle;
+                font-size:13px;
+                margin-left:10px;
+            }
+
+            p {
+                margin-left:5px;
+                font-size:13px;
+            }
+
+            input{
+                margin-left:10px;
+            }
+
+            div#mapray-container {
+                display: flex;
+                height: 96%;
+            }
+
+            div#AltitudeModeBox{
+                display: flex;
+                background-color:#E0E0E0;
+                height: 32px;
+                width: 200px;
+                float:left;
+                border:inset 1px #000000;
+                align-items:center;
+            }
+
+            div#HeightBox{
+                display: flex;
+                background-color:#E0E0E0;
+                height: 32px;
+                width: 110px;
+                float:left;
+                border:inset 1px #000000;
+                align-items:center;
+            }
+            
+            div#mapInfo{
+                display: flex;
+                width: 50px;
+                height: 16px;
+                margin-left: auto;
+                margin-right: 10px;
+                align-items: center;
+            }
+
+            div#modelInfo{
+                display: flex;
+                width: 265px;
+                height: 16px;
+                margin-left: auto;
+                margin-right: 10px;
+                align-items: center;
+            }
+        </style>
+    </head>
+
+    <body onload="CreateChangeAltitudeModeInstance('mapray-container');">
+        <div id="mapray-container"></div>
+
+        <div id="AltitudeModeBox">
+                <p>Altitude Mode</p>
+                <select name="AltitudeModePullDown" id="AltitudeModePullDown" onchange="AltitudeModeValueChanged()">
+                    <option value="ABSOLUTE">ABSOLUTE</option>
+                    <option value="RELATIVE">RELATIVE</option>
+                </select>
+        </div>
+
+        <div id="HeightBox">
+                <p>Height</p>
+                <select name="HeightPullDown" id="HeightPullDown" onchange="HeightValueChanged()">
+                    <option value=0>0</option>
+                    <option value=40 selected>40</option>
+                    <option value=100>100</option>
+                </select>
+        </div>
+
+        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
+        <div id="modelInfo"><a href="https://sketchfab.com/3d-models/plane-cedc8a07370747f7b0d14400cdf2faf9" style="font-size: 9px">Plane by osmosikum: Creative Commons - Attribution</a></div>
+    </body>
+</html>

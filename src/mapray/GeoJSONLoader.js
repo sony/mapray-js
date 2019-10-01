@@ -227,7 +227,6 @@ class GeoJSONLoader extends Loader {
         const bgColor = this._getPointBGColor( geojson );
         const iconId = this._getPointIconId( geojson );
         const size = this._getPointSize( geojson );
-        const extruded = this._getExtrudedMode( geojson );
         const elevation = this._getElevation( geojson );
         
         if ( !geometry ) {

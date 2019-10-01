@@ -11,36 +11,36 @@ mapray.SceneLoaderを使って文字を表示する**WriteStringWithSceneLoder.h
 ```HTML
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <title>WriteStringWithSceneLoderSample</title>
-    <script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
-    <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-        }
+    <head>
+        <meta charset="UTF-8">
+        <title>WriteStringWithSceneLoderSample</title>
+        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <style>
+            html, body {
+                height: 100%;
+                margin: 0;
+            }
 
-        div#mapray-container {
-            display: flex;
-            height: 97%;
-        }
+            div#mapray-container {
+                display: flex;
+                height: 97%;
+            }
 
-        div#mapInfo{
-            display: flex;
-            width: 50px;
-            height: 25px;
-            margin-left: auto;
-            margin-right: 10px;
-            align-items: center;
-        }
-    </style>
-</head>
+            div#mapInfo{
+                display: flex;
+                width: 50px;
+                height: 25px;
+                margin-left: auto;
+                margin-right: 10px;
+                align-items: center;
+            }
+        </style>
+    </head>
 
-<body>
-    <div id="mapray-container"></div>
-    <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
-</body>
+    <body>
+        <div id="mapray-container"></div>
+        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
+    </body>
 </html>
 
 <script>
@@ -68,7 +68,7 @@ mapray.SceneLoaderを使って文字を表示する**WriteStringWithSceneLoder.h
     var cam_end_pos = mapray.GeoMath.createVector3([0, 0, 0]);
     var cam_up = mapray.GeoMath.createVector3([0, 0, 1]);
 
-    //ビュー変換行列を作成
+    // ビュー変換行列を作成
     var view_to_home = mapray.GeoMath.createMatrix();
     mapray.GeoMath.lookat_matrix(cam_pos, cam_end_pos, cam_up, view_to_home);
 
@@ -76,14 +76,16 @@ mapray.SceneLoaderを使って文字を表示する**WriteStringWithSceneLoder.h
     var view_to_gocs = viewer.camera.view_to_gocs;
     mapray.GeoMath.mul_AA(home_view_to_gocs, view_to_home, view_to_gocs);
 
-    // カメラのnear  farの設定
+    // カメラのnear、farの設定
     viewer.camera.near = 30;
     viewer.camera.far = 500000;
 
-    var scene_File_URL = "http://localhost/font/font.json";
-    //シーンを読み込む
+    var scene_File_URL = "./data/font.json";
+
+    // シーンを読み込む
     var loader = new mapray.SceneLoader(viewer.scene, scene_File_URL);
 
+    loader.load();
 </script>
 ```
 
@@ -95,13 +97,12 @@ mapray.SceneLoaderを使って文字を表示する**WriteStringWithSceneLoder.h
       "type": "text",
       "entries": [
         { "text": "Mt.Fuji",
-          "position": { "cartographic": [138.730647, 35.362773, 4000.0] },
+          "position": [138.730647, 35.362773, 4000.0],
           "font_size": 25,
           "color": [1, 0, 0] }
       ],
       "font_size": 20
     }
-
   ]
 }
 ```
@@ -116,41 +117,41 @@ htmlのサンプルコードの詳細を以下で解説します。
 ```HTML
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <title>WriteStringWithSceneLoderSample</title>
-    <script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
-    <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-        }
+    <head>
+        <meta charset="UTF-8">
+        <title>WriteStringWithSceneLoderSample</title>
+        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <style>
+            html, body {
+                height: 100%;
+                margin: 0;
+            }
 
-        div#mapray-container {
-            display: flex;
-            height: 97%;
-        }
+            div#mapray-container {
+                display: flex;
+                height: 97%;
+            }
 
-        div#mapInfo{
-            display: flex;
-            width: 50px;
-            height: 25px;
-            margin-left: auto;
-            margin-right: 10px;
-            align-items: center;
-        }
-    </style>
-</head>
+            div#mapInfo{
+                display: flex;
+                width: 50px;
+                height: 25px;
+                margin-left: auto;
+                margin-right: 10px;
+                align-items: center;
+            }
+        </style>
+    </head>
 
-<body>
-    <div id="mapray-container"></div>
-    <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
-</body>
+    <body>
+        <div id="mapray-container"></div>
+        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
+    </body>
 </html>
 ```
 
 #### カメラ位置・向きの設定
-36～70行目でMapray.Viewerクラスを作成し、カメラ位置・向きを設定します。
+37～70行目でMapray.Viewerクラスを作成し、カメラ位置・向きを設定します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -178,7 +179,7 @@ var cam_pos = mapray.GeoMath.createVector3([-2300, 3600, 1000]);
 var cam_end_pos = mapray.GeoMath.createVector3([0, 0, 0]);
 var cam_up = mapray.GeoMath.createVector3([0, 0, 1]);
 
-//ビュー変換行列を作成
+// ビュー変換行列を作成
 var view_to_home = mapray.GeoMath.createMatrix();
 mapray.GeoMath.lookat_matrix(cam_pos, cam_end_pos, cam_up, view_to_home);
 
@@ -186,20 +187,23 @@ mapray.GeoMath.lookat_matrix(cam_pos, cam_end_pos, cam_up, view_to_home);
 var view_to_gocs = viewer.camera.view_to_gocs;
 mapray.GeoMath.mul_AA(home_view_to_gocs, view_to_home, view_to_gocs);
 
-// カメラのnear  farの設定
+// カメラのnear、farの設定
 viewer.camera.near = 30;
 viewer.camera.far = 500000;
 ```
 
 #### シーンファイルの読み込み
-74行目でmapray.SceneLoaderのインスタンス生成時にシーンを指定することで、シーンファイルを読み込みます。
+75行目でmapray.SceneLoaderのインスタンス生成時にシーンを指定し、77行目で、load関数を呼び出すことで、シーンファイルを読み込みます。
 SceneLoaderの引数は、シーンファイルのエンティティを追加するシーン、読み込むシーンファイルのURLの順に指定します。このサンプルコードでは、viewerのシーン、72行目で設定したURLの順に指定します。
 読み込むシーンのURLはhttpもしくはhttpsでアクセスできるURLを指定します。
 
 ```JavaScript
-var scene_File_URL = "http://localhost/font/font.json";
-//シーンを読み込む
+var scene_File_URL = "./data/font.json";
+
+// シーンを読み込む
 var loader = new mapray.SceneLoader(viewer.scene, scene_File_URL);
+
+loader.load();
 ```
 
 ### シーンファイルの詳細
@@ -218,23 +222,22 @@ var loader = new mapray.SceneLoader(viewer.scene, scene_File_URL);
       中略
 
     }
-
   ]
 }
 ```
 
 #### 文字の情報の設定
-5～10行目で文字の情報を記述します。文字の情報は、個々の文字情報（entries）、全体のフォントサイズ（font_size）があり、個々の文字情報の中には、表示する文字（text）、位置（position）、フォントサイズ（font_size）、色（color）があります。
+5～11行目で文字の情報を記述します。文字の情報は、個々の文字情報（entries）、全体のフォントサイズ（font_size）があり、個々の文字情報の中には、表示する文字（text）、位置（position）、フォントサイズ（font_size）、色（color）があります。
 このシーンファイルでは、個々の文字情報として、表示する文字にはMt.Fuji、位置には富士山頂上付近の緯度・経度・高度、フォントサイズには25、色に赤を、それぞれ指定します。また、全体のフォントサイズには20を指定します。
 
 ```json
-      "entries": [
-        { "text": "Mt.Fuji",
-          "position": { "cartographic": [138.730647, 35.362773, 4000.0] },
-          "font_size": 25,
-          "color": [1, 0, 0] }
-      ],
-      "font_size": 20
+"entries": [
+  { "text": "Mt.Fuji",
+    "position": [138.730647, 35.362773, 4000.0],
+    "font_size": 25,
+    "color": [1, 0, 0] }
+],
+"font_size": 20
 ```
 
 ### 出力イメージ

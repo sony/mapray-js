@@ -1,120 +1,120 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
-<head>
-    <meta charset="utf-8">
-    <title>ChangeFontFormatSample</title>
-    <script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
-    <script src="ChangeFontFormat.js" charset="utf-8"></script>
-    <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-            background-color:#E0E0E0;
-        }
+    <head>
+        <meta charset="utf-8">
+        <title>ChangeFontFormatSample</title>
+        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="ChangeFontFormat.js" charset="utf-8"></script>
+        <style>
+            html, body {
+                height: 100%;
+                margin: 0;
+                background-color:#E0E0E0;
+            }
 
-        select{
-            height:22px;
-            vertical-align:middle;
-            font-size:13px;
-            margin-left:10px;
-        }
+            select{
+                height:22px;
+                vertical-align:middle;
+                font-size:13px;
+                margin-left:10px;
+            }
 
-        p {
-            margin-left:5px;
-            font-size:13px;
-        }
+            p {
+                margin-left:5px;
+                font-size:13px;
+            }
 
-        input{
-            margin-left:10px;
-        }
+            input{
+                margin-left:10px;
+            }
 
-        div#mapray-container {
-            display: flex;
-            height: 96%;
-        }
+            div#mapray-container {
+                display: flex;
+                height: 96%;
+            }
 
-        div#FontStyleBox{
-            display: flex;
-            background-color:#E0E0E0;
-            height: 32px;
-            width: 155px;
-            float:left;
-            border:inset 1px #000000;
-            align-items:center;
-        }
+            div#FontStyleBox{
+                display: flex;
+                background-color:#E0E0E0;
+                height: 32px;
+                width: 155px;
+                float:left;
+                border:inset 1px #000000;
+                align-items:center;
+            }
 
-        div#FontWeightBox{
-            display: flex;
-            background-color:#E0E0E0;
-            height: 32px;
-            width: 185px;
-            float:left;
-            border:inset 1px #000000;
-            align-items:center;
-        }
+            div#FontWeightBox{
+                display: flex;
+                background-color:#E0E0E0;
+                height: 32px;
+                width: 185px;
+                float:left;
+                border:inset 1px #000000;
+                align-items:center;
+            }
 
 
-        div#FontSizeBox{
-            display: flex;
-            background-color:#E0E0E0;
-            height: 32px;
-            width: 125px;
-            float:left;
-            border:inset 1px #000000;
-            align-items:center;
-        }
+            div#FontSizeBox{
+                display: flex;
+                background-color:#E0E0E0;
+                height: 32px;
+                width: 125px;
+                float:left;
+                border:inset 1px #000000;
+                align-items:center;
+            }
 
-        div#FontCollarBox{
-            display: flex;
-            background-color:#E0E0E0;
-            height: 32px;
-            width: 145px;
-            float:left;
-            border:inset 1px #000000;
-            align-items:center;
-        }
+            div#FontCollarBox{
+                display: flex;
+                background-color:#E0E0E0;
+                height: 32px;
+                width: 145px;
+                float:left;
+                border:inset 1px #000000;
+                align-items:center;
+            }
 
-        div#FontFamilyBox{
-            display: flex;
-            background-color:#E0E0E0;
-            height: 32px;
-            width: 230px;
-            float:left;
-            border:inset 1px #000000;
-            align-items:center;
-        }
+            div#FontFamilyBox{
+                display: flex;
+                background-color:#E0E0E0;
+                height: 32px;
+                width: 230px;
+                float:left;
+                border:inset 1px #000000;
+                align-items:center;
+            }
 
-        div#mapInfo{
-            display: flex;
-            width: 50px;
-            height: 32px;
-            margin-left: auto;
-            margin-right: 10px;
-            align-items: center;
-        }
-    </style>
-</head>
+            div#mapInfo{
+                display: flex;
+                width: 50px;
+                height: 32px;
+                margin-left: auto;
+                margin-right: 10px;
+                align-items: center;
+            }
+        </style>
+    </head>
 
-<body onload="CreateChangeFontStyleInstance('mapray-container');">
-    <div id="mapray-container"></div>
-    <div id="FontStyleBox">
+    <body onload="CreateChangeFontStyleInstance('mapray-container');">
+        <div id="mapray-container"></div>
+        <div id="FontStyleBox">
             <p>Font Style</p>
             <select name="FontStylePullDown" id="FontStylePullDown" onchange="FontStyleValueChanged()">
                 <option value="normal">normal</option>
                 <option value="italic">italic</option>
                 <option value="oblique">oblique</option>
             </select>
-    </div>
+        </div>
 
-    <div id="FontWeightBox">
+        <div id="FontWeightBox">
             <p>Font Thickness</p>
             <select name="FontWeightPullDown" id="FontWeightPullDown" onchange="FontWeightValueChanged()">
                 <option value="normal">normal</option>
                 <option value="bold">bold</option>
             </select>
-    </div>
+        </div>
 
-    <div id="FontSizeBox">
+        <div id="FontSizeBox">
             <p>Font Size</p>
             <select name="FontSizePullDown" id="FontSizePullDown" onchange="FontSizeValueChanged()">
                 <option value=32>32</option>
@@ -124,14 +124,14 @@
                 <option value=14>14</option>
                 <option value=9>9</option>
             </select>
-    </div>
+        </div>
 
-    <div id="FontCollarBox">
+        <div id="FontCollarBox">
             <p>Font Collar</p>
             <input type="color" id="FontCollarPallet" name="FontCollarPallet" value="#000000" onchange="FontCollarValueChanged()">
-    </div>
+        </div>
 
-    <div id="FontFamilyBox">
+        <div id="FontFamilyBox">
             <p>Font Family</p>
             <select name="FontFamilyPullDown" id="FontFamilyPullDown" onchange="FontFamilyValueChanged()">
                 <option value="arial" style="font-family:'arial'">arial</option>
@@ -139,8 +139,8 @@
                 <option value="Times New Roman" style="font-family:Times New Roman">Times New Roman</option>
                 <option value="vardana" style="font-family:vardana">vardana</option>
             </select>
-    </div>
+        </div>
 
-    <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
-</body>
+        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
+    </body>
 </html>

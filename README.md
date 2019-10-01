@@ -9,7 +9,7 @@ maprayJS is a JavaScript library for a high quality interactive 3D globes and ma
 ## Installation
 ### CDN
 ```html
-  <script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
+  <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
 ```
 
 ### npm

@@ -8,41 +8,38 @@ Mapray.Viewerクラスのカメラ位置を緯度・経度で指定する**Longi
 #### LongitudeAndLatitudeCameraPos.html
 
 ```HTML
-
-
-
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <title>LongitudeAndLatitudeCameraPosSample</title>
-    <script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
-    <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-        }
+    <head>
+        <meta charset="UTF-8">
+        <title>LongitudeAndLatitudeCameraPosSample</title>
+        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <style>
+            html, body {
+                height: 100%;
+                margin: 0;
+            }
 
-        div#mapray-container {
-            display: flex;
-            height: 97%;
-        }
+            div#mapray-container {
+                display: flex;
+                height: 97%;
+            }
 
-        div#mapInfo{
-            display: flex;
-            width: 50px;
-            height: 25px;
-            margin-left: auto;
-            margin-right: 10px;
-            align-items: center;
-        }
-    </style>
-</head>
+            div#mapInfo{
+                display: flex;
+                width: 50px;
+                height: 25px;
+                margin-left: auto;
+                margin-right: 10px;
+                align-items: center;
+            }
+        </style>
+    </head>
 
-<body>
-    <div id="mapray-container"></div>
-    <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
-</body>
+    <body>
+        <div id="mapray-container"></div>
+        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
+    </body>
 </html>
 
 <script>
@@ -70,7 +67,7 @@ Mapray.Viewerクラスのカメラ位置を緯度・経度で指定する**Longi
     var cam_end_pos = mapray.GeoMath.createVector3([0, 0, 0]);
     var cam_up = mapray.GeoMath.createVector3([0, 0, 1]);
 
-    //ビュー変換行列を作成
+    // ビュー変換行列を作成
     var view_to_home = mapray.GeoMath.createMatrix();
     mapray.GeoMath.lookat_matrix(cam_pos, cam_end_pos, cam_up, view_to_home);
 
@@ -78,10 +75,9 @@ Mapray.Viewerクラスのカメラ位置を緯度・経度で指定する**Longi
     var view_to_gocs = viewer.camera.view_to_gocs;
     mapray.GeoMath.mul_AA(home_view_to_gocs, view_to_home, view_to_gocs);
 
-    // カメラのnear  farの設定
+    // カメラのnear、farの設定
     viewer.camera.near = 30;
     viewer.camera.far = 500000;
-
 </script>
 ```
 このサンプルコードの詳細を以下で解説します。
@@ -104,7 +100,7 @@ Mapray.Viewerクラスのカメラ位置を緯度・経度で指定する**Longi
 6行目でhtmlで参照するJavaScriptのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイルを設定します。
 
 ```HTML
-<script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
+<script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
 ```
 
 #### スタイルの設定
@@ -152,7 +148,7 @@ Mapray.Viewerクラスのカメラ位置を緯度・経度で指定する**Longi
 ```
 
 #### アクセストークンの設定
-36、37行目でアクセストークンを設定します。＜your access token here＞部分に取得したアクセストークンを設定します。
+37行目でアクセストークンを設定します。＜your access token here＞部分に取得したアクセストークンを設定します。
 
 ```JavaScript
 // Access Tokenを設定
@@ -160,7 +156,7 @@ var accessToken = "<your access token here>";
 ```
 
 #### Viewerの作成
-次に、地図を表示するために、39～45行目のmaprayの表示を管理するクラス（mapray.Viewer）を生成します。このクラスの引数は、コンテナ、生成オプションの順に設定します。このサンプルコードでは、地図表示部分のブロックのid、汎用的な地図画像プロバイダクラス（mapray.StandardImageProvider）のインスタンス、クラウドDEMプロバイダクラス（mapray.CloudDemProvider）のインスタンスを設定します。
+次に、地図を表示するために、40～45行目のmaprayの表示を管理するクラス（mapray.Viewer）を生成します。このクラスの引数は、コンテナ、生成オプションの順に設定します。このサンプルコードでは、地図表示部分のブロックのid、汎用的な地図画像プロバイダクラス（mapray.StandardImageProvider）のインスタンス、クラウドDEMプロバイダクラス（mapray.CloudDemProvider）のインスタンスを設定します。
 汎用的な地図画像プロバイダクラスのコンストラクタの引数は、地図タイルのURLの先頭文字列、地図タイルのURLの末尾文字列、地図タイル画像の寸法、最小ズームレベル、最大ズームレベルの順に設定します。このサンプルコードでは、"https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/" 、".jpg"、256、2、18を設定します。
 クラウドDEMプロバイダクラスのコンストラクタの引数は、APIキーの文字列を設定します。このサンプルコードでは、アクセストークンを設定します。
 
@@ -220,13 +216,13 @@ var cam_pos = mapray.GeoMath.createVector3([-3000, 2600, 1000]);
 var cam_end_pos = mapray.GeoMath.createVector3([0, 0, 0]);
 var cam_up = mapray.GeoMath.createVector3([0, 0, 1]);
 
-//ビュー変換行列を作成
+// ビュー変換行列を作成
 var view_to_home = mapray.GeoMath.createMatrix();
 mapray.GeoMath.lookat_matrix(cam_pos, cam_end_pos, cam_up, view_to_home);
 ```
 
 ##### カメラ姿勢の適用
-これまでに求めたカメラ位置を表す変換行列と、カメラ方向を表す変換行列から、最終的なカメラ姿勢を計算し、Mapray.Viewerクラスのカメラに反映します。64～66行目では、mul_AA関数を用いて、2つの行列を乗算し、最終的なカメラ姿勢を計算しています。
+これまでに求めたカメラ位置を表す変換行列と、カメラ方向を表す変換行列から、最終的なカメラ姿勢を計算し、Mapray.Viewerクラスのカメラに反映します。65～66行目では、mul_AA関数を用いて、2つの行列を乗算し、最終的なカメラ姿勢を計算しています。
 
 ```JavaScript
 // カメラの位置と視線方向からカメラの姿勢を変更
@@ -239,7 +235,7 @@ mapray.GeoMath.mul_AA(home_view_to_gocs, view_to_home, view_to_gocs);
 このサンプルコードでは、カメラの見える範囲（投影範囲）を設定します。これは実際のカメラの焦点距離と同じ考え方で、撮影するカメラで見える範囲を設定することができます。コンピュータグラフィックスでは、カメラからの近い側を近接平面距離、遠い側を遠方平面距離と呼び、その2つの距離の中に含まれている3次元データを2次元画像で表現する対象としています。具体的には、69行目で指定した近接平面距離と70行目で指定した遠方平面距離の間になるため、このサンプルコードでは、カメラの位置から30～500,000mmの範囲が表示対象となっています。
 
 ```JavaScript
-// カメラのnear  farの設定
+// カメラのnear、farの設定
 this.viewer.camera.near = 30;
 this.viewer.camera.far = 500000;
 ```
