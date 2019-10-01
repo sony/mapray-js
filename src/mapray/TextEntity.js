@@ -699,7 +699,6 @@ class Layout {
      */
     _createItemList()
     {
-        var entries = this._owner._entries;
         var context = Dom.createCanvasContext( 1, 1 );
 
         var items = [];
