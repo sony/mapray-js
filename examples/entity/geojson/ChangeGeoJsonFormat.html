@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>ChangeGeoJSONFormatSample</title>
+        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="ChangeGeoJSONFormat.js" charset="utf-8"></script>
+        <style>
+            html, body {
+                height: 100%;
+                margin: 0;
+                background-color: #E0E0E0;
+            }
+
+            select{
+                height:22px;
+                vertical-align:middle;
+                font-size:13px;
+                margin-left:10px;
+            }
+
+            p{
+                font-size:13px;
+                margin-left:5px;
+            }
+
+            input{
+                margin-left:10px;
+            }
+
+            div#mapray-container {
+                display: flex;
+                height: 96%;
+            }
+
+            div#LineWidthBox {
+                display: flex;
+                background-color: #E0E0E0;
+                height: 32px;
+                width: 135px;
+                float: left;
+                border: inset 1px #000000;
+                align-items: center;
+            }
+
+            div#LineCollarBox {
+                display: flex;
+                background-color: #E0E0E0;
+                height: 32px;
+                width: 145px;
+                float: left;
+                border: inset 1px #000000;
+                align-items: center;
+            }
+
+            div#mapInfo{
+                display: flex;
+                width: 50px;
+                height: 32px;
+                margin-left: auto;
+                margin-right: 10px;
+                align-items: center;
+            }
+        </style>
+    </head>
+
+    <body onload="CreateChangeGeoJSONFormatInstance('mapray-container');">
+        <div id="mapray-container"></div>
+
+        <div id="LineWidthBox">
+            <p>Line Width</p>
+            <select name="LineWidthPullDown" id="LineWidthPullDown" onchange="LineWidthValueChanged()">
+                <option value=1>1</option>
+                <option value=3 selected>3</option>
+                <option value=7>7</option>
+                <option value=13>13</option>
+                <option value=17>17</option>
+                <option value=21>21</option>
+            </select>
+        </div>
+
+        <div id="LineCollarBox">
+            <p>Line Collar</p>
+            <input type="color" id="LineCollarPallet" name="LineCollarPallet" value="#0000ff" onchange="LineCollarValueChanged()">
+        </div>
+
+        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
+    </body>
+</html>

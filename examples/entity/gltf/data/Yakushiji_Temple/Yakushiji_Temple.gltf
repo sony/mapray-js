@@ -1,0 +1,179 @@
+{
+  "asset": {
+    "generator": "11.00 Build 183160",
+    "version": "2.0",
+    "copyright": "2018 (c) CADENAS GmbH"
+  },
+  "scene": 0,
+  "scenes": [
+    {
+      "nodes": [
+        0
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "main",
+      "matrix": [
+        5,
+        0,
+        0,
+        0,
+        0,
+        0,
+        5,
+        0,
+        0,
+        -5,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "children": [
+        1
+      ]
+    },
+    {
+      "mesh": 0,
+      "name": "26198879"
+    }
+  ],
+  "meshes": [
+    {
+      "primitives": [
+        {
+          "indices": 0,
+          "attributes": {
+            "NORMAL": 1,
+            "POSITION": 2
+          },
+          "mode": 4,
+          "material": 2
+        }
+      ],
+      "name": "55289"
+    }
+  ],
+  "materials": [
+    {
+      "doubleSided": true,
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "metallicFactor": 0.5,
+        "roughnessFactor": 0.36000001430511475
+      },
+      "alphaMode": "BLEND"
+    },
+    {
+      "doubleSided": true,
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "metallicFactor": 0.5,
+        "roughnessFactor": 0.36000001430511475
+      },
+      "alphaMode": "BLEND"
+    },
+    {
+      "doubleSided": true,
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.36000002861023006,
+          0.36000002861023006,
+          0.36000002861023006,
+          1
+        ],
+        "metallicFactor": 0.5,
+        "roughnessFactor": 0.36000001430511475
+      }
+    }
+  ],
+  "accessors": [
+    {
+      "bufferView": 0,
+      "byteOffset": 0,
+      "componentType": 5125,
+      "count": 1002219,
+      "type": "SCALAR",
+      "min": [
+        0
+      ],
+      "max": [
+        1002218
+      ]
+    },
+    {
+      "bufferView": 1,
+      "byteOffset": 0,
+      "componentType": 5126,
+      "count": 1002219,
+      "type": "VEC3",
+      "min": [
+        -1,
+        -1,
+        -1
+      ],
+      "max": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 0,
+      "componentType": 5126,
+      "count": 1002219,
+      "type": "VEC3",
+      "min": [
+        -3.2918848991394043,
+        1.0823169946670532,
+        -3.2134029865264893
+      ],
+      "max": [
+        3.548496961593628,
+        15.639506340026855,
+        3.211406946182251
+      ]
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 4008876,
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 4008876,
+      "byteLength": 12026628,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 16035504,
+      "byteLength": 12026628,
+      "target": 34962
+    }
+  ],
+  "buffers": [
+    {
+      "uri": "Yakushiji_Temple_data.bin",
+      "byteLength": 28062132
+    }
+  ]
+}

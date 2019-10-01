@@ -4,7 +4,6 @@ var layer_Control;
 class LayerControl {
 
     constructor(container) {
-
         // Access Tokenを設定
         var accessToken = "<your access token here>";
 
@@ -16,8 +15,7 @@ class LayerControl {
             }
         );
 
-        this.SetCamera()
-
+        this.SetCamera();
     }
 
     // 画像プロバイダを生成
@@ -40,7 +38,7 @@ class LayerControl {
         var cam_end_pos = mapray.GeoMath.createVector3([0, 0, 0]);
         var cam_up = mapray.GeoMath.createVector3([0, 0, 1]);
 
-        //ビュー変換行列を作成
+        // ビュー変換行列を作成
         var view_to_home = mapray.GeoMath.createMatrix();
         mapray.GeoMath.lookat_matrix(cam_pos, cam_end_pos, cam_up, view_to_home);
 
@@ -48,7 +46,7 @@ class LayerControl {
         var view_to_gocs = this.viewer.camera.view_to_gocs;
         mapray.GeoMath.mul_AA(home_view_to_gocs, view_to_home, view_to_gocs);
 
-        // カメラのnear  farの設定
+        // カメラのnear、farの設定
         this.viewer.camera.near = 30;
         this.viewer.camera.far = 500000;
     }
@@ -59,15 +57,15 @@ class LayerControl {
     }
 
     AddLayer() {
-        //UI不透明度取得
+        // UI不透明度取得
         var opacity_Value = parseFloat(document.getElementById("LayerOpacityPullDown").value);
 
-        //レイヤーを末尾に追加
+        // レイヤーを末尾に追加
         this.viewer.layers.add({ image_provider: this.createLayerImageProvider(), opacity: opacity_Value });
     }
 
     DeleteLayer() {
-        //末尾のレイヤーを削除
+        // 末尾のレイヤーを削除
         if (this.viewer.layers.num_layers == 0) {
             return;
         }
@@ -80,12 +78,13 @@ class LayerControl {
             return;
         }
 
-        //UI不透明度取得
+        // UI不透明度取得
         var opacity_Value = parseFloat(document.getElementById("LayerOpacityPullDown").value);
 
-        //末尾のレイヤー不透明度を変更
+        // 末尾のレイヤー不透明度を変更
         this.viewer.layers.getLayer(this.viewer.layers.num_layers - 1).setOpacity(opacity_Value);
     }
+    
 }
 
 function CreateLayerControlInstance(container) {
@@ -93,13 +92,13 @@ function CreateLayerControlInstance(container) {
 }
 
 function CreateLayerButtonClicked() {
-    layer_Control.AddLayer()
+    layer_Control.AddLayer();
 }
 
 function DeleteLayerButtonClicked() {
-    layer_Control.DeleteLayer()
+    layer_Control.DeleteLayer();
 }
 
 function LayerOpacityValueChanged() {
-    layer_Control.ChangeOpacity()
+    layer_Control.ChangeOpacity();
 }

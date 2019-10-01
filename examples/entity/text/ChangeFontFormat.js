@@ -1,11 +1,9 @@
 // JavaScript source code
-
 var change_Font_Format;
 
 class ChangeFontFormat {
 
     constructor(container) {
-
         // Access Tokenを設定
         var accessToken = "<your access token here>";
 
@@ -17,40 +15,40 @@ class ChangeFontFormat {
             }
         );
 
-        this.SetCamera()
+        this.SetCamera();
 
-        this.WriteUIFormatStr()
+        this.WriteUIFormatStr();
     }
 
     WriteUIFormatStr() {
-        //文字のエンティティを作成
+        // 文字のエンティティを作成
         var entity = new mapray.TextEntity(this.viewer.scene);
-        //座標は富士山山頂付近
-        var font_Pos = { longitude: 138.730647, latitude: 35.362773, height: 4000 };
 
-        var font_View_To_Gocs = mapray.GeoMath.iscs_to_gocs_matrix(font_Pos, mapray.GeoMath.createMatrix());
+        // 座標は富士山山頂付近
+        var font_position = { longitude: 138.730647, latitude: 35.362773, height: 4000 };
 
-        entity.addText("Mt.Fuji",
-                 [font_View_To_Gocs[12], font_View_To_Gocs[13], font_View_To_Gocs[14]]);
+        // GeoPointクラスを生成して、テキストを追加
+        var font_geopoint = new mapray.GeoPoint( font_position.longitude, font_position.latitude, font_position.height );
+        entity.addText( "Mt.Fuji", font_geopoint);
 
-        //プルダウンの値取得
+        // プルダウンの値取得
         var font_Style_Value = document.getElementById("FontStylePullDown").value;
         var font_Weight_Value = document.getElementById("FontWeightPullDown").value;
         var font_Size_Value = parseFloat(document.getElementById("FontSizePullDown").value);
         var font_CollarChord = document.getElementById("FontCollarPallet").value;
         var font_Family_Value = document.getElementById("FontFamilyPullDown").value;
 
-        //CollarChordをRBGに変換
+        // CollarChordをRBGに変換
         var RGBArray = this.convertCollarChordToRGB(font_CollarChord);
 
-        //プルダウンの値を設定
+        // プルダウンの値を設定
         entity.setFontStyle(font_Style_Value);
         entity.setFontWeight(font_Weight_Value);
         entity.setFontSize(font_Size_Value);
         entity.setColor(RGBArray);
         entity.setFontFamily(font_Family_Value);
 
-        //エンティティをシーンに追加
+        // エンティティをシーンに追加
         this.viewer.scene.addEntity(entity);
     }
 
@@ -74,7 +72,7 @@ class ChangeFontFormat {
         var cam_end_pos = mapray.GeoMath.createVector3([0, 0, 0]);
         var cam_up = mapray.GeoMath.createVector3([0, 0, 1]);
 
-        //ビュー変換行列を作成
+        // ビュー変換行列を作成
         var view_to_home = mapray.GeoMath.createMatrix();
         mapray.GeoMath.lookat_matrix(cam_pos, cam_end_pos, cam_up, view_to_home);
 
@@ -82,63 +80,57 @@ class ChangeFontFormat {
         var view_to_gocs = this.viewer.camera.view_to_gocs;
         mapray.GeoMath.mul_AA(home_view_to_gocs, view_to_home, view_to_gocs);
 
-        // カメラのnear  farの設定
+        // カメラのnear、farの設定
         this.viewer.camera.near = 30;
         this.viewer.camera.far = 500000;
     }
 
     ChangeFontStyle() {
-        //プルダウンの値取得
+        // プルダウンの値取得
         var font_Style_Value = document.getElementById("FontStylePullDown").value;
 
-        //プルダウンの値を設定
+        // プルダウンの値を設定
         var textEntity = this.viewer.scene.getEntity(0);
         textEntity.setFontStyle(font_Style_Value);
-
     }
 
     ChangeFontWeight() {
-        //プルダウンの値取得
+        // プルダウンの値取得
         var font_Weight_Value = document.getElementById("FontWeightPullDown").value;
 
-        //プルダウンの値を設定
+        // プルダウンの値を設定
         var textEntity = this.viewer.scene.getEntity(0);
         textEntity.setFontWeight(font_Weight_Value);
-
     }
 
     ChangeFontSize() {
-        //プルダウンの値取得
+        // プルダウンの値取得
         var font_Size_Value = parseFloat(document.getElementById("FontSizePullDown").value);
 
-        //プルダウンの値を設定
+        // プルダウンの値を設定
         var textEntity = this.viewer.scene.getEntity(0);
         textEntity.setFontSize(font_Size_Value);
-
     }
 
     ChangeFontCollar() {
-        //プルダウンの値取得
+        // プルダウンの値取得
         var font_CollarChord = document.getElementById("FontCollarPallet").value;
 
-        //CollarChordをRBGに変換
+        // CollarChordをRBGに変換
         var RGBArray = this.convertCollarChordToRGB(font_CollarChord);
 
-        //プルダウンの値を設定
+        // プルダウンの値を設定
         var textEntity = this.viewer.scene.getEntity(0);
         textEntity.setColor(RGBArray);
-
     }
 
     ChangeFontFamily() {
-        //プルダウンの値取得
+        // プルダウンの値取得
         var font_Family_Value = document.getElementById("FontFamilyPullDown").value;
 
-
-        //プルダウンの値を設定
+        // プルダウンの値を設定
         var textEntity = this.viewer.scene.getEntity(0);
         textEntity.setFontFamily(font_Family_Value);
-
     }
 
     convertCollarChordToRGB(collarChord) {
@@ -148,7 +140,7 @@ class ChangeFontFormat {
         var g = parseInt(collarChordChars[3].toString() + collarChordChars[4].toString(), 16) / 255;
         var b = parseInt(collarChordChars[5].toString() + collarChordChars[6].toString(), 16) / 255;
 
-        return [r,g,b]
+        return [r,g,b];
     }
 }
 
@@ -157,22 +149,22 @@ function CreateChangeFontStyleInstance(container) {
 }
 
 function FontStyleValueChanged() {
-    change_Font_Format.ChangeFontStyle()
+    change_Font_Format.ChangeFontStyle();
 }
 
 function FontWeightValueChanged() {
-    change_Font_Format.ChangeFontWeight()
+    change_Font_Format.ChangeFontWeight();
 }
 
 function FontSizeValueChanged() {
-    change_Font_Format.ChangeFontSize()
+    change_Font_Format.ChangeFontSize();
 }
 
 function FontCollarValueChanged() {
-    change_Font_Format.ChangeFontCollar()
+    change_Font_Format.ChangeFontCollar();
 }
 
 function FontFamilyValueChanged() {
-    change_Font_Format.ChangeFontFamily()
+    change_Font_Format.ChangeFontFamily();
 }
 

@@ -4,7 +4,6 @@ var viewer_Image_Control;
 class ViewerImageControl {
 
     constructor(container) {
-
         // Access Tokenを設定
         this.accessToken = "<your access token here>";
 
@@ -18,8 +17,7 @@ class ViewerImageControl {
             }
         );
 
-        this.SetCamera()
-
+        this.SetCamera();
     }
 
     // 画像プロバイダを生成
@@ -30,7 +28,7 @@ class ViewerImageControl {
         if (map_Tile_Value == "std") {
             // 国土地理院提供の標準地図タイルを設定
             return new mapray.StandardImageProvider("https://cyberjapandata.gsi.go.jp/xyz/std/", ".png", 256, 5, 18);
-        }else{
+        } else {
             // 国土地理院提供の写真タイルを設定
             return new mapray.StandardImageProvider("https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", ".jpg", 256, 2, 18);
         }
@@ -50,7 +48,7 @@ class ViewerImageControl {
         var cam_end_pos = mapray.GeoMath.createVector3([0, 0, 0]);
         var cam_up = mapray.GeoMath.createVector3([0, 1, 0]);
 
-        //ビュー変換行列を作成
+        // ビュー変換行列を作成
         var view_to_home = mapray.GeoMath.createMatrix();
         mapray.GeoMath.lookat_matrix(cam_pos, cam_end_pos, cam_up, view_to_home);
 
@@ -58,16 +56,16 @@ class ViewerImageControl {
         var view_to_gocs = this.viewer.camera.view_to_gocs;
         mapray.GeoMath.mul_AA(home_view_to_gocs, view_to_home, view_to_gocs);
 
-        // カメラのnear  farの設定
+        // カメラのnear、farの設定
         this.viewer.camera.near = 30;
         this.viewer.camera.far = 1000000;
     }
 
     ChangeMapTile() {
-        //Viewerのインスタンスを破棄
+        // Viewerのインスタンスを破棄
         this.viewer.destroy();
 
-        //Viewerを作成
+        // Viewerを作成
         this.viewer = new mapray.Viewer(
             this.container, {
                 image_provider: this.createImageProvider(),
@@ -75,8 +73,9 @@ class ViewerImageControl {
             }
         );
 
-        this.SetCamera()
+        this.SetCamera();
     }
+    
 }
 
 function CreateViewerImageControlInstance(container) {
@@ -84,5 +83,5 @@ function CreateViewerImageControlInstance(container) {
 }
 
 function MapTileValueChanged() {
-    viewer_Image_Control.ChangeMapTile()
+    viewer_Image_Control.ChangeMapTile();
 }

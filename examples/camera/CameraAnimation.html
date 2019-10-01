@@ -1,42 +1,42 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
-<head>
-    <meta charset="utf-8">
-    <title>CameraAnimationSample</title>
-    <script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
-    <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-        }
+    <head>
+        <meta charset="utf-8">
+        <title>CameraAnimationSample</title>
+        <script src="https://resouce.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <style>
+            html, body {
+                height: 100%;
+                margin: 0;
+            }
 
-        div#mapray-container {
-            display: flex;
-            height: 97%;
-        }
+            div#mapray-container {
+                display: flex;
+                height: 97%;
+            }
 
-         div#mapInfo{
-            display: flex;
-            width: 50px;
-            height: 25px;
-            margin-left: auto;
-            margin-right: 10px;
-            align-items: center;
-        }
-    </style>
-</head>
-<body>
-    <div id="mapray-container"></div>
-    <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
-</body>
+            div#mapInfo{
+                display: flex;
+                width: 50px;
+                height: 25px;
+                margin-left: auto;
+                margin-right: 10px;
+                align-items: center;
+            }
+        </style>
+    </head>
+    
+    <body>
+        <div id="mapray-container"></div>
+        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
+    </body>
 </html>
 
 <script>
-    //サブクラスのコンストラクタ定義
+    // サブクラスのコンストラクタ定義
     function CameraAnimation() {
         mapray.RenderCallback.call(this);
 
-        //インスタンスの初期化
         // Access Tokenを設定
         var accessToken = "<your access token here>";
 
@@ -47,24 +47,24 @@
             dem_provider: new mapray.CloudDemProvider(accessToken)
         });
 
-        this.longitude = 138.730647;    //富士山の経度
-        this.latitude = 35.362773;      //富士山の緯度
-        this.height = 3776.24;          //富士山の高度
-        this.distance = 10000.0;        //富士山からの距離
-        this.pitch_angle = -30.0;       //仰俯角
-        this.angular_velocity = 5.0;    //毎フレームの回転角度
-        this.turn_angle = 0;            //ターン角
+        this.longitude = 138.730647;    // 富士山の経度
+        this.latitude = 35.362773;      // 富士山の緯度
+        this.height = 3776.24;          // 富士山の高度
+        this.distance = 10000.0;        // 富士山からの距離
+        this.pitch_angle = -30.0;       // 仰俯角
+        this.angular_velocity = 5.0;    // 毎フレームの回転角度
+        this.turn_angle = 0;            // ターン角
     }
 
-    //CameraAnimationにmapray.RenderCallbackを継承させる
+    // CameraAnimationにmapray.RenderCallbackを継承させる
     CameraAnimation.prototype = Object.create(mapray.RenderCallback.prototype);
 
-    //毎フレームの処理を定義
+    // 毎フレームの処理を定義
     CameraAnimation.prototype.onUpdateFrame = function(delta_time) {
-        //毎フレームの処理
+        // 毎フレームの処理
         var camera = this.viewer.camera;
 
-        //基準座標系から GOCS への変換行列を生成
+        // 基準座標系から GOCS への変換行列を生成
         var base_to_gocs = mapray.GeoMath.createMatrix();
         mapray.GeoMath.iscs_to_gocs_matrix({
             longitude: this.longitude,
@@ -79,15 +79,20 @@
 
         var camera_pos_mat = mapray.GeoMath.createMatrix();
         mapray.GeoMath.setIdentity(camera_pos_mat);
-        //カメラの位置をY軸方向に距離分移動させる
+
+        // カメラの位置をY軸方向に距離分移動させる
         camera_pos_mat[13] = -d;
-        //z軸でturn_angle分回転させる回転行列を求める
+
+        // z軸でturn_angle分回転させる回転行列を求める
         var turn_Mat = mapray.GeoMath.rotation_matrix([0, 0, 1], this.turn_angle, mapray.GeoMath.createMatrix());
-        //x軸でpitch_angle分回転させる回転行列を求める
+
+        // x軸でpitch_angle分回転させる回転行列を求める
         var pitch_Mat = mapray.GeoMath.rotation_matrix([1, 0, 0], this.pitch_angle, mapray.GeoMath.createMatrix());
-        //カメラの位置にX軸の回転行列をかける
+
+        // カメラの位置にX軸の回転行列をかける
         mapray.GeoMath.mul_AA(pitch_Mat, camera_pos_mat, camera_pos_mat);
-        //カメラの位置にZ軸の回転行列をかける
+        
+        // カメラの位置にZ軸の回転行列をかける
         mapray.GeoMath.mul_AA(turn_Mat, camera_pos_mat, camera_pos_mat);
 
         // 視線方向を定義
@@ -95,12 +100,11 @@
         var cam_end_pos = mapray.GeoMath.createVector3([0, 0, 0]);
         var cam_up = mapray.GeoMath.createVector3([0, 0, 1]);
 
-        //ビュー変換行列を作成
+        // ビュー変換行列を作成
         mapray.GeoMath.lookat_matrix(cam_pos, cam_end_pos, cam_up, camera_Mat);
 
         // カメラに変換行列を設定
-        mapray.GeoMath.mul_AA(base_to_gocs, camera_Mat,
-                        camera.view_to_gocs);
+        mapray.GeoMath.mul_AA(base_to_gocs, camera_Mat, camera.view_to_gocs);
 
         // カメラに近接遠方平面を設定
         camera.near = this.distance / 2;
@@ -110,7 +114,7 @@
         this.turn_angle += this.angular_velocity * delta_time;
     }
 
-    //CameraAnimationのインスタンス作成
+    // CameraAnimationのインスタンス作成
     var cam_Animation = new CameraAnimation();
 </script>
 
