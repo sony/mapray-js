@@ -49,7 +49,7 @@ class ChangeGeoJSONFormat extends mapray.RenderCallback {
         var view_to_gocs = this.viewer.camera.view_to_gocs;
         mapray.GeoMath.mul_AA(home_view_to_gocs, view_to_home, view_to_gocs);
 
-        // カメラのnear  farの設定
+        // カメラのnear、farの設定
         this.viewer.camera.near = 30;
         this.viewer.camera.far = 500000;
     }
@@ -116,6 +116,7 @@ class ChangeGeoJSONFormat extends mapray.RenderCallback {
 
         return [r, g, b]
     }
+
 }
 
 function CreateChangeGeoJSONFormatInstance(container) {

@@ -54,7 +54,7 @@
                 align-items: center;
             }
 
-            div#LineCollarBox {
+            div#LineColorBox {
                 display: flex;
                 background-color: #E0E0E0;
                 height: 32px;
@@ -90,9 +90,9 @@
             </select>
         </div>
 
-        <div id="LineCollarBox">
-            <p>Line Collar</p>
-            <input type="color" id="LineCollarPallet" name="LineCollarPallet" value="#ffffff" onchange="LineCollarValueChanged()">
+        <div id="LineColorBox">
+            <p>Line Color</p>
+            <input type="color" id="LineColorPallet" name="LineColorPallet" value="#ffffff" onchange="LineColorValueChanged()">
         </div>
 
         <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
@@ -176,10 +176,10 @@ class ChangeLineFormat {
 
         // プルダウンの値取得
         var line_Width_Value = parseFloat(document.getElementById("LineWidthPullDown").value);
-        var line_CollarChord = document.getElementById("LineCollarPallet").value;
+        var line_ColorChord = document.getElementById("LineColorPallet").value;
 
-        // CollarChordをRBGに変換
-        var RGBArray = this.convertCollarChordToRGB(line_CollarChord);
+        // ColorChordをRBGに変換
+        var RGBArray = this.convertColorChordToRGB(line_ColorChord);
 
         // プルダウンの値を設定
         entity.setLineWidth(line_Width_Value);
@@ -220,24 +220,24 @@ class ChangeLineFormat {
         lineEntity.setLineWidth(line_Width_Value);
     }
 
-    ChangeLineCollar() {
+    ChangeLineColor() {
         // プルダウンの値取得
-        var line_CollarChord = document.getElementById("LineCollarPallet").value;
+        var line_ColorChord = document.getElementById("LineColorPallet").value;
 
-        // CollarChordをRBGに変換
-        var RGBArray = this.convertCollarChordToRGB(line_CollarChord);
+        // ColorChordをRBGに変換
+        var RGBArray = this.convertColorChordToRGB(line_ColorChord);
 
         // プルダウンの値を設定
         var lineEntity = this.viewer.scene.getEntity(0);
         lineEntity.setColor(RGBArray);
     }
 
-    convertCollarChordToRGB(collarChord) {
-        var collarChordChars = collarChord.split('');
+    convertColorChordToRGB(colorChord) {
+        var colorChordChars = colorChord.split('');
 
-        var r = parseInt(collarChordChars[1].toString() + collarChordChars[2].toString(), 16) / 255;
-        var g = parseInt(collarChordChars[3].toString() + collarChordChars[4].toString(), 16) / 255;
-        var b = parseInt(collarChordChars[5].toString() + collarChordChars[6].toString(), 16) / 255;
+        var r = parseInt(colorChordChars[1].toString() + colorChordChars[2].toString(), 16) / 255;
+        var g = parseInt(colorChordChars[3].toString() + colorChordChars[4].toString(), 16) / 255;
+        var b = parseInt(colorChordChars[5].toString() + colorChordChars[6].toString(), 16) / 255;
 
         return [r, g, b];
     }
@@ -252,8 +252,8 @@ function LineWidthValueChanged() {
     change_Line_Format.ChangeLineWidth();
 }
 
-function LineCollarValueChanged() {
-    change_Line_Format.ChangeLineCollar();
+function LineColorValueChanged() {
+    change_Line_Format.ChangeLineColor();
 }
 ```
 
@@ -518,10 +518,10 @@ MakeUIFormatLine() {
 
     // プルダウンの値取得
     var line_Width_Value = parseFloat(document.getElementById("LineWidthPullDown").value);
-    var line_CollarChord = document.getElementById("LineCollarPallet").value;
+    var line_ColorChord = document.getElementById("LineColorPallet").value;
 
-    // CollarChordをRBGに変換
-    var RGBArray = this.convertCollarChordToRGB(line_CollarChord);
+    // ColorChordをRBGに変換
+    var RGBArray = this.convertColorChordToRGB(line_ColorChord);
 
     // プルダウンの値を設定
     entity.setLineWidth(line_Width_Value);
@@ -578,12 +578,12 @@ ChangeLineWidth() {
 118～128行目が線色変更メソッドです。120行目でカラーピッカーから値を取得し、123行目でカラーピッカーの値をRGBの配列に変換します。そして、126行目のviewer.sceneのgetEntity関数で表示している線のエンティティを取得し、127行目でその値を指定することで、線の色を変更します。このサンプルコードでは、線のエンティティのインデックスは0となるため、getEntity関数には0を指定します。
 
 ```JavaScript
-ChangeLineCollar() {
+ChangeLineColor() {
     // プルダウンの値取得
-    var line_CollarChord = document.getElementById("LineCollarPallet").value;
+    var line_ColorChord = document.getElementById("LineColorPallet").value;
 
-    // CollarChordをRBGに変換
-    var RGBArray = this.convertCollarChordToRGB(line_CollarChord);
+    // ColorChordをRBGに変換
+    var RGBArray = this.convertColorChordToRGB(line_ColorChord);
 
     // プルダウンの値を設定
     var lineEntity = this.viewer.scene.getEntity(0);
@@ -596,12 +596,12 @@ ChangeLineCollar() {
 色情報の変換方法の詳細は、ヘルプページ『**文字のフォーマットの変更**』を参照してください。
 
 ```JavaScript
-convertCollarChordToRGB(collarChord) {
-    var collarChordChars = collarChord.split('');
+convertColorChordToRGB(colorChord) {
+    var colorChordChars = colorChord.split('');
 
-    var r = parseInt(collarChordChars[1].toString() + collarChordChars[2].toString(), 16) / 255;
-    var g = parseInt(collarChordChars[3].toString() + collarChordChars[4].toString(), 16) / 255;
-    var b = parseInt(collarChordChars[5].toString() + collarChordChars[6].toString(), 16) / 255;
+    var r = parseInt(colorChordChars[1].toString() + colorChordChars[2].toString(), 16) / 255;
+    var g = parseInt(colorChordChars[3].toString() + colorChordChars[4].toString(), 16) / 255;
+    var b = parseInt(colorChordChars[5].toString() + colorChordChars[6].toString(), 16) / 255;
 
     return [r, g, b];
 }

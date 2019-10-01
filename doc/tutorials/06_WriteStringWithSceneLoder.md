@@ -80,7 +80,7 @@ mapray.SceneLoaderを使って文字を表示する**WriteStringWithSceneLoder.h
     viewer.camera.near = 30;
     viewer.camera.far = 500000;
 
-    var scene_File_URL = "https://storage.googleapis.com/mapray-examples/text/font.json";
+    var scene_File_URL = "./data/font.json";
 
     // シーンを読み込む
     var loader = new mapray.SceneLoader(viewer.scene, scene_File_URL);
@@ -198,7 +198,7 @@ SceneLoaderの引数は、シーンファイルのエンティティを追加す
 読み込むシーンのURLはhttpもしくはhttpsでアクセスできるURLを指定します。
 
 ```JavaScript
-var scene_File_URL = "https://storage.googleapis.com/mapray-examples/text/font.json";
+var scene_File_URL = "./data/font.json";
 
 // シーンを読み込む
 var loader = new mapray.SceneLoader(viewer.scene, scene_File_URL);
