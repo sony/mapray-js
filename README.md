@@ -26,7 +26,7 @@ Mapray cloud managed by [Sony Network Communications Inc.](https://www.sonynetwo
 <head>
     <meta charset="UTF-8">
     <title>Hello Globe</title>
-    <script src="https://api.mapray.com/mapray-js/v0.6.0/mapray.js"></script>
+    <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
 </head>
 <style>
     html, body {
