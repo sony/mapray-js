@@ -1,4 +1,7 @@
 {
+  "source": {
+    "exclude": [ "src/mapray/tests/" ]
+  },
   "templates": {
     "default": {
       "outputSourceFiles": false
