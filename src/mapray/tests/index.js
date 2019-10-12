@@ -10,4 +10,4 @@ mapray_tests()
 }
 
 
-mapray_tests();
+window.mapray_tests = mapray_tests;
