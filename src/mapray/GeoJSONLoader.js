@@ -6,6 +6,7 @@ import MarkerLineEntity from "./MarkerLineEntity";
 import PolygonEntity from "./PolygonEntity";
 import PinEntity from "./PinEntity";
 import Resource, { URLResource } from "./Resource";
+import AltitudeMode from "./AltitudeMode";
 
 /**
  * GeoJSON形式（<a href="https://tools.ietf.org/html/rfc7946">rfc7946</a>）のデータをシーンに読み込みます。
@@ -53,6 +54,7 @@ class GeoJSONLoader extends Loader {
         this._getPointSize = options.getPointSize || defaultGetPointSizeCallback;
         this._getPointIconId = options.getPointIconId || defaultGetPointIconIdCallback;
 
+        this._getAltitudeMode = options.getAltitudeMode || defaultGetAltitudeModeCallback;
         this._getElevation = options.getElevation || defaultGetElevationCallback;
         this._transform  = options.transform || defaultTransformCallback;
         this._getExtrudedMode = options.getExtrudedMode || defaultExtrudedModeCallback;
@@ -168,6 +170,7 @@ class GeoJSONLoader extends Loader {
         const width = this._getLineWidth( geojson );
         const extruded = this._getExtrudedMode( geojson );
         const elevation = this._getElevation( geojson );
+        const altitude_mode = this._getAltitudeMode( geojson );
         
         if ( !geometry || color4.length !== 4 ) {
             return false;
@@ -227,6 +230,7 @@ class GeoJSONLoader extends Loader {
         const bgColor = this._getPointBGColor( geojson );
         const iconId = this._getPointIconId( geojson );
         const size = this._getPointSize( geojson );
+        const altitude_mode = this._getAltitudeMode( geojson );
         const elevation = this._getElevation( geojson );
         
         if ( !geometry ) {
@@ -245,6 +249,7 @@ class GeoJSONLoader extends Loader {
         // If multiline, split entity
         if ( type === GEOMETRY_TYPES.POINT ) {
             var entity = new PinEntity( this._scene );
+            entity.altitude_mode = altitude_mode;
             var coords = new GeoPoint( geometry.coordinates[0], geometry.coordinates[1], geometry.coordinates[2] || elevation );
             if ( iconId !== null ) {
                 entity.addMakiIconPin( iconId, coords, props );
@@ -256,6 +261,7 @@ class GeoJSONLoader extends Loader {
         }
         else { // type === GEOMETRY_TYPES.MULTI_POINT
             var entity = new PinEntity( this._scene );
+            entity.altitude_mode = altitude_mode;
             for ( var i = 0; i < geometry.coordinates.length; i++ ) {
                 var targetCoordinates = geometry.coordinates[i];
                 var coords = new GeoPoint( targetCoordinates[0], targetCoordinates[1], targetCoordinates[2] || elevation );
@@ -278,6 +284,7 @@ class GeoJSONLoader extends Loader {
     {
         const color4 = this._getFillColor( geojson );
         const extruded = this._getExtrudedMode( geojson );
+        const altitude_mode = this._getAltitudeMode( geojson );
         const elevation = this._getElevation( geojson );
 
         if ( !geometry || color4.length !== 4 ) {
@@ -291,19 +298,19 @@ class GeoJSONLoader extends Loader {
         // If multiline, split entity
         if ( type === GEOMETRY_TYPES.MULTI_POLYGON ) {
             coords.forEach( points => {
-                if ( !this._generatePolygon( points, rgb, alpha, extruded, elevation ) ) {
+                if ( !this._generatePolygon( points, rgb, alpha, extruded, altitude_mode, elevation ) ) {
                     return false;
                 }
             });
             return true;
         }
         else { // type === GEOMETRY_TYPES.POLYGON
-            return this._generatePolygon( coords, rgb, alpha, extruded, elevation )
+            return this._generatePolygon( coords, rgb, alpha, extruded, altitude_mode, elevation )
         }
     }
 
 
-    _generatePolygon( pointsList, color, opaticy, extruded, elevation ) 
+    _generatePolygon( pointsList, color, opaticy, extruded, altitude_mode, elevation ) 
     {
         if ( !pointsList ) {
             return false;
@@ -311,6 +318,7 @@ class GeoJSONLoader extends Loader {
 
         var h = extruded ? elevation : 0;
         const entity = new PolygonEntity( this._scene );
+        entity.altitude_mode = altitude_mode;
         entity.setColor( color );
         entity.setOpacity( opaticy );
         for ( let i=0; i< pointsList.length; i++ ) {
@@ -382,8 +390,8 @@ class GeoJSONLoader extends Loader {
     GeoJSONLoader.defaultLineWidth = 1;
     GeoJSONLoader.defaultRadius = 10;
     GeoJSONLoader.defaultExtrudedMode = true;
-    GeoJSONLoader.defaultPointFGColor = [1, 0, 0];
-    GeoJSONLoader.defaultPointBGColor = [0, 0, 1];
+    GeoJSONLoader.defaultPointFGColor = [1.0, 1.0, 1.0];
+    GeoJSONLoader.defaultPointBGColor = [0.35, 0.61, 0.81];
     GeoJSONLoader.defaultPointSize = 30;
     GeoJSONLoader.defaultPointIconId = null;
 }
@@ -432,9 +440,13 @@ function defaultGetPointIconIdCallback( geojson )
 }
 
 
+function defaultGetAltitudeModeCallback( geojson )
+{
+    return AltitudeMode.ABSOLUTE;
+}
 function defaultGetElevationCallback( geojson )
 {
-    return 100;
+    return 0;
 }
 
 function defaultExtrudedModeCallback( geojson )
