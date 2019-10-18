@@ -201,7 +201,10 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
      */
     onChangeElevation( regions )
     {
-        this._dirty = true;
+        const owner = this.entity;
+        if (owner.altitude_mode === AltitudeMode.RELATIVE || owner.altitude_mode === AltitudeMode.CLAMP) {
+            this._dirty = true;
+        }
     }
 
 
@@ -400,11 +403,15 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
         switch ( owner.altitude_mode ) {
         case AltitudeMode.RELATIVE:
+        case AltitudeMode.CLAMP:
             // flat_array[] の高度要素に現在の標高を設定
             owner.scene.viewer.getExistingElevations( num_points, flat_array, 0, 3, flat_array, 2, 3 );
-            // flat_array[] の高度要素に絶対高度を設定
-            for ( let i = 0; i < num_points; ++i ) {
-                flat_array[3*i + 2] += entries[i].position.altitude;
+
+            if ( owner.altitude_mode === AltitudeMode.RELATIVE ) {
+                // flat_array[] の高度要素に絶対高度を設定
+                for ( let i = 0; i < num_points; ++i ) {
+                    flat_array[3*i + 2] += entries[i].position.altitude;
+                }
             }
             break;
 

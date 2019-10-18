@@ -268,7 +268,10 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
      */
     onChangeElevation( regions )
     {
-        this._dirty = true;
+        const owner = this.entity;
+        if (owner.altitude_mode === AltitudeMode.RELATIVE || owner.altitude_mode === AltitudeMode.CLAMP) {
+            this._dirty = true;
+        }
     }
 
 
