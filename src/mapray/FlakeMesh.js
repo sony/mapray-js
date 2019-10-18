@@ -1,4 +1,5 @@
 import GeoMath from "./GeoMath";
+import AreaUtil from "./AreaUtil";
 
 
 /**
@@ -9,17 +10,17 @@ import GeoMath from "./GeoMath";
 class FlakeMesh {
 
     /**
-     * @param {mapray.GLEnv}       glenv
-     * @param {mapray.Globe.Flake} flake  地表断片
-     * @param {number[]}           dpows  地表断片の分割指数
-     * @param {mapray.DemBinary}   dem    DEM バイナリ
+     * @param {mapray.GLEnv}     glenv  WebGL 環境
+     * @param {mapray.Area}      area   地表断片の領域
+     * @param {number[]}         dpows  地表断片の分割指数
+     * @param {mapray.DemBinary} dem    DEM バイナリ
      */
-    constructor( glenv, flake, dpows, dem )
+    constructor( glenv, area, dpows, dem )
     {
         var gl = glenv.context;
 
         // オブジェクト座標系の中心位置 (GOCS)
-        this._center = this._createCenter( flake );
+        this._center = this._createCenter( area );
 
         // 頂点バッファ
         this._vertices = null;
@@ -35,7 +36,7 @@ class FlakeMesh {
         this._num_quads_y = 0;
 
         // 頂点データを生成
-        this._createVertices( gl, flake, dpows, dem );
+        this._createVertices( gl, area, dpows, dem );
 
         // 頂点属性辞書を設定
         this._setupVertexAttribs( gl );
@@ -55,157 +56,26 @@ class FlakeMesh {
     }
 
 
-    _createCenter( flake )
+    /**
+     * @summary 中心位置を生成
+     *
+     * @param {mapray.Area} area  地表断片の領域
+     *
+     * @return {mapray.Vector3}  中心位置 (GOCS)
+     *
+     * @private
+     */
+    _createCenter( area )
     {
-        var      z = flake.z;
-        var      x = flake.x;
-        var      y = flake.y;
-        var center = GeoMath.createVector3();
-
-        switch ( z ) {
-        case 0:  return this._getCenter_0( center );
-        case 1:  return this._getCenter_1( x, y, center );
-        default: return this._getCenter_N( z, x, y, center );
-        }
+        return AreaUtil.getCenter( area, GeoMath.createVector3() );
     }
 
 
-    _getCenter_0( dst )
-    {
-        dst[0] = 0;
-        dst[1] = 0;
-        dst[2] = 0;
-
-        return dst;
-    }
-
-
-    _getCenter_1( x, y, dst )
-    {
-        var r = GeoMath.EARTH_RADIUS;
-
-        dst[0] = 0;
-        dst[1] = r * (x - 0.5);
-        dst[2] = r * (0.5 - y);
-
-        return dst;
-    }
-
-
-    _getCenter_N( z, x, y, dst )
-    {
-        var pi = Math.PI;
-
-        // 座標範囲 (単位球メルカトル座標系)
-        var  msize = Math.pow( 2, 1 - z ) * pi;
-        var mx_min = -pi + x * msize;
-        var mx_max = -pi + (x + 1) * msize;
-        var my_min =  pi - (y + 1) * msize;
-        var my_max =  pi - y * msize;
-
-        // 事前計算変数
-        var λmin = mx_min;
-        var λmax = mx_max;
-        var  emin = Math.exp( my_min );   // Exp[my_min]
-        var  emax = Math.exp( my_max );   // Exp[my_max]
-        var e2min = emin * emin;          // Exp[my_min]^2
-        var e2max = emax * emax;          // Exp[my_max]^2
-
-        // 座標範囲 (地心直交座標系)
-        //
-        // z >= 2 のとき、λとφの範囲は以下の区間のどれかに入る
-        //   φ:                (-π/2, 0] [0, π/2)
-        //   λ:   [-π, -π/2] [-π/2, 0] [0, π/2] [π/2, π]
-        //
-        // 区間ごとの関数の変化 (各区間で単調増加または単調減少)
-        //   Sin[φ]:            (-1 → 0] [0 → 1)
-        //   Cos[φ]:            ( 0 → 1] [1 → 0)
-        //   Sin[λ]: [ 0 → -1] [-1 → 0] [0 → 1] [1 →  0]
-        //   Cos[λ]: [-1 →  0] [ 0 → 1] [1 → 0] [0 → -1]
-
-        var       rh = GeoMath.EARTH_RADIUS / 2;
-        var cosφmin = 2 * emin / (e2min + 1);
-        var cosφmax = 2 * emax / (e2max + 1);
-
-        // gx = r Cos[φ] Cos[λ]
-        // gy = r Cos[φ] Sin[λ]
-        if ( my_min + my_max < 0 ) {
-            //     φ : (-π/2, 0]
-            // Cos[φ]: ( 0 →  1]
-            if ( λmin + λmax < -pi ) {
-                //     λ : [-π, -π/2]
-                // Cos[λ]: [-1  →   0]
-                // Sin[λ]: [ 0  →  -1]
-                dst[0] = rh * (cosφmax * Math.cos( λmin ) + cosφmin * Math.cos( λmax ));
-                dst[1] = rh * (cosφmax * Math.sin( λmax ) + cosφmin * Math.sin( λmin ));
-            }
-            else if ( λmin + λmax < 0 ) {
-                //     λ : [-π/2, 0]
-                // Cos[λ]: [ 0  → 1]
-                // Sin[λ]: [-1  → 0]
-                dst[0] = rh * (cosφmin * Math.cos( λmin ) + cosφmax * Math.cos( λmax ));
-                dst[1] = rh * (cosφmax * Math.sin( λmin ) + cosφmin * Math.sin( λmax ));
-            }
-            else if ( λmin + λmax < pi ) {
-                //     λ : [0, π/2]
-                // Cos[λ]: [1  → 0]
-                // Sin[λ]: [0  → 1]
-                dst[0] = rh * (cosφmin * Math.cos( λmax ) + cosφmax * Math.cos( λmin ));
-                dst[1] = rh * (cosφmin * Math.sin( λmin ) + cosφmax * Math.sin( λmax ));
-            }
-            else {
-                //     λ : [π/2, π]
-                // Cos[λ]: [0  → -1]
-                // Sin[λ]: [1  →  0]
-                dst[0] = rh * (cosφmax * Math.cos( λmax ) + cosφmin * Math.cos( λmin ));
-                dst[1] = rh * (cosφmin * Math.sin( λmax ) + cosφmax * Math.sin( λmin ));
-            }
-        }
-        else {
-            //     φ : [0, π/2)
-            // Cos[φ]: [1  → 0)
-            if ( λmin + λmax < -pi ) {
-                //     λ : [-π, -π/2]
-                // Cos[λ]: [-1  →   0]
-                // Sin[λ]: [ 0  →  -1]
-                dst[0] = rh * (cosφmin * Math.cos( λmin ) + cosφmax * Math.cos( λmax ));
-                dst[1] = rh * (cosφmin * Math.sin( λmax ) + cosφmax * Math.sin( λmin ));
-            }
-            else if ( λmin + λmax < 0 ) {
-                //     λ : [-π/2, 0]
-                // Cos[λ]: [ 0  → 1]
-                // Sin[λ]: [-1  → 0]
-                dst[0] = rh * (cosφmax * Math.cos( λmin ) + cosφmin * Math.cos( λmax ));
-                dst[1] = rh * (cosφmin * Math.sin( λmin ) + cosφmax * Math.sin( λmax ));
-            }
-            else if ( λmin + λmax < pi ) {
-                //     λ : [0, π/2]
-                // Cos[λ]: [1  → 0]
-                // Sin[λ]: [0  → 1]
-                dst[0] = rh * (cosφmax * Math.cos( λmax ) + cosφmin * Math.cos( λmin ));
-                dst[1] = rh * (cosφmax * Math.sin( λmin ) + cosφmin * Math.sin( λmax ));
-            }
-            else {
-                //     λ : [π/2, π]
-                // Cos[λ]: [0  → -1]
-                // Sin[λ]: [1  →  0]
-                dst[0] = rh * (cosφmin * Math.cos( λmax ) + cosφmax * Math.cos( λmin ));
-                dst[1] = rh * (cosφmax * Math.sin( λmax ) + cosφmin * Math.sin( λmin ));
-            }
-        }
-
-        // rh * (Sin[φmin] + Sin[φmax])
-        dst[2] = rh * 2 * (e2max / (e2max + 1) - 1 / (e2min + 1));
-
-        return dst;
-    }
-
-
-    _createVertices( gl, flake, dpows, dem )
+    _createVertices( gl, area, dpows, dem )
     {
         var target = gl.ARRAY_BUFFER;
         var    vbo = gl.createBuffer();
-        var   data = this._createVerticesData( flake, dpows, dem );
+        var   data = this._createVerticesData( area, dpows, dem );
 
         gl.bindBuffer( target, vbo );
         gl.bufferData( target, data.array, gl.STATIC_DRAW );
@@ -218,12 +88,12 @@ class FlakeMesh {
     }
 
 
-    _createVerticesData( flake, dpows, dem )
+    _createVerticesData( area, dpows, dem )
     {
         // 開始位置 (単位球メルカトル座標系)
-        var  msize = Math.pow( 2, 1 - flake.z ) * Math.PI;
-        var mx_min = flake.x * msize - Math.PI;
-        var my_min = Math.PI - (flake.y + 1) * msize;
+        var  msize = Math.pow( 2, 1 - area.z ) * Math.PI;
+        var mx_min = area.x * msize - Math.PI;
+        var my_min = Math.PI - (area.y + 1) * msize;
 
         // 分割数
         var u_count = 1 << dpows[0];
@@ -236,7 +106,7 @@ class FlakeMesh {
         var my_step = msize / v_count;
 
         var    center  = this._center;
-        var demSampler = dem.newSampler( flake );
+        var demSampler = dem.newSampler( area );
 
         var num_vertices = (u_count + 1) * (v_count + 1);
         var        array = new Float32Array( FlakeMesh.VERTEX_SIZE * num_vertices );

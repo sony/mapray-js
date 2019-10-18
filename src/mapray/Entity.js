@@ -100,6 +100,25 @@ class Entity {
 
 
     /**
+     * @summary FlakePrimitiveProducer インタフェースを取得
+     *
+     * @desc
+     * <p>FlakePrimitiveProducer インタフェースを取得するためにシーンレンダラーが呼び出す。
+     *    FlakePrimitiveProducer インタフェースが実装されていなければ null を返す。</p>
+     * <p>既定の実装は null を返す。</p>
+     *
+     * @return {?mapray.Entity.FlakePrimitiveProducer}  FlakePrimitiveProducer インタフェース
+     *
+     * @abstract
+     * @package
+     */
+    getFlakePrimitiveProducer()
+    {
+        return null;
+    }
+
+
+    /**
      * JSON データによる Entity 共通の初期化
      * @private
      */
@@ -113,6 +132,9 @@ class Entity {
                 break;
             case "relative":
                 this._altitude_mode = AltitudeMode.RELATIVE;
+                break;
+            case "clamp":
+                this._altitude_mode = AltitudeMode.CLAMP;
                 break;
             default:
                 console.error( "unrecognized altitude_mode: " + json.altitude_mode );
@@ -254,7 +276,157 @@ class PrimitiveProducer {
 }
 
 
+/**
+ * @summary 地表断片エンティティのプリミティブを生産
+ *
+ * @classdesc
+ * <p>シーンレンダラーに地表断片エンティティのプリミティブを与える。</p>
+ *
+ * @memberof mapray.Entity
+ * @private
+ * @abstract
+ */
+class FlakePrimitiveProducer {
+
+    /**
+     * @param {mapray.Entity} entity  FlakePrimitiveProducer に対応するエンティティ
+     */
+    constructor( entity )
+    {
+        this._entity  = entity;
+        this._updated = false;
+    }
+
+
+    /**
+     * @summary エンティティ
+     *
+     * @type {mapray.Entity}
+     * @readonly
+     */
+    get entity() { return this._entity; }
+
+
+
+    /**
+     * @summary 位置や形状の変化を通知
+     */
+    notifyForUpdate()
+    {
+        this._updated = true;
+    }
+
+
+    /**
+     * @summary 領域状態を取得
+     *
+     * @desc
+     * <p>area が示す領域の状態を取得する。</p>
+     *
+     * @param {mapray.Area} area  確認する領域
+     *
+     * @return {mapray.Entity.AreaStatus}  領域の状態
+     *
+     * @abstract
+     */
+    getAreaStatus( area )
+    {
+        return AreaStatus.EMPTY;
+    }
+
+
+    /**
+     * @summary メッシュを生成
+     *
+     * @desc
+     * <p>area の領域に対応するメッシュを取得する。</p>
+     * <p>area に形状がないときは null を返す。</p>
+     *
+     * @param {mapray.Area}     area  メッシュの領域
+     * @param {number[]}       dpows  領域の分割指数
+     * @param {mapray.DemBinary} dem  DEM バイナリ
+     *
+     * @return {?mapray.Mesh}
+     *
+     * @abstract
+     */
+    createMesh( area, dpows, dem )
+    {
+        return null;
+    }
+
+
+    /**
+     * @summary マテリアルとプロパティを取得
+     *
+     * @param {mapray.RenderStage} stage  レンダリングステージ
+     *
+     * @return {object}  { material: mapray.EntityMaterial, properties: mapray.PropSet }
+     *
+     * @abstract
+     */
+    getMaterialAndProperties( stage )
+    {
+        throw new Error( "mapray.Entity.FlakePrimitiveProducer#getMaterialAndProperties() method has not been overridden." );
+    }
+
+
+    /**
+     * @summary 更新状態を確認
+     *
+     * @desc
+     * <p>レンダラーが呼び出す。</p>
+     * <p>更新状態を返してから、更新なし状態に設定する。</p>
+     *
+     * @return {boolean}  更新ありのとき true, それ以外のとき false
+     *
+     * @package
+     */
+    checkForUpdate()
+    {
+        let updated = this._updated;
+
+        this._updated = false;
+
+        return updated;
+    }
+
+}
+
+
+/**
+ * @summary 領域状態の列挙型
+ *
+ * @enum {object}
+ * @memberof mapray.Entity
+ * @constant
+ * @private
+ */
+var AreaStatus = {
+
+    /**
+     * 何もない領域
+     */
+    EMPTY: { id: "EMPTY" },
+
+
+    /**
+     * 完全に満たされた領域
+     */
+    FULL: { id: "FULL" },
+
+
+    /**
+     * 部分領域または領域不明
+     */
+    PARTIAL: { id: "PARTIAL" }
+
+};
+
+
 Entity.PrimitiveProducer = PrimitiveProducer;
+Entity.FlakePrimitiveProducer = FlakePrimitiveProducer;
+Entity.AreaStatus = AreaStatus;
 
 
 export default Entity;

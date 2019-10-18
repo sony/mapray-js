@@ -98,7 +98,7 @@ start => <SCENE>
 
 <PARAM-SCALE3> => <PARAM-VEC3> | Number
 
-<ALTITUDE-MODE> => "absolute" | "relative"
+<ALTITUDE-MODE> => "absolute" | "relative" | "clamp"
 
 <BOUNDARY-TYPE> => "outer" | "inner"
 

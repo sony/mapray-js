@@ -266,6 +266,28 @@ class Scene {
         }
     }
 
+
+    /**
+     * @summary FlakePrimitiveProducer の反復可能オブジェクトを取得
+     *
+     * @return {iterable.<mapray.Entity.FlakePrimitiveProducer>}
+     *
+     * @package
+     */
+    getFlakePrimitiveProducers()
+    {
+        let producers = [];
+
+        for ( let {entity} of this._enode_list ) {
+            let prod = entity.getFlakePrimitiveProducer();
+            if ( prod !== null ) {
+                producers.push( prod );
+            }
+        }
+
+        return producers;
+    }
+
 }
 
 

@@ -9,9 +9,9 @@ import DemSampler from "./DemSampler";
  */
 class DemSamplerNearest extends DemSampler {
 
-    constructor( z, x, y, ρ, body )
+    constructor( area, ρ, body )
     {
-        super( z, x, y, ρ, body );
+        super( area, ρ, body );
     }
 
 

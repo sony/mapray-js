@@ -6,6 +6,8 @@ import GeoMath from "./GeoMath";
 import GeoPoint from "./GeoPoint";
 import AltitudeMode from "./AltitudeMode";
 import EntityRegion from "./EntityRegion";
+import AreaUtil from "./AreaUtil";
+import QAreaManager from "./QAreaManager";
 
 
 /**
@@ -32,7 +34,14 @@ class MarkerLineEntity extends Entity {
         this._color   = GeoMath.createVector3( [1.0, 1.0, 1.0] );
         this._opacity = 1.0;
 
-        this._primitive_producer = new PrimitiveProducer( this );
+        if ( this.altitude_mode === AltitudeMode.CLAMP ) {
+            this._producer = new FlakePrimitiveProducer( this );
+            this._is_flake_mode = true;
+        }
+        else {
+            this._producer = new PrimitiveProducer( this );
+            this._is_flake_mode = false;
+        }
 
         // 生成情報から設定
         if ( opts && opts.json ) {
@@ -46,7 +55,16 @@ class MarkerLineEntity extends Entity {
      */
     getPrimitiveProducer()
     {
-        return this._primitive_producer;
+        return (!this._is_flake_mode) ? this._producer : null;
+    }
+
+
+    /**
+     * @override
+     */
+    getFlakePrimitiveProducer()
+    {
+        return (this._is_flake_mode) ? this._producer : null;
     }
 
 
@@ -55,7 +73,14 @@ class MarkerLineEntity extends Entity {
      */
     onChangeAltitudeMode( prev_mode )
     {
-        this._primitive_producer.onChangeAltitudeMode();
+        if ( this.altitude_mode === AltitudeMode.CLAMP ) {
+            this._producer = new FlakePrimitiveProducer( this );
+            this._is_flake_mode = true;
+        }
+        else {
+            this._producer = new PrimitiveProducer( this );
+            this._is_flake_mode = false;
+        }
     }
 
 
@@ -67,6 +92,7 @@ class MarkerLineEntity extends Entity {
     setLineWidth( width )
     {
         this._width = width;
+        this._producer.onChangeProperty();
     }
 
 
@@ -78,6 +104,7 @@ class MarkerLineEntity extends Entity {
     setColor( color )
     {
         GeoMath.copyVector3( color, this._color );
+        this._producer.onChangeProperty();
     }
 
 
@@ -89,6 +116,7 @@ class MarkerLineEntity extends Entity {
     setOpacity( opacity )
     {
         this._opacity = opacity;
+        this._producer.onChangeProperty();
     }
 
 
@@ -130,7 +158,7 @@ class MarkerLineEntity extends Entity {
         this._num_floats = target_size;
 
         // 形状が変化した可能性がある
-        this._primitive_producer.onChangePoints();
+        this._producer.onChangePoints();
     }
 
 
@@ -247,21 +275,20 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
 
     /**
-     * @summary 高度モードが変更されたことを通知
-     */
-    onChangeAltitudeMode()
-    {
-        this._geom_dirty = true;
-    }
-
-
-    /**
      * @summary 頂点が変更されたことを通知
      */
     onChangePoints()
     {
         this.needToCreateRegions();
         this._geom_dirty = true;
+    }
+
+
+    /**
+     * @summary プロパティが変更されたことを通知
+     */
+    onChangeProperty()
+    {
     }
 
 
@@ -554,7 +581,7 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
 
     /**
-     * @summary 頂点配列は生成
+     * @summary 頂点インデックスの生成
      *
      * @desc
      * <pre>
@@ -598,6 +625,613 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
     _numPoints()
     {
         return Math.floor( this.entity._num_floats / 3 );
+    }
+
+}
+
+
+/**
+ * @summary MarkerLineEntity の FlakePrimitiveProducer
+ *
+ * @private
+ */
+class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
+
+    /**
+     * @param {mapray.MarkerLineEntity} entity
+     */
+    constructor( entity )
+    {
+        super( entity );
+
+        this._material     = entity._getMarkerLineMaterial();
+        this._properties   = null;
+        this._area_manager = new LineAreaManager( entity );
+    }
+
+
+    /**
+     * @override
+     */
+    getAreaStatus( area )
+    {
+        return this._area_manager.getAreaStatus( area );
+    }
+
+
+    /**
+     * @override
+     */
+    createMesh( area, dpows, dem )
+    {
+        let segments = this._divideXY( area, dpows );
+        if ( segments.length == 0 ) {
+            return null;
+        }
+
+        // メッシュ生成
+        let mesh_data = {
+            vtype: [
+                { name: "a_position",  size: 3 },
+                { name: "a_direction", size: 3 },
+                { name: "a_where",     size: 2 }
+            ],
+            vertices: this._createVertices( area, dem, segments ),
+            indices:  this._createIndices( segments.length )
+        };
+
+        return new Mesh( this.entity.scene.glenv, mesh_data );
+    }
+
+
+    /**
+     * @override
+     */
+    getMaterialAndProperties( stage )
+    {
+        if ( this._properties === null ) {
+            let entity = this.entity;
+            this._properties = {
+                width:   entity._width,
+                color:   GeoMath.createVector3f( entity._color ),
+                opacity: entity._opacity
+            };
+        }
+
+        return {
+            material:   this._material,
+            properties: this._properties
+        };
+    }
+
+
+    /**
+     * @summary 頂点が変更されたことを通知
+     */
+    onChangePoints()
+    {
+        this._area_manager.notifyForUpdateContent();
+        this.notifyForUpdate();
+    }
+
+
+    /**
+     * @summary プロパティが変更されたことを通知
+     */
+    onChangeProperty()
+    {
+        this._properties = null;
+    }
+
+
+    /**
+     * @summary すべての線分を垂直グリッドで分割
+     *
+     * @param {mapray.Area} area   地表断片の領域
+     * @param {number}      msize  area 寸法 ÷ π (厳密値)
+     * @param {number}      dpow   area の x 分割指数
+     *
+     * @private
+     */
+    _divideXOnly( area, msize, dpow )
+    {
+        let x_min = Math.PI * (area.x * msize - 1);
+        let x_max = Math.PI * ((area.x + 1) * msize - 1);
+
+        let  div_x = 1 << dpow;                // 横分割数: 2^dpow
+        let step_x = (x_max - x_min) / div_x;  // 横分割間隔
+
+        let segments = [];
+
+        // 垂直グリッド線で分割
+        for ( let [px, py, qx, qy] of this._area_manager.getAreaContent( area ) ) {
+
+            let [x0, y0, x1, y1] = (px <= qx) ? [px, py, qx, qy] : [qx, qy, px, py];
+            // assert: x0 <= x1
+
+            if ( x1 < x_min || x0 >= x_max ) {
+                // 線分の x 座標が area の範囲外
+                continue;
+            }
+
+            if ( x0 == x1 ) {
+                // 垂直線分なので、垂直グリッド線で分割しない
+                segments.push( [x0, y0, x1, y1] );
+                continue;
+            }
+
+            let delta = (y1 - y0) / (x1 - x0);
+
+            // 左端でトリミング
+            let tx0 = x0;
+            let ty0 = y0;
+            if ( x0 < x_min ) {
+                tx0 = x_min;
+                ty0 = y0 + delta * (x_min - x0);  // 左端線と線分の交点の y 座標
+            }
+
+            // 右端でトリミング
+            let tx1 = x1;
+            let ty1 = y1;
+            if ( x1 > x_max ) {
+                tx1 = x_max;
+                ty1 = y0 + delta * (x_max - x0);  // 右端線と線分の交点の y 座標
+            }
+
+            // グリッド線の範囲
+            let i_min = Math.max( Math.ceil(  (x0 - x_min) / step_x ), 1         );
+            let i_max = Math.min( Math.floor( (x1 - x_min) / step_x ), div_x - 1 );
+
+            let prev_x = tx0;
+            let prev_y = ty0;
+
+            for ( let i = i_min; i <= i_max; ++i ) {
+                let next_x = x_min + step_x * i;          // 垂直グリッド線の x 座標
+                let next_y = y0 + delta * (next_x - x0);  // 垂直グリッド線と線分の交点の y 座標
+
+                if ( prev_x != next_x || prev_y != next_y ) {
+                    segments.push( [prev_x, prev_y, next_x, next_y] );
+                }
+
+                prev_x = next_x;
+                prev_y = next_y;
+            }
+
+            if ( prev_x != tx1 || prev_y != ty1 ) {
+                segments.push( [prev_x, prev_y, tx1, ty1] );
+            }
+        }
+
+        return segments;
+    }
+
+
+    /**
+     * @summary すべての線分をグリッドで分割
+     *
+     * @param {mapray.Area} area   地表断片の領域
+     * @param {number[]}    dpows  area の xy 分割指数
+     *
+     * @private
+     */
+    _divideXY( area, dpows )
+    {
+        // area 寸法 ÷ π (厳密値)
+        // 線分の場合、領域の端によるクリッピングがシビアなので厳密値 (2^整数) を使う
+        let msize = 2 / Math.round( Math.pow( 2, area.z ) );
+
+        // area の y 座標の範囲
+        let y_min = Math.PI * (1 - (area.y + 1) * msize);
+        let y_max = Math.PI * (1 - area.y * msize);
+
+        let  div_y = 1 << dpows[1];            // 縦分割数: 2^dpow
+        let step_y = (y_max - y_min) / div_y;  // 縦分割間隔
+
+        let segments = [];
+
+        // 水平グリッド線で分割
+        for ( let [px, py, qx, qy] of this._divideXOnly( area, msize, dpows[0] ) ) {
+
+            let [x0, y0, x1, y1] = (py <= qy) ? [px, py, qx, qy] : [qx, qy, px, py];
+            // assert: y0 <= y1
+
+            if ( y1 < y_min || y0 >= y_max ) {
+                // 線分の y 座標が area の範囲外
+                continue;
+            }
+
+            if ( y0 == y1 ) {
+                // 水平線分なので、水平グリッド線で分割しない
+                segments.push( [x0, y0, x1, y1] );
+                continue;
+            }
+
+            let delta = (x1 - x0) / (y1 - y0);
+
+            // 下端でトリミング
+            let tx0 = x0;
+            let ty0 = y0;
+            if ( y0 < y_min ) {
+                tx0 = x0 + delta * (y_min - y0);  // 下端線と線分の交点の x 座標
+                ty0 = y_min;
+            }
+
+            // 上端でトリミング
+            let tx1 = x1;
+            let ty1 = y1;
+            if ( y1 > y_max ) {
+                tx1 = x0 + delta * (y_max - y0);  // 上端線と線分の交点の x 座標
+                ty1 = y_max;
+            }
+
+            // グリッド線の範囲
+            let i_min = Math.max( Math.ceil(  (y0 - y_min) / step_y ), 1         );
+            let i_max = Math.min( Math.floor( (y1 - y_min) / step_y ), div_y - 1 );
+
+            let prev_x = tx0;
+            let prev_y = ty0;
+
+            for ( let i = i_min; i <= i_max; ++i ) {
+                let next_y = y_min + step_y * i;          // 水平グリッド線の y 座標
+                let next_x = x0 + delta * (next_y - y0);  // 水平グリッド線と線分の交点の x 座標
+
+                if ( prev_x != next_x || prev_y != next_y ) {
+                    segments.push( [prev_x, prev_y, next_x, next_y] );
+                }
+
+                prev_x = next_x;
+                prev_y = next_y;
+            }
+
+            if ( prev_x != tx1 || prev_y != ty1 ) {
+                segments.push( [prev_x, prev_y, tx1, ty1] );
+            }
+        }
+
+        return segments;
+    }
+
+
+    /**
+     * @summary 頂点配列の生成
+     *
+     * @param {mapray.Area}      area  地表断片の領域
+     * @param {mapray.DemBinary} dem   DEM バイナリ
+     *
+     * @return {Float32Array}  Mesh 用の頂点配列
+     *
+     * @private
+     */
+    _createVertices( area, dem, segments )
+    {
+        let sampler = dem.newLinearSampler();
+        let [ox, oy, oz] = AreaUtil.getCenter( area, GeoMath.createVector3() );
+
+        let num_segments = segments.length;
+        let num_vertices = 4 * num_segments;
+        let vertices     = new Float32Array( 8 * num_vertices );
+
+        for ( let i = 0; i < num_segments; ++i ) {
+            let [smx, smy, emx, emy] = segments[i];
+
+            let [sgx, sgy, sgz] = toGocs( smx, smy, sampler );
+            let [egx, egy, egz] = toGocs( emx, emy, sampler );
+
+            let sx = sgx - ox;
+            let sy = sgy - oy;
+            let sz = sgz - oz;
+
+            let ex = egx - ox;
+            let ey = egy - oy;
+            let ez = egz - oz;
+
+            let dx = egx - sgx;
+            let dy = egy - sgy;
+            let dz = egz - sgz;
+
+            let v = 32 * i;
+
+            // 始左
+            vertices[v     ] = sx;  // a_position.x
+            vertices[v +  1] = sy;  // a_position.y
+            vertices[v +  2] = sz;  // a_position.z
+            vertices[v +  3] = dx;  // a_direction.x
+            vertices[v +  4] = dy;  // a_direction.y
+            vertices[v +  5] = dz;  // a_direction.z
+            vertices[v +  6] = -1;  // a_where.x
+            vertices[v +  7] =  1;  // a_where.y
+            // 始右
+            vertices[v +  8] = sx;
+            vertices[v +  9] = sy;
+            vertices[v + 10] = sz;
+            vertices[v + 11] = dx;
+            vertices[v + 12] = dy;
+            vertices[v + 13] = dz;
+            vertices[v + 14] = -1;
+            vertices[v + 15] = -1;
+            // 終左
+            vertices[v + 16] = ex;
+            vertices[v + 17] = ey;
+            vertices[v + 18] = ez;
+            vertices[v + 19] = dx;
+            vertices[v + 20] = dy;
+            vertices[v + 21] = dz;
+            vertices[v + 22] =  1;
+            vertices[v + 23] =  1;
+            // 終右
+            vertices[v + 24] = ex;
+            vertices[v + 25] = ey;
+            vertices[v + 26] = ez;
+            vertices[v + 27] = dx;
+            vertices[v + 28] = dy;
+            vertices[v + 29] = dz;
+            vertices[v + 30] =  1;
+            vertices[v + 31] = -1;
+        }
+
+        return vertices;
+    }
+
+
+    /**
+     * @summary @summary 頂点インデックスの生成
+     *
+     * @param {number} num_segments  線分の数
+     *
+     * @return {Uint32Array}  Mesh 用の頂点インデックス
+     *
+     * @private
+     */
+    _createIndices( num_segments )
+    {
+        let num_indices = 6 * num_segments;
+        let indices     = new Uint32Array( num_indices );
+
+        for ( let i = 0; i < num_segments; ++i ) {
+            let base_d = 6 * i;
+            let base_s = 4 * i;
+            indices[base_d    ] = base_s;
+            indices[base_d + 1] = base_s + 1;
+            indices[base_d + 2] = base_s + 2;
+            indices[base_d + 3] = base_s + 2;
+            indices[base_d + 4] = base_s + 1;
+            indices[base_d + 5] = base_s + 3;
+        }
+
+        return indices;
+    }
+
+}
+
+
+/**
+ * @private
+ */
+function
+toGocs( x, y, sampler )
+{
+    let λ = x;
+    let φ = GeoMath.gudermannian( y );
+    let r = GeoMath.EARTH_RADIUS + sampler.sample( x, y );
+
+    let cosφ = Math.cos( φ );
+
+    return [r * cosφ * Math.cos( λ ),
+            r * cosφ * Math.sin( λ ),
+            r * Math.sin( φ )];
+}
+
+
+/**
+ * @summary 線分の領域管理
+ *
+ * @private
+ */
+class LineAreaManager extends QAreaManager {
+
+    /**
+     * @param {mapray.MarkerLineEntity} entity  管理対象のエンティティ
+     */
+    constructor( entity )
+    {
+        super();
+
+        this._entity = entity;
+    }
+
+
+    /**
+     * @override
+     */
+    getInitialContent()
+    {
+        const Degree = GeoMath.DEGREE;
+        const RAngle = Math.PI / 2;  // 直角
+        const TwoPI  = 2 * Math.PI;  // 2π
+
+        let segments = [];
+
+        // 頂点データ
+        let points    = this._entity._point_array;
+        let end_point = this._entity._num_floats;
+
+        if ( end_point < 6 ) {
+            // 線分なし
+            return segments;
+        }
+
+        // 線分の始点 (ラジアン)
+        let lon0 = points[0] * Degree;
+        let lat0 = points[1] * Degree;
+        let lon1;
+        let lat1;
+
+        for ( let i = 3; i < end_point; i += 3, lon0 = lon1, lat0 = lat1 ) {
+            // 線分の終点 (ラジアン)
+            lon1 = points[i    ] * Degree;
+            lat1 = points[i + 1] * Degree;
+
+            if ( lat0 <= -RAngle || lat0 >= RAngle ||
+                 lat1 <= -RAngle || lat1 >= RAngle ) {
+                // 端点の緯度の絶対値が RAngle 以上の線分は除外
+                // ※ まだ検討していないので、とりあえずの処置
+                continue;
+            }
+
+            // 単位球メルカトル座標系に変換
+            let x0 = lon0;
+            let y0 = GeoMath.invGudermannian( lat0 );
+            let x1 = lon1;
+            let y1 = GeoMath.invGudermannian( lat1 );
+
+            // 左端点と右端点
+            let [xL, yL, xR, yR] = (x0 < x1) ? [x0, y0, x1, y1] : [x1, y1, x0, y0];
+
+            // -π <= xL < π になるように xL を正規化
+            if ( xL < -Math.PI || xL >= Math.PI ) {
+                let dx = xR - xL;
+                xL -= TwoPI * (Math.floor( (xL - Math.PI) / TwoPI ) + 1);
+                if ( xL < -Math.PI || xL >= Math.PI ) {
+                    // 誤差対策
+                    xL = -Math.PI;
+                }
+                xR = xL + dx;
+            }
+
+            if ( xL == xR && yL == yR ) {
+                // 長さ 0 の線分は除外
+                continue;
+            }
+
+            // 線分を追加
+            segments.push( [xL, yL, xR, yR] );
+
+            if ( xR > Math.PI ) {
+                // 線分が 180 度子午線をまたぐとき
+                // こちらは多少厳密さを無視する
+                segments.push( [xL - TwoPI, yL, xR - TwoPI, yR] );
+            }
+        }
+
+        return segments;
+    }
+
+
+    /**
+     * @override
+     */
+    createAreaContent( min_x, min_y, msize, parent_content )
+    {
+        // 単位球メルカトルでの領域に変換
+        const x_area_min = Math.PI * min_x;
+        const x_area_max = Math.PI * (min_x + msize);
+        const y_area_min = Math.PI * min_y;
+        const y_area_max = Math.PI * (min_y + msize);
+
+        let segments = [];
+
+        for ( let segment of parent_content ) {
+            let [xP, yP, xQ, yQ] = segment;
+            if ( this._intersect( x_area_min, x_area_max, y_area_min, y_area_max, xP, yP, xQ, yQ ) ) {
+                segments.push( segment );
+            }
+        }
+
+        return (segments.length > 0) ? segments : Entity.AreaStatus.EMPTY;
+    }
+
+
+    /**
+     * @summary 矩形と線分の交差判定
+     *
+     * @desc
+     * <p>矩形領域と線分が交差するかどうかを返す。</p>
+     * <p>矩形領域には x 座標が x_area_max の点と、y 座標が y_area_max の点は含まれないものとする。</p>
+     *
+     * <pre>
+     * 事前条件:
+     *   x_area_min < x_area_max
+     *   y_area_min < y_area_max
+     * </pre>
+     *
+     * @param {number} x_area_min  矩形領域の最小 x 座標
+     * @param {number} x_area_max  矩形領域の最大 x 座標
+     * @param {number} y_area_min  矩形領域の最小 y 座標
+     * @param {number} y_area_max  矩形領域の最大 y 座標
+     * @param {number} xP          線分端点 P の x 座標
+     * @param {number} yP          線分端点 P の y 座標
+     * @param {number} xQ          線分端点 Q の x 座標
+     * @param {number} yQ          線分端点 Q の y 座標
+     *
+     * @return {boolean}  交差するとき true, それ以外のとき false
+     *
+     * @private
+     */
+    _intersect( x_area_min, x_area_max, y_area_min, y_area_max, xP, yP, xQ, yQ )
+    {
+        if ( Math.abs( xP - xQ ) < Math.abs( yP - yQ ) ) {
+            // 線分が垂直に近いとき
+            return this._nhorz_intersect( x_area_min, x_area_max, y_area_min, y_area_max, xP, yP, xQ, yQ );
+        }
+        else {
+            // 線分が水平に近いとき
+            return this._nhorz_intersect( y_area_min, y_area_max, x_area_min, x_area_max, yP, xP, yQ, xQ );
+        }
+    }
+
+
+    /**
+     * @summary 矩形と非水平線分の交差判定
+     *
+     * @desc
+     * <p>矩形領域と線分が交差するかどうかを返す。</p>
+     * <p>矩形領域には x 座標が x_area_max の点と、y 座標が y_area_max の点は含まれないものとする。</p>
+     *
+     * <pre>
+     * 事前条件:
+     *   x_area_min < x_area_max
+     *   y_area_min < y_area_max
+     *   yP != yQ
+     * </pre>
+     *
+     * <p>注意: |yP - yQ| が小さいと精度が悪くなる。</p>
+     *
+     * @param {number} x_area_min  矩形領域の最小 x 座標
+     * @param {number} x_area_max  矩形領域の最大 x 座標
+     * @param {number} y_area_min  矩形領域の最小 y 座標
+     * @param {number} y_area_max  矩形領域の最大 y 座標
+     * @param {number} xP          線分端点 P の x 座標
+     * @param {number} yP          線分端点 P の y 座標
+     * @param {number} xQ          線分端点 Q の x 座標
+     * @param {number} yQ          線分端点 Q の y 座標
+     *
+     * @return {boolean}  交差するとき true, それ以外のとき false
+     *
+     * @private
+     */
+    _nhorz_intersect( x_area_min, x_area_max, y_area_min, y_area_max, xP, yP, xQ, yQ )
+    {
+        // 線分の y 座標の範囲
+        let [y_line_min, y_line_max] = (yP < yQ) ? [yP, yQ] : [yQ, yP];
+
+        if ( y_line_min >= y_area_max || y_line_max < y_area_min ) {
+            // 線分の y 範囲が矩形領域の y 範囲の外側なので交差しない
+            return false;
+        }
+
+        // 矩形領域と線分の y 座標が重なる範囲 (順不同)
+        let y_range_0 = (y_area_min >= y_line_max) ? y_area_min : y_line_max;
+        let y_range_1 = (y_area_max <= y_line_min) ? y_area_max : y_line_min;
+
+        // y が {y_range_0, y_range_1} 範囲での線分の x 範囲 (順不同)
+        let x_range_0 = xP + (xQ - xP) * (y_range_0 - yP) / (yQ - yP);
+        let x_range_1 = xP + (xQ - xP) * (y_range_1 - yP) / (yQ - yP);
+
+        // y が {y_range_0, y_range_1} 範囲での線分の x 範囲
+        let [x_range_min, x_range_max] = (x_range_0 < x_range_1) ? [x_range_0, x_range_1] : [x_range_1, x_range_0];
+
+        // [x_range_min, x_range_max] 範囲は矩形領域の x の範囲と重なるか？
+        return (x_range_min < x_area_max) && (x_range_max >= x_area_min);
     }
 
 }

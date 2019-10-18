@@ -190,18 +190,20 @@ class DemBinary {
      * @summary 地表断片の分割指数を取得
      * @desc
      * <p>注意: 次の呼び出しで、結果配列は上書きされる。</p>
-     * @param  {mapray.Globe.Flake} flake  地表断片
-     * @param  {number}           lod    地表詳細レベル (LOD)
-     * @param  {number}           cu     水平球面分割レベル
-     * @param  {number}           cv     垂直球面分割レベル
-     * @return {array}                   [水平分割指数, 垂直分割指数]
+     *
+     * @param  {mapray.Area} flake_area  地表断片の領域
+     * @param  {number}      lod         地表詳細レベル (LOD)
+     * @param  {number}      cu          水平球面分割レベル
+     * @param  {number}      cv          垂直球面分割レベル
+     *
+     * @return {array}  [水平分割指数, 垂直分割指数]
      */
-    getDivisionPowers( flake, lod, cu, cv )
+    getDivisionPowers( flake_area, lod, cu, cv )
     {
-        var zg = flake.z;
+        var zg = flake_area.z;
         var ze = this._z;
         var  b = GeoMath.LOG2PI - this._ρ + 1;  // b = log2π - ρ + 1
-        var ω = this._getComplexity( zg, flake.x, flake.y );
+        var ω = this._getComplexity( zg, flake_area.x, flake_area.y );
 
         // {gu, gv} = max( {cu, cv}, min( ze + ρ, round( lod + b + ω ) ) − zg )
         var arg = Math.min( ze + this._ρ, Math.round( lod + b + ω ) ) - zg;
@@ -215,15 +217,28 @@ class DemBinary {
 
     /**
      * @summary DEM サンプラーを生成
-     * @param  {mapray.Flake} flake  地表断片
-     * @return {mapray.DemSampler}   DEM サンプラー
+     *
+     * @param {mapray.Area} flake_area  地表断片の領域
+     *
+     * @return {mapray.DemSampler}  DEM サンプラー
      */
-    newSampler( flake )
+    newSampler( flake_area )
     {
         // 今のところ、地表断片が 1 標高点またはそれ以上のとき、最近傍サンプラーでも結果が
         // 変わらないので、最適化のためにサンプラーを別けている
-        var samplerClass = (flake.z - this._z > this._ρ) ? DemSamplerLinear : DemSamplerNearest;
-        return new samplerClass( this._z, this._x, this._y, this._ρ, this._body );
+        var samplerClass = (flake_area.z - this._z > this._ρ) ? DemSamplerLinear : DemSamplerNearest;
+        return new samplerClass( this, this._ρ, this._body );
+    }
+
+
+    /**
+     * @summary 線形 DEM サンプラーを生成
+     *
+     * @return {mapray.DemSamplerLinear}  DEM サンプラー
+     */
+    newLinearSampler()
+    {
+        return new DemSamplerLinear( this, this._ρ, this._body );
     }
 
 
