@@ -35,11 +35,11 @@ class ChangeFontFormat {
         var font_Style_Value = document.getElementById("FontStylePullDown").value;
         var font_Weight_Value = document.getElementById("FontWeightPullDown").value;
         var font_Size_Value = parseFloat(document.getElementById("FontSizePullDown").value);
-        var font_CollarChord = document.getElementById("FontCollarPallet").value;
+        var font_ColorChord = document.getElementById("FontColorPallet").value;
         var font_Family_Value = document.getElementById("FontFamilyPullDown").value;
 
-        // CollarChordをRBGに変換
-        var RGBArray = this.convertCollarChordToRGB(font_CollarChord);
+        // ColorChordをRBGに変換
+        var RGBArray = this.convertColorChordToRGB(font_ColorChord);
 
         // プルダウンの値を設定
         entity.setFontStyle(font_Style_Value);
@@ -112,12 +112,12 @@ class ChangeFontFormat {
         textEntity.setFontSize(font_Size_Value);
     }
 
-    ChangeFontCollar() {
+    ChangeFontColor() {
         // プルダウンの値取得
-        var font_CollarChord = document.getElementById("FontCollarPallet").value;
+        var font_ColorChord = document.getElementById("FontColorPallet").value;
 
-        // CollarChordをRBGに変換
-        var RGBArray = this.convertCollarChordToRGB(font_CollarChord);
+        // ColorChordをRBGに変換
+        var RGBArray = this.convertColorChordToRGB(font_ColorChord);
 
         // プルダウンの値を設定
         var textEntity = this.viewer.scene.getEntity(0);
@@ -133,12 +133,12 @@ class ChangeFontFormat {
         textEntity.setFontFamily(font_Family_Value);
     }
 
-    convertCollarChordToRGB(collarChord) {
-        var collarChordChars = collarChord.split('')
+    convertColorChordToRGB(colorChord) {
+        var colorChordChars = colorChord.split('')
 
-        var r = parseInt(collarChordChars[1].toString() + collarChordChars[2].toString(), 16) / 255;
-        var g = parseInt(collarChordChars[3].toString() + collarChordChars[4].toString(), 16) / 255;
-        var b = parseInt(collarChordChars[5].toString() + collarChordChars[6].toString(), 16) / 255;
+        var r = parseInt(colorChordChars[1].toString() + colorChordChars[2].toString(), 16) / 255;
+        var g = parseInt(colorChordChars[3].toString() + colorChordChars[4].toString(), 16) / 255;
+        var b = parseInt(colorChordChars[5].toString() + colorChordChars[6].toString(), 16) / 255;
 
         return [r,g,b];
     }
@@ -160,8 +160,8 @@ function FontSizeValueChanged() {
     change_Font_Format.ChangeFontSize();
 }
 
-function FontCollarValueChanged() {
-    change_Font_Format.ChangeFontCollar();
+function FontColorValueChanged() {
+    change_Font_Format.ChangeFontColor();
 }
 
 function FontFamilyValueChanged() {

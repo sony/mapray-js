@@ -97,10 +97,7 @@ class ModelController {
         entity.setPosition(this.model_Point);
 
         // モデルの回転
-        entity.setOrientation(new mapray.Orientation(-this.model_Angle, -90, 0)); 
-
-        // モデルのスケールを設定
-        entity.setScale([0.1, 0.1, 0.1]); 
+        entity.setOrientation(new mapray.Orientation(-this.model_Angle, 0, 0)); 
     }
 
     UpdateMoveVec() {
