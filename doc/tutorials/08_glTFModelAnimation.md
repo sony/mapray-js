@@ -5,16 +5,6 @@
 動的にglTFモデルの位置・向きを変更するアニメーションを作成する**glTFModelAnimation.html**及び、**glTFModelAnimation.js**のサンプルコードとシーンファイル（**glTFAnimation.json**）です。
 このサンプルコードでは、glTFモデルが京都御所沿いの道路を北上したのち、西向きに向きを変え、さらに西進するアニメーションを表現します。
 
-#### glTFデータの入手
-[Sketchfab](https://sketchfab.com/3d-models/truck-wip-33e925207e134652bd8c2465e5c16957)へアクセスし、glTFファイルフォーマットのデータをダウンロードする、もしくは[ダウンロードリンク](https://storage.cloud.google.com/mapray-examples/model/download/truck_wip.zip)をクリックしてダウンロードしてください。ダウンロードリンクからダウンロードした場合はzipファイルを展開してご利用ください。展開したデータは解答した結果できたディレクトリを含めて、mapray-jsのルートディレクトリからの相対パスで以下のディレクトリに保存されているという想定で以下の説明を行います。
-
-```
-./examples/entity/gltf/data/
-```
-
-なお、データは当社の著作物ではありません。著作権は各データの作成者に帰属します。詳細はフォルダ中のLICENSEファイルを参照の上ご利用ください。
-ユーザーの皆様がコンテンツの権利を侵害した場合、当社では一切責任を追うものではありませんのでご注意ください。
-
 #### glTFModelAnimation.html
 
 ```HTML
@@ -204,10 +194,7 @@ class ModelAnimation extends mapray.RenderCallback {
         entity.setPosition(this.model_Point);
 
         // モデルの回転
-        entity.setOrientation(new mapray.Orientation(-this.model_Angle, -90, 0));
-
-        // モデルのスケールを設定
-        entity.setScale([0.1, 0.1, 0.1]);
+        entity.setOrientation(new mapray.Orientation(-this.model_Angle, 0, 0));
     }
 
 }
@@ -216,7 +203,12 @@ class ModelAnimation extends mapray.RenderCallback {
 #### シーンファイル（glTFAnimation.json）
 ```json
 {
-  "model_register": { "model-0": { "link": "./truck_wip/scene.gltf" } },
+  "model_register": {
+    "model-0": {
+      "link": "./truck_wip/scene.gltf",
+      "offset_transform": { "tilt": -90, "scale": 0.1 }
+      }
+    },
   "entity_list": [{
     "type": "model",
     "mode": "basic",
@@ -321,7 +313,7 @@ glTFモデルアニメーションクラスはJavaScriptのサンプルコード
 JavaScriptのサンプルコードの詳細を以下で解説します。
 
 #### クラスとグローバル変数の説明
-1～144行目のクラスは、glTFモデルアニメーションクラスです。アニメーションを表現するために、glTFモデルアニメーション作成クラスは、mapray.RenderCallbackクラスを継承します。
+1～141行目のクラスは、glTFモデルアニメーションクラスです。アニメーションを表現するために、glTFモデルアニメーション作成クラスは、mapray.RenderCallbackクラスを継承します。
 
 ```JavaScript
 class ModelAnimation extends mapray.RenderCallback {
@@ -522,8 +514,8 @@ onLoadScene(loader, isSuccess) {
 ```
 
 #### glTFモデルの表示位置の設定
-130～142行目がglTFモデルの表示位置の設定メソッドです。モデルの表示位置、向き、スケールをモデルのエンティティに反映します。
-135行目でモデルの表示位置を、138行目でモデルの向きを、141行目でモデルのスケールをそれぞれ設定します。
+130～139行目がglTFモデルの表示位置の設定メソッドです。モデルの表示位置、向きをモデルのエンティティに反映します。
+135行目でモデルの表示位置を、138行目でモデルの向きをそれぞれ設定します。
 なお、読み込んだモデルは1つ目のエンティティとなるため、エンティティ取得時の引数には0を指定します。
 
 ```JavaScript
@@ -535,10 +527,7 @@ UpdateModelPosition() {
     entity.setPosition(this.model_Point);
 
     // モデルの回転
-    entity.setOrientation(new mapray.Orientation(-this.model_Angle, -90, 0));
-
-    // モデルのスケールを設定
-    entity.setScale([0.1, 0.1, 0.1]);
+    entity.setOrientation(new mapray.Orientation(-this.model_Angle, 0, 0));
 }
 ```
 
@@ -546,7 +535,7 @@ UpdateModelPosition() {
 シーンファイルの詳細を以下で解説します。なお、シーンファイルはJSON形式で記述します。
 
 #### エンティティの設定
-3行目でentity_listという名称でエンティティを定義し、その中にエンティティの詳細を定義します。4行目のtypeという名称は、エンティティの種類を表し、glTFモデルの場合はmodelを指定します。
+8行目でentity_listという名称でエンティティを定義し、その中にエンティティの詳細を定義します。9行目のtypeという名称は、エンティティの種類を表し、glTFモデルの場合はmodelを指定します。
 
 ```json
 {
@@ -564,14 +553,22 @@ UpdateModelPosition() {
 ```
 
 #### glTFモデルのデータ
-2行目でmodel_registerという名称でモデルデータを定義します。このシーンファイルでは、モデルデータのIDをmodel-0とし、モデルファイルをファイルから読み込むために、linkという名称にglTFファイルのURLを指定します。
+2～7行目でmodel_registerという名称でモデルデータを定義します。このシーンファイルでは、モデルデータのIDをmodel-0とし、モデルファイルをファイルから読み込むために、linkという名称にglTFファイルのURLを指定します。
+また、モデルの初期向きとスケールをoffset_transformという名称で指定することができます。今回のデータでは下記の内容を定義します。
+- チルト（Y軸回りの回転角度）（tilt）　⇒　-90
+- モデルスケール（scale）　⇒　0.1
 
 ```json
-"model_register": { "model-0": { "link": "./truck_wip/scene.gltf" } },
-```
+"model_register": {
+  "model-0": {
+    "link": "./truck_wip/scene.gltf",
+    "offset_transform": { "tilt": -90, "scale": 0.1 }
+    }
+  },
+  ```
 
 #### 汎用エンティティの設定
-4～8行目で汎用エンティティの設定をします。汎用エンティティには以下の内容を定義します。
+8～15行目で汎用エンティティの設定をします。汎用エンティティには以下の内容を定義します。
 - モード（mode）　⇒　basic
 - 初期姿勢（transform）　⇒　球面座標系（position）での初期位置
 - モデルデータ（ref_model）　⇒　モデルデータのID（model-0）

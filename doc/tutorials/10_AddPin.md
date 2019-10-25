@@ -205,6 +205,7 @@ pin_Entity.addPin(fast_Pin_Point, { size: 40, bg_color: [1, 0, 0] });
 
 #### Makiアイコンピンの生成
 80～83行目で、Makiアイコンのピンを生成します。80行目で東京駅の経度・緯度・高度からGeoPointクラスを定義し、83行目のaddMakiIconPin関数でピンを生成します。addMakiIconPin関数には、Makiアイコンの名称、ピンを表示する位置、生成オプションとしてピンの大きさと色を、それぞれ設定します。
+Makiアイコンとは、[Makiアイコン](https://labs.mapbox.com/maki-icons/)に掲載されているアイコンを指します。各アイコンの名称を指定することで、自由にアイコンを使用することができます。
 
 ```JavaScript
 // 東京駅の座標を設定
