@@ -6,6 +6,16 @@
 ユーザインタフェースを介して、glTFモデルを移動・回転させる**glTFModelController.html**及び、**glTFModelController.js**のサンプルコードとシーンファイル（**glTFController.json**）です。
 このサンプルコードでは、対応するボタンを操作することで、前進、後進、左90度回転、右90度回転ができます。
 
+#### glTFデータの入手
+[Sketchfab](https://sketchfab.com/3d-models/truck-wip-33e925207e134652bd8c2465e5c16957)へアクセスし、glTFファイルフォーマットのデータをダウンロードする、もしくは[ダウンロードリンク](https://storage.cloud.google.com/mapray-examples/model/download/truck_wip.zip)をクリックしてダウンロードしてください。ダウンロードリンクからダウンロードした場合はzipファイルを展開してご利用ください。展開したデータは解答した結果できたディレクトリを含めて、mapray-jsのルートディレクトリからの相対パスで以下のディレクトリに保存されているという想定で以下の説明を行います。
+
+```
+./examples/entity/gltf/data/
+```
+
+なお、データは当社の著作物ではありません。著作権は各データの作成者に帰属します。詳細はフォルダ中のLICENSEファイルを参照の上ご利用ください。
+ユーザーの皆様がコンテンツの権利を侵害した場合、当社では一切責任を追うものではありませんのでご注意ください。
+
 #### glTFModelController.html
 
 ```HTML

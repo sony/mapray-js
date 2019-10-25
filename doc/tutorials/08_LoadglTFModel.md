@@ -6,6 +6,16 @@ mapray.SceneLoaderを使ってglTFモデルを表示する方法を説明しま�
 mapray.SceneLoaderを使ってglTFモデルを表示する**LoadglTFModel.html**及び、**LoadglTFModel.js**のサンプルコードとシーンファイル（**glTFLoad.json**）です。
 このサンプルコードでは、薬師寺の場所に3Dモデルを表示します。
 
+#### glTFデータの入手
+[PART Community](https://b2b.partcommunity.com/community/knowledge/ja/detail/435/Yakushi-ji)へアクセスし、glTFファイルフォーマットのデータをダウンロードする、もしくは[ダウンロードリンク](https://storage.cloud.google.com/mapray-examples/model/download/Yakushiji_Temple.zip)をクリックしてダウンロードしてください。ダウンロードリンクからダウンロードした場合はzipファイルを展開してご利用ください。展開したデータは展開したデータは解答した結果できたディレクトリを含めて、mapray-jsのルートディレクトリからの相対パスで以下のディレクトリに保存されているという想定で以下の説明を行います。
+
+```
+./examples/entity/gltf/data/
+```
+
+なお、データは当社の著作物ではありません。著作権は各データの作成者に帰属します。詳細はフォルダ中のLICENSEファイルを参照の上ご利用ください。
+ユーザーの皆様がコンテンツの権利を侵害した場合、当社では一切責任を追うものではありませんのでご注意ください。
+
 #### LoadglTFModel.html
 ```HTML
 <!DOCTYPE html>
