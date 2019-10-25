@@ -66,6 +66,10 @@ class LoadModel {
         ```
         ./examples/entity/gltf/data/
         ```
+
+        The data is not our copyrighted contents. The copyright belongs to the creator of each data. 
+        Please refer to the LICENSE file in the folder for details.
+        Please note that we do not take any responsibility if you infringe on the content rights.
         */
 
         // シーンを読み込む

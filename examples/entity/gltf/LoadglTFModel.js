@@ -53,6 +53,26 @@ class LoadModel {
     LoadScene() {
         var scene_File_URL = "./data/glTFLoad.json";
 
+        /* glTFLoad.json links glTF file "./Yakushiji_Temple/Yakushiji_Temple.gltf". 
+        You need to get this glTF file from the web. The following is how to download it.
+        
+        - Access [PARTcommunity] (https://b2b.partcommunity.com/community/knowledge/ja/detail/435/Yakushi-ji) and download the data in glTF file format
+        - Click [Download link] (https://storage.cloud.google.com/mapray-examples/model/download/Yakushiji_Temple.zip) to download it
+        
+        If you download from the download link, please unzip and use it. 
+        The following explanation is based on the assumption that 
+        the expanded data is stored in the following directory 
+        with the relative path from the root directory of mapray-js.
+
+        ```
+        ./examples/entity/gltf/data/
+        ```
+
+        The data is not our copyrighted contents. The copyright belongs to the creator of each data. 
+        Please refer to the LICENSE file in the folder for details.
+        Please note that we do not take any responsibility if you infringe on the content rights.
+        */
+
         // シーンを読み込む
         var loader = new mapray.SceneLoader(this.viewer.scene, scene_File_URL, {
             transform: (url, type) => this.onTransform(url, type),
