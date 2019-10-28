@@ -6,6 +6,16 @@
 ユーザインタフェースを介して、glTFモデルを移動・回転させる**glTFModelController.html**及び、**glTFModelController.js**のサンプルコードとシーンファイル（**glTFController.json**）です。
 このサンプルコードでは、対応するボタンを操作することで、前進、後進、左90度回転、右90度回転ができます。
 
+#### glTFデータの入手
+[Sketchfab](https://sketchfab.com/3d-models/truck-wip-33e925207e134652bd8c2465e5c16957)へアクセスし、glTFファイルフォーマットのデータをダウンロードする、もしくは[ダウンロードリンク](https://storage.cloud.google.com/mapray-examples/model/download/truck_wip.zip)をクリックしてダウンロードしてください。ダウンロードリンクからダウンロードした場合はzipファイルを展開してご利用ください。展開したデータは解答した結果できたディレクトリを含めて、mapray-jsのルートディレクトリからの相対パスで以下のディレクトリに保存されているという想定で以下の説明を行います。
+
+```
+./examples/entity/gltf/data/
+```
+
+なお、データは当社の著作物ではありません。著作権は各データの作成者に帰属します。詳細はフォルダ中のLICENSEファイルを参照の上ご利用ください。
+ユーザーの皆様がコンテンツの権利を侵害した場合、当社では一切責任を追うものではありませんのでご注意ください。
+
 #### glTFModelController.html
 
 ```HTML
@@ -218,10 +228,7 @@ class ModelController {
         entity.setPosition(this.model_Point);
 
         // モデルの回転
-        entity.setOrientation(new mapray.Orientation(-this.model_Angle, -90, 0));
-
-        // モデルのスケールを設定
-        entity.setScale([0.1, 0.1, 0.1]);
+        entity.setOrientation(new mapray.Orientation(-this.model_Angle, 0, 0));
     }
 
     UpdateMoveVec() {
@@ -316,7 +323,12 @@ function RightTurnButtonClicked() {
 #### シーンファイル（glTFController.json）
 ```json
 {
-  "model_register": { "model-0": { "link": "./truck_wip/scene.gltf" } },
+  "model_register": {
+    "model-0": {
+      "link": "./truck_wip/scene.gltf",
+      "offset_transform": { "tilt": -90, "scale": 0.1 }
+      }
+    },
   "entity_list": [{
     "type": "model",
     "mode": "basic",
@@ -492,7 +504,7 @@ glTFモデルを操作するクラスのインスタンスを生成する関数�
 JavaScriptのサンプルコードの詳細を以下で解説します。
 
 #### クラスとグローバル変数の説明
-3～171行目でglTFモデルを操作するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
+3～168行目でglTFモデルを操作するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
 また、1行目でglTFモデルを操作するクラスのグローバル変数を定義します。
 
 ```JavaScript
@@ -520,7 +532,7 @@ class ModelController {
 
 ```JavaScript
 constructor(container) {
-  
+
     // Access Tokenを設定
     var accessToken = "<your access token here>";
 
@@ -638,8 +650,8 @@ onLoadScene(loader, isSuccess) {
 ```
 
 #### glTFモデルの表示位置の設定
-91～103行目がglTFモデルの表示位置の設定メソッドです。モデルの表示位置、向き、スケールをモデルのエンティティに反映します。
-96行目でモデルの表示位置を設定、97行目でモデルの向きを、98行目でモデルのスケールをそれぞれ設定します。
+91～100行目がglTFモデルの表示位置の設定メソッドです。モデルの表示位置、向きをモデルのエンティティに反映します。
+96行目でモデルの表示位置を設定、99行目でモデルの向きをそれぞれ設定します。
 なお、読み込んだモデルは1つ目のエンティティとなるため、エンティティ取得時の引数には0を指定します。
 
 ```JavaScript
@@ -651,16 +663,13 @@ UpdateModelPosition() {
     entity.setPosition(this.model_Point);
 
     // モデルの回転
-    entity.setOrientation(new mapray.Orientation(-this.model_Angle, -90, 0));
-
-    // モデルのスケールを設定
-    entity.setScale([0.1, 0.1, 0.1]);
+    entity.setOrientation(new mapray.Orientation(-this.model_Angle, 0, 0));
 }
 ```
 
 #### 移動方向ベクトルの作成
-105～123行目が移動方向ベクトル作成メソッドです。現在の向きを表す回転行列を利用して、最新の移動方向ベクトルを求めます。
-まず、107～116行目で、移動方向を表す変換行列を単位行列に初期化し、glTFモデルの初期の前方向であるY軸方向に単位移動量である1分移動させます。その後、移動方向を表す変換行列に、現在の向きを表す変換行列を掛け合わせることで、現在の移動方向を表す変換行列を求めます。
+102～120行目が移動方向ベクトル作成メソッドです。現在の向きを表す回転行列を利用して、最新の移動方向ベクトルを求めます。
+まず、104～113行目で、移動方向を表す変換行列を単位行列に初期化し、glTFモデルの初期の前方向であるY軸方向に単位移動量である1分移動させます。その後、移動方向を表す変換行列に、現在の向きを表す変換行列を掛け合わせることで、現在の移動方向を表す変換行列を求めます。
 そして、求めた現在の移動方向を表す変換行列から、移動方向成分に該当する部分を抜き出し、移動方向ベクトルとして設定します。
 
 ```JavaScript
@@ -686,7 +695,7 @@ UpdateMoveVec() {
 ```
 
 #### 前進
-125～134行目が前進メソッドです。glTFモデルが正常に読み込まれている場合は、現在のglTFモデルの移動方向ベクトルに移動量を掛けた値をモデルの緯度・経度に加算し、glTFモデルの姿勢変換行列の設定メソッドを呼び出します。
+122～131行目が前進メソッドです。glTFモデルが正常に読み込まれている場合は、現在のglTFモデルの移動方向ベクトルに移動量を掛けた値をモデルの緯度・経度に加算し、glTFモデルの姿勢変換行列の設定メソッドを呼び出します。
 
 ```JavaScript
 Forward() {
@@ -702,7 +711,7 @@ Forward() {
 ```
 
 #### 後進
-136～145行目が後退メソッドです。glTFモデルが正常に読み込まれている場合は、現在のglTFモデルの移動方向ベクトルに移動量を掛けた値をモデルの緯度・経度に減算し、glTFモデルの姿勢変換行列の設定メソッドを呼び出します。
+133～142行目が後退メソッドです。glTFモデルが正常に読み込まれている場合は、現在のglTFモデルの移動方向ベクトルに移動量を掛けた値をモデルの緯度・経度に減算し、glTFモデルの姿勢変換行列の設定メソッドを呼び出します。
 
 ```JavaScript
 Backward() {
@@ -718,7 +727,7 @@ Backward() {
 ```
 
 #### 左回転
-147～157行目が左回転メソッドです。glTFモデルが正常に読み込まれている場合は、現在のglTFモデルの回転角度に90を加算し、glTFモデルの姿勢変換行列の設定メソッドを呼び出します。
+144～154行目が左回転メソッドです。glTFモデルが正常に読み込まれている場合は、現在のglTFモデルの回転角度に90を加算し、glTFモデルの姿勢変換行列の設定メソッドを呼び出します。
 
 ```JavaScript
 LeftTurn() {
@@ -735,7 +744,7 @@ LeftTurn() {
 ```
 
 #### 右回転
-159～169行目が右回転メソッドです。glTFモデルが正常に読み込まれている場合は、現在のglTFモデルの回転角度に90を減算し、glTFモデルの姿勢変換行列の設定メソッドを呼び出します。
+156～166行目が右回転メソッドです。glTFモデルが正常に読み込まれている場合は、現在のglTFモデルの回転角度に90を減算し、glTFモデルの姿勢変換行列の設定メソッドを呼び出します。
 ```JavaScript
 RightTurn() {
     if (this.isLoadedModel == false) {
@@ -751,7 +760,7 @@ RightTurn() {
 ```
 
 #### glTFモデルを操作するクラスのインスタンス生成
-173～175行目の関数は、引数として渡されるブロックのidを利用して、glTFモデルを操作するクラスのインスタンスを生成します。
+170～172行目の関数は、引数として渡されるブロックのidを利用して、glTFモデルを操作するクラスのインスタンスを生成します。
 
 ```JavaScript
 function CreateModelControllerInstance(container) {
@@ -760,7 +769,7 @@ function CreateModelControllerInstance(container) {
 ```
 
 #### 前進ボタンクリック時のイベント
-177～179行目の関数は、前進ボタンクリック時に呼ばれ、glTFモデルを操作するクラスの前進メソッドを呼び出します。
+174～176行目の関数は、前進ボタンクリック時に呼ばれ、glTFモデルを操作するクラスの前進メソッドを呼び出します。
 
 ```JavaScript
 function ForwardButtonClicked() {
@@ -769,7 +778,7 @@ function ForwardButtonClicked() {
 ```
 
 #### 後進ボタンクリック時のイベント
-181～183行目の関数は、後進ボタンクリック時に呼ばれ、glTFモデルを操作するクラスの後進メソッドを呼び出します。
+178～180行目の関数は、後進ボタンクリック時に呼ばれ、glTFモデルを操作するクラスの後進メソッドを呼び出します。
 
 ```JavaScript
 function BackwardButtonClicked() {
@@ -778,7 +787,7 @@ function BackwardButtonClicked() {
 ```
 
 #### 左回転ボタンクリック時のイベント
-185～187行目の関数は、左回転ボタンクリック時に呼ばれ、glTFモデルを操作するクラスの左回転メソッドを呼び出します。
+182～184行目の関数は、左回転ボタンクリック時に呼ばれ、glTFモデルを操作するクラスの左回転メソッドを呼び出します。
 
 ```JavaScript
 function LeftTurnButtonClicked() {
@@ -787,7 +796,7 @@ function LeftTurnButtonClicked() {
 ```
 
 #### 右回転ボタンクリック時のイベント
-189～191行目の関数は、右回転ボタンクリック時に呼ばれ、glTFモデルを操作するクラスの左回転メソッドを呼び出します。
+186～188行目の関数は、右回転ボタンクリック時に呼ばれ、glTFモデルを操作するクラスの左回転メソッドを呼び出します。
 
 ```JavaScript
 function RightTurnButtonClicked() {
@@ -799,7 +808,7 @@ function RightTurnButtonClicked() {
 シーンファイルの詳細を以下で解説します。なお、シーンファイルはJSON形式で記述します。
 
 #### エンティティの設定
-3行目でentity_listという名称でエンティティを定義し、その中にエンティティの詳細を定義します。4行目のtypeという名称は、エンティティの種類を表し、glTFモデルの場合はmodelを指定します。
+8行目でentity_listという名称でエンティティを定義し、その中にエンティティの詳細を定義します。9行目のtypeという名称は、エンティティの種類を表し、glTFモデルの場合はmodelを指定します。
 
 ```json
 {
@@ -817,14 +826,22 @@ function RightTurnButtonClicked() {
 ```
 
 #### glTFモデルのデータ
-2行目でmodel_registerという名称でモデルデータを定義します。このシーンファイルでは、モデルデータのIDをmodel-0とし、モデルファイルをファイルから読み込むために、linkという名称にglTFファイルのURLを指定します。
+2～7行目でmodel_registerという名称でモデルデータを定義します。このシーンファイルでは、モデルデータのIDをmodel-0とし、モデルファイルをファイルから読み込むために、linkという名称にglTFファイルのURLを指定します。
+また、モデルの初期向きとスケールをoffset_transformという名称で指定することができます。今回のデータでは下記の内容を定義します。
+- チルト（Y軸回りの回転角度）（tilt）　⇒　-90
+- モデルスケール（scale）　⇒　0.1
 
 ```json
-"model_register": { "model-0": { "link": "./truck_wip/scene.gltf" } },
-```
+"model_register": {
+  "model-0": {
+    "link": "./truck_wip/scene.gltf",
+    "offset_transform": { "tilt": -90, "scale": 0.1 }
+    }
+  },
+  ```
 
 #### 汎用エンティティの設定
-4～8行目で汎用エンティティの設定をします。汎用エンティティには以下の内容を定義します。
+8～15行目で汎用エンティティの設定をします。汎用エンティティには以下の内容を定義します。
 - モード（mode）　⇒　basic
 - 初期姿勢（transform）　⇒　球面座標系（position）での初期位置
 - モデルデータ（ref_model）　⇒　モデルデータのID（model-0）

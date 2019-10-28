@@ -95,24 +95,24 @@ class ChangeGeoJSONFormat extends mapray.RenderCallback {
         lineEntity.setLineWidth(line_Width_Value);
     }
 
-    ChangeLineCollar() {
+    ChangeLineColor() {
         // プルダウンの値取得
-        var line_CollarChord = document.getElementById("LineCollarPallet").value;
+        var line_ColorChord = document.getElementById("LineColorPallet").value;
 
         // カラーコードをRBGに変換
-        var RGBArray = this.convertCollarChordToRGB(line_CollarChord);
+        var RGBArray = this.convertColorChordToRGB(line_ColorChord);
 
         // プルダウンの値を設定
         var lineEntity = this.viewer.scene.getEntity(1);
         lineEntity.setColor(RGBArray);
     }
 
-    convertCollarChordToRGB(collarChord) {
-        var collarChordChars = collarChord.split('')
+    convertColorChordToRGB(colorChord) {
+        var colorChordChars = colorChord.split('')
 
-        var r = parseInt(collarChordChars[1].toString() + collarChordChars[2].toString(), 16) / 255;
-        var g = parseInt(collarChordChars[3].toString() + collarChordChars[4].toString(), 16) / 255;
-        var b = parseInt(collarChordChars[5].toString() + collarChordChars[6].toString(), 16) / 255;
+        var r = parseInt(colorChordChars[1].toString() + colorChordChars[2].toString(), 16) / 255;
+        var g = parseInt(colorChordChars[3].toString() + colorChordChars[4].toString(), 16) / 255;
+        var b = parseInt(colorChordChars[5].toString() + colorChordChars[6].toString(), 16) / 255;
 
         return [r, g, b]
     }
@@ -127,6 +127,6 @@ function LineWidthValueChanged() {
     change_GeoJSON_Format.ChangeLineWidth()
 }
 
-function LineCollarValueChanged() {
-    change_GeoJSON_Format.ChangeLineCollar()
+function LineColorValueChanged() {
+    change_GeoJSON_Format.ChangeLineColor()
 }

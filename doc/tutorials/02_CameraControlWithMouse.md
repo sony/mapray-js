@@ -118,20 +118,14 @@ class CheckInput {
         this.mouse_Right_Move_Pos_Old = [0, 0];     // 右マウスボタンドラッグ時の1フレーム前の位置
 
         // イベントをセット
-        window.addEventListener("blur", function (event) { self._onBlur(event); }, false);
-        element.addEventListener("mousedown", function (event) { self._onMouseDown(event); }, false);
-        document.addEventListener("mousemove", function (event) { self._onMouseMove(event); }, false);
-        document.addEventListener("mouseup", function (event) { self._onMouseUp(event); }, false);
+        window.addEventListener( "blur", function ( event ) { self._onBlur( event ); }, { passive: false } );
+        element.addEventListener( "mousedown", function ( event ) { self._onMouseDown( event ); }, { passive: false } );
+        document.addEventListener( "mousemove", function ( event ) { self._onMouseMove( event ); }, { passive: false } );
+        document.addEventListener( "mouseup", function ( event ) { self._onMouseUp( event ); }, { passive: false } );
+        document.addEventListener( "wheel", function ( event ) { self._onMouseScroll( event ); }, { passive: false } );
 
-        if (window.addEventListener) {
-            // FireFoxのマウスホイールイベント
-            window.addEventListener("DOMMouseScroll", function (event) { self._onMouseScroll_FireFox(event); }, false);
-        }
-
-        // chromeのマウスホイールイベント
-        window.onmousewheel = function (event) {
-            self._onMouseScroll_Chrome(event);
-        }
+        // FireFoxのマウスホイールイベント
+        window.addEventListener( "DOMMouseScroll", function ( event ) { self._onMouseScroll_FireFox( event ); }, { passive: false } );
     }
 
     IsMouseClick(mousePos) {
@@ -175,6 +169,8 @@ class CheckInput {
     }
 
     _onMouseDown(event) {
+        event.preventDefault();
+
         if (event.button == 0 /* 左ボタン */) {
             if (event.shiftKey) {
                 // カメラ回転ドラッグ開始
@@ -199,11 +195,13 @@ class CheckInput {
                 this.is_Mouse_Click = true;
                 this.mouse_Click_Pos[0] = event.clientX;
                 this.mouse_Click_Pos[1] = event.clientY;
-            }
+            }            
         }
     }
 
     _onMouseMove(event) {
+        event.preventDefault();
+
         if (this.is_Camera_Turn == true) {
             // カメラ回転ドラッグ中
             this.mouse_Move_Pos_Old[0] = this.mouse_Move_Pos[0];
@@ -222,6 +220,8 @@ class CheckInput {
     }
 
     _onMouseUp(event) {
+        event.preventDefault();
+
         if (event.button == 0 /* 左ボタン */) {
             // クリック、カメラ回転終了
             this.is_Mouse_Click = false;
@@ -239,6 +239,8 @@ class CheckInput {
     }
 
     _onBlur(event) {
+        event.preventDefault();
+
         // フォーカスを失った
         this.is_Mouse_Click = false;
         this.is_Forward = false;
@@ -247,9 +249,11 @@ class CheckInput {
         this.is_Camera_Height_Move = false;
     }
 
-    _onMouseScroll_Chrome(event) {
+    _onMouseScroll(event) {
+        event.preventDefault();
+
         // chromeのホイール移動量検出
-        if (event.wheelDelta > 0) {
+        if ( event.deltaY < 0) {
             this.is_Forward = true;
         }else{
             this.is_Backward = true;
@@ -257,6 +261,8 @@ class CheckInput {
     }
 
     _onMouseScroll_FireFox(event) {
+        event.preventDefault();
+
         // FireFoxのホイール移動量検出
         if (event.detail < 0) {
             this.is_Forward = true;
@@ -619,7 +625,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 マウスの入力を検知するJavaScriptのサンプルコードの詳細を以下で解説します。
 
 #### クラス
-1～173行目で、マウスの入力を検知するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
+1～179行目で、マウスの入力を検知するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
 
 ```JavaScript
 class CheckInput {
@@ -630,7 +636,7 @@ class CheckInput {
 ```
 
 #### コンストラクタ
-3～34行目がマウスの入力を検知するクラスのコンストラクタです。
+3～28行目がマウスの入力を検知するクラスのコンストラクタです。
 まず、マウスの入力検知に関する初期値を下記のように設定します。
 - クリックしたかどうか　⇒　false
 - クリックした画面の位置 ⇒　全て0
@@ -649,8 +655,8 @@ class CheckInput {
 - マウスのボタンが押された時のイベント（21行目）
 - マウスが移動した時のイベント（22行目）
 - マウスのボタンが離された時のイベント（23行目）
-- FireFox用のマウスホイールが動いた時のイベント（24～27行目）
-- Google Chrome用のマウスホイールが動いた時のイベント（30～32行目）
+- マウスホイールが動いた時のイベント（24行目）
+- FireFox用のマウスホイールが動いた時のイベント（27行目）
 
 ```JavaScript
 constructor(viewer) {
@@ -670,25 +676,19 @@ constructor(viewer) {
     this.mouse_Right_Move_Pos_Old = [0, 0];     // 右マウスボタンドラッグ時の1フレーム前の位置
 
     // イベントをセット
-    window.addEventListener("blur", function (event) { self._onBlur(event); }, false);
-    element.addEventListener("mousedown", function (event) { self._onMouseDown(event); }, false);
-    document.addEventListener("mousemove", function (event) { self._onMouseMove(event); }, false);
-    document.addEventListener("mouseup", function (event) { self._onMouseUp(event); }, false);
+    window.addEventListener( "blur", function ( event ) { self._onBlur( event ); }, { passive: false } );
+    element.addEventListener( "mousedown", function ( event ) { self._onMouseDown( event ); }, { passive: false } );
+    document.addEventListener( "mousemove", function ( event ) { self._onMouseMove( event ); }, { passive: false } );
+    document.addEventListener( "mouseup", function ( event ) { self._onMouseUp( event ); }, { passive: false } );
+    document.addEventListener( "wheel", function ( event ) { self._onMouseScroll( event ); }, { passive: false } );
 
-    if (window.addEventListener) {
-        // FireFoxのマウスホイールイベント
-        window.addEventListener("DOMMouseScroll", function (event) { self._onMouseScroll_FireFox(event); }, false);
-    }
-
-    // chromeのマウスホイールイベント
-    window.onmousewheel = function (event) {
-        self._onMouseScroll_Chrome(event);
-    }
+    // FireFoxのマウスホイールイベント
+    window.addEventListener( "DOMMouseScroll", function ( event ) { self._onMouseScroll_FireFox( event ); }, { passive: false } );
 }
 ```
 
 #### クリック状態の取得
-36～44行目がクリック状態の取得メソッドです。このメソッドはクリックしたかどうかを返し、クリックされている場合は、引数のmousePosにクリックされた位置を格納します。
+30～38行目がクリック状態の取得メソッドです。このメソッドはクリックしたかどうかを返し、クリックされている場合は、引数のmousePosにクリックされた位置を格納します。
 
 ```JavaScript
 IsMouseClick(mousePos) {
@@ -703,7 +703,7 @@ IsMouseClick(mousePos) {
 ```
 
 #### カメラの前進状態の取得
-46～48行目がカメラの前進状態の取得メソッドです。このメソッドは、カメラが前進中かどうかを返します。
+40～42行目がカメラの前進状態の取得メソッドです。このメソッドは、カメラが前進中かどうかを返します。
 
 ```JavaScript
 IsForward() {
@@ -712,7 +712,7 @@ IsForward() {
 ```
 
 #### カメラの後進状態の取得
-50～52行目がカメラの後進状態の取得メソッドです。このメソッドは、カメラが後進中かどうかを返します。
+44～46行目がカメラの後進状態の取得メソッドです。このメソッドは、カメラが後進中かどうかを返します。
 
 ```JavaScript
 IsBackward() {
@@ -721,7 +721,7 @@ IsBackward() {
 ```
 
 #### カメラの回転状態の取得
-54～63行目がカメラの回転状態の取得メソッドです。このメソッドは、カメラが回転中かどうかを返し、回転中の場合は、現在のマウス位置と1フレーム前のマウス位置からマウスの移動方向を求め、引数のdragVecに格納します。
+48～57行目がカメラの回転状態の取得メソッドです。このメソッドは、カメラが回転中かどうかを返し、回転中の場合は、現在のマウス位置と1フレーム前のマウス位置からマウスの移動方向を求め、引数のdragVecに格納します。
 
 ```JavaScript
 IsCameraTurn(dragVec) {
@@ -737,7 +737,7 @@ IsCameraTurn(dragVec) {
 ```
 
 #### カメラの高度変更フラグの取得
-65～74行目がカメラの高度変更状態の取得メソッドです。このメソッドは、カメラが高度変更中かどうかを返し、高度変更中の場合は、現在のマウス位置と1フレーム前のマウス位置から移動方向を求め、引数のdragVecに格納します。
+59～68行目がカメラの高度変更状態の取得メソッドです。このメソッドは、カメラが高度変更中かどうかを返し、高度変更中の場合は、現在のマウス位置と1フレーム前のマウス位置から移動方向を求め、引数のdragVecに格納します。
 
 ```JavaScript
 IsCameraHeightMove(dragVec) {
@@ -753,7 +753,7 @@ IsCameraHeightMove(dragVec) {
 ```
 
 #### マウスのボタンが押された時のイベント
-76～103行目がマウスのボタンが押されたときのイベントメソッドです。このメソッドでは、マウスの左ボタンとShiftキー、Altキーの組み合わせで対応する操作を決定します。
+70～99行目がマウスのボタンが押されたときのイベントメソッドです。このメソッドでは、マウスの左ボタンとShiftキー、Altキーの組み合わせで対応する操作を決定します。
 まず、マウスの左ボタンとShiftキーの組み合わせで、カメラの回転操作に対する設定を下記のように行います。
 
 - 回転中かどうか　⇒　true
@@ -773,6 +773,8 @@ IsCameraHeightMove(dragVec) {
 
 ```JavaScript
 _onMouseDown(event) {
+    event.preventDefault();
+
     if (event.button == 0 /* 左ボタン */) {
         if (event.shiftKey) {
             // カメラ回転ドラッグ開始
@@ -797,13 +799,13 @@ _onMouseDown(event) {
             this.is_Mouse_Click = true;
             this.mouse_Click_Pos[0] = event.clientX;
             this.mouse_Click_Pos[1] = event.clientY;
-        }
+        }            
     }
 }
 ```
 
 #### マウスが移動した時のイベント
-105～121行目がマウスが移動した時のイベントメソッドです。このメソッドは、カメラが回転中か高度変更中の場合に、マウス位置を更新する処理を行います。
+101～119行目がマウスが移動した時のイベントメソッドです。このメソッドは、カメラが回転中か高度変更中の場合に、マウス位置を更新する処理を行います。
 まず、カメラが回転中の場合は、下記の設定を行います。
 
 - 回転時の1フレーム前のマウス位置　⇒　回転時のマウス位置
@@ -816,6 +818,8 @@ _onMouseDown(event) {
 
 ```JavaScript
 _onMouseMove(event) {
+    event.preventDefault();
+
     if (this.is_Camera_Turn == true) {
         // カメラ回転ドラッグ中
         this.mouse_Move_Pos_Old[0] = this.mouse_Move_Pos[0];
@@ -835,7 +839,7 @@ _onMouseMove(event) {
 ```
 
 #### マウスのボタンが離された時のイベント
-123～138行目がマウスのボタンが離された時のイベントメソッドです。このメソッドは、各種カメラ操作を終了させる処理を行います。そのため、下記の設定（初期化）を行います。
+121～138行目がマウスのボタンが離された時のイベントメソッドです。このメソッドは、各種カメラ操作を終了させる処理を行います。そのため、下記の設定（初期化）を行います。
 
 - クリックしたかどうか　⇒　false
 - クリックした画面の位置 ⇒　全て0
@@ -846,6 +850,8 @@ _onMouseMove(event) {
 
 ```JavaScript
 _onMouseUp(event) {
+    event.preventDefault();
+
     if (event.button == 0 /* 左ボタン */) {
         // クリック、カメラ回転終了
         this.is_Mouse_Click = false;
@@ -864,7 +870,7 @@ _onMouseUp(event) {
 ```
 
 #### フォーカスが外れた時のイベント
-140～147行目がフォーカスが外れた時のイベントメソッドです。画面のフォーカスが外れた時に呼ばれます。このサンプルコードでは、以下の変数を初期化します。
+140～149行目がフォーカスが外れた時のイベントメソッドです。画面のフォーカスが外れた時に呼ばれます。このサンプルコードでは、以下の変数を初期化します。
 
 - クリックしたかどうか　⇒　false
 - 前進中かどうか　⇒　false
@@ -874,6 +880,8 @@ _onMouseUp(event) {
 
 ```JavaScript
 _onBlur(event) {
+    event.preventDefault();
+
     // フォーカスを失った
     this.is_Mouse_Click = false;
     this.is_Forward = false;
@@ -883,13 +891,15 @@ _onBlur(event) {
 }
 ```
 
-#### マウスホイールが動いた時のイベント（Google Chrome用）
-149～156行目がGoogle Chrome用のマウスホイールが動いた時のイベントメソッドです。このサンプルコードでは、マウスホイールを前に動かすと前進中とし、後ろに動かすと後進中とします。
+#### マウスホイールが動いた時のイベント
+151～160行目がマウスホイールが動いた時のイベントメソッドです。このサンプルコードでは、マウスホイールを前に動かすと前進中とし、後ろに動かすと後進中とします。
 
 ```JavaScript
-_onMouseScroll_Chrome(event) {
+_onMouseScroll(event) {
+    event.preventDefault();
+
     // chromeのホイール移動量検出
-    if (event.wheelDelta > 0) {
+    if ( event.deltaY < 0) {
         this.is_Forward = true;
     }else{
         this.is_Backward = true;
@@ -898,10 +908,12 @@ _onMouseScroll_Chrome(event) {
 ```
 
 #### マウスホイールが動いた時のスクロールイベント（FireFox用）
-158～165行目がFireFox用のマウスホイールが動いた時のイベントメソッドです。このメソッドは、このサンプルコードでは、Google Chrome用のマウスホイールのスクロールイベントメソッドと同様の動きとしますが、マウスホイールの移動量を表す変数が異なります。
+162～171行目がFireFox用のマウスホイールが動いた時のイベントメソッドです。このメソッドは、このサンプルコードでは、マウスホイールのスクロールイベントメソッドと同様の動きとしますが、マウスホイールの移動量を表す変数が異なります。
 
 ```JavaScript
 _onMouseScroll_FireFox(event) {
+    event.preventDefault();
+
     // FireFoxのホイール移動量検出
     if (event.detail < 0) {
         this.is_Forward = true;
@@ -912,7 +924,7 @@ _onMouseScroll_FireFox(event) {
 ```
 
 #### フレーム終了時のリセット
-167～171行目がフレーム終了時のリセットメソッドです。このメソッドは、前進中の状態、後進中の状態を初期化します。
+173～177行目がフレーム終了時のリセットメソッドです。このメソッドは、前進中の状態、後進中の状態を初期化します。
 
 ```JavaScript
 endFrame() {

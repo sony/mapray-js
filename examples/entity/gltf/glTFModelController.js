@@ -62,6 +62,26 @@ class ModelController {
     LoadScene() {
         var scene_File_URL = "./data/glTFController.json";
 
+        /* glTFController.json links glTF file "./truck_wip/scene.gltf". 
+        You need to get this glTF file from the web. The following is how to download it.
+        
+        - Access [Sketchfab] (https://sketchfab.com/3d-models/truck-wip-33e925207e134652bd8c2465e5c16957) and download the data in glTF file format
+        - Click [Download link] (https://storage.cloud.google.com/mapray-examples/model/download/truck_wip.zip) to download it
+        
+        If you download from the download link, please unzip and use it. 
+        The following explanation is based on the assumption that 
+        the expanded data is stored in the following directory 
+        with the relative path from the root directory of mapray-js.
+
+        ```
+        ./examples/entity/gltf/data/
+        ```
+
+        The data is not our copyrighted contents. The copyright belongs to the creator of each data. 
+        Please refer to the LICENSE file in the folder for details.
+        Please note that we do not take any responsibility if you infringe on the content rights.
+        */
+
         // シーンを読み込む
         var loader = new mapray.SceneLoader(this.viewer.scene, scene_File_URL, {
             transform: (url, type) => this.onTransform(url, type),
@@ -97,10 +117,7 @@ class ModelController {
         entity.setPosition(this.model_Point);
 
         // モデルの回転
-        entity.setOrientation(new mapray.Orientation(-this.model_Angle, -90, 0)); 
-
-        // モデルのスケールを設定
-        entity.setScale([0.1, 0.1, 0.1]); 
+        entity.setOrientation(new mapray.Orientation(-this.model_Angle, 0, 0)); 
     }
 
     UpdateMoveVec() {

@@ -1,5 +1,10 @@
 {
-  "model_register": { "model-0": { "link": "./truck_wip/scene.gltf" } },
+  "model_register": { 
+    "model-0": { 
+      "link": "./truck_wip/scene.gltf",
+      "offset_transform": { "tilt": -90, "scale": 0.1 }
+      } 
+    },
   "entity_list": [{
     "type": "model",
     "mode": "basic",

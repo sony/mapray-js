@@ -1,0 +1,77 @@
+﻿<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>ReadGeoJsonPolygonPropertiesSample</title>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="ReadGeoJsonPolygonProperties.js" charset="utf-8"></script>
+        <style>
+            html, body {
+                height: 100%;
+                margin: 0;
+                background-color: #E0E0E0;
+            }
+
+            select{
+                height:22px;
+                vertical-align:middle;
+                font-size:13px;
+                margin-left:10px;
+            }
+
+            p{
+                font-size:13px;
+                margin-left:5px;
+            }
+
+            div#mapray-container {
+                display: flex;
+                height: 96%;
+            }
+
+            div#OpacityBox {
+                display: flex;
+                background-color: #E0E0E0;
+                height: 35px;
+                width: 120px;
+                float: left;
+                border: inset 1px #000000;
+                align-items: center;
+            }
+
+            div#mapInfo{
+                display: flex;
+                width: 50px;
+                height: 16px;
+                margin-left: auto;
+                margin-right: 10px;
+                align-items: center;
+            }
+
+            div#geoJsonInfo{
+                display: flex;
+                width: 580px;
+                height: 16px;
+                margin-left: auto;
+                margin-right: 10px;
+                align-items: center;
+            }
+        </style>
+    </head>
+
+    <body onload="CreateReadGeoJsonPolygonPropertiesInstance('mapray-container');">
+        <div id="mapray-container"></div>
+
+        <div id="OpacityBox">
+            <p>Opacity</p>
+            <select name="OpacityPullDown" id="OpacityPullDown" onchange="OpacityValueChanged()">
+                <option value=0.0>0.0</option>
+                <option value=0.5 selected>0.5</option>
+                <option value=1.0>1.0</option>
+            </select>
+        </div>
+
+        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
+        <div id="geoJsonInfo"><a href="http://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-mesh1000.html" style="font-size: 9px">国土数値情報　ダウンロードサービス 1kmメッシュ別将来推計人口（H29国政局推計）（shape形式からGeoJSON形式に変換）</a></div>
+    </body>
+</html>

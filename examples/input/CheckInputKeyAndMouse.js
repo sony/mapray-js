@@ -18,20 +18,14 @@ class CheckInput {
         this.mouse_Right_Move_Pos_Old = [0, 0];     // 右マウスボタンドラッグ時の1フレーム前の位置
 
         // イベントをセット
-        window.addEventListener("blur", function (event) { self._onBlur(event); }, false);
-        element.addEventListener("mousedown", function (event) { self._onMouseDown(event); }, false);
-        document.addEventListener("mousemove", function (event) { self._onMouseMove(event); }, false);
-        document.addEventListener("mouseup", function (event) { self._onMouseUp(event); }, false);
+        window.addEventListener( "blur", function ( event ) { self._onBlur( event ); }, { passive: false } );
+        element.addEventListener( "mousedown", function ( event ) { self._onMouseDown( event ); }, { passive: false } );
+        document.addEventListener( "mousemove", function ( event ) { self._onMouseMove( event ); }, { passive: false } );
+        document.addEventListener( "mouseup", function ( event ) { self._onMouseUp( event ); }, { passive: false } );
+        document.addEventListener( "wheel", function ( event ) { self._onMouseScroll( event ); }, { passive: false } );
 
-        if (window.addEventListener) {
-            // FireFoxのマウスホイールイベント
-            window.addEventListener("DOMMouseScroll", function (event) { self._onMouseScroll_FireFox(event); }, false);
-        }
-        
-        // chromeのマウスホイールイベント
-        window.onmousewheel = function (event) {
-            self._onMouseScroll_Chrome(event);
-        }
+        // FireFoxのマウスホイールイベント
+        window.addEventListener( "DOMMouseScroll", function ( event ) { self._onMouseScroll_FireFox( event ); }, { passive: false } );
     }
 
     IsMouseClick(mousePos) {
@@ -75,6 +69,8 @@ class CheckInput {
     }
 
     _onMouseDown(event) {
+        event.preventDefault();
+
         if (event.button == 0 /* 左ボタン */) {
             if (event.shiftKey) {
                 // カメラ回転ドラッグ開始
@@ -104,6 +100,8 @@ class CheckInput {
     }
 
     _onMouseMove(event) {
+        event.preventDefault();
+
         if (this.is_Camera_Turn == true) {
             // カメラ回転ドラッグ中
             this.mouse_Move_Pos_Old[0] = this.mouse_Move_Pos[0];
@@ -122,6 +120,8 @@ class CheckInput {
     }
 
     _onMouseUp(event) {
+        event.preventDefault();
+
         if (event.button == 0 /* 左ボタン */) {
             // クリック、カメラ回転終了
             this.is_Mouse_Click = false;
@@ -139,6 +139,8 @@ class CheckInput {
     }
 
     _onBlur(event) {
+        event.preventDefault();
+
         // フォーカスを失った
         this.is_Mouse_Click = false;
         this.is_Forward = false;
@@ -147,9 +149,11 @@ class CheckInput {
         this.is_Camera_Height_Move = false;
     }
 
-    _onMouseScroll_Chrome(event) {
+    _onMouseScroll(event) {
+        event.preventDefault();
+
         // chromeのホイール移動量検出
-        if (event.wheelDelta > 0) {
+        if ( event.deltaY < 0) {
             this.is_Forward = true;
         }else{
             this.is_Backward = true;
@@ -157,6 +161,8 @@ class CheckInput {
     }
 
     _onMouseScroll_FireFox(event) {
+        event.preventDefault();
+
         // FireFoxのホイール移動量検出
         if (event.detail < 0) {
             this.is_Forward = true;

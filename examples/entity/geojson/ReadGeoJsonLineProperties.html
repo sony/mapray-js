@@ -1,0 +1,45 @@
+﻿<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>ReadGeoJsonLinePropertiesSample</title>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="ReadGeoJsonLineProperties.js" charset="utf-8"></script>
+        <style>
+            html, body {
+                height: 100%;
+                margin: 0;
+                background-color: #E0E0E0;
+            }
+
+            div#mapray-container {
+                display: flex;
+                height: 96%;
+            }
+
+            div#mapInfo{
+                display: flex;
+                width: 50px;
+                height: 16px;
+                margin-left: auto;
+                margin-right: 10px;
+                align-items: center;
+            }
+
+            div#geoJsonInfo{
+                display: flex;
+                width: 575px;
+                height: 16px;
+                margin-left: auto;
+                margin-right: 10px;
+                align-items: center;
+            }
+        </style>
+    </head>
+
+    <body onload="new ReadGeoJsonLineProperties('mapray-container');">
+        <div id="mapray-container"></div>
+        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
+        <div id="geoJsonInfo"><a href="https://www.geospatial.jp/ckan/dataset/0401/resource/2c8311ed-d54d-44bf-8c2e-a74d02bbb65d" style="font-size: 9px">（東京都）新宿駅周辺（2018年3月版仕様適用）リンクデータ by 国土交通省　政策統括官: Creative Commons - Attribution</a></div>
+    </body>
+</html>

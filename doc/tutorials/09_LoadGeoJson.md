@@ -242,12 +242,12 @@ GeoJSONデータ読み込みクラスはJavaScriptのサンプルコードの詳
 ```
 
 #### 地図表示部分と出典表示部分の指定
-31目で地図表示部分になるブロックを記述し、32行目で出典を明記するためのブロックを記述します。
+31行目で地図表示部分になるブロックを記述し、32行目で出典を明記するためのブロックを記述します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```HTML
-    <div id="mapray-container"></div>
-    <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
+<div id="mapray-container"></div>
+<div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
 ```
 
 ### JavaScriptのサンプルコードの詳細
@@ -335,7 +335,8 @@ SetCamera() {
 ```
 
 #### 文字の表示
-54～70行目で、それぞれの駅名を表示するための文字をmapray.Viewerのシーンに追加します。文字の表示方法の詳細は、ヘルプページ『**文字の表示（addTextを使った表示）**』を参照してください。
+54～70行目で、それぞれの駅名を表示するための文字をmapray.Viewerのシーンに追加します。
+文字の表示方法の詳細は、ヘルプページ『**文字の表示（addTextを使った表示）**』を参照してください。
 
 ```JavaScript
 // テキストの表示
@@ -361,6 +362,7 @@ AddText() {
 #### シーンのロード
 73～83行目がシーンのロードメソッドです。mapray.GeoJSONLoaderでシーンを読み込みます。
 GeoJSONLoaderクラス生成時の引数には、GeoJSONファイルのエンティティを追加するシーン、読み込むGeoJSONファイルのURL、オプション集合の順に指定します。このサンプルコードでは、viewerクラスのシーン、GeoJSONファイルのURL、オプション集合の順に指定します。オプション集合には、シーンのロードが終了した時のコールバック関数、線の色、線の幅、指定高度優先可否、指定高度をの順に指定します。読み込むGeoJSONファイルのURLは、httpもしくはhttpsでアクセスできるURLを指定します。最後に、82行目のload関数を呼び出すことでシーンの読み込みができます。
+なお、GeoJSONLoaderクラスは、GeoJSONデータのfeatureごとのロード時にコールバック関数が呼ばれ、GeoJSONデータの任意のproperty属性にアクセスすることができます。また、propertyに書かれているkeyの値をコールバック関数内で取得することも可能です。
 
 ```JavaScript
 // シーンの読み込み
