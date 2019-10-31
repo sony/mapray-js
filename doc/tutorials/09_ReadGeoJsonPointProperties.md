@@ -131,7 +131,7 @@ class ReadGeoJsonPointProperties extends mapray.RenderCallback {
             getPointBGColor: d => d.properties ? this.GetBGColor(d.properties) : [0.0, 0.0, 0.0],
             getPointIconId: () => "circle-11",
             getPointSize: () => 10,
-            getElevation: () => 2000
+            getAltitude: () => 2000
         } );
 
         loader.load();
@@ -365,7 +365,7 @@ LoadGeoJson() {
         getPointBGColor: d => d.properties ? this.GetBGColor(d.properties) : [0.0, 0.0, 0.0],
         getPointIconId: () => "circle-11",
         getPointSize: () => 10,
-        getElevation: () => 2000
+        getAltitude: () => 2000
     } );
 
     loader.load();

@@ -130,8 +130,7 @@ class ReadGeoJsonLineProperties extends mapray.RenderCallback {
             onLoad: (loader, isSuccess) => { console.log("success load geojson") },
             getLineWidth: () => 5,
             getLineColor: d => d.properties ? this.GetLineColor(d.properties) : [1.0, 1.0, 1.0, 1.0],
-            getExtrudedMode: () => true,
-            getElevation: () => 50
+            getAltitude: () => 50
         } );
 
         loader.load();
@@ -373,8 +372,7 @@ LoadGeoJson() {
         onLoad: (loader, isSuccess) => { console.log("success load geojson") },
         getLineWidth: () => 5,
         getLineColor: d => d.properties ? this.GetLineColor(d.properties) : [1.0, 1.0, 1.0, 1.0],
-        getExtrudedMode: () => true,
-        getElevation: () => 50
+        getAltitude: () => 50
     } );
 
     loader.load();
