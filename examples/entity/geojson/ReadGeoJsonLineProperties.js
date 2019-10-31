@@ -71,7 +71,6 @@ class ReadGeoJsonLineProperties extends mapray.RenderCallback {
             onLoad: (loader, isSuccess) => { console.log("success load geojson") },
             getLineWidth: () => 5,
             getLineColor: d => d.properties ? this.GetLineColor(d.properties) : [1.0, 1.0, 1.0, 1.0],
-            getExtrudedHeight: () => true,
             getAltitude: () => 50
         } );
 
