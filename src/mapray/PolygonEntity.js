@@ -29,7 +29,7 @@ class PolygonEntity extends Entity {
     {
         super( scene, opts );
 
-        this._extruded = false;
+        this._extruded_height = 0.0;
         this._color    = GeoMath.createVector3( [1, 1, 1] );
         this._opacity  = 1.0;
 
@@ -56,23 +56,25 @@ class PolygonEntity extends Entity {
 
 
     /**
-     * @summary 押し出しモード
-     * @type {boolean}
+     * @summary 押し出し量（0より大きい値）
+     * @type {number}
      */
-    set extruded( value )
+    set extruded_height( value )
     {
-        var prev = this._extruded;
+        var prev = this._extruded_height;
 
-        if ( (prev && !value) || (!prev && value) ) {
-            // モードが変化した
-            this._extruded = value;
-            // モード変更を通知
+        if ( prev !== value ) {
+            this._extruded_height = value;
             this._producer.onChangeExtruded();
         }
     }
 
 
-    get extruded() { return this._extruded; }
+    /**
+     * @summary 押し出し量
+     * @type {number}
+     */
+    get extruded_height() { return this._extruded_height; }
 
 
     /**
@@ -209,9 +211,9 @@ class PolygonEntity extends Entity {
             }
         }
 
-        // json.extruded
-        if ( json.extruded !== undefined ) {
-            this.extruded = json.extruded;
+        // json.extruded_height
+        if ( json.extruded_height !== undefined ) {
+            this.extruded_height = json.extruded_height;
         }
 
         // json.color
@@ -421,10 +423,8 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
      */
     needsElevation()
     {
-        let owner = this.entity;
-
-        // ABSOLUTE でも押し出しモードのときは高さが必要
-        return (owner.altitude_mode !== AltitudeMode.ABSOLUTE) || owner._extruded;
+        const owner = this.entity;
+        return owner.altitude_mode !== AltitudeMode.ABSOLUTE;
     }
 
 
@@ -668,8 +668,9 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
         const s1_num_floats = fpv * cb_data.num_points;                          // 上面のデータサイズ
         const s2_num_floats = cb_data.lower ? fpv * (4*cb_data.num_points) : 0;  // 側面のデータサイズ
+        const s3_num_floats = cb_data.lower ? s1_num_floats : 0;                 // 底面のデータサイズ
 
-        let vertices = new Float32Array( s1_num_floats + s2_num_floats );
+        let vertices = new Float32Array( s1_num_floats + s2_num_floats + s3_num_floats );
 
         // 上面の法線を取得
         let unormal = GeoMath.normalize3( cb_data.origin, GeoMath.createVector3() );
@@ -735,6 +736,24 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
             }
         }
 
+        if ( cb_data.lower ) {
+            const bnormal = GeoMath.scale3( -1.0, unormal, GeoMath.createVector3() );
+
+            // 底面の頂点データ
+            for ( let i = 0; i < cb_data.num_points; ++i ) {
+                let b  = 3 * i;
+                let px = cb_data.lower[b];
+                let py = cb_data.lower[b + 1];
+                let pz = cb_data.lower[b + 2];
+
+                let vi = s1_num_floats + s2_num_floats + fpv * i;
+                vertices[vi    ] = px;  // a_position.x
+                vertices[vi + 1] = py;  // a_position.y
+                vertices[vi + 2] = pz;  // a_position.z
+                setVec3ToArray( bnormal, vertices, vi + 3 );  // a_normal
+            }
+        }
+
         return vertices;
     }
 
@@ -756,13 +775,14 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
         let num_upper_triangles = this._triangles.length / 3;
         let num_side_triangles  = cb_data.lower ? 2 * cb_data.num_points : 0;
+        let num_bottom_triangles  = cb_data.lower ? num_upper_triangles : 0;
 
-        let indices = new Uint32Array( 3 * (num_upper_triangles + num_side_triangles) );
+        let indices = new Uint32Array( 3 * (num_upper_triangles + num_side_triangles + num_bottom_triangles) );
 
         // 前半に上面のポリゴンを設定
         indices.set( this._triangles );
 
-        // 前半に側面のポリゴンを設定
+        // 側面のポリゴンを設定
         if ( cb_data.lower ) {
             let num_quads = cb_data.num_points;
             let   ioffset = 3 * num_upper_triangles;  // indices 内の現在の四角形のオフセット
@@ -777,6 +797,17 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
                 indices[ioffset + 3] = voffset + 2;
                 indices[ioffset + 4] = voffset + 1;
                 indices[ioffset + 5] = voffset + 3;
+            }
+        }
+
+        // 底面のポリゴンを設定
+        if ( cb_data.lower ) {
+            const len =  this._triangles.length / 3;
+            const voffset = cb_data.num_points + 4 * cb_data.num_points;
+            for ( let i = 0; i < len; ++i ) {
+                indices[ (num_upper_triangles + num_side_triangles + i) * 3 + 0 ] = this._triangles[ i * 3 + 0 ] + voffset;
+                indices[ (num_upper_triangles + num_side_triangles + i) * 3 + 1 ] = this._triangles[ i * 3 + 2 ] + voffset;
+                indices[ (num_upper_triangles + num_side_triangles + i) * 3 + 2 ] = this._triangles[ i * 3 + 1 ] + voffset;
             }
         }
 
@@ -799,7 +830,7 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
         GeoMath.copyVector3( owner._color, props.color );
         props.opacity  = owner._opacity;
-        props.lighting = owner._extruded;
+        props.lighting = this.extruded_height !== 0.0;
     }
 
 }
@@ -1257,7 +1288,7 @@ class Boundary {
  *
  * @classdesc
  * <p>pe._bounaries に対応する上頂点と底頂点の LOCS 平坦化配列を取得する。</p>
- * <p>pe._extruded == false のときは lower に null を設定する。</p>
+ * <p>pe._extruded_height === 0 のときは lower に null を設定する。</p>
  *
  * <pre>
  * プロパティ:
@@ -1277,7 +1308,7 @@ class BoundaryConbiner {
      * 入力:
      *   pe.viewer
      *   pe.altitude_mode
-     *   pe._extruded
+     *   pe._extruded_height
      *   pe._bounaries
      * </pre>
      *
@@ -1285,38 +1316,56 @@ class BoundaryConbiner {
      */
     constructor( pe )
     {
+        /*
+        pe._extruded_height !== 0             == 0    
+                                                      
+                    ---  _.-*---*._        _.-*---*._ 
+        upper_points    *-_      _-*      *-_      _-*
+                    --- |  *----*  |         *----*   
+                        |  |    |  |                  
+                    --- |  |    |  |                  
+        lower_points    *-_|    |_-*         (null)   
+                    ---    *----*                     
+        */
         let        viewer = pe.scene.viewer;
         let altitude_mode = pe.altitude_mode;
 
         let src_points = pe._getCombinedBoundaryPoints();
         let num_points = pe._countNumPointsOnBoundaries();
 
-        // 底頂点の GeoPoint 平坦化配列
-        let lower_points = null;
-        if ( pe._extruded || (altitude_mode !== AltitudeMode.ABSOLUTE) ) {
-            lower_points = Float64Array.from( src_points );
-            viewer.getExistingElevations( num_points, lower_points, 0, 3, lower_points, 2, 3 );
+        let base_points = Float64Array.from( src_points );
+
+        if ( altitude_mode === AltitudeMode.RELATIVE ) {
+            let elevation = viewer.getExistingElevation( pe._getPosition() );
+            for ( let i = 0; i < num_points; ++i ) {
+                let ai = 3 * i + 2;
+                base_points[ai] +=  elevation;
+            }
         }
 
-        // 上頂点の GeoPoint 平坦化配列
-        let upper_points = Float64Array.from( src_points );
-        if ( altitude_mode === AltitudeMode.RELATIVE ) {
-            // ASSERT: lower_points != null
-            if ( pe._extruded ) {
-                let elevation = viewer.getExistingElevation( pe._getPosition() );
+        let upper_points = null;
+        let lower_points = null;
+        if ( pe._extruded_height !== 0 ) {
+            if ( altitude_mode === AltitudeMode.CLAMP ) {
+                upper_points = base_points;
+                lower_points = Float64Array.from( src_points );
                 for ( let i = 0; i < num_points; ++i ) {
                     let ai = 3 * i + 2;
-                    upper_points[ai] = elevation + src_points[ai];
+                    lower_points[ai] = 0;
                 }
             }
-            else {
+            else { // altitude_mode !== AltitudeMode.ABSOLUTE || altitude_mode !== AltitudeMode.RELATIVE
+                lower_points = base_points;
+                upper_points = Float64Array.from( src_points );
                 for ( let i = 0; i < num_points; ++i ) {
                     let ai = 3 * i + 2;
-                    upper_points[ai] = lower_points[ai] + src_points[ai];
+                    upper_points[ai] = lower_points[ai] + pe._extruded_height;
                 }
             }
         }
-        // ASSERT: upper_points の高度は絶対高度
+        else {
+            upper_points = base_points;
+        }
 
         let origin = pe._getPosition().getAsGocs( GeoMath.createVector3() );
 
@@ -1331,7 +1380,7 @@ class BoundaryConbiner {
         }
 
         let lower_ocs_points = null;
-        if ( pe._extruded ) {
+        if ( lower_points ) {
             // ASSERT: lower_points != null
             lower_ocs_points = GeoPoint.toGocsArray( lower_points, num_points,
                                                       new Float64Array( 3 * num_points ) );

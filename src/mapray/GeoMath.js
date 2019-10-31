@@ -226,6 +226,17 @@ class GeoMath {
     }
 
 
+
+    static scale3( a, vec, dst )
+    {
+        dst[0] = a * vec[0];
+        dst[1] = a * vec[1];
+        dst[2] = a * vec[2];
+        return dst;
+    }
+
+
+
     /**
      * @summary 行列の積を計算 (アフィン変換 x アフィン変換)
      * @param  {mapray.Matrix}  a    左の行列
