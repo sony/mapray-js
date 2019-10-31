@@ -150,8 +150,8 @@ class Rambler extends mapray.RenderCallback {
             onLoad: (loader, isSuccess) => { console.log("success load geojson") },
             getLineColor: d => d.properties && d.properties.color ? d.properties.color : [0, 255, 255, 255],
             getLineWidth: d => d.properties && d.properties.width ? d.properties.width : 3,
-            getExtrudedMode: () => true,
-            getElevation: () => 40
+            getExtrudedHeight: () => null,
+            getAltitude: () => 40
         } );
     }
 

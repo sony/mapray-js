@@ -164,7 +164,7 @@ class ReadGeoJsonPolygonProperties extends mapray.RenderCallback {
             onLoad: (loader, isSuccess) => { console.log("success load geojson") },
             getFillColor: d => d.properties ? this.GetFillColor(d.properties) : [1.0, 0.0, 1.0, 0.5],
             getExtrudedMode: () => true,
-            getElevation: () => 2000
+            getAltitude: () => 2000
         } );
 
         loader.load();
@@ -472,7 +472,7 @@ LoadGeoJson() {
         onLoad: (loader, isSuccess) => { console.log("success load geojson") },
         getFillColor: d => d.properties ? this.GetFillColor(d.properties) : [1.0, 0.0, 1.0, 0.5],
         getExtrudedMode: () => true,
-        getElevation: () => 2000
+        getAltitude: () => 2000
     } );
 
     loader.load();

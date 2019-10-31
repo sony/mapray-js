@@ -184,7 +184,7 @@ class ChangeGeoJSONFormat extends mapray.RenderCallback {
             getLineColor: d => d.properties && d.properties.color ? d.properties.color : [0, 0, 255, 1.0],
             getLineWidth: d => d.properties && d.properties.width ? d.properties.width : 3,
             getExtrudedMode: () => true,
-            getElevation: () => 100
+            getAltitude: () => 100
         } );
 
         loader.load();
@@ -510,7 +510,7 @@ LoadScene() {
         getLineColor: d => d.properties && d.properties.color ? d.properties.color : [0, 0, 255, 1.0],
         getLineWidth: d => d.properties && d.properties.width ? d.properties.width : 3,
         getExtrudedMode: () => true,
-        getElevation: () => 100
+        getAltitude: () => 100
     } );
 
     loader.load();
