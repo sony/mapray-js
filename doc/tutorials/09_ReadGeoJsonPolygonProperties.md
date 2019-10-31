@@ -163,7 +163,6 @@ class ReadGeoJsonPolygonProperties extends mapray.RenderCallback {
         var loader = new mapray.GeoJSONLoader( this._viewer.scene, "./data/tokyo_population.json", {
             onLoad: (loader, isSuccess) => { console.log("success load geojson") },
             getFillColor: d => d.properties ? this.GetFillColor(d.properties) : [1.0, 0.0, 1.0, 0.5],
-            getExtrudedMode: () => true,
             getAltitude: () => 2000
         } );
 
@@ -471,7 +470,6 @@ LoadGeoJson() {
     var loader = new mapray.GeoJSONLoader( this._viewer.scene, "./data/tokyo_population.json", {
         onLoad: (loader, isSuccess) => { console.log("success load geojson") },
         getFillColor: d => d.properties ? this.GetFillColor(d.properties) : [1.0, 0.0, 1.0, 0.5],
-        getExtrudedMode: () => true,
         getAltitude: () => 2000
     } );
 
