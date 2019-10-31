@@ -393,7 +393,7 @@ class GeoJSONLoader extends Loader {
     GeoJSONLoader.defaultPointSize = 30;
     GeoJSONLoader.defaultPointIconId = null;
     GeoJSONLoader.defaultAltitude = 0.0;
-    GeoJSONLoader.defaultExtrudedHeight = 1;
+    GeoJSONLoader.defaultExtrudedHeight = 0.0;
 }
 
 
