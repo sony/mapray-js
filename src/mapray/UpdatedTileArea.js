@@ -98,6 +98,7 @@ class UpdatedTileArea {
  * @summary UpdatedTileArea のノード
  *
  * @memberof mapray.UpdatedTileArea
+ * @private
  */
 class Node {
 

@@ -8,6 +8,7 @@ import ImageProvider from "./ImageProvider";
  *
  * @memberof mapray
  * @extends mapray.ImageProvider
+ * @private
  */
 class EmptyImageProvider extends ImageProvider {
 
