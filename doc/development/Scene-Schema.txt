@@ -46,7 +46,7 @@ start => <SCENE>
 <POLYGON-CONTENT> =>
   type: "polygon"
   boundaries: [<BOUNDARY>*]
-  extruded?: Boolean = false
+  extruded_height?: Number = 0.0
   color?: <PARAM-VEC3> = [1, 1, 1]
   opacity?: <PARAM-FLOAT> = 1
 
