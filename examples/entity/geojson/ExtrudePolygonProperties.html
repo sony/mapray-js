@@ -2,8 +2,8 @@
 <html>
     <head>
         <meta charset="utf-8">
-        <title>CameraAnimationSample</title>
-        <script src="mapray.js"></script>
+        <title>ExtrudePolygonProperties</title>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
         <style>
             html, body {
                 height: 100%;
@@ -11,14 +11,19 @@
             }
 
             div#mapray-container {
-                display: flex;
-                height: 97%;
+                height: calc(100vh - 120px);
             }
 
             div#mapInfo{
                 width: 90%;
                 margin: auto;
                 align-items: center;
+            }
+
+            .cambutton {
+                position: absolute;
+                bottom: 130px;
+                right: 2px
             }
 
             .btn-flat-simple {
@@ -42,18 +47,19 @@
     <script src="USGSImageProvider.js"></script>
     <script src="ExtrudePolygonProperties.js"></script>
     <body>
-        <div id="mapray-container"></div>
-        <button href="#" class="btn-flat-simple" onclick="extrude.moveCamera()">
-            BUTTON
-        </button>
-
+        <div id="mapray-container">
+            <div class="cambutton">
+                <button href="#" class="btn-flat-simple" onclick="extrude.moveCamera()">
+                    Change Camera Position
+                </button>
+            </div>
+        </div>
         <div id="mapInfo">
             <p style="font-size: 9px">Base map:<a href="https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer" style="font-size: 9px">© USGS The National Map: National Boundaries Dataset, 3DEP Elevation Program, Geographic Names Information System, National Hydrography Dataset, National Land Cover Database, National Structures Dataset, and National Transportation Dataset; USGS Global Ecosystems; U.S. Census Bureau TIGER/Line data; USFS Road Data; Natural Earth Data; U.S. Department of State Humanitarian Information Unit; and NOAA National Centers for Environmental Information, U.S. Coastal Relief Model. Data refreshed August, 2019.</a></p>
             <p style="font-size: 9px">Data source: <a href="https://vancouver.ca/your-government/open-data-catalogue.aspx" style="font-size: 9px">City of Vancouver</a></p>
             <p style="font-size: 9px">GeoJSON: <a href="https://github.com/uber/deck.gl" style="font-size: 9px">Deck.gl</a></p>
         </div>
     </body>
-    var extrude = null;
     <script>
             window.onload = function(){
                 extrude = new ExtrudePolygonProperties('mapray-container');

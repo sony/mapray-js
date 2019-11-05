@@ -28,6 +28,13 @@ const COLOR_SCALE = d3.scaleThreshold()
     [128, 0, 38]
   ]);
 
+  const INIT_DISTANCE = 50000.0
+  const INIT_PITCH_ANGLE = -30.0;
+  const TARGET_DISTANCE = 10000;
+  const TARGET_PITCH_ANGLE = -10;
+  const DISTANCE_STEP = 10000;
+  const PITCH_STEP = 10.0;
+
 class ExtrudePolygonProperties extends mapray.RenderCallback {
 
     constructor(container) {
@@ -59,24 +66,20 @@ class ExtrudePolygonProperties extends mapray.RenderCallback {
 
     onStart()  // override
     {
-        // 初期のターン角度
         this.turn_angle = 0;
 
-        // 初期の画角
         this.angle_Of_View = 0
 
         this.buttonPush = false;
     }
 
-    // フレーム毎に呼ばれるメソッド
+    // called this method in each frames
     onUpdateFrame(delta_time)  // override
     {
-        // 毎フレームの処理
         var camera = this.viewer.camera;
 
         var c_distance = this.distance;
 
-        // 基準座標系から GOCS への変換行列を生成
         var base_to_gocs = mapray.GeoMath.createMatrix();
         mapray.GeoMath.iscs_to_gocs_matrix({
             longitude: this.longitude,
@@ -84,7 +87,6 @@ class ExtrudePolygonProperties extends mapray.RenderCallback {
             height: this.height
         }, base_to_gocs);
 
-        // カメラの相対位置を計算し、姿勢を決める
         var d = c_distance;
 
         var camera_Mat = mapray.GeoMath.createMatrix();
@@ -92,48 +94,47 @@ class ExtrudePolygonProperties extends mapray.RenderCallback {
         var camera_pos_mat = mapray.GeoMath.createMatrix();
         mapray.GeoMath.setIdentity(camera_pos_mat);
 
-        // カメラの位置をY軸方向に距離分移動させる
         camera_pos_mat[13] = -d;
 
-        // z軸でturn_angle分回転させる回転行列を求める
         var turn_Mat = mapray.GeoMath.rotation_matrix([0, 0, 1], this.turn_angle, mapray.GeoMath.createMatrix());
 
-        // x軸でpitch_angle分回転させる回転行列を求める
         var pitch_Mat = mapray.GeoMath.rotation_matrix([1, 0, 0], this.pitch_angle, mapray.GeoMath.createMatrix());
 
-        // カメラの位置にX軸の回転行列をかける
         mapray.GeoMath.mul_AA(pitch_Mat, camera_pos_mat, camera_pos_mat);
         
-        // カメラの位置にZ軸の回転行列をかける
         mapray.GeoMath.mul_AA(turn_Mat, camera_pos_mat, camera_pos_mat);
 
-        // 視線方向を定義
         var cam_pos = mapray.GeoMath.createVector3([camera_pos_mat[12], camera_pos_mat[13], camera_pos_mat[14]]);
         var cam_end_pos = mapray.GeoMath.createVector3([0, 0, 0]);
         var cam_up = mapray.GeoMath.createVector3([0, 0, 1]);
 
-        // ビュー変換行列を作成
         mapray.GeoMath.lookat_matrix(cam_pos, cam_end_pos, cam_up, camera_Mat);
 
-        // カメラに変換行列を設定
         mapray.GeoMath.mul_AA(base_to_gocs, camera_Mat, camera.view_to_gocs);
 
-        // カメラに近接遠方平面を設定
         camera.near = c_distance / 100;
         camera.far = camera.near * 1000;
 
-        // 次のターン角度
         this.turn_angle += this.angular_velocity * delta_time;
     
-        // next distance
+        // next distance and pitch
         if (this.buttonPush) {
-            this.distance -= 1000;
-            this.pitch_angle += 0.1;
-            if (this.distance <= 10000) {
-                this.distance = 10000;
+            this.distance -= DISTANCE_STEP*delta_time;
+            this.pitch_angle += PITCH_STEP*delta_time;
+            if (this.distance <= TARGET_DISTANCE) {
+                this.distance = TARGET_DISTANCE;
             }
-            if (this.pitch_angle > -10) {
-                this.pitch_angle = -10;
+            if (this.pitch_angle > TARGET_PITCH_ANGLE) {
+                this.pitch_angle = TARGET_PITCH_ANGLE;
+            }
+        } else {
+            this.distance += DISTANCE_STEP*delta_time;
+            this.pitch_angle -= PITCH_STEP*delta_time;
+            if (this.distance > INIT_DISTANCE) {
+                this.distance = INIT_DISTANCE;
+            }
+            if (this.pitch_angle <= INIT_PITCH_ANGLE) {
+                this.pitch_angle = INIT_PITCH_ANGLE;
             }
         }
     }
@@ -157,10 +158,6 @@ class ExtrudePolygonProperties extends mapray.RenderCallback {
 
     // move camera
     moveCamera() {
-        console.log('call');
         this.buttonPush = !this.buttonPush;
-        if (this.buttonPush) {
-            
-        }
     }
 }
