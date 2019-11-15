@@ -3,6 +3,7 @@ import Primitive from "./Primitive";
 import Mesh from "./Mesh";
 import Texture from "./Texture";
 import TextMaterial from "./TextMaterial";
+import TextStrokeMaterial from "./TextStrokeMaterial";
 import GeoMath from "./GeoMath";
 import GeoPoint from "./GeoPoint";
 import AltitudeMode from "./AltitudeMode";
@@ -36,7 +37,10 @@ class TextEntity extends Entity {
             font_weight: "normal",
             font_size:   TextEntity.DEFAULT_FONT_SIZE,
             font_family: TextEntity.DEFAULT_FONT_FAMILY,
-            color: GeoMath.createVector3f( TextEntity.DEFAULT_COLOR )
+            color: GeoMath.createVector3f( TextEntity.DEFAULT_COLOR ),
+            stroke_color: GeoMath.createVector3f( TextEntity.DEFAULT_STROKE_COLOR ),
+            stroke_width: TextEntity.DEFAULT_STROKE_WIDTH,
+            enable_stroke: true
         };
 
         // Entity.PrimitiveProducer インスタンス
@@ -117,6 +121,33 @@ class TextEntity extends Entity {
         this._setVector3Property( "color", color );
     }
 
+    /**
+     * @summary テキスト縁の色を設定
+     * @param {mapray.Vector3} color  縁の色
+     */
+    setStrokeColor( color )
+    {
+        this._setVector3Property( "stroke_color", color );
+    }
+
+    /**
+     * @summary テキスト縁の太さを設定
+     * @param {mapray.number} width  縁の線幅
+     */
+    setStrokeLineWidth( width )
+    {
+        this._setValueProperty( "stroke_width", width );
+    }
+
+    /**
+     * @summary テキスト縁を有効にするかどうか
+     * @param {boolean} enable  trueなら有効
+     */
+    setEnableStroke( enable )
+    {
+        this._setValueProperty( "enable_stroke", enable );
+        this._primitive_producer = new PrimitiveProducer( this );
+    }
 
     /**
      * @summary テキストを追加
@@ -128,6 +159,9 @@ class TextEntity extends Entity {
      * @param {number}         [props.font_size]    フォントの大きさ (Pixels)
      * @param {string}         [props.font_family]  フォントファミリー
      * @param {mapray.Vector3} [props.color]        テキストの色
+     * @param {mapray.Vector3} [props.stroke_color] テキスト縁の色
+     * @param {number}         [props.stroke_width] テキスト縁の幅
+     * @param {number}         [props.enable_stroke] テキストの縁取りを有効にするか
      */
     addText( text, position, props )
     {
@@ -150,6 +184,19 @@ class TextEntity extends Entity {
         return scene._TextEntity_text_material;
     }
 
+        /**
+     * @summary StrokeText用の専用マテリアルを取得
+     * @private
+     */
+    _getTextStrokeMaterial()
+    {
+        var scene = this.scene;
+        if ( !scene._TextEntity_text_material ) {
+            // scene にマテリアルをキャッシュ
+            scene._TextEntity_text_material = new TextStrokeMaterial( scene.glenv );
+        }
+        return scene._TextEntity_text_material;
+    }
 
     /**
      * @private
@@ -189,11 +236,22 @@ class TextEntity extends Entity {
             this.addText( entry.text, position, entry );
         }
 
-        if ( json.font_style  !== undefined ) this.setFontStyle( json.font_style );
-        if ( json.font_weight !== undefined ) this.setFontWeight( json.font_weight );
-        if ( json.font_size   !== undefined ) this.setFontSize( json.font_size );
-        if ( json.font_family !== undefined ) this.setFontFamily( json.font_family );
-        if ( json.color       !== undefined ) this.setColor( json.color );
+        if ( json.font_style    !== undefined ) this.setFontStyle( json.font_style );
+        if ( json.font_weight   !== undefined ) this.setFontWeight( json.font_weight );
+        if ( json.font_size     !== undefined ) this.setFontSize( json.font_size );
+        if ( json.font_family   !== undefined ) this.setFontFamily( json.font_family );
+        if ( json.color         !== undefined ) this.setColor( json.color );
+        if ( json.stroke_color  !== undefined ) this.setStrokeColor ( json.stroke_color );
+        if ( json.stroke_width  !== undefined ) this.setStrokeLineWidth ( json.stroke_width );
+        if ( json.enable_stroke !== undefined ) this.setEnableStroke ( json.enable_stroke );
+    }
+
+    /**
+     * @private
+     */
+    _enableStroke( )
+    {
+        return this._text_parent_props["enable_stroke"];
     }
 
 }
@@ -204,6 +262,8 @@ class TextEntity extends Entity {
     TextEntity.DEFAULT_FONT_SIZE   = 16;
     TextEntity.DEFAULT_FONT_FAMILY = "sans-serif";
     TextEntity.DEFAULT_COLOR       = GeoMath.createVector3f( [1, 1, 1] );
+    TextEntity.DEFAULT_STROKE_COLOR = GeoMath.createVector3f( [0.5, 0.5, 0.5]);
+    TextEntity.DEFAULT_STROKE_WIDTH = 3;
 
     TextEntity.DEFAULT_TEXT_UPPER  = 1.1;
     TextEntity.DEFAULT_TEXT_LOWER  = 0.38;
@@ -239,7 +299,13 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         };
 
         // プリミティブ
-        var primitive = new Primitive( this._glenv, null, entity._getTextMaterial(), this._transform );
+        var primitive = null;
+        if (!entity._enableStroke()) {
+            primitive = new Primitive( this._glenv, null, entity._getTextMaterial(), this._transform );
+        } else {
+            primitive = new Primitive( this._glenv, null, entity._getTextStrokeMaterial(), this._transform );
+        }
+        
         primitive.properties = this._properties;
         this._primitive = primitive;
 
@@ -364,13 +430,18 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         properties.image = layout.texture;
 
         // メッシュ生成
+        var vtype = [
+            { name: "a_position", size: 3 },
+            { name: "a_offset",   size: 2 },
+            { name: "a_texcoord", size: 2 }
+        ];
+
+        if ( !this.entity._enableStroke() ) {
+            vtype.push({ name: "a_color", size: 4 });
+        }
+
         var mesh_data = {
-            vtype: [
-                { name: "a_position", size: 3 },
-                { name: "a_offset",   size: 2 },
-                { name: "a_texcoord", size: 2 },
-                { name: "a_color",    size: 4 }
-            ],
+            vtype,
             vertices: layout.vertices,
             indices:  layout.indices
         };
@@ -511,6 +582,9 @@ class Entry {
      * @param {number}            [props.font_size]    フォントの大きさ (Pixels)
      * @param {string}            [props.font_family]  フォントファミリー
      * @param {mapray.Vector3}    [props.color]        テキストの色
+     * @param {mapray.Vector3}    [props.stroke_color] テキスト縁の色
+     * @param {number}            [props.stroke_width] テキスト縁の幅
+     * @param {number}            [props.enable_stroke] テキストの縁取りを有効にするか
      */
     constructor( owner, text, position, props )
     {
@@ -520,6 +594,7 @@ class Entry {
 
         this._props = Object.assign( {}, props );  // props の複製
         this._copyPropertyVector3f( "color" );     // deep copy
+        this._copyPropertyVector3f( "stroke_color" );     // deep copy
     }
 
 
@@ -590,6 +665,41 @@ class Entry {
         return style + " " + variant + " " + weight + " " + this.size + "px " + family;
     }
 
+    /**
+     * @summary テキスト縁の色
+     * @type {mapray.Vector3}
+     * @readonly
+     */
+    get stroke_color()
+    {
+        var props  = this._props;
+        var parent = this._owner._text_parent_props;
+        return props.stroke_color || parent.stroke_color;
+    }
+
+    /**
+     * @summary 縁の幅 (Pixels)
+     * @type {number}
+     * @readonly
+     */
+    get stroke_width()
+    {
+        var props  = this._props;
+        var parent = this._owner._text_parent_props;
+        return props.stroke_width || parent.stroke_width;
+    }
+
+    /**
+     * @summary 縁を描画するか
+     * @type {boolean}
+     * @readonly
+     */
+    get enable_stroke()
+    {
+        var props  = this._props;
+        var parent = this._owner._text_parent_props;
+        return props.enable_stroke || parent.enable_stroke;
+    }
 
     /**
      * @private
@@ -821,25 +931,37 @@ class Layout {
             vertices.push( xm, ym, zm );                                // a_position
             vertices.push( -xsize / 2, -lower );                        // a_offset
             vertices.push( xc * xn, 1 - (yc + lower) * yn );            // a_texcoord
-            vertices.push( color[0], color[1], color[2], 1 );           // a_color
+            if ( !this._owner._entity._enableStroke() )
+            {
+                vertices.push( color[0], color[1], color[2], 1 );           // a_color
+            }
 
             // 右下
             vertices.push( xm, ym, zm );                                // a_position
             vertices.push( xsize / 2, -lower );                         // a_offset
             vertices.push( (xc + xsize) * xn, 1 - (yc + lower) * yn );  // a_texcoord
-            vertices.push( color[0], color[1], color[2], 1 );           // a_color
+            if ( !this._owner._entity._enableStroke() )
+            {
+                vertices.push( color[0], color[1], color[2], 1 );           // a_color
+            }
 
             // 左上
             vertices.push( xm, ym, zm );                                // a_position
             vertices.push( -xsize / 2, upper );                         // a_offset
             vertices.push( xc * xn, 1 - (yc - upper) * yn );            // a_texcoord
-            vertices.push( color[0], color[1], color[2], 1 );           // a_color
+            if ( !this._owner._entity._enableStroke() )
+            {
+                vertices.push( color[0], color[1], color[2], 1 );           // a_color
+            }
 
             // 右上
             vertices.push( xm, ym, zm );                                // a_position
             vertices.push( xsize / 2, upper );                          // a_offset
             vertices.push( (xc + xsize) * xn, 1 - (yc - upper) * yn );  // a_texcoord
-            vertices.push( color[0], color[1], color[2], 1 );           // a_color
+            if ( !this._owner._entity._enableStroke() )
+            {
+                vertices.push( color[0], color[1], color[2], 1 );           // a_color
+            }
         }
 
         return vertices;
