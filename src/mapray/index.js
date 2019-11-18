@@ -17,6 +17,7 @@ import StandardImageProvider from "./StandardImageProvider";
 import Scene from "./Scene";
 import Entity from "./Entity";
 import MarkerLineEntity from "./MarkerLineEntity";
+import SimpleTextEntity from "./SimpleTextEntity";
 import TextEntity from "./TextEntity";
 import ModelEntity from "./ModelEntity";
 import PolygonEntity from "./PolygonEntity";
@@ -53,6 +54,7 @@ var mapray = {
     Scene,
     Entity,
     MarkerLineEntity,
+    SimpleTextEntity,
     TextEntity,
     ModelEntity,
     PolygonEntity,
