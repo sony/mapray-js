@@ -31,8 +31,9 @@ class TextMaterial extends EntityMaterial {
      */
     isTranslucent( stage, primitive )
     {
-        // アンチエイリアス用のブレンドのため常に半透明
-        return false;
+        var  props = primitive.properties;
+        // If drawing background color, alpha is disable.
+        return !props.enable_bg;
     }
 
 

@@ -33,15 +33,15 @@ class TextEntity extends Entity {
 
         // テキストの親プロパティ
         this._text_parent_props = {
-            font_style:  "normal",
-            font_weight: "normal",
-            font_size:   TextEntity.DEFAULT_FONT_SIZE,
-            font_family: TextEntity.DEFAULT_FONT_FAMILY,
-            color: GeoMath.createVector3f( TextEntity.DEFAULT_COLOR ),
-            stroke_color: GeoMath.createVector3f( TextEntity.DEFAULT_STROKE_COLOR ),
+            font_style:   "normal",
+            font_weight:  "normal",
+            font_size:    TextEntity.DEFAULT_FONT_SIZE,
+            font_family:  TextEntity.DEFAULT_FONT_FAMILY,
+            color:        Color.generateOpacityColor( TextEntity.DEFAULT_COLOR ),
+            stroke_color: Color.generateOpacityColor( TextEntity.DEFAULT_STROKE_COLOR ),
             stroke_width: TextEntity.DEFAULT_STROKE_WIDTH,
-            bg_color: GeoMath.createVector3f( TextEntity.DEFAULT_BG_COLOR ),
-            enable_stroke: true,
+            bg_color:     Color.generateOpacityColor( TextEntity.DEFAULT_BG_COLOR ),
+            enable_stroke: false,
             enable_bg: false
         };
 
@@ -120,7 +120,7 @@ class TextEntity extends Entity {
      */
     setColor( color )
     {
-        this._setVector3Property( "color", color );
+        this._setColorProperty( "color", color );
     }
 
     /**
@@ -129,7 +129,7 @@ class TextEntity extends Entity {
      */
     setStrokeColor( color )
     {
-        this._setVector3Property( "stroke_color", color );
+        this._setColorProperty( "stroke_color", color );
     }
 
     /**
@@ -153,11 +153,11 @@ class TextEntity extends Entity {
 
     /**
      * @summary テキスト背景の色を設定
-     * @param {mapray.Vector3} color  背景色
+     * @param {mapray.Vector3} color  テキストの色
      */
     setBackgroundColor( color )
     {
-        this._setVector3Property( "bg_color", color );
+        this._setColorProperty( "bg_color", color );
     }
 
         /**
@@ -179,10 +179,12 @@ class TextEntity extends Entity {
      * @param {string}         [props.font_weight]  フォントの太さ   ("normal" | "bold")
      * @param {number}         [props.font_size]    フォントの大きさ (Pixels)
      * @param {string}         [props.font_family]  フォントファミリー
-     * @param {mapray.Vector3} [props.color]        テキストの色
-     * @param {mapray.Vector3} [props.stroke_color] テキスト縁の色
+     * @param {mapray.Color}   [props.color]        テキストの色
+     * @param {mapray.Color}   [props.stroke_color] テキスト縁の色
      * @param {number}         [props.stroke_width] テキスト縁の幅
-     * @param {number}         [props.enable_stroke] テキストの縁取りを有効にするか
+     * @param {mapray.Color}   [props.bg_color]     テキスト背景色
+     * @param {boolean}        [props.enable_stroke] テキストの縁取りを有効にするか
+     * @param {boolean}        [props.enable_bg]    テキスト背景を有効にするか
      */
     addText( text, position, props )
     {
@@ -221,11 +223,11 @@ class TextEntity extends Entity {
     /**
      * @private
      */
-    _setVector3Property( name, value )
+    _setColorProperty( name, value )
     {
         var dst = this._text_parent_props[name];
-        if ( dst[0] != value[0] || dst[1] != value[1] || dst[2] != value[2] ) {
-            GeoMath.copyVector3( value, dst );
+        if ( dst.r != value[0] || dst.g != value[1] || dst.b != value[2] ) {
+            Color.setOpacityColor( value, dst );
             this._primitive_producer.onChangeParentProperty();
         }
     }
@@ -252,7 +254,7 @@ class TextEntity extends Entity {
         if ( json.stroke_width  !== undefined ) this.setStrokeLineWidth ( json.stroke_width );
         if ( json.enable_stroke !== undefined ) this.setEnableStroke ( json.enable_stroke );
         if ( json.bg_color      !== undefined ) this.setBackgroundColor( json.bg_color );
-        if ( json.enable_bg !== undefined ) this.setEnableBackground ( json.enable_bg );
+        if ( json.enable_bg     !== undefined ) this.setEnableBackground ( json.enable_bg );
     }
 
     /**
@@ -268,12 +270,12 @@ class TextEntity extends Entity {
 
 // クラス定数の定義
 {
-    TextEntity.DEFAULT_FONT_SIZE   = 16;
-    TextEntity.DEFAULT_FONT_FAMILY = "sans-serif";
-    TextEntity.DEFAULT_COLOR       = GeoMath.createVector3f( [1, 1, 1] );
-    TextEntity.DEFAULT_STROKE_COLOR = GeoMath.createVector3f( [0.0, 0.0, 0.0]);
-    TextEntity.DEFAULT_STROKE_WIDTH = 3;
-    TextEntity.DEFAULT_BG_COLOR = GeoMath.createVector3f( [0.3, 0.3, 0.3] );
+    TextEntity.DEFAULT_FONT_SIZE    = 16;
+    TextEntity.DEFAULT_FONT_FAMILY  = "sans-serif";
+    TextEntity.DEFAULT_COLOR        = [1, 1, 1];
+    TextEntity.DEFAULT_STROKE_COLOR = [0.0, 0.0, 0.0];
+    TextEntity.DEFAULT_STROKE_WIDTH = 0.48;
+    TextEntity.DEFAULT_BG_COLOR     = [0.3, 0.3, 0.3];
 
     TextEntity.DEFAULT_TEXT_UPPER  = 1.1;
     TextEntity.DEFAULT_TEXT_LOWER  = 0.38;
@@ -305,13 +307,13 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         // プリミティブの要素
         this._transform  = GeoMath.setIdentity( GeoMath.createMatrix() );
         this._properties = {
+            enable_bg: false,
             image: null  // テキスト画像
         };
 
         // プリミティブ
         var primitive = null;
         primitive = new Primitive( this._glenv, null, entity._getTextMaterial(), this._transform );
-    
         primitive.properties = this._properties;
         this._primitive = primitive;
 
@@ -406,6 +408,7 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
             // 更新する必要はない
             return this._primitives;
         }
+        this._updateProperties();
 
         if ( this.entity._entries.length == 0 ) {
             this._primitives = [];
@@ -459,6 +462,35 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         this._primitives = [primitive];
         this._dirty = false;
         return this._primitives;
+    }
+
+    /**
+     * @summary プロパティを更新
+     *
+     * @desc
+     * <pre>
+     * 入力:
+     *   this.entity
+     * 出力:
+     *   this._properties
+     * </pre>
+     *
+     * @private
+     */
+    _updateProperties()
+    {
+        let entity = this.entity;
+        let props  = this._properties;
+
+        // check enable bg color;
+        let ebg = false;
+        let i = 0;
+        while ( !ebg && entity._entries.length > i ) {
+            let entry = entity._entries[i];
+            ebg = entry.enable_background;
+            i++;
+        }
+        props.enable_bg = ebg || entity._text_parent_props.enable_bg;
     }
 
 
@@ -581,8 +613,8 @@ class Entry {
      * @param {string}            [props.font_weight]  フォントの太さ   ("normal" | "bold")
      * @param {number}            [props.font_size]    フォントの大きさ (Pixels)
      * @param {string}            [props.font_family]  フォントファミリー
-     * @param {mapray.Vector3}    [props.color]        テキストの色
-     * @param {mapray.Vector3}    [props.stroke_color] テキスト縁の色
+     * @param {mapray.Color}      [props.color]        テキストの色
+     * @param {mapray.Color}      [props.stroke_color] テキスト縁の色
      * @param {number}            [props.stroke_width] テキスト縁の幅
      * @param {number}            [props.enable_stroke] テキストの縁取りを有効にするか
      */
@@ -592,9 +624,11 @@ class Entry {
         this._text     = text;
         this._position = position.clone();
 
-        this._props = Object.assign( {}, props );  // props の複製
-        this._copyPropertyVector3f( "color" );     // deep copy
-        this._copyPropertyVector3f( "stroke_color" );     // deep copy
+        this._props = Object.assign( {}, props );   // props の複製
+        this._copyColorProperty( "color" );         // deep copy
+        this._copyColorProperty( "stroke_color" );  // deep copy
+        this._copyColorProperty( "bg_color" );      // deep copy
+
     }
 
 
@@ -667,7 +701,7 @@ class Entry {
 
     /**
      * @summary テキスト縁の色
-     * @type {mapray.Vector3}
+     * @type {mapray.Color}
      * @readonly
      */
     get stroke_color()
@@ -703,10 +737,10 @@ class Entry {
 
     /**
      * @summary 背景色
-     * @type {mapray.Vector3}
+     * @type {mapray.Color}
      * @readonly
      */
-    get stroke_color()
+    get bg_color()
     {
         var props  = this._props;
         var parent = this._owner._text_parent_props;
@@ -728,11 +762,11 @@ class Entry {
     /**
      * @private
      */
-    _copyPropertyVector3f( name )
+    _copyColorProperty( name )
     {
         var props = this._props;
         if ( props.hasOwnProperty( name ) ) {
-            props[name] = GeoMath.createVector3f( props[name] );
+            props[name] = Color.generateOpacityColor( props[name] );
         }
     }
 
@@ -893,11 +927,11 @@ class Layout {
         for ( var i = 0; i < items.length; ++i ) {
             var item = items[i];
             if ( item.is_canceled ) continue;
-            if ( item._entry.enable_bg ) {
+            if ( item._entry.enable_background ) {
                 item.drawRect( context );
             }
             item.drawText( context );
-            if ( item._entity.enable_stroke ) {
+            if ( item._entry.enable_stroke ) {
                 item.drawStrokeText( context );
             }
         }
@@ -934,12 +968,6 @@ class Layout {
         for ( var i = 0; i < items.length; ++i ) {
             var item = items[i];
             if ( item.is_canceled ) continue;
-
-            var entry = item.entry;
-
-            // テキストの色
-            var color = entry.color;
-
             // テキストの位置 (モデル座標系)
             var ibase = 3 * i;
             var xm = gocs_array[ibase]     - xo;
@@ -961,37 +989,21 @@ class Layout {
             vertices.push( xm, ym, zm );                                // a_position
             vertices.push( -xsize / 2, -lower );                        // a_offset
             vertices.push( xc * xn, 1 - (yc + lower) * yn );            // a_texcoord
-            if ( !this._owner._entity._enableStroke() )
-            {
-                vertices.push( color[0], color[1], color[2], 1 );           // a_color
-            }
 
             // 右下
             vertices.push( xm, ym, zm );                                // a_position
             vertices.push( xsize / 2, -lower );                         // a_offset
             vertices.push( (xc + xsize) * xn, 1 - (yc + lower) * yn );  // a_texcoord
-            if ( !this._owner._entity._enableStroke() )
-            {
-                vertices.push( color[0], color[1], color[2], 1 );           // a_color
-            }
 
             // 左上
             vertices.push( xm, ym, zm );                                // a_position
             vertices.push( -xsize / 2, upper );                         // a_offset
             vertices.push( xc * xn, 1 - (yc - upper) * yn );            // a_texcoord
-            if ( !this._owner._entity._enableStroke() )
-            {
-                vertices.push( color[0], color[1], color[2], 1 );           // a_color
-            }
 
             // 右上
             vertices.push( xm, ym, zm );                                // a_position
             vertices.push( xsize / 2, upper );                          // a_offset
             vertices.push( (xc + xsize) * xn, 1 - (yc - upper) * yn );  // a_texcoord
-            if ( !this._owner._entity._enableStroke() )
-            {
-                vertices.push( color[0], color[1], color[2], 1 );           // a_color
-            }
         }
 
         return vertices;
@@ -1211,31 +1223,28 @@ class LItem {
         var entry = this._entry;
 
         context.font = entry.font;
-        context.fillStyle =  "rgba(255, 0, 0, 1)";
+        context.fillStyle =  entry.color.toRGBString();
         context.fillText( entry.text, this._pos_x, this._pos_y );
     }
 
     drawStrokeText( context )
     {
-        context.strokeStyle = "#FFFF00";
-        context.lineWidth = 5;
+        var entry = this._entry;
+
+        context.strokeStyle = entry.stroke_color.toRGBString();
+        context.lineWidth = entry.stroke_width;
         context.lineJoin = "round";
         context.strokeText( entry.text, this._pos_x, this._pos_y );
     }
 
     drawRect( context )
     {
+        var entry = this._entry;
 
-        if (c==0) {
-            context.fillStyle =  "rgba(128, 128, 255, 1)";
-            c += 1;
-        } else {
-            context.fillStyle =  "rgba(128, 128, 128, 1.0)";
-        }
-        context.fillRect(this._pos_x - TextEntity.SAFETY_PIXEL_MARGIN, this._pos_y - this._upper - TextEntity.SAFETY_PIXEL_MARGIN, this.width_pixel + TextEntity.SAFETY_PIXEL_MARGIN, this.height_pixel );
+        context.fillStyle = entry.bg_color.toRGBString();
+        context.fillRect( this._pos_x - TextEntity.SAFETY_PIXEL_MARGIN, this._pos_y - this._upper - TextEntity.SAFETY_PIXEL_MARGIN, this.width_pixel + TextEntity.SAFETY_PIXEL_MARGIN, this.height_pixel );
     }
 }
-var c = 0;
 
 
 /**
