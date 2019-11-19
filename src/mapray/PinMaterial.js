@@ -9,7 +9,7 @@ import pin_fs_code from "./shader/pin.frag";
  * @memberof mapray
  * @extends mapray.EntityMaterial
  * @private
- * @see mapray.TextEntity
+ * @see mapray.PinEntity
  */
 class PinMaterial extends EntityMaterial {
 
