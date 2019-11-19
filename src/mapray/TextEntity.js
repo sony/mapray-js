@@ -184,7 +184,6 @@ class TextEntity extends Entity {
      * @param {number}         [props.stroke_width] テキスト縁の幅
      * @param {mapray.Color}   [props.bg_color]     テキスト背景色
      * @param {boolean}        [props.enable_stroke] テキストの縁取りを有効にするか
-     * @param {boolean}        [props.enable_bg]    テキスト背景を有効にするか
      */
     addText( text, position, props )
     {
@@ -482,15 +481,7 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         let entity = this.entity;
         let props  = this._properties;
 
-        // check enable bg color;
-        let ebg = false;
-        let i = 0;
-        while ( !ebg && entity._entries.length > i ) {
-            let entry = entity._entries[i];
-            ebg = entry.enable_background;
-            i++;
-        }
-        props.enable_bg = ebg || entity._text_parent_props.enable_bg;
+        props.enable_bg = entity._text_parent_props.enable_bg;
     }
 
 
@@ -754,9 +745,9 @@ class Entry {
      */
     get enable_background()
     {
-        var props  = this._props;
+        // Enable or Disable background can be set by parent.
         var parent = this._owner._text_parent_props;
-        return props.enable_bg || parent.enable_bg;
+        return parent.enable_bg;
     }
 
     /**
@@ -1242,7 +1233,7 @@ class LItem {
         var entry = this._entry;
 
         context.fillStyle = entry.bg_color.toRGBString();
-        context.fillRect( this._pos_x - TextEntity.SAFETY_PIXEL_MARGIN, this._pos_y - this._upper - TextEntity.SAFETY_PIXEL_MARGIN, this.width_pixel + TextEntity.SAFETY_PIXEL_MARGIN, this.height_pixel );
+        context.fillRect( this._pos_x - TextEntity.SAFETY_PIXEL_MARGIN, this._pos_y - this._upper - TextEntity.SAFETY_PIXEL_MARGIN, this.width_pixel + TextEntity.SAFETY_PIXEL_MARGIN, this.height_pixel + TextEntity.SAFETY_PIXEL_MARGIN );
     }
 }
 
