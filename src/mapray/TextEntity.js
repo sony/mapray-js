@@ -3,6 +3,7 @@ import Primitive from "./Primitive";
 import Mesh from "./Mesh";
 import Texture from "./Texture";
 import TextMaterial from "./TextMaterial";
+import SimpleTextMaterial from "./SimpleTextMaterial";
 import GeoMath from "./GeoMath";
 import GeoPoint from "./GeoPoint";
 import AltitudeMode from "./AltitudeMode";
@@ -207,6 +208,20 @@ class TextEntity extends Entity {
     }
 
     /**
+     * @summary テキストだけを描画する専用マテリアルを取得
+     * @private
+     */
+    _getSimpleTextMaterial()
+    {
+        var scene = this.scene;
+        if ( !scene._SimpleTextEntity_text_material ) {
+            // scene にマテリアルをキャッシュ
+            scene._SimpleTextEntity_text_material = new SimpleTextMaterial( scene.glenv );
+        }
+        return scene._SimpleTextEntity_text_material;
+    }
+
+    /**
      * @private
      */
     _setValueProperty( name, value )
@@ -311,8 +326,14 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         };
 
         // プリミティブ
-        var primitive = null;
-        primitive = new Primitive( this._glenv, null, entity._getTextMaterial(), this._transform );
+        var material = null;
+        if ( this._isSimpleText() ) {
+            material = entity._getSimpleTextMaterial();
+        } else {
+            material = entity._getTextMaterial();
+        }
+        var primitive = new Primitive( this._glenv, null, material, this._transform );
+
         primitive.properties = this._properties;
         this._primitive = primitive;
 
@@ -438,12 +459,23 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         properties.image = layout.texture;
 
         // メッシュ生成
-        var mesh_data = {
-            vtype: [
+        var vtype = [];
+        if ( this._isSimpleText() ) {
+            vtype = [
                 { name: "a_position", size: 3 },
                 { name: "a_offset",   size: 2 },
                 { name: "a_texcoord", size: 2 },
-            ],
+                { name: "a_color",    size: 4 }
+            ];
+        } else {
+            vtype = [
+                { name: "a_position", size: 3 },
+                { name: "a_offset",   size: 2 },
+                { name: "a_texcoord", size: 2 },
+            ];
+        }
+        var mesh_data = {
+            vtype,
             vertices: layout.vertices,
             indices:  layout.indices
         };
@@ -583,6 +615,35 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         }
 
         return flat_array;
+    }
+
+     /**
+     * @summary シンプルテキストモードかどうかを確認
+     *
+     *
+     * @return {boolean}  シンプルテキストモードならtrue.
+     * @private
+     */
+    _isSimpleText() 
+    {
+        let entity = this.entity;
+        let props  = this._properties;
+
+        let enable = true;
+        // check enable bg color or stroke;
+        if ( entity._text_parent_props.enable_bg || entity._text_parent_props.enable_stroke ) {
+            enable = false;
+        }
+
+        // check enable stroke
+        let i = 0;
+        while ( enable && entity._entries.length > i ) {
+            let entry = entity._entries[i];
+            enable = !entry.enable_stroke;
+            i++;
+        }
+
+        return enable;
     }
 
 }
@@ -798,8 +859,13 @@ class Layout {
         // アイテムの配置の設定とキャンバスサイズの決定
         var size = this._setupLocation( row_layouts );
 
-        this._texture  = this._createTexture( size.width, size.height );
-        this._vertices = this._createVertices( size.width, size.height, gocs_array );
+        if ( this._isSimpleTextWithAllItems( this._items ) ) { 
+            this._texture  = this._createTextureForSimple( size.width, size.height );
+            this._vertices = this._createVerticesForSimple( size.width, size.height, gocs_array );
+        } else {
+            this._texture  = this._createTexture( size.width, size.height );
+            this._vertices = this._createVertices( size.width, size.height, gocs_array );
+        }
         this._indices  = this._createIndices();
     }
 
@@ -929,7 +995,7 @@ class Layout {
 
         var glenv = this._owner._glenv;
         var  opts = {
-            usage: Texture.Usage.ICON
+            usage: Texture.Usage.TEXT
         };
         return new Texture( glenv, context.canvas, opts );
     }
@@ -999,6 +1065,112 @@ class Layout {
 
         return vertices;
     }
+
+
+    /**
+     * @summary 単純テキスト用テクスチャを生成
+     * @param  {number} width    横幅
+     * @param  {number} height   高さ
+     * @return {mapray.Texture}  テキストテクスチャ
+     * @private
+     */
+    _createTextureForSimple( width, height )
+    {
+        var context = Dom.createCanvasContext( width, height );
+
+        context.textAlign    = "left";
+        context.textBaseline = "alphabetic";
+        context.fillStyle    = "rgba( 255, 255, 255, 1.0 )";
+
+        var items = this._items;
+        for ( var i = 0; i < items.length; ++i ) {
+            var item = items[i];
+            if ( item.is_canceled ) continue;
+            item.drawText( context );
+        }
+
+        var glenv = this._owner._glenv;
+        var  opts = {
+            usage: Texture.Usage.SIMPLETEXT
+        };
+        return new Texture( glenv, context.canvas, opts );
+    }
+
+
+    /**
+     * @summary 単純テキスト用頂点配列を生成
+     *
+     * @param  {number}   width       横幅
+     * @param  {number}   height      高さ
+     * @param  {number[]} gocs_array  GOCS 平坦化配列
+     * @return {array.<number>}  頂点配列 [左下0, 右下0, 左上0, 右上0, ...]
+     *
+     * @private
+     */
+    _createVerticesForSimple( width, height, gocs_array )
+    {
+        var vertices = [];
+
+        // テキスト集合の原点 (GOCS)
+        var transform = this._owner._transform;
+        var xo = transform[12];
+        var yo = transform[13];
+        var zo = transform[14];
+
+        var items = this._items;
+        for ( var i = 0; i < items.length; ++i ) {
+            var item = items[i];
+            if ( item.is_canceled ) continue;
+
+            var entry = item.entry;
+
+            // テキストの色
+            var color = entry.color.toVector4();
+
+            // テキストの位置 (モデル座標系)
+            var ibase = 3 * i;
+            var xm = gocs_array[ibase]     - xo;
+            var ym = gocs_array[ibase + 1] - yo;
+            var zm = gocs_array[ibase + 2] - zo;
+
+            // ベースライン左端 (キャンバス座標系)
+            var xc = item.pos_x;
+            var yc = item.pos_y;
+
+            var upper = item.upper;
+            var lower = item.lower;
+            var xsize = item.width;
+
+            var xn = 1 / width;
+            var yn = 1 / height;
+
+            // 左下
+            vertices.push( xm, ym, zm );                                // a_position
+            vertices.push( -xsize / 2, -lower );                        // a_offset
+            vertices.push( xc * xn, 1 - (yc + lower) * yn );            // a_texcoord
+            vertices.push( color[0], color[1], color[2], 1 );           // a_color
+
+            // 右下
+            vertices.push( xm, ym, zm );                                // a_position
+            vertices.push( xsize / 2, -lower );                         // a_offset
+            vertices.push( (xc + xsize) * xn, 1 - (yc + lower) * yn );  // a_texcoord
+            vertices.push( color[0], color[1], color[2], 1 );           // a_color
+
+            // 左上
+            vertices.push( xm, ym, zm );                                // a_position
+            vertices.push( -xsize / 2, upper );                         // a_offset
+            vertices.push( xc * xn, 1 - (yc - upper) * yn );            // a_texcoord
+            vertices.push( color[0], color[1], color[2], 1 );           // a_color
+
+            // 右上
+            vertices.push( xm, ym, zm );                                // a_position
+            vertices.push( xsize / 2, upper );                          // a_offset
+            vertices.push( (xc + xsize) * xn, 1 - (yc - upper) * yn );  // a_texcoord
+            vertices.push( color[0], color[1], color[2], 1 );           // a_color
+        }
+
+        return vertices;
+    }
     
 
     /**
@@ -1048,6 +1220,39 @@ class Layout {
             height: height
         };
     }
+
+    /**
+     * @summary シンプルテキストモードかどうか
+     * @param  {mapray.TextEntity.LItem} item
+     * @return {boolean}                 シンプルテキストモードならtrue
+     * @private
+     */
+    _isSimpleText( item ) 
+    {
+        if ( item._entry.enable_background || item._entry.enable_stroke ) {
+            return false;
+        }
+        return true;
+    } 
+
+    /**
+     * @summary シンプルテキストモードかどうか
+     * @param  {array.<mapray.TextEntity.LItem>} items
+     * @return {boolean}                 シンプルテキストモードならtrue
+     * @private
+     */
+    _isSimpleTextWithAllItems( items ) 
+    {
+        let enable = true;
+        let i = 0;
+        while( enable && items.length > i) 
+        {
+            let item = items[i];
+            enable = this._isSimpleText( item );
+            i++;
+        }
+        return enable;
+    } 
 
 }
 
@@ -1199,6 +1404,25 @@ class LItem {
 
 
     /**
+     * @summary テキストだけを描画 (stokeやfillRectとは組み合わせ不可)
+     * @desc
+     * <p>context は以下のように設定していること。</p>
+     * <pre>
+     *   context.textAlign    = "left";
+     *   context.textBaseline = "alphabetic";
+     *   context.fillStyle    = "rgba( 255, 255, 255, 1.0 )";
+     * </pre>
+     * @param {CanvasRenderingContext2D} context  描画先コンテキスト
+     */
+    drawTextOnly( context )
+    {
+        var entry = this._entry;
+        context.font = entry.font;
+        context.fillText( entry.text, this._pos_x, this._pos_y );
+    }
+
+
+    /**
      * @summary テキストを描画
      * @desc
      * <p>context は以下のように設定していること。</p>
@@ -1218,6 +1442,14 @@ class LItem {
         context.fillText( entry.text, this._pos_x, this._pos_y );
     }
 
+ 
+    /**
+     * @summary テキストの淵を描画
+     * @desc
+     * <p>drawTextOnlyとは組み合わせ不可</p>
+
+     * @param {CanvasRenderingContext2D} context  描画先コンテキスト
+     */
     drawStrokeText( context )
     {
         var entry = this._entry;
@@ -1228,6 +1460,14 @@ class LItem {
         context.strokeText( entry.text, this._pos_x, this._pos_y );
     }
 
+
+    /**
+     * @summary テキストの背景を描画
+     * @desc
+     * <p>drawTextOnlyとは組み合わせ不可</p>
+
+     * @param {CanvasRenderingContext2D} context  描画先コンテキスト
+     */
     drawRect( context )
     {
         var entry = this._entry;

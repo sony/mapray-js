@@ -69,7 +69,29 @@ class Color {
      */
     toArray()
     {
-        return [this.floatToByte(this._r), this.floatToByte(this._g), this.floatToByte(this._b), this._a]; 
+        return (this._a === 0 ? [0, 0, 0, 0] : [
+            this.floatToByte(this._r) / this._a, 
+            this.floatToByte(this._g) / this._a, 
+            this.floatToByte(this._b) / this._a, 
+            this._a
+        ]); 
+    }
+
+    /**
+     * @summary 色配列に変換する
+     * @desc
+     * <p>0から1に正規化。 [R, G, B, A]の順番</p>
+     *
+     * @return {mapray.Vector4}      dst
+     */
+    toVector4()
+    {
+        return (this._a === 0 ? [0, 0, 0, 0] : [
+            this._r / this._a, 
+            this._g / this._a, 
+            this._b / this._a, 
+            this._a
+        ]);
     }
 
     /**
