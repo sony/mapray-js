@@ -46,9 +46,6 @@ class TextEntity extends Entity {
             enable_bg: false
         };
 
-        // Entity.PrimitiveProducer インスタンス
-        this._primitive_producer = new PrimitiveProducer( this );
-
         // 生成情報から設定
         if ( opts && opts.json ) {
             this._setupByJson( opts.json );
@@ -189,6 +186,7 @@ class TextEntity extends Entity {
     addText( text, position, props )
     {
         this._entries.push( new Entry( this, text, position, props ) );
+        this._primitive_producer = new PrimitiveProducer( this );
         this._primitive_producer.onAddTextEntry();
     }
 
