@@ -986,7 +986,7 @@ class GeoPoint {
         }
 
         // 高度 h = √(x^2 + y^2 + z^2) - R
-        this.height = Math.sqrt( x2 + y2 + z2 ) - GeoMath.EARTH_RADIUS;
+        this.altitude = Math.sqrt( x2 + y2 + z2 ) - GeoMath.EARTH_RADIUS;
 
         return this;
     }
