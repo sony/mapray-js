@@ -9,7 +9,7 @@ import text_fs_code from "./shader/simple_text.frag";
  * @memberof mapray
  * @extends mapray.EntityMaterial
  * @private
- * @see mapray.SimpleTextEntity
+ * @see mapray.TextEntity
  */
 class SimpleTextMaterial extends EntityMaterial {
 
