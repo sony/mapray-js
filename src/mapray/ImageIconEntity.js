@@ -56,6 +56,24 @@ class ImageIconEntity extends Entity {
 
 
     /**
+     * @summary アイコンのサイズを指定
+     * @param {mapray.Vector2} size  アイコンのピクセルサイズ
+     */
+    setSize( size ) {
+        this._setVector2Property( "size", size );
+    }
+
+
+    /**
+     * @summary アイコンの原点位置を指定
+     * @param {mapray.Vector2} origin  アイコンの原点位置
+     */
+    setOrigin( origin ) {
+        this._setVector2Property( "origin", origin );
+    }
+
+
+    /**
      * @summary Add Image Icon
      * @param {URL|HTMLImageElement|HTMLCanvasElement} image_src      画像
      * @param {mapray.GeoPoint} position  位置
@@ -96,19 +114,21 @@ class ImageIconEntity extends Entity {
         }
     }
 
-
     /**
      * @private
      */
-    _setVector3Property( name, value )
+    _setVector2Property( name, value )
     {
-        var dst = this._text_parent_props[name];
-        if ( dst[0] != value[0] || dst[1] != value[1] || dst[2] != value[2] ) {
-            GeoMath.copyVector3( value, dst );
+        var dst = this._parent_props[name];
+        if ( !dst ) {
+            this._parent_props[name] = GeoMath.createVector2f( value );
+            this._primitive_producer.onChangeParentProperty();
+        }
+        else if ( dst[0] !== value[0] || dst[1] !== value[1] ) {
+            GeoMath.copyVector2( value, dst );
             this._primitive_producer.onChangeParentProperty();
         }
     }
-
 
     /**
      * @private
@@ -123,10 +143,8 @@ class ImageIconEntity extends Entity {
         }
         
         if ( json.size )     this.setSize( json.size );
-        if ( json.fg_color ) this.setFGColor( json.fg_color );
-        if ( json.bg_color ) this.setBGColor( json.bg_color );
+        if ( json.origin )   this.setOrigin( json.origin );
     }
-
 }
 
 

@@ -83,7 +83,7 @@ class PinEntity extends Entity {
 
     /**
      * @summary アイコンのピクセルサイズを指定
-     * @param {mapray.Vector3} color  アイコンのピクセルサイズ
+     * @param {mapray.Vector3} size  アイコンのピクセルサイズ
      */
     setSize( size )
     {
@@ -217,10 +217,11 @@ class PinEntity extends Entity {
     {
         var dst = this._parent_props[name];
         if ( !dst ) {
-            dst = this._parent_props[name] = GeoMath.createVector2f( value );
+            this._parent_props[name] = GeoMath.createVector2f( value );
+            this._primitive_producer.onChangeParentProperty();
         }
         else if ( dst[0] !== value[0] || dst[1] !== value[1] ) {
-            GeoMath.copyVector3( value, dst );
+            GeoMath.copyVector2( value, dst );
             this._primitive_producer.onChangeParentProperty();
         }
     }
