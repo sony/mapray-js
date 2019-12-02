@@ -14,7 +14,8 @@ mapray.Viewerクラスの画角を指定する**ChangeAngleOfView30.html**のサ
     <head>
         <meta charset="UTF-8">
         <title>ChangeAngleOfView30Sample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+        <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <style>
             html, body {
                 height: 100%;
@@ -23,23 +24,14 @@ mapray.Viewerクラスの画角を指定する**ChangeAngleOfView30.html**のサ
 
             div#mapray-container {
                 display: flex;
-                height: 97%;
-            }
-
-            div#mapInfo{
-                display: flex;
-                width: 50px;
-                height: 25px;
-                margin-left: auto;
-                margin-right: 10px;
-                align-items: center;
+                position: relative;
+                height: 100%;
             }
         </style>
     </head>
 
     <body>
         <div id="mapray-container"></div>
-        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
     </body>
 </html>
 
@@ -61,7 +53,8 @@ mapray.Viewerクラスの画角を指定する**ChangeAngleOfView30.html**のサ
     var home_pos = { longitude: 138.247739, latitude: 35.677604, height: 3000 };
 
     // 球面座標から地心直交座標へ変換
-    var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+    var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+    var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
     // 視線方向を定義
     var cam_pos = mapray.GeoMath.createVector3([-3000, 2600, 1000]);
@@ -88,7 +81,7 @@ mapray.Viewerクラスの画角を指定する**ChangeAngleOfView30.html**のサ
 このサンプルコードの詳細を以下で解説します。
 
 #### htmlの記述
-1～33行目がhtmlの定義です。ヘルプページ『**緯度経度によるカメラ位置の指定**』で示したhtmlファイルからタイトルのみを変更します。
+1～25行目がhtmlの定義です。ヘルプページ『**緯度経度によるカメラ位置の指定**』で示したhtmlファイルからタイトルのみを変更します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```HTML
@@ -97,7 +90,8 @@ mapray.Viewerクラスの画角を指定する**ChangeAngleOfView30.html**のサ
     <head>
         <meta charset="UTF-8">
         <title>ChangeAngleOfView30Sample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+        <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <style>
             html, body {
                 height: 100%;
@@ -106,29 +100,20 @@ mapray.Viewerクラスの画角を指定する**ChangeAngleOfView30.html**のサ
 
             div#mapray-container {
                 display: flex;
-                height: 97%;
-            }
-
-            div#mapInfo{
-                display: flex;
-                width: 50px;
-                height: 25px;
-                margin-left: auto;
-                margin-right: 10px;
-                align-items: center;
+                position: relative;
+                height: 100%;
             }
         </style>
     </head>
 
     <body>
         <div id="mapray-container"></div>
-        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
     </body>
 </html>
 ```
 
 #### カメラ位置・向きの設定
-37～70行目でmapray.Viewerクラスを作成し、カメラ位置・向きを設定します。
+29～63行目でmapray.Viewerクラスを作成し、カメラ位置・向きを設定します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -149,7 +134,8 @@ viewer = new mapray.Viewer(
 var home_pos = { longitude: 138.247739, latitude: 35.677604, height: 3000 };
 
 // 球面座標から地心直交座標へ変換
-var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
 // 視線方向を定義
 var cam_pos = mapray.GeoMath.createVector3([-3000, 2600, 1000]);
@@ -170,7 +156,7 @@ viewer.camera.far = 500000;
 ```
 
 #### カメラの画角の指定
-73行目で画角を指定します。設定する値は正の角度（度）です。
+66行目で画角を指定します。設定する値は正の角度（度）です。
 
 ```JavaScript
 // カメラの画角を30°に設定

@@ -13,7 +13,8 @@ mapray.GeoJSONLoaderを使ってGeoJSONデータを表示する**LoadGeoJSON.htm
     <head>
         <meta charset="utf-8">
         <title>LoadGeoJSONSample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+        <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <script src="LoadGeoJSON.js"></script>
         <style>
             html, body {
@@ -23,23 +24,14 @@ mapray.GeoJSONLoaderを使ってGeoJSONデータを表示する**LoadGeoJSON.htm
 
             div#mapray-container {
                 display: flex;
-                height: 97%;
-            }
-
-            div#mapInfo{
-                display: flex;
-                width: 50px;
-                height: 25px;
-                margin-left: auto;
-                margin-right: 10px;
-                align-items: center;
+                position: relative;
+                height: 100%;
             }
         </style>
     </head>
 
     <body onload="new LoadGeoJSON('mapray-container');">
         <div id="mapray-container"></div>
-        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
     </body>
 </html>
 ```
@@ -78,7 +70,8 @@ class LoadGeoJSON extends mapray.RenderCallback {
         var home_pos = { longitude: 135.642749, latitude: 34.849955, height: 500.0 };
 
         // 球面座標から地心直交座標へ変換
-        var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+        var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+        var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
         // 視線方向を定義
         var cam_pos = mapray.GeoMath.createVector3([0, 0, 70000]);
@@ -198,15 +191,16 @@ htmlのサンプルコードの詳細を以下で解説します。
 ```
 
 #### JavaScriptファイルのパス設定
-6～7行目で参照するJavaScripのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイルとモデルのシーンを読み込むJavaScriptファイル（**LoadGeoJSON.js**）を設定します。
+6～8行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、モデルのシーンを読み込むJavaScriptファイル（**LoadGeoJSON.js**）を設定します。
 
 ```HTML
-<script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+<script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+<link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
 <script src="LoadGeoJSON.js"></script>
 ```
 
 #### スタイルの設定
-8～27行目で表示する要素のスタイルを設定します。
+9～20行目で表示する要素のスタイルを設定します。
 スタイルの詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```HTML
@@ -218,35 +212,26 @@ htmlのサンプルコードの詳細を以下で解説します。
 
     div#mapray-container {
         display: flex;
-        height: 97%;
-    }
-
-    div#mapInfo{
-        display: flex;
-        width: 50px;
-        height: 25px;
-        margin-left: auto;
-        margin-right: 10px;
-        align-items: center;
+        position: relative;
+        height: 100%;
     }
 </style>
 ```
 
 #### loadイベントの処理
-画面を表示するときに、GeoJSONデータ読み込みクラスを生成します。そのため、30行目でページの読み込み時に、地図表示部分のブロックのidからGeoJSONデータ読み込みクラスのインスタンスを生成します。
+画面を表示するときに、GeoJSONデータ読み込みクラスを生成します。そのため、23行目でページの読み込み時に、地図表示部分のブロックのidからGeoJSONデータ読み込みクラスのインスタンスを生成します。
 GeoJSONデータ読み込みクラスはJavaScriptのサンプルコードの詳細で説明します。
 
 ```HTML
 <body onload="new LoadGeoJSON('mapray-container');">
 ```
 
-#### 地図表示部分と出典表示部分の指定
-31行目で地図表示部分になるブロックを記述し、32行目で出典を明記するためのブロックを記述します。
+#### 地図表示部分の指定
+24行目で地図表示部分のブロックを記述します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```HTML
 <div id="mapray-container"></div>
-<div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
 ```
 
 ### JavaScriptのサンプルコードの詳細
@@ -302,7 +287,7 @@ createImageProvider() {
 ```
 
 #### カメラの位置・向きの設定
-28～51行目がカメラの位置・向きの設定メソッドです。
+28～52行目がカメラの位置・向きの設定メソッドです。
 カメラの位置・向きの設定は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -312,7 +297,8 @@ SetCamera() {
     var home_pos = { longitude: 135.642749, latitude: 34.849955, height: 500.0 };
 
     // 球面座標から地心直交座標へ変換
-    var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+    var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+    var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
     // 視線方向を定義
     var cam_pos = mapray.GeoMath.createVector3([0, 0, 70000]);
@@ -334,7 +320,7 @@ SetCamera() {
 ```
 
 #### 文字の表示
-54～70行目で、それぞれの駅名を表示するための文字をmapray.Viewerのシーンに追加します。
+55～71行目で、それぞれの駅名を表示するための文字をmapray.Viewerのシーンに追加します。
 文字の表示方法の詳細は、ヘルプページ『**文字の表示（addTextを使った表示）**』を参照してください。
 
 ```JavaScript
@@ -359,7 +345,7 @@ AddText() {
 ```
 
 #### シーンのロード
-73～83行目がシーンのロードメソッドです。mapray.GeoJSONLoaderでシーンを読み込みます。
+74～83行目がシーンのロードメソッドです。mapray.GeoJSONLoaderでシーンを読み込みます。
 GeoJSONLoaderクラス生成時の引数には、GeoJSONファイルのエンティティを追加するシーン、読み込むGeoJSONファイルのURL、オプション集合の順に指定します。このサンプルコードでは、viewerクラスのシーン、GeoJSONファイルのURL、オプション集合の順に指定します。オプション集合には、シーンのロードが終了した時のコールバック関数、線の色、線の幅、指定高度優先可否、指定高度をの順に指定します。読み込むGeoJSONファイルのURLは、httpもしくはhttpsでアクセスできるURLを指定します。最後に、82行目のload関数を呼び出すことでシーンの読み込みができます。
 なお、GeoJSONLoaderクラスは、GeoJSONデータのfeatureごとのロード時にコールバック関数が呼ばれ、GeoJSONデータの任意のproperty属性にアクセスすることができます。また、propertyに書かれているkeyの値をコールバック関数内で取得することも可能です。
 

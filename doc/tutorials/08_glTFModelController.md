@@ -7,7 +7,7 @@
 このサンプルコードでは、対応するボタンを操作することで、前進、後進、左90度回転、右90度回転ができます。
 
 #### glTFデータの入手
-[Sketchfab](https://sketchfab.com/3d-models/truck-wip-33e925207e134652bd8c2465e5c16957)へアクセスし、glTFファイルフォーマットのデータをダウンロードする、もしくは[ダウンロードリンク](https://storage.cloud.google.com/mapray-examples/model/download/truck_wip.zip)をクリックしてダウンロードしてください。ダウンロードリンクからダウンロードした場合はzipファイルを展開してご利用ください。展開したデータは解答した結果できたディレクトリを含めて、mapray-jsのルートディレクトリからの相対パスで以下のディレクトリに保存されているという想定で以下の説明を行います。
+[Sketchfab](https://sketchfab.com/3d-models/truck-wip-33e925207e134652bd8c2465e5c16957)へアクセスし、glTFファイルフォーマットのデータをダウンロードする、もしくは[ダウンロードリンク](https://storage.cloud.google.com/mapray-examples/model/download/truck_wip.zip)をクリックしてダウンロードしてください。ダウンロードリンクからダウンロードした場合はzipファイルを展開してご利用ください。展開したデータは解凍した結果できたディレクトリを含めて、mapray-jsのルートディレクトリからの相対パスで以下のディレクトリに保存されているという想定で以下の説明を行います。
 
 ```
 ./examples/entity/gltf/data/
@@ -24,7 +24,8 @@
     <head>
         <meta charset="utf-8">
         <title>glTFModelControllerSample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+        <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <script src="glTFModelController.js"></script>
         <style>
             html, body {
@@ -35,79 +36,53 @@
 
             input {
                 font-size: 13px;
+                width: 80px;
+                height: 30px;
             }
 
             div#mapray-container {
                 display: flex;
-                height: 88%;
+                position: relative;
+                height: calc(100% - 102px);
             }
 
             div#ButtonBox {
                 display: block;
                 background-color: #E0E0E0;
                 height: 100px;
-                width: 220px;
+                width: 250px;
                 border: inset 1px #000000;
                 float: left;
             }
 
             div#ForwardButton{
                 display:flex;
-                width:70px;
-                height:30px;
+                width: 80px;
+                height: 30px;
                 margin-top: 5px;
-                margin-bottom:auto;
-                margin-left:auto;
-                margin-right:auto;
+                margin-left: 85px;
             }
 
             div#RotateLeft90Button{
                 display: flex;
-                width:70px;
-                height:30px;
+                width: 80px;
+                height: 30px;
                 margin-left: 5px;
-                margin-right:auto;
-                margin-top:auto;
-                margin-bottom:auto;
                 float: left;
             }
 
             div#RotateRight90Button{
                 display: flex;
-                width:70px;
-                height:30px;
-                margin-right: 7px;
-                margin-left:auto;
-                margin-top:auto;
-                margin-bottom:auto;
+                width: 80px;
+                height: 30px;
+                margin-left:165px;
             }
 
             div#BackwardButton{
                 display: flex;
-                width:70px;
-                height:30px;
-                margin-bottom:5px;
-                margin-top:auto;
-                margin-left:auto;
-                margin-right:auto;
-            }
-
-            div#mapInfo{
-                display: flex;
-                width: 50px;
-                height: 50px;
-                margin-left: auto;
-                margin-right: 10px;
-                align-items: center;
-            }
-
-            div#modelInfo{
-                display: flex;
-                width: 270px;
-                height: 50px;
-                margin-left: auto;
-                margin-right: 10px;
-                align-items: center;
+                width: 80px;
+                height: 30px;
+                margin-left: 85px;
             }
         </style>
     </head>
@@ -121,9 +96,6 @@
             <div id="RotateRight90Button"><input type="button" value="Right Turn" onclick="RightTurnButtonClicked()"></div>
             <div id="BackwardButton"><input type="button" value="Backward" onclick="BackwardButtonClicked()"></div>
         </div>
-
-        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
-        <div id="modelInfo"><a href="https://sketchfab.com/3d-models/truck-wip-33e925207e134652bd8c2465e5c16957" style="font-size: 9px">Created by modifying truck-wip by Renafox: Creative Commons - Attribution</a></div>
     </body>
 </html>
 ```
@@ -134,7 +106,6 @@ var model_Controller;
 
 class ModelController {
     constructor(container) {
-
         // Access Tokenを設定
         var accessToken = "<your access token here>";
 
@@ -145,6 +116,12 @@ class ModelController {
                 dem_provider: new mapray.CloudDemProvider(accessToken)
             }
         );
+
+        // glTFモデルのライセンス表示
+        this.viewer.attribution_controller.addAttribution( {
+            display: "Created by modifying truck-wip by Renafox: Creative Commons - Attribution",
+            link: "https://sketchfab.com/3d-models/truck-wip-33e925207e134652bd8c2465e5c16957"
+        } );
 
         this.model_Point = new mapray.GeoPoint(135.759309, 35.025891, 55.0);    // モデルの球面座標(経度、緯度、高度)
         this.move_Vec = [0, 1, 0];                                              // モデルの移動方向(X:経度 Y:緯度 Z:高度)
@@ -169,7 +146,8 @@ class ModelController {
         var home_pos = { longitude: 135.759366, latitude: 35.025891, height: 50.0 };
 
         // 球面座標から地心直交座標へ変換
-        var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+        var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+        var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
         // 視線方向を定義
         var cam_pos = mapray.GeoMath.createVector3([-400, 10, 400]);
@@ -356,14 +334,15 @@ htmlのサンプルコードの詳細を以下で解説します。
 ```
 
 #### JavaScriptファイルのパス設定
-6～7行目でhtmlで参照するJavaScriptのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイルとglTFモデルを操作するJavaScriptファイル（**glTFModelController.js**）を設定します。
+6～8行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、glTFモデルを操作するJavaScriptファイル（**glTFModelController.js**）を設定します。
 ```HTML
-<script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+<script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+<link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
 <script src="glTFModelController.js"></script>
 ```
 
 #### スタイルの設定
-8～91行目で表示する要素のスタイルを設定します。このサンプルコードでは、下記のスタイルを設定します。
+9～66行目で表示する要素のスタイルを設定します。このサンプルコードでは、下記のスタイルを設定します。
 - html
 - body
 - input
@@ -373,8 +352,6 @@ htmlのサンプルコードの詳細を以下で解説します。
 - div#RotateLeft90Button（左回転ボタン表示部分）
 - div#RotateRight90Button（右回転ボタン表示部分）
 - div#BackwardButton（後進ボタン表示部分）
-- div#mapInfo（出典表示部分）
-- div#modelInfo（モデル出典表示部分）
 
 ```HTML
 <style>
@@ -386,103 +363,73 @@ htmlのサンプルコードの詳細を以下で解説します。
 
     input {
         font-size: 13px;
+        width: 80px;
+        height: 30px;
     }
 
     div#mapray-container {
         display: flex;
-        height: 88%;
+        position: relative;
+        height: calc(100% - 102px);
     }
 
     div#ButtonBox {
         display: block;
         background-color: #E0E0E0;
         height: 100px;
-        width: 220px;
+        width: 250px;
         border: inset 1px #000000;
         float: left;
     }
 
     div#ForwardButton{
         display:flex;
-        width:70px;
-        height:30px;
+        width: 80px;
+        height: 30px;
         margin-top: 5px;
-        margin-bottom:auto;
-        margin-left:auto;
-        margin-right:auto;
+        margin-left: 85px;
     }
 
     div#RotateLeft90Button{
         display: flex;
-        width:70px;
-        height:30px;
+        width: 80px;
+        height: 30px;
         margin-left: 5px;
-        margin-right:auto;
-        margin-top:auto;
-        margin-bottom:auto;
         float: left;
     }
 
     div#RotateRight90Button{
         display: flex;
-        width:70px;
-        height:30px;
-        margin-right: 7px;
-        margin-left:auto;
-        margin-top:auto;
-        margin-bottom:auto;
+        width: 80px;
+        height: 30px;
+        margin-left:165px;
     }
 
     div#BackwardButton{
         display: flex;
-        width:70px;
-        height:30px;
-        margin-bottom:5px;
-        margin-top:auto;
-        margin-left:auto;
-        margin-right:auto;
-    }
-
-    div#mapInfo{
-        display: flex;
-        width: 50px;
-        height: 50px;
-        margin-left: auto;
-        margin-right: 10px;
-        align-items: center;
-    }
-
-    div#modelInfo{
-        display: flex;
-        width: 270px;
-        height: 50px;
-        margin-left: auto;
-        margin-right: 10px;
-        align-items: center;
+        width: 80px;
+        height: 30px;
+        margin-left: 85px;
     }
 </style>
 ```
 
 #### loadイベントの設定
-画面を表示するときに、glTFモデルを操作するクラスを生成します。そのため、94行目でページ読み込み時に、glTFモデルを操作するクラスのインスタンスを生成する関数（**CreateglTFModelControllerInstance**）を呼ぶように設定します。
+画面を表示するときに、glTFモデルを操作するクラスを生成します。そのため、69行目でページ読み込み時に、glTFモデルを操作するクラスのインスタンスを生成する関数（**CreateglTFModelControllerInstance**）を呼ぶように設定します。
 glTFモデルを操作するクラスのインスタンスを生成する関数は、JavaScriptのサンプルコードの詳細で説明します。
 ```HTML
 <body onload="CreateModelControllerInstance('mapray-container');">
 ```
 
-#### 地図表示部分と出典表示部分の指定
-95行目で地図表示部分になるブロックを、104行目で出典を明記するためのブロックを記述します。
+#### 地図表示部分の指定
+70行目で地図表示部分のブロックを記述します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 ```HTML
 <div id="mapray-container"></div>
-
-中略
-
-<div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
 ```
 
 #### モデル操作のUI
-97～102行目でモデル操作ボタン表示部分のブロックを記述します。このブロックの中には、前進ボタン、左回転ボタン、右回転ボタン、後退ボタンを用意します。
+72～77行目でモデル操作ボタン表示部分のブロックを記述します。このブロックの中には、前進ボタン、左回転ボタン、右回転ボタン、後退ボタンを用意します。
 前進ボタンをクリックした時のイベント（onclick）に、前進ボタンクリック時に呼び出す関数（ForwardButtonClicked）を設定します。同様に、各ボタンのクリック時に呼び出す関数（LeftTurnButtonClicked、RightTurnButtonClicked、BackwardButtonClicked）をそれぞれ設定します。
 各ボタンのクリック時に呼び出す関数は、JavaScriptのサンプルコードの詳細で説明します。
 ```HTML
@@ -494,21 +441,14 @@ glTFモデルを操作するクラスのインスタンスを生成する関数�
 </div>
 ```
 
-#### glTFモデルの出典表示部分の設定
-105行目で、glTFモデルの出典を明記するためのブロックを記述します。
-```HTML
-<div id="modelInfo"><a href="https://sketchfab.com/3d-models/truck-wip-33e925207e134652bd8c2465e5c16957" style="font-size: 9px">Created by modifying truck-wip by Renafox: Creative Commons - Attribution</a></div>
-```
-
 ### JavaScriptのサンプルコードの詳細
 JavaScriptのサンプルコードの詳細を以下で解説します。
 
 #### クラスとグローバル変数の説明
-3～168行目でglTFモデルを操作するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
+3～174行目でglTFモデルを操作するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
 また、1行目でglTFモデルを操作するクラスのグローバル変数を定義します。
 
 ```JavaScript
-// JavaScript source code
 var model_Controller;
 
 class ModelController {
@@ -519,8 +459,8 @@ class ModelController {
 ```
 
 #### コンストラクタ
-4～26行目がglTFモデルを操作するクラスのコンストラクタです。
-まず、引数として渡されるブロックのidに対して、mapray.Viewerを作成します。mapray.Viewerのベース地図の画像プロバイダは、画像プロバイダの生成メソッドで取得した画像プロバイダを設定します。mapray.Viewerの作成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
+3～31行目がglTFモデルを操作するクラスのコンストラクタです。
+まず、引数として渡されるブロックのidに対して、mapray.Viewerを作成し、glTFモデルの出典情報を追加します。mapray.Viewerのベース地図の画像プロバイダは、画像プロバイダの生成メソッドで取得した画像プロバイダを設定します。mapray.Viewerの作成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 次に、glTFモデルの操作に関する初期値を下記のように設定します。
 - glTFモデル初期位置の緯度、経度、高度　⇒　京都御所沿いの道路
 - glTFモデルの現在移動方向（経度・緯度・高度）　⇒　緯度＋方向
@@ -532,7 +472,6 @@ class ModelController {
 
 ```JavaScript
 constructor(container) {
-
     // Access Tokenを設定
     var accessToken = "<your access token here>";
 
@@ -543,6 +482,12 @@ constructor(container) {
             dem_provider: new mapray.CloudDemProvider(accessToken)
         }
     );
+
+    // glTFモデルのライセンス表示
+    this.viewer.attribution_controller.addAttribution( {
+        display: "Created by modifying truck-wip by Renafox: Creative Commons - Attribution",
+        link: "https://sketchfab.com/3d-models/truck-wip-33e925207e134652bd8c2465e5c16957"
+    } );    
 
     this.model_Point = new mapray.GeoPoint(135.759309, 35.025891, 55.0);    // モデルの球面座標(経度、緯度、高度)
     this.move_Vec = [0, 1, 0];                                              // モデルの移動方向(X:経度 Y:緯度 Z:高度)
@@ -557,7 +502,7 @@ constructor(container) {
 ```
 
 #### 画像プロバイダを生成
-29～32行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
+34～37行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
 画像プロバイダの生成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -569,7 +514,7 @@ createImageProvider() {
 ```
 
 #### カメラの位置・向きの設定
-35～58行目がカメラの位置・向きの設定メソッドです。
+40～64行目がカメラの位置・向きの設定メソッドです。
 カメラの位置・向きの設定は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -579,7 +524,8 @@ SetCamera() {
     var home_pos = { longitude: 135.759366, latitude: 35.025891, height: 50.0 };
 
     // 球面座標から地心直交座標へ変換
-    var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+    var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+    var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
     // 視線方向を定義
     var cam_pos = mapray.GeoMath.createVector3([-400, 10, 400]);
@@ -601,7 +547,7 @@ SetCamera() {
 ```
 
 #### シーンのロード
-61～73行目がシーンのロードメソッドです。
+67～79行目がシーンのロードメソッドです。
 シーンのロードは、ヘルプページ『**glTFモデルの表示（SceneLoaderを使った表示）**』を参照してください。
 
 ```JavaScript
@@ -622,7 +568,7 @@ LoadScene() {
 ```
 
 #### リソース要求変換
-75～81行目がリソース要求変換メソッドです。
+81～87行目がリソース要求変換メソッドです。
 リソース要求変換は、ヘルプページ『**glTFモデルの表示（SceneLoaderを使った表示）**』を参照してください。
 
 ```JavaScript
@@ -636,7 +582,7 @@ onTransform(url, type) {
 ```
 
 #### シーンのロード終了イベント
-83～89行目がシーンのロード終了イベントメソッドです。引数のisSuccessには、読み込み結果が格納されており、trueの場合のみ読み込んだglTFモデルを表示し、glTFモデルを操作できるようにします。
+89～95行目がシーンのロード終了イベントメソッドです。引数のisSuccessには、読み込み結果が格納されており、trueの場合のみ読み込んだglTFモデルを表示し、glTFモデルを操作できるようにします。
 glTFモデルのロード成功可否をtrueにし、glTFモデルの表示位置を設定するメソッドを呼び出します。glTFモデルの表示位置を設定するメソッドの詳細は後述します。
 
 ```JavaScript
@@ -650,8 +596,8 @@ onLoadScene(loader, isSuccess) {
 ```
 
 #### glTFモデルの表示位置の設定
-91～100行目がglTFモデルの表示位置の設定メソッドです。モデルの表示位置、向きをモデルのエンティティに反映します。
-96行目でモデルの表示位置を設定、99行目でモデルの向きをそれぞれ設定します。
+97～106行目がglTFモデルの表示位置の設定メソッドです。モデルの表示位置、向きをモデルのエンティティに反映します。
+102行目でモデルの表示位置を設定、105行目でモデルの向きをそれぞれ設定します。
 なお、読み込んだモデルは1つ目のエンティティとなるため、エンティティ取得時の引数には0を指定します。
 
 ```JavaScript
@@ -668,8 +614,8 @@ UpdateModelPosition() {
 ```
 
 #### 移動方向ベクトルの作成
-102～120行目が移動方向ベクトル作成メソッドです。現在の向きを表す回転行列を利用して、最新の移動方向ベクトルを求めます。
-まず、104～113行目で、移動方向を表す変換行列を単位行列に初期化し、glTFモデルの初期の前方向であるY軸方向に単位移動量である1分移動させます。その後、移動方向を表す変換行列に、現在の向きを表す変換行列を掛け合わせることで、現在の移動方向を表す変換行列を求めます。
+108～126行目が移動方向ベクトル作成メソッドです。現在の向きを表す回転行列を利用して、最新の移動方向ベクトルを求めます。
+まず、110～119行目で、移動方向を表す変換行列を単位行列に初期化し、glTFモデルの初期の前方向であるY軸方向に単位移動量である1分移動させます。その後、移動方向を表す変換行列に、現在の向きを表す変換行列を掛け合わせることで、現在の移動方向を表す変換行列を求めます。
 そして、求めた現在の移動方向を表す変換行列から、移動方向成分に該当する部分を抜き出し、移動方向ベクトルとして設定します。
 
 ```JavaScript
@@ -695,7 +641,7 @@ UpdateMoveVec() {
 ```
 
 #### 前進
-122～131行目が前進メソッドです。glTFモデルが正常に読み込まれている場合は、現在のglTFモデルの移動方向ベクトルに移動量を掛けた値をモデルの緯度・経度に加算し、glTFモデルの姿勢変換行列の設定メソッドを呼び出します。
+128～137行目が前進メソッドです。glTFモデルが正常に読み込まれている場合は、現在のglTFモデルの移動方向ベクトルに移動量を掛けた値をモデルの緯度・経度に加算し、glTFモデルの姿勢変換行列の設定メソッドを呼び出します。
 
 ```JavaScript
 Forward() {
@@ -711,7 +657,7 @@ Forward() {
 ```
 
 #### 後進
-133～142行目が後退メソッドです。glTFモデルが正常に読み込まれている場合は、現在のglTFモデルの移動方向ベクトルに移動量を掛けた値をモデルの緯度・経度に減算し、glTFモデルの姿勢変換行列の設定メソッドを呼び出します。
+139～148行目が後退メソッドです。glTFモデルが正常に読み込まれている場合は、現在のglTFモデルの移動方向ベクトルに移動量を掛けた値をモデルの緯度・経度に減算し、glTFモデルの姿勢変換行列の設定メソッドを呼び出します。
 
 ```JavaScript
 Backward() {
@@ -727,7 +673,7 @@ Backward() {
 ```
 
 #### 左回転
-144～154行目が左回転メソッドです。glTFモデルが正常に読み込まれている場合は、現在のglTFモデルの回転角度に90を加算し、glTFモデルの姿勢変換行列の設定メソッドを呼び出します。
+150～160行目が左回転メソッドです。glTFモデルが正常に読み込まれている場合は、現在のglTFモデルの回転角度に90を加算し、glTFモデルの姿勢変換行列の設定メソッドを呼び出します。
 
 ```JavaScript
 LeftTurn() {
@@ -744,7 +690,8 @@ LeftTurn() {
 ```
 
 #### 右回転
-156～166行目が右回転メソッドです。glTFモデルが正常に読み込まれている場合は、現在のglTFモデルの回転角度に90を減算し、glTFモデルの姿勢変換行列の設定メソッドを呼び出します。
+162～172行目が右回転メソッドです。glTFモデルが正常に読み込まれている場合は、現在のglTFモデルの回転角度に90を減算し、glTFモデルの姿勢変換行列の設定メソッドを呼び出します。
+
 ```JavaScript
 RightTurn() {
     if (this.isLoadedModel == false) {
@@ -760,7 +707,7 @@ RightTurn() {
 ```
 
 #### glTFモデルを操作するクラスのインスタンス生成
-170～172行目の関数は、引数として渡されるブロックのidを利用して、glTFモデルを操作するクラスのインスタンスを生成します。
+176～178行目の関数は、引数として渡されるブロックのidを利用して、glTFモデルを操作するクラスのインスタンスを生成します。
 
 ```JavaScript
 function CreateModelControllerInstance(container) {
@@ -769,7 +716,7 @@ function CreateModelControllerInstance(container) {
 ```
 
 #### 前進ボタンクリック時のイベント
-174～176行目の関数は、前進ボタンクリック時に呼ばれ、glTFモデルを操作するクラスの前進メソッドを呼び出します。
+180～182行目の関数は、前進ボタンクリック時に呼ばれ、glTFモデルを操作するクラスの前進メソッドを呼び出します。
 
 ```JavaScript
 function ForwardButtonClicked() {
@@ -778,7 +725,7 @@ function ForwardButtonClicked() {
 ```
 
 #### 後進ボタンクリック時のイベント
-178～180行目の関数は、後進ボタンクリック時に呼ばれ、glTFモデルを操作するクラスの後進メソッドを呼び出します。
+184～186行目の関数は、後進ボタンクリック時に呼ばれ、glTFモデルを操作するクラスの後進メソッドを呼び出します。
 
 ```JavaScript
 function BackwardButtonClicked() {
@@ -787,7 +734,7 @@ function BackwardButtonClicked() {
 ```
 
 #### 左回転ボタンクリック時のイベント
-182～184行目の関数は、左回転ボタンクリック時に呼ばれ、glTFモデルを操作するクラスの左回転メソッドを呼び出します。
+188～190行目の関数は、左回転ボタンクリック時に呼ばれ、glTFモデルを操作するクラスの左回転メソッドを呼び出します。
 
 ```JavaScript
 function LeftTurnButtonClicked() {
@@ -796,7 +743,7 @@ function LeftTurnButtonClicked() {
 ```
 
 #### 右回転ボタンクリック時のイベント
-186～188行目の関数は、右回転ボタンクリック時に呼ばれ、glTFモデルを操作するクラスの左回転メソッドを呼び出します。
+192～194行目の関数は、右回転ボタンクリック時に呼ばれ、glTFモデルを操作するクラスの左回転メソッドを呼び出します。
 
 ```JavaScript
 function RightTurnButtonClicked() {

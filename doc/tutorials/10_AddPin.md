@@ -12,7 +12,8 @@ mapray.PinEntityを使ってピンを表示する**AddPin.html**のサンプル�
     <head>
         <meta charset="UTF-8">
         <title>AddPinSample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+        <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <style>
             html, body {
                 height: 100%;
@@ -21,23 +22,14 @@ mapray.PinEntityを使ってピンを表示する**AddPin.html**のサンプル�
 
             div#mapray-container {
                 display: flex;
-                height: 97%;
-            }
-
-            div#mapInfo{
-                display: flex;
-                width: 50px;
-                height: 25px;
-                margin-left: auto;
-                margin-right: 10px;
-                align-items: center;
+                position: relative;
+                height: 100%;
             }
         </style>
     </head>
 
     <body>
         <div id="mapray-container"></div>
-        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
     </body>
 </html>
 
@@ -57,7 +49,8 @@ mapray.PinEntityを使ってピンを表示する**AddPin.html**のサンプル�
     var home_pos = { longitude: 139.753175, latitude: 35.653943, height: 500 };
 
     // 球面座標から地心直交座標へ変換
-    var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+    var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+    var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
     // 視線方向を定義
     var cam_pos = mapray.GeoMath.createVector3([0, -2000, 500]);
@@ -105,7 +98,7 @@ mapray.PinEntityを使ってピンを表示する**AddPin.html**のサンプル�
 このサンプルコードの詳細を以下で解説します。
 
 #### htmlの記述
-1～33行目がでhtmlの定義です。ヘルプページ『**緯度経度によるカメラ位置の指定**』で示したhtmlファイルからタイトルのみを変更します。
+1～25行目がでhtmlの定義です。ヘルプページ『**緯度経度によるカメラ位置の指定**』で示したhtmlファイルからタイトルのみを変更します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```HTML
@@ -114,7 +107,8 @@ mapray.PinEntityを使ってピンを表示する**AddPin.html**のサンプル�
     <head>
         <meta charset="UTF-8">
         <title>AddPinSample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+        <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <style>
             html, body {
                 height: 100%;
@@ -123,29 +117,20 @@ mapray.PinEntityを使ってピンを表示する**AddPin.html**のサンプル�
 
             div#mapray-container {
                 display: flex;
-                height: 97%;
-            }
-
-            div#mapInfo{
-                display: flex;
-                width: 50px;
-                height: 25px;
-                margin-left: auto;
-                margin-right: 10px;
-                align-items: center;
+                position: relative;
+                height: 100%;
             }
         </style>
     </head>
 
     <body>
         <div id="mapray-container"></div>
-        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
     </body>
 </html>
 ```
 
 #### カメラ位置・向きの設定
-37～68行目でMapray.Viewerクラスを作成し、カメラ位置・向きを設定します。
+29～61行目でMapray.Viewerクラスを作成し、カメラ位置・向きを設定します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -164,7 +149,8 @@ viewer = new mapray.Viewer(
 var home_pos = { longitude: 139.753175, latitude: 35.653943, height: 500 };
 
 // 球面座標から地心直交座標へ変換
-var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
 // 視線方向を定義
 var cam_pos = mapray.GeoMath.createVector3([0, -2000, 500]);
@@ -185,7 +171,7 @@ viewer.camera.far = 500000;
 ```
 
 #### PinEntityの生成
-ピンを表示するためには、ピンの情報を管理するクラス（PinEntity）が必要です。そのため、71行目でPinEntityのインスタンスを生成します。コンストラクタの引数には、作成したMapray.Viewerのシーン（Mapray.Viewer.scene）を指定します。
+ピンを表示するためには、ピンの情報を管理するクラス（PinEntity）が必要です。そのため、64行目でPinEntityのインスタンスを生成します。コンストラクタの引数には、作成したMapray.Viewerのシーン（Mapray.Viewer.scene）を指定します。
 
 ```JavaScript
 // ピンのエンティティを作成
@@ -193,7 +179,7 @@ var pin_Entity = new mapray.PinEntity(viewer.scene);
 ```
 
 #### 表示ピンの生成
-74～77行目で、標準のピンを生成します。74行目で皇居の経度・緯度・高度からGeoPointクラスを定義し、76行目のaddPin関数でピンを作成します。addPin関数には、ピンを表示する位置、生成オプションとしてピンの大きさと色を、それぞれ設定します。
+67～70行目で、標準のピンを生成します。67行目で皇居の経度・緯度・高度からGeoPointクラスを定義し、70行目のaddPin関数でピンを作成します。addPin関数には、ピンを表示する位置、生成オプションとしてピンの大きさと色を、それぞれ設定します。
 
 ```JavaScript
 // 皇居の座標を設定
@@ -204,7 +190,7 @@ pin_Entity.addPin(fast_Pin_Point, { size: 40, bg_color: [1, 0, 0] });
 ```
 
 #### Makiアイコンピンの生成
-80～83行目で、Makiアイコンのピンを生成します。80行目で東京駅の経度・緯度・高度からGeoPointクラスを定義し、83行目のaddMakiIconPin関数でピンを生成します。addMakiIconPin関数には、Makiアイコンの名称、ピンを表示する位置、生成オプションとしてピンの大きさと色を、それぞれ設定します。
+73～76行目で、Makiアイコンのピンを生成します。73行目で東京駅の経度・緯度・高度からGeoPointクラスを定義し、76行目のaddMakiIconPin関数でピンを生成します。addMakiIconPin関数には、Makiアイコンの名称、ピンを表示する位置、生成オプションとしてピンの大きさと色を、それぞれ設定します。
 Makiアイコンとは、[Makiアイコン](https://labs.mapbox.com/maki-icons/)に掲載されているアイコンを指します。各アイコンの名称を指定することで、自由にアイコンを使用することができます。
 
 ```JavaScript
@@ -216,7 +202,7 @@ pin_Entity.addMakiIconPin("rail-15", second_Pin_Point, { size: 40, bg_color: [0,
 ```
 
 #### テキストピンの生成
-86～89行目で、テキストのピンを生成します。86行目で東京タワーの経度・緯度・高度からGeoPointクラスを定義し、89行目のaddTextPin関数でピンを生成します。addTextPin関数には、表示する文字、ピンを表示する位置、生成オプションとしてピンの大きさと色を、それぞれ設定します。
+79～82行目で、テキストのピンを生成します。79行目で東京タワーの経度・緯度・高度からGeoPointクラスを定義し、82行目のaddTextPin関数でピンを生成します。addTextPin関数には、表示する文字、ピンを表示する位置、生成オプションとしてピンの大きさと色を、それぞれ設定します。
 
 ```JavaScript
 // 東京タワーの座標を設定
@@ -227,7 +213,7 @@ pin_Entity.addTextPin("T", third_Pin_Point, { size: 40, bg_color: [0, 0, 1] });
 ```
 
 #### PinEntityの追加
-92行目でPinEntityを作成したmapray.Viewerのシーンに追加します。mapray.Viewerのシーンに追加することでピンが表示されます。
+85行目でPinEntityを作成したmapray.Viewerのシーンに追加します。mapray.Viewerのシーンに追加することでピンが表示されます。
 
 ```JavaScript
 // エンティティをシーンに追加

@@ -5,10 +5,10 @@
 ### サンプルコード
 モデルの高度の設定方法をを変更する**ChangeAltitudeMode.html**及び、**ChangeAltitudeMode.js**のサンプルコードとシーンファイル（**glTFChangeAltitudeMode.json**）です。
 このサンプルコードでは、ユーザインタフェースを介して、高度モードを変更します。変更できる項目は、高度の設定方法、高さです。
-高度の設定方法は、ABSOLUTE（絶対値）、RELATIVE（地表面からの相対値）に、高さは、0、40、100にそれぞれ変更できます。
+高度の設定方法は、ABSOLUTE（絶対値）、RELATIVE（地表面からの相対値）、CLAMP（地表面に接地）に、高さは、0、40、100にそれぞれ変更できます。
 
 #### glTFデータの入手
-[Sketchfab](https://sketchfab.com/3d-models/plane-cedc8a07370747f7b0d14400cdf2faf9)へアクセスし、glTFファイルフォーマットのデータをダウンロードする、もしくは[ダウンロードリンク](https://storage.cloud.google.com/mapray-examples/model/download/plane.zip)をクリックしてダウンロードしてください。ダウンロードリンクからダウンロードした場合はzipファイルを展開してご利用ください。展開したデータは解答した結果できたディレクトリを含めて、mapray-jsのルートディレクトリからの相対パスで以下のディレクトリに保存されているという想定で以下の説明を行います。
+[Sketchfab](https://sketchfab.com/3d-models/plane-cedc8a07370747f7b0d14400cdf2faf9)へアクセスし、glTFファイルフォーマットのデータをダウンロードする、もしくは[ダウンロードリンク](https://storage.cloud.google.com/mapray-examples/model/download/plane.zip)をクリックしてダウンロードしてください。ダウンロードリンクからダウンロードした場合はzipファイルを展開してご利用ください。展開したデータは解凍した結果できたディレクトリを含めて、mapray-jsのルートディレクトリからの相対パスで以下のディレクトリに保存されているという想定で以下の説明を行います。
 
 ```
 ./examples/entity/gltf/data/
@@ -25,7 +25,8 @@
     <head>
         <meta charset="utf-8">
         <title>ChangeAltitudeModeSample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+        <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <script src="ChangeAltitudeMode.js" charset="utf-8"></script>
         <style>
             html, body {
@@ -52,7 +53,8 @@
 
             div#mapray-container {
                 display: flex;
-                height: 96%;
+                position: relative;
+                height: calc(100% - 34px);
             }
 
             div#AltitudeModeBox{
@@ -74,24 +76,6 @@
                 border:inset 1px #000000;
                 align-items:center;
             }
-
-            div#mapInfo{
-                display: flex;
-                width: 50px;
-                height: 16px;
-                margin-left: auto;
-                margin-right: 10px;
-                align-items: center;
-            }
-
-            div#modelInfo{
-                display: flex;
-                width: 265px;
-                height: 16px;
-                margin-left: auto;
-                margin-right: 10px;
-                align-items: center;
-            }
         </style>
     </head>
 
@@ -103,6 +87,7 @@
                 <select name="AltitudeModePullDown" id="AltitudeModePullDown" onchange="AltitudeModeValueChanged()">
                     <option value="ABSOLUTE">ABSOLUTE</option>
                     <option value="RELATIVE">RELATIVE</option>
+                    <option value="CLAMP">CLAMP</option>
                 </select>
         </div>
 
@@ -114,9 +99,6 @@
                     <option value=100>100</option>
                 </select>
         </div>
-
-        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
-        <div id="modelInfo"><a href="https://sketchfab.com/3d-models/plane-cedc8a07370747f7b0d14400cdf2faf9" style="font-size: 9px">Plane by osmosikum: Creative Commons - Attribution</a></div>
     </body>
 </html>
 ```
@@ -139,6 +121,12 @@ class ChangeAltitudeMode {
             }
         );
 
+        // glTFモデルのライセンス表示
+        this.viewer.attribution_controller.addAttribution( {
+            display: "Plane by osmosikum: Creative Commons - Attribution",
+            link: "https://sketchfab.com/3d-models/plane-cedc8a07370747f7b0d14400cdf2faf9"
+        } );
+
         this.model_Point = new mapray.GeoPoint(140.379528, 35.758832, 40.0);    //モデルの球面座標(経度、緯度、高度)
         this.altitude_mode = mapray.AltitudeMode.ABSOLUTE;
 
@@ -159,7 +147,8 @@ class ChangeAltitudeMode {
         var home_pos = { longitude: 140.379528, latitude: 35.758832, height: 40 };
 
         // 球面座標から地心直交座標へ変換
-        var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+        var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+        var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
         // 視線方向を定義
         var cam_pos = mapray.GeoMath.createVector3([-500, -1500, 500]);
@@ -239,6 +228,9 @@ class ChangeAltitudeMode {
             case mapray.AltitudeMode.RELATIVE.id:
                     this.altitude_mode = mapray.AltitudeMode.RELATIVE;
                 break;
+            case mapray.AltitudeMode.CLAMP.id:
+                this.altitude_mode = mapray.AltitudeMode.CLAMP;
+                break;                
         }
 
         this.UpdateModelPosition();
@@ -302,15 +294,16 @@ htmlのサンプルコードの詳細を以下で解説します。
 ```
 
 #### JavaScriptファイルのパス設定
-6～7行目でで参照するJavaScriptのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイルと高度モードを変えるJavaScriptファイル（**ChangeAltitudeMode.js**）を設定します。高度モードを変えるJavaScriptファイルの文字コードはutf-8に設定します。
+6～8行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、高度モードを変えるJavaScriptファイル（**ChangeAltitudeMode.js**）を設定します。高度モードを変えるJavaScriptファイルの文字コードはutf-8に設定します。
 
 ```HTML
-<script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+<script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+<link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
 <script src="ChangeAltitudeMode.js" charset="utf-8"></script>
 ```
 
 #### スタイルの設定
-8～73行目で表示する要素のスタイルを設定します。このサンプルコードでは、下記のスタイルを設定します。
+9～57行目で表示する要素のスタイルを設定します。このサンプルコードでは、下記のスタイルを設定します。
 - html
 - body
 - select
@@ -319,8 +312,6 @@ htmlのサンプルコードの詳細を以下で解説します。
 - div#mapray-container（地図表示部分）
 - div#AltitudeModeBox（高度の設定方法変更コンボボックス表示部分）
 - div#HeightBox（高さ変更コンボボックス表示部分）
-- div#mapInfo（出典表示部分）
-- div#modelInfo（モデル出典表示部分）
 
 ```HTML
 <style>
@@ -348,7 +339,8 @@ htmlのサンプルコードの詳細を以下で解説します。
 
     div#mapray-container {
         display: flex;
-        height: 96%;
+        position: relative;
+        height: calc(100% - 34px);
     }
 
     div#AltitudeModeBox{
@@ -370,49 +362,27 @@ htmlのサンプルコードの詳細を以下で解説します。
         border:inset 1px #000000;
         align-items:center;
     }
-
-    div#mapInfo{
-        display: flex;
-        width: 50px;
-        height: 16px;
-        margin-left: auto;
-        margin-right: 10px;
-        align-items: center;
-    }
-
-    div#modelInfo{
-        display: flex;
-        width: 265px;
-        height: 16px;
-        margin-left: auto;
-        margin-right: 10px;
-        align-items: center;
-    }
 </style>
 ```
 
 #### loadイベントの設定
-画面を表示するときに、高度モード変更クラスを生成します。そのため、76行目でページ読み込み時に、高度モードを変更するクラスのインスタンスを生成する関数（**CreateChangeAltitudeModeInstance**）を呼ぶように設定します。
+画面を表示するときに、高度モード変更クラスを生成します。そのため、60行目でページ読み込み時に、高度モードを変更するクラスのインスタンスを生成する関数（**CreateChangeAltitudeModeInstance**）を呼ぶように設定します。
 高度モードを変更するクラスのインスタンスを生成する関数は、JavaScriptのサンプルコードの詳細で説明します。
 
 ```HTML
 <body onload="CreateChangeAltitudeModeInstance('mapray-container');">
 ```
 
-#### 地図表示部分と出典表示部分と著作権表示部分の指定
-77行目で地図表示部分になるブロックを記述し、96行目で出典を明記するためのブロックを記述します。
+#### 地図表示部分の指定
+61行目で地図表示部分のブロックを記述します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```HTML
 <div id="mapray-container"></div>
-
-中略
-
-<div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
 ```
 
 #### 高度の設定方法変更のUI
-79～85行目で高度の設定方法変更コンボボックス表示部分のブロックを記述します。このブロックの中には、高度の設定方法を変更するコンボボックスを用意します。このサンプルコードでは、ABSOLUTE、RELATIVEを設定します。
+63～70行目で高度の設定方法変更コンボボックス表示部分のブロックを記述します。このブロックの中には、高度の設定方法を変更するコンボボックスを用意します。このサンプルコードでは、ABSOLUTE、RELATIVE、CLAMPを設定します。
 高度の設定方法を変更するコンボボックスが変更された時のイベント（onchange）に、高度の設定方法変更のコンボボックス変更時に呼び出す関数（**AltitudeModeValueChanged**）を設定します。
 高度の設定方法変更のコンボボックス変更時に呼び出す関数はJavaScriptのサンプルコードの詳細で説明します。
 
@@ -422,12 +392,13 @@ htmlのサンプルコードの詳細を以下で解説します。
         <select name="AltitudeModePullDown" id="AltitudeModePullDown" onchange="AltitudeModeValueChanged()">
             <option value="ABSOLUTE">ABSOLUTE</option>
             <option value="RELATIVE">RELATIVE</option>
+            <option value="CLAMP">CLAMP</option>
         </select>
 </div>
 ```
 
 #### 高さ変更のUI
-87～94行目で高さ変更ボタン表示部分のブロックを記述します。このブロックの中には、このブロックの中には、高さを変更するコンボボックスを用意します。このサンプルコードでは、0、40、100を設定します。
+72～79行目で高さ変更ボタン表示部分のブロックを記述します。このブロックの中には、このブロックの中には、高さを変更するコンボボックスを用意します。このサンプルコードでは、0、40、100を設定します。
 高さを変更するコンボボックスが変更された時のイベント（onchange）に、高さのコンボボックス変更時に呼び出す関数（**HeightValueChanged**）を設定します。
 高さのコンボボックス変更時に呼び出す関数はJavaScriptのサンプルコードの詳細で説明します。
 
@@ -442,18 +413,11 @@ htmlのサンプルコードの詳細を以下で解説します。
 </div>
 ```
 
-#### glTFモデルの出典表示部分の設定
-97行目で、glTFモデルの出典を明記するためのブロックを記述します。
-
-```HTML
-<div id="modelInfo"><a href="https://sketchfab.com/3d-models/plane-cedc8a07370747f7b0d14400cdf2faf9" style="font-size: 9px">Plane by osmosikum: Creative Commons - Attribution</a></div>
-```
-
 ### JavaScriptのサンプルコードの詳細
 JavaScriptのサンプルコードの詳細を以下で解説します。
 
 #### クラスとグローバル変数の説明
-3～131行目でモデルの高度の設定方法を変更するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
+3～141行目でモデルの高度の設定方法を変更するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
 また、1行目でモデルの高度の設定方法を変更するクラスのグローバル変数を定義します。
 
 ```JavaScript
@@ -467,8 +431,8 @@ class ChangeAltitudeMode {
 ```
 
 #### コンストラクタ
-4～22行目がモデルの高度の設定方法を変更するクラスのコンストラクタです。
-引数として渡されるブロックのidに対して、mapray.Viewerを作成し、カメラの位置・向きの設定、シーンの読み込みの順にメソッド呼び出します。mapray.Viewerのベース地図の画像プロバイダは、画像プロバイダの生成メソッドで取得した画像プロバイダを設定します。
+4～28行目がモデルの高度の設定方法を変更するクラスのコンストラクタです。
+引数として渡されるブロックのidに対して、mapray.Viewerを作成し、glTFモデルの出典情報を追加します。そして、カメラの位置・向きの設定、シーンの読み込みの順にメソッド呼び出します。mapray.Viewerのベース地図の画像プロバイダは、画像プロバイダの生成メソッドで取得した画像プロバイダを設定します。
 mapray.Viewerの作成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -484,6 +448,12 @@ constructor(container) {
         }
     );
 
+    // glTFモデルのライセンス表示
+    this.viewer.attribution_controller.addAttribution( {
+        display: "Plane by osmosikum: Creative Commons - Attribution",
+        link: "https://sketchfab.com/3d-models/plane-cedc8a07370747f7b0d14400cdf2faf9"
+    } );    
+
     this.model_Point = new mapray.GeoPoint(140.379528, 35.758832, 40.0);    //モデルの球面座標(経度、緯度、高度)
     this.altitude_mode = mapray.AltitudeMode.ABSOLUTE;
 
@@ -494,7 +464,7 @@ constructor(container) {
 ```
 
 #### 画像プロバイダの生成
-25～28行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
+31～34行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
 画像プロバイダの生成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -506,7 +476,7 @@ createImageProvider() {
 ```
 
 #### カメラの位置・向きの設定
-31～54行目がカメラの位置・向きの設定メソッドです。
+37～61行目がカメラの位置・向きの設定メソッドです。
 カメラの位置・向きの設定は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -516,7 +486,8 @@ SetCamera() {
     var home_pos = { longitude: 140.379528, latitude: 35.758832, height: 40 };
 
     // 球面座標から地心直交座標へ変換
-    var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+    var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+    var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
     // 視線方向を定義
     var cam_pos = mapray.GeoMath.createVector3([-500, -1500, 500]);
@@ -538,7 +509,7 @@ SetCamera() {
 ```
 
 #### シーンのロード
-57～69行目がシーンのロードメソッドです。
+64～77行目がシーンのロードメソッドです。
 シーンのロードは、ヘルプページ『**glTFモデルの表示（SceneLoaderを使った表示）**』を参照してください。
 
 ```JavaScript
@@ -559,7 +530,7 @@ LoadScene() {
 ```
 
 #### リソース要求変換
-71～77行目がリソース要求変換メソッドです。
+78～84行目がリソース要求変換メソッドです。
 リソース要求変換は、ヘルプページ『**glTFモデルの表示（SceneLoaderを使った表示）**』を参照してください。
 
 ```JavaScript
@@ -573,7 +544,7 @@ onTransform(url, type) {
 ```
 
 #### シーンのロード終了イベント
-79～83行目がシーンのロード終了イベントメソッドです。引数のisSuccessには、読み込み結果が格納されており、trueの場合のみ読み込んだglTFモデルを表示し、glTFモデルを操作できるようにします。
+86～90行目がシーンのロード終了イベントメソッドです。引数のisSuccessには、読み込み結果が格納されており、trueの場合のみ読み込んだglTFモデルを表示し、glTFモデルを操作できるようにします。
 glTFモデルのロード成功可否をtrueにし、glTFモデルの表示位置を設定するメソッドを呼び出します。glTFモデルの表示位置を設定するメソッドの詳細は後述します。
 
 ```JavaScript
@@ -585,8 +556,8 @@ onLoadScene(loader, isSuccess) {
 ```
 
 #### glTFモデルの表示位置の設定
-85～100行目がglTFモデルの表示位置の設定メソッドです。高度の設定方法の設定、モデルの表示位置、向き、スケールをモデルのエンティティに反映します。
-90行目で高度の設定方法を、93行目でモデルの表示位置を、96行目でモデルの向きを、99行目でモデルのスケールをそれぞれ設定します。
+92～107行目がglTFモデルの表示位置の設定メソッドです。高度の設定方法の設定、モデルの表示位置、向き、スケールをモデルのエンティティに反映します。
+97行目で高度の設定方法を、101行目でモデルの表示位置を、103行目でモデルの向きを、106行目でモデルのスケールをそれぞれ設定します。
 なお、読み込んだモデルは1つ目のエンティティとなるため、エンティティ取得時の引数には0を指定します。
 
 ```JavaScript
@@ -609,7 +580,7 @@ UpdateModelPosition() {
 ```
 
 #### 高度の設定方法の変更
-102～119行目が高度の設定方法の変更メソッドです。104行目で高度の設定方法を変更するコンボボックスから文字列を取得します。そして、107～116行目で取得した文字列を高度の設定方法として設定し、118行目でglTFモデルの表示位置の設定を呼び出します。
+109～129行目が高度の設定方法の変更メソッドです。111行目で高度の設定方法を変更するコンボボックスから文字列を取得します。そして、114～126行目で取得した文字列を高度の設定方法として設定し、128行目でglTFモデルの表示位置の設定を呼び出します。
 
 ```JavaScript
 ChangeAltitudeMode() {
@@ -626,6 +597,9 @@ ChangeAltitudeMode() {
         case mapray.AltitudeMode.RELATIVE.id:
                 this.altitude_mode = mapray.AltitudeMode.RELATIVE;
             break;
+        case mapray.AltitudeMode.CLAMP.id:
+            this.altitude_mode = mapray.AltitudeMode.CLAMP;
+            break;
     }
 
     this.UpdateModelPosition();
@@ -633,7 +607,7 @@ ChangeAltitudeMode() {
 ```
 
 #### 高さの変更
-121～130行目が高さの変更メソッドです。123行目で高さを変更するコンボボックスから値を取得し、126行目で高さの値として設定します。その後、128行目でglTFモデルの表示位置の設定を呼び出します。
+131～140行目が高さの変更メソッドです。133行目で高さを変更するコンボボックスから値を取得し、136行目で高さの値として設定します。その後、138行目でglTFモデルの表示位置の設定を呼び出します。
 
 ```JavaScript
 ChangeHeight() {
@@ -648,7 +622,7 @@ ChangeHeight() {
 ```
 
 #### 高度の設定方法変更クラスのインスタンス生成
-133～135行目の関数は、引数として渡されるブロックのidを利用して、高度の設定方法変更クラスのインスタンスを生成します。
+143～145行目の関数は、引数として渡されるブロックのidを利用して、高度の設定方法変更クラスのインスタンスを生成します。
 
 ```JavaScript
 function CreateChangeAltitudeModeInstance(container) {
@@ -657,7 +631,7 @@ function CreateChangeAltitudeModeInstance(container) {
 ```
 
 #### 高度の設定方法変更時のイベント
-137～139行目の関数は、高度の設定方法変更時に呼ばれ、高度の設定方法変更クラスの高度の設定方法変更メソッドを呼び出します。
+147～149行目の関数は、高度の設定方法変更時に呼ばれ、高度の設定方法変更クラスの高度の設定方法変更メソッドを呼び出します。
 
 ```JavaScript
 function AltitudeModeValueChanged() {
@@ -666,7 +640,7 @@ function AltitudeModeValueChanged() {
 ```
 
 #### 高さ変更時のイベント
-141～143行目の関数は、高さ変更時に呼ばれ、高度モード変更クラスの高さ変更メソッドを呼び出します。
+151～153行目の関数は、高さ変更時に呼ばれ、高度モード変更クラスの高さ変更メソッドを呼び出します。
 
 ```JavaScript
 function HeightValueChanged() {
@@ -723,6 +697,9 @@ function HeightValueChanged() {
 
 初期状態から、高度モードをRELATIVEにした時の出力イメージは下図のようになります。
 ![出力イメージ](image/SampleImageChangeAltitudeMode_relative.png)
+
+初期状態から、高度モードをCLAMPにした時の出力イメージは下図のようになります。
+![出力イメージ](image/SampleImageChangeAltitudeMode_clamp.png)
 
 初期状態から、高さを100にした時の出力イメージは下図のようになります。
 ![出力イメージ](image/SampleImageChangeAltitudeMode_height100.png)

@@ -14,7 +14,8 @@
     <head>
         <meta charset="utf-8">
         <title>ChangeFontFormatSample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+        <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <script src="ChangeFontFormat.js" charset="utf-8"></script>
         <style>
             html, body {
@@ -41,7 +42,8 @@
 
             div#mapray-container {
                 display: flex;
-                height: 96%;
+                position: relative;
+                height: calc(100% - 34px);
             }
 
             div#FontStyleBox{
@@ -94,20 +96,12 @@
                 border:inset 1px #000000;
                 align-items:center;
             }
-
-            div#mapInfo{
-                display: flex;
-                width: 50px;
-                height: 32px;
-                margin-left: auto;
-                margin-right: 10px;
-                align-items: center;
-            }
         </style>
     </head>
 
     <body onload="CreateChangeFontStyleInstance('mapray-container');">
         <div id="mapray-container"></div>
+
         <div id="FontStyleBox">
             <p>Font Style</p>
             <select name="FontStylePullDown" id="FontStylePullDown" onchange="FontStyleValueChanged()">
@@ -151,8 +145,6 @@
                 <option value="vardana" style="font-family:vardana">vardana</option>
             </select>
         </div>
-
-        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
     </body>
 </html>
 ```
@@ -225,7 +217,8 @@ class ChangeFontFormat {
         var home_pos = { longitude: 138.736758, latitude: 35.359326, height: 4000 };
 
         // 球面座標から地心直交座標へ変換
-        var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+        var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+        var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
         // 視線方向を定義
         var cam_pos = mapray.GeoMath.createVector3([3000, -2600, 1500]);
@@ -347,15 +340,16 @@ htmlのサンプルコードの詳細を以下で解説します。
 ```
 
 #### JavaScriptファイルのパス設定
-6～7行目でhtmlで参照するJavaScriptのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイルと文字のフォーマットを変えるJavaScriptファイル（**ChangeFontFormat.js**）を設定します。文字のフォーマットを変えるJavaScriptファイルの文字コードはutf-8に設定します。
+6～8行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、文字のフォーマットを変えるJavaScriptファイル（**ChangeFontFormat.js**）を設定します。文字のフォーマットを変えるJavaScriptファイルの文字コードはutf-8に設定します。
 
 ```HTML
-<script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+<script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+<link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
 <script src="ChangeFontFormat.js" charset="utf-8"></script>
 ```
 
 #### スタイルの設定
-8～95行目で表示する要素のスタイルを設定します。このサンプルコードでは、下記のスタイルを設定します。
+9～88行目で表示する要素のスタイルを設定します。このサンプルコードでは、下記のスタイルを設定します。
 - html
 - body
 - select
@@ -367,7 +361,6 @@ htmlのサンプルコードの詳細を以下で解説します。
 - div#FontSizeBox（文字の大きさ変更コンボボックス表示部分）
 - div#FontColorBox（文字の色変更ボタン表示部分）
 - div#FontFamilyBox（文字のフォントファミリー変更コンボボックス表示部分）
-- div#mapInfo（出典表示部分）
 
 ```HTML
 <style>
@@ -395,7 +388,8 @@ htmlのサンプルコードの詳細を以下で解説します。
 
     div#mapray-container {
         display: flex;
-        height: 96%;
+        position: relative;
+        height: calc(100% - 34px);
     }
 
     div#FontStyleBox{
@@ -448,40 +442,27 @@ htmlのサンプルコードの詳細を以下で解説します。
         border:inset 1px #000000;
         align-items:center;
     }
-
-    div#mapInfo{
-        display: flex;
-        width: 50px;
-        height: 32px;
-        margin-left: auto;
-        margin-right: 10px;
-        align-items: center;
-    }
 </style>
 ```
 
 #### loadイベントの設定
-画面を表示するときに、文字フォーマット変更クラスを生成します。そのため、98行目でページ読み込み時に、文字のフォーマットを変更するクラスのインスタンスを生成する関数（**CreateChangeFontStyleInstance**）を呼ぶように設定します。
+画面を表示するときに、文字フォーマット変更クラスを生成します。そのため、90行目でページ読み込み時に、文字のフォーマットを変更するクラスのインスタンスを生成する関数（**CreateChangeFontStyleInstance**）を呼ぶように設定します。
 文字のフォーマットを変更するクラスのインスタンスを生成する関数は、JavaScriptのサンプルコードの詳細で説明します。
 
 ```HTML
 <body onload="CreateChangeFontStyleInstance('mapray-container');">
 ```
 
-#### 地図表示部分と出典表示部分の指定
-99行目で地図表示部分になるブロックを記述し、144行目で出典を明記するためのブロックを記述します。
+#### 地図表示部分の指定
+91行目で地図表示部分のブロックを記述します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```HTML
 <div id="mapray-container"></div>
-
-中略
-
-<div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
 ```
 
 #### 文字のスタイル変更のUI
-100～107行目で文字のスタイル変更コンボボックス表示部分のブロックを記述します。このブロックの中には、文字のスタイルを変更するコンボボックスを用意します。このサンプルコードでは、normal、italic、obliqueを設定します。
+93～100行目で文字のスタイル変更コンボボックス表示部分のブロックを記述します。このブロックの中には、文字のスタイルを変更するコンボボックスを用意します。このサンプルコードでは、normal、italic、obliqueを設定します。
 文字のスタイルを変更するコンボボックスが変更された時のイベント（onchange）に、文字のスタイルのコンボボックス変更時に呼び出す関数（**FontStyleValueChanged**）を設定します。
 文字のスタイルのコンボボックス変更時に呼び出す関数は、JavaScriptのサンプルコードの詳細で説明します。
 
@@ -497,7 +478,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 ```
 
 #### 文字の太さ変更のUI
-109～115行目で文字の太さ変更コンボボックス表示部分のブロックを記述します。このブロックの中には、文字の太さを変更するコンボボックスを用意します。このサンプルコードでは、normal、boldを設定します。
+102～108行目で文字の太さ変更コンボボックス表示部分のブロックを記述します。このブロックの中には、文字の太さを変更するコンボボックスを用意します。このサンプルコードでは、normal、boldを設定します。
 文字の太さを変更するコンボボックスが変更された時のイベント（onchange）に、文字の太さのコンボボックス変更時に呼び出す関数（**FontWeightValueChanged**）を設定します。
 文字の太さのコンボボックス変更時に呼び出す関数はJavaScriptのサンプルコードの詳細で説明します。
 
@@ -512,7 +493,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 ```
 
 #### 文字の大きさ変更のUI
-117～127行目で文字の大きさ変更コンボボックス表示部分のブロックを記述します。このブロックの中には、文字の大きさを変更するコンボボックスを用意します。このサンプルコードでは、9、14、18、22、26、32を設定します。
+110～120行目で文字の大きさ変更コンボボックス表示部分のブロックを記述します。このブロックの中には、文字の大きさを変更するコンボボックスを用意します。このサンプルコードでは、9、14、18、22、26、32を設定します。
 文字の大きさを変更するコンボボックスが変更された時のイベント（onchange）に、文字の大きさのコンボボックス変更時に呼び出す関数（**FontSizeValueChanged**）を設定します。
 文字の大きさのコンボボックス変更時に呼び出す関数はJavaScriptのサンプルコードの詳細で説明します。
 
@@ -531,7 +512,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 ```
 
 #### 文字の色変更のUI
-129～132行目で文字の色変更コンボボックス表示部分のブロックを記述します。このブロックの中には、文字の色変更ボタンを用意します。
+122～125行目で文字の色変更コンボボックス表示部分のブロックを記述します。このブロックの中には、文字の色変更ボタンを用意します。
 文字色変更ボタンには、カラーピッカーの色が変更された時のイベント（onchange）に、文字の色変更時に呼び出す関数（**FontColorValueChanged**）を設定します。
 文字の色変更時に呼び出す関数はJavaScriptのサンプルコードの詳細で説明します。
 
@@ -543,7 +524,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 ```
 
 #### 文字のフォントファミリー変更のUI
-134～142行目で文字のフォントファミリー変更コンボボックス表示部分のブロックを記述します。このブロックの中には、文字のフォントファミリーを変更するコンボボックスを用意します。このサンプルコードでは、arial、Courier、Times New Roman、vardanaを設定します。
+127～135行目で文字のフォントファミリー変更コンボボックス表示部分のブロックを記述します。このブロックの中には、文字のフォントファミリーを変更するコンボボックスを用意します。このサンプルコードでは、arial、Courier、Times New Roman、vardanaを設定します。
 文字のフォントファミリーを変更するコンボボックスが変更された時のイベント（onchange）に、文字のフォントファミリーのコンボボックス変更時に呼び出す関数（**FontFamilyValueChanged**）を設定します。
 文字のフォントファミリーのコンボボックス変更時に呼び出す関数はJavaScriptのサンプルコードの詳細で説明します。
 
@@ -563,7 +544,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 JavaScriptのサンプルコードの詳細を以下で解説します。
 
 #### クラスとグローバル変数の説明
-3~144行目で文字のフォーマットを変更するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
+3～145行目で文字のフォーマットを変更するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
 また、1行目で文字のフォーマットを変更するクラスのグルーバル変数を定義します。
 
 ```JavaScript
@@ -656,7 +637,7 @@ createImageProvider() {
 ```
 
 #### カメラの位置・向きの設定
-60～85行目がカメラの位置・向きの設定メソッドです。
+60～86行目がカメラの位置・向きの設定メソッドです。
 カメラの位置・向きの設定は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -667,7 +648,8 @@ SetCamera() {
     var home_pos = { longitude: 138.736758, latitude: 35.359326, height: 4000 };
 
     // 球面座標から地心直交座標へ変換
-    var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+    var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+    var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
     // 視線方向を定義
     var cam_pos = mapray.GeoMath.createVector3([3000, -2600, 1500]);
@@ -689,7 +671,7 @@ SetCamera() {
 ```
 
 #### 文字のスタイル変更
-87～94行目が文字のスタイル変更メソッドです。89行目で文字のスタイルを変更するコンボボックスから値を取得します。そして、92行目のviewer.sceneのgetEntity関数で表示している文字のエンティティを取得し、93行目で取得した値を指定することで、文字のスタイルを変更します。このサンプルコードでは、文字のエンティティのインデックスは0となるため、getEntity関数には0を指定します。
+88～95行目が文字のスタイル変更メソッドです。90行目で文字のスタイルを変更するコンボボックスから値を取得します。そして、93行目のviewer.sceneのgetEntity関数で表示している文字のエンティティを取得し、94行目で取得した値を指定することで、文字のスタイルを変更します。このサンプルコードでは、文字のエンティティのインデックスは0となるため、getEntity関数には0を指定します。
 
 ```JavaScript
 ChangeFontStyle() {
@@ -703,7 +685,7 @@ ChangeFontStyle() {
 ```
 
 #### 文字の太さ変更
-96～103行目が文字の太さ変更メソッドです。98行目で文字の太さを変更するコンボボックスから値を取得します。そして、101行目のviewer.sceneのgetEntity関数で表示している文字のエンティティを取得し、102行目で取得した値を指定することで、文字の太さを変更します。このサンプルコードでは、文字のエンティティのインデックスは0となるため、getEntity関数には0を指定します。
+97～104行目が文字の太さ変更メソッドです。99行目で文字の太さを変更するコンボボックスから値を取得します。そして、102行目のviewer.sceneのgetEntity関数で表示している文字のエンティティを取得し、103行目で取得した値を指定することで、文字の太さを変更します。このサンプルコードでは、文字のエンティティのインデックスは0となるため、getEntity関数には0を指定します。
 
 ```JavaScript
 ChangeFontWeight() {
@@ -717,7 +699,7 @@ ChangeFontWeight() {
 ```
 
 #### 文字の大きさ変更
-105～112行目が文字の大きさ変更メソッドです。107行目で文字の大きさを変更するコンボボックスから値を取得します。そして、110行目のviewer.sceneのgetEntity関数で表示している文字のエンティティを取得し、111行目で取得した値を指定することで、文字の太さを変更します。このサンプルコードでは、文字のエンティティのインデックスは0となるため、getEntity関数には0を指定します。
+106～113行目が文字の大きさ変更メソッドです。108行目で文字の大きさを変更するコンボボックスから値を取得します。そして、111行目のviewer.sceneのgetEntity関数で表示している文字のエンティティを取得し、112行目で取得した値を指定することで、文字の太さを変更します。このサンプルコードでは、文字のエンティティのインデックスは0となるため、getEntity関数には0を指定します。
 
 ```JavaScript
 ChangeFontSize() {
@@ -731,7 +713,7 @@ ChangeFontSize() {
 ```
 
 #### 文字の色変更
-114～124行目が文字の色変更メソッドです。116行目でカラーピッカーから値を取得し、119行目でカラーピッカーの値をRGBの配列に変換します。そして、122行目のviewer.sceneのgetEntity関数で表示している文字のエンティティを取得し、123行目でその値を指定することで、文字の色を変更します。このサンプルコードでは、文字のエンティティのインデックスは0となるため、getEntity関数には0を指定します。
+115～125行目が文字の色変更メソッドです。117行目でカラーピッカーから値を取得し、120行目でカラーピッカーの値をRGBの配列に変換します。そして、123行目のviewer.sceneのgetEntity関数で表示している文字のエンティティを取得し、124行目でその値を指定することで、文字の色を変更します。このサンプルコードでは、文字のエンティティのインデックスは0となるため、getEntity関数には0を指定します。
 
 ```JavaScript
 ChangeFontColor() {
@@ -748,7 +730,7 @@ ChangeFontColor() {
 ```
 
 #### 文字のファミリー変更
-126～133行目が文字のファミリー変更メソッドです。128行目で文字のフォントファミリーを変更するコンボボックスから値を取得します。そして、131行目のviewer.sceneのgetEntity関数で表示している文字のエンティティを取得し、132行目で取得した値を指定することで、文字のフォントファミリーを変更します。このサンプルコードでは、文字のエンティティのインデックスは0となるため、getEntity関数には0を指定します。
+127～134行目が文字のファミリー変更メソッドです。129行目で文字のフォントファミリーを変更するコンボボックスから値を取得します。そして、132行目のviewer.sceneのgetEntity関数で表示している文字のエンティティを取得し、133行目で取得した値を指定することで、文字のフォントファミリーを変更します。このサンプルコードでは、文字のエンティティのインデックスは0となるため、getEntity関数には0を指定します。
 
 ```JavaScript
 ChangeFontFamily() {
@@ -762,7 +744,7 @@ ChangeFontFamily() {
 ```
 
 #### 色情報の変換
-135～143行目が色情報の変換メソッドです。引数の16進数表記の色情報（"#rrggbb"）から赤、緑、青それぞれの色情報を0～1の範囲に正規化し、赤、緑、青の順に配列に格納し返します。
+136～144行目が色情報の変換メソッドです。引数の16進数表記の色情報（"#rrggbb"）から赤、緑、青それぞれの色情報を0～1の範囲に正規化し、赤、緑、青の順に配列に格納し返します。
 ```JavaScript
 convertColorChordToRGB(colorChord) {
     var colorChordChars = colorChord.split('')
@@ -776,7 +758,7 @@ convertColorChordToRGB(colorChord) {
 ```
 
 #### 文字のフォーマット変更クラスのインスタンス生成
-146～148行目の関数は、引数として渡されるブロックのidを利用して、文字フォーマット変更クラスのインスタンスを生成します。
+147～149行目の関数は、引数として渡されるブロックのidを利用して、文字フォーマット変更クラスのインスタンスを生成します。
 
 ```JavaScript
 function CreateChangeFontStyleInstance(container) {
@@ -785,7 +767,7 @@ function CreateChangeFontStyleInstance(container) {
 ```
 
 #### 文字のスタイル変更時のイベント
-150～152行目の関数は、文字のスタイル変更時に呼ばれ、文字フォーマット変更クラスの文字のスタイル変更メソッドを呼び出します。
+151～153行目の関数は、文字のスタイル変更時に呼ばれ、文字フォーマット変更クラスの文字のスタイル変更メソッドを呼び出します。
 
 ```JavaScript
 function FontStyleValueChanged() {
@@ -794,7 +776,7 @@ function FontStyleValueChanged() {
 ```
 
 #### 文字の太さ変更時のイベント
-154～156行目の関数は、文字の太さ変更時に呼ばれ、文字フォーマット変更クラスの文字の太さ変更メソッドを呼び出します。
+155～157行目の関数は、文字の太さ変更時に呼ばれ、文字フォーマット変更クラスの文字の太さ変更メソッドを呼び出します。
 
 ```JavaScript
 function FontWeightValueChanged() {
@@ -803,7 +785,7 @@ function FontWeightValueChanged() {
 ```
 
 #### 文字の大きさ変更時のイベント
-158～160行目の関数は、文字の大きさ変更時に呼ばれ、文字フォーマット変更クラスの文字の大きさ変更メソッドを呼び出します。
+159～161行目の関数は、文字の大きさ変更時に呼ばれ、文字フォーマット変更クラスの文字の大きさ変更メソッドを呼び出します。
 
 ```JavaScript
 function FontSizeValueChanged() {
@@ -812,7 +794,7 @@ function FontSizeValueChanged() {
 ```
 
 #### 文字の色変更メソッドの呼び出し
-162～164行目の関数は、文字の色変更時に呼ばれ、文字フォーマット変更クラスの文字の色変更メソッドを呼び出します。
+163～165行目の関数は、文字の色変更時に呼ばれ、文字フォーマット変更クラスの文字の色変更メソッドを呼び出します。
 
 ```JavaScript
 function FontColorValueChanged() {
@@ -821,7 +803,7 @@ function FontColorValueChanged() {
 ```
 
 #### 文字のフォントファミリー変更メソッドの呼び出し
-166～168行目の関数は、文字のフォントファミリー変更時に呼ばれ、文字フォーマット変更クラスの文字のフォントファミリー変更メソッドを呼び出します。
+167～169行目の関数は、文字のフォントファミリー変更時に呼ばれ、文字フォーマット変更クラスの文字のフォントファミリー変更メソッドを呼び出します。
 
 ```JavaScript
 function FontFamilyValueChanged() {

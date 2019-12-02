@@ -13,7 +13,8 @@
     <head>
         <meta charset="utf-8">
         <title>CameraControlWithMouseSample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+        <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <script src="CameraControlWithMouse.js"></script>
         <script src="CheckInputKeyAndMouse.js"></script>
         <style>
@@ -29,7 +30,8 @@
 
             div#mapray-container {
                 display: flex;
-                height: 96%;
+                position: relative;
+                height: calc(100% - 34px);
             }
 
             div#LongitudeStringBox {
@@ -61,15 +63,6 @@
                 border: inset 1px #000000;
                 align-items: center;
             }
-
-            div#mapInfo{
-                display: flex;
-                width: 50px;
-                height: 32px;
-                margin-left: auto;
-                margin-right: 10px;
-                align-items: center;
-            }
         </style>
     </head>
 
@@ -90,8 +83,6 @@
             <p style="margin-left:5px;">Height:</p>
             <p id="HeightValue">0</p>
         </div>
-
-        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
     </body>
 </html>
 ```
@@ -361,7 +352,8 @@ class CameraControl extends mapray.RenderCallback{
         // カメラ位置の設定
 
         // 球面座標から地心直交座標へ変換
-        var camera_Pos_Gocs = GeoMath.iscs_to_gocs_matrix(this.camera_Pos, GeoMath.createMatrix());
+        var camera_geoPoint = new mapray.GeoPoint( this.camera_Pos.longitude, this.camera_Pos.latitude, this.camera_Pos.height );
+        var camera_Pos_Gocs = camera_geoPoint.getMlocsToGocsMatrix( GeoMath.createMatrix() );
 
         var camera_End_Pos_Mat = GeoMath.createMatrix();
         GeoMath.setIdentity(camera_End_Pos_Mat);
@@ -417,18 +409,20 @@ class CameraControl extends mapray.RenderCallback{
 
         if (clossPoint != null) {
             // 交点を球面座標系に変換する
-            var closs_Pos = GeoMath.gocs_to_iscs(clossPoint, {});
+            var closs_geoPoint = new mapray.GeoPoint();
+            closs_geoPoint.setFromGocs( clossPoint );
 
             // UIを更新する
-            document.getElementById("LongitudeValue").innerText = closs_Pos.longitude.toFixed(6);
-            document.getElementById("LatitudeValue").innerText = closs_Pos.latitude.toFixed(6);
-            document.getElementById("HeightValue").innerText = closs_Pos.height.toFixed(6);
+            document.getElementById( "LongitudeValue" ).innerText = closs_geoPoint.longitude.toFixed(6);
+            document.getElementById( "LatitudeValue" ).innerText = closs_geoPoint.latitude.toFixed(6);
+            document.getElementById( "HeightValue" ).innerText = closs_geoPoint.height.toFixed(6);
         }
     }
 
     ForwardCameraPos() {
         // 球面座標から地心直交座標へ変換
-        var camera_Pos_Gocs = GeoMath.iscs_to_gocs_matrix(this.camera_Pos, GeoMath.createMatrix());
+        var camera_geoPoint = new mapray.GeoPoint( this.camera_Pos.longitude, this.camera_Pos.latitude, this.camera_Pos.height );
+        var camera_Pos_Gocs = camera_geoPoint.getMlocsToGocsMatrix( GeoMath.createMatrix() );
 
         // 地心直交座標の平行移動成分を変更
         camera_Pos_Gocs[12] -= this.camera_Vec[0] * this.camera_Move_Correction;
@@ -436,12 +430,18 @@ class CameraControl extends mapray.RenderCallback{
         camera_Pos_Gocs[14] -= this.camera_Vec[2] * this.camera_Move_Correction;
 
         // 地心直交座標を球面座標に変換する
-        GeoMath.gocs_to_iscs([camera_Pos_Gocs[12], camera_Pos_Gocs[13], camera_Pos_Gocs[14]], this.camera_Pos);
+        var next_camera_geoPoint = new mapray.GeoPoint();
+        next_camera_geoPoint.setFromGocs( [camera_Pos_Gocs[12], camera_Pos_Gocs[13], camera_Pos_Gocs[14]] );
+
+        this.camera_Pos.longitude = next_camera_geoPoint.longitude;
+        this.camera_Pos.latitude = next_camera_geoPoint.latitude;
+        this.camera_Pos.height = next_camera_geoPoint.height;
     }
 
     BackwardCameraPos() {
         // 球面座標から地心直交座標へ変換
-        var camera_Pos_Gocs = GeoMath.iscs_to_gocs_matrix(this.camera_Pos, GeoMath.createMatrix());
+        var camera_geoPoint = new mapray.GeoPoint( this.camera_Pos.longitude, this.camera_Pos.latitude, this.camera_Pos.height );
+        var camera_Pos_Gocs = camera_geoPoint.getMlocsToGocsMatrix( GeoMath.createMatrix() );
 
         // 地心直交座標の平行移動成分を変更
         camera_Pos_Gocs[12] += this.camera_Vec[0] * this.camera_Move_Correction;
@@ -449,7 +449,12 @@ class CameraControl extends mapray.RenderCallback{
         camera_Pos_Gocs[14] += this.camera_Vec[2] * this.camera_Move_Correction;
 
         // 地心直交座標を球面座標に変換する
-        GeoMath.gocs_to_iscs([camera_Pos_Gocs[12], camera_Pos_Gocs[13], camera_Pos_Gocs[14]], this.camera_Pos);
+        var next_camera_geoPoint = new mapray.GeoPoint();
+        next_camera_geoPoint.setFromGocs( [camera_Pos_Gocs[12], camera_Pos_Gocs[13], camera_Pos_Gocs[14]] );
+
+        this.camera_Pos.longitude = next_camera_geoPoint.longitude;
+        this.camera_Pos.latitude = next_camera_geoPoint.latitude;
+        this.camera_Pos.height = next_camera_geoPoint.height;
     }
 
     TurnCamera(drag_Vec) {
@@ -505,16 +510,17 @@ htmlのサンプルコードの詳細を以下で解説します。
 ```
 
 #### JavaScriptファイルのパス設定
-6～8行目で参照するJavaScriptのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、カメラを操作するJavaScriptファイル（**CameraControlWithMouse.js**）、マウスの入力を検知するJavaScriptファイル（**CheckInputKeyAndMouse.js**）を設定します。
+6～9行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、カメラを操作するJavaScriptファイル（**CameraControlWithMouse.js**）、マウスの入力を検知するJavaScriptファイル（**CheckInputKeyAndMouse.js**）を設定します。
 
 ```HTML
-<script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+<script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+<link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
 <script src="CameraControlWithMouse.js"></script>
 <script src="CheckInputKeyAndMouse.js"></script>
 ```
 
 #### スタイルの設定
-9～63行目で表示する要素のスタイルを設定します。このサンプルコードでは、下記のスタイルを設定します。
+10～56行目で表示する要素のスタイルを設定します。このサンプルコードでは、下記のスタイルを設定します。
 - html
 - body
 - p
@@ -522,7 +528,6 @@ htmlのサンプルコードの詳細を以下で解説します。
 - div#LongitudeStringBox（経度表示部分）
 - div#LatitudeStringBox（緯度表示部分）
 - div#HeightStringBox（高度表示部分）
-- div#mapInfo（出典表示部分）
 
 ```HTML
 <style>
@@ -538,7 +543,8 @@ htmlのサンプルコードの詳細を以下で解説します。
 
     div#mapray-container {
         display: flex;
-        height: 96%;
+        position: relative;
+        height: calc(100% - 34px);
     }
 
     div#LongitudeStringBox {
@@ -570,39 +576,27 @@ htmlのサンプルコードの詳細を以下で解説します。
         border: inset 1px #000000;
         align-items: center;
     }
-
-    div#mapInfo{
-        display: flex;
-        width: 50px;
-        height: 32px;
-        margin-left: auto;
-        margin-right: 10px;
-        align-items: center;
-    }
 </style>
 ```
 
 #### loadイベントの処理
-画面を表示する時に、カメラを操作するクラスを生成します。そのため、66行目でページの読み込み時に、地図表示部分のブロックのidからカメラを操作するクラスのインスタンスを生成します。
+画面を表示する時に、カメラを操作するクラスを生成します。そのため、59行目でページの読み込み時に、地図表示部分のブロックのidからカメラを操作するクラスのインスタンスを生成します。
 カメラを操作するはJavaScriptのサンプルコードの詳細で説明します。
 
 ```HTML
 <body onload="new CameraControl('mapray-container');">
 ```
 
-#### 地図表示部分と出典表示部分の指定
-67行目で地図表示部分のブロックを、84行目で出典を明記するためのブロックを記述します。詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
+#### 地図表示部分の指定
+60行目で地図表示部分のブロックを記述します。
+詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```HTML
 <div id="mapray-container"></div>
-
-中略
-
-<div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
 ```
 
 #### クリック位置の緯度・経度・高度表示のUI
-69～82行目で緯度・経度・高度を表示するブロックを記述します。それぞれのブロックの中には、該当する数値を表示する領域を用意します。
+62～75行目で緯度・経度・高度を表示するブロックを記述します。それぞれのブロックの中には、該当する数値を表示する領域を用意します。
 
 ```HTML
 <div id="LongitudeStringBox">
@@ -938,7 +932,7 @@ endFrame() {
 カメラを操作するJavaScriptのサンプルコードの詳細を以下で解説します。
 
 #### クラスとグローバル変数
-3～202行目で、カメラを操作するクラスを定義します。カメラをマウスで操作するために、カメラを操作するクラスはmapray.RenderCallbackクラスを継承します。
+3～216行目で、カメラを操作するクラスを定義します。カメラをマウスで操作するために、カメラを操作するクラスはmapray.RenderCallbackクラスを継承します。
 1行目のグローバル変数は、数学関連の関数または定数を定義するユーティリティークラスです。
 
 ```JavaScript
@@ -1053,18 +1047,19 @@ createImageProvider() {
 ```
 
 #### カメラの位置・向きの設定
-75～124行目がカメラの位置・向きの設定メソッドです。
-まず、79行目のiscs_to_gocs_matrix関数で、カメラ位置の緯度・経度・高度を地心直交座標系で表現したカメラ位置を表す変換行列を計算します。
-次に、ビュー変換行列を作成します。まず、81～85行目で相対注視点を表す変換行列を単位行列に初期化し、相対注視点がY軸の負の方向になるように、Y軸方向に移動します。その後、88～91行目で、現在の回転角度に対応する回転行列（Z軸回りの回転行列）、カメラの仰俯角に対応する回転行列（X軸回りの回転行列）を生成し、94～97行目で、相対注視点を表す変換行列にそれぞれの回転行列を掛け合わせることで、相対注視点を表す変換行列を作成します。そして、100～108行目で、原点と求めた相対注視点から上方向ベクトルを求め、111～112行目で、原点、求めた相対注視点、カメラの上方向ベクトルを利用して、最終的なビュー変換行列を作成します。
-そして、115～116行目で、これまでに求めたカメラ位置を表す変換行列と、ビュー変換行列を掛け合わせることで、最終的なカメラ姿勢を計算します。
-最後に、119行目で、視線方向ベクトルを更新し、122～123行目でカメラの投影範囲を設定し、現在のカメラ視線を最新の状態に更新します。
+75～125行目がカメラの位置・向きの設定メソッドです。
+まず、79～80行目のgetMlocsToGocsMatrix関数で、カメラ位置の緯度・経度・高度を地心直交座標系で表現したカメラ位置を表す変換行列を計算します。
+次に、ビュー変換行列を作成します。まず、82～86行目で相対注視点を表す変換行列を単位行列に初期化し、相対注視点がY軸の負の方向になるように、Y軸方向に移動します。その後、89～92行目で、現在の回転角度に対応する回転行列（Z軸回りの回転行列）、カメラの仰俯角に対応する回転行列（X軸回りの回転行列）を生成し、95～98行目で、相対注視点を表す変換行列にそれぞれの回転行列を掛け合わせることで、相対注視点を表す変換行列を作成します。そして、101～109行目で、原点と求めた相対注視点から上方向ベクトルを求め、112～113行目で、原点、求めた相対注視点、カメラの上方向ベクトルを利用して、最終的なビュー変換行列を作成します。
+そして、116～117行目で、これまでに求めたカメラ位置を表す変換行列と、ビュー変換行列を掛け合わせることで、最終的なカメラ姿勢を計算します。
+最後に、120行目で、視線方向ベクトルを更新し、122～123行目でカメラの投影範囲を設定し、現在のカメラ視線を最新の状態に更新します。
 
 ```JavaScript
 SetCamera() {
     // カメラ位置の設定
 
     // 球面座標から地心直交座標へ変換
-    var camera_Pos_Gocs = GeoMath.iscs_to_gocs_matrix(this.camera_Pos, GeoMath.createMatrix());
+    var camera_geoPoint = new mapray.GeoPoint( this.camera_Pos.longitude, this.camera_Pos.latitude, this.camera_Pos.height );
+    var camera_Pos_Gocs = camera_geoPoint.getMlocsToGocsMatrix( GeoMath.createMatrix() );
 
     var camera_End_Pos_Mat = GeoMath.createMatrix();
     GeoMath.setIdentity(camera_End_Pos_Mat);
@@ -1113,8 +1108,8 @@ SetCamera() {
 ```
 
 #### クリックした位置の緯度・経度・高度表示
-126～142行目がクリックした位置の緯度・経度・高度表示メソッドです。このサンプルコードでは、クリックした位置から視線方向に伸ばした直線と地表面の交点を求め、その位置の緯度・経度・高度を画面に表示します。
-まず、128行目のgetCanvasRay関数で、クリックした位置から視線方向に伸ばした直線（レイ）を取得します。次に、131行目で行目のgetRayIntersection関数で、先ほど取得したレイと地表の交点を取得します。最後に、135行目のgocs_to_iscs関数で、先ほど取得した交点の緯度・経度・高度を取得し、138～140行目で、その緯度・経度・高度を対応したテキストに設定します。
+127～143行目がクリックした位置の緯度・経度・高度表示メソッドです。このサンプルコードでは、クリックした位置から視線方向に伸ばした直線と地表面の交点を求め、その位置の緯度・経度・高度を画面に表示します。
+まず、129行目のgetCanvasRay関数で、クリックした位置から視線方向に伸ばした直線（レイ）を取得します。次に、132行目で行目のgetRayIntersection関数で、先ほど取得したレイと地表の交点を取得します。最後に、136～137行目のsetFromGocs関数で、先ほど取得した交点の緯度・経度・高度を計算し、140～142行目で、その緯度・経度・高度を対応したテキストに設定します。
 
 ```JavaScript
 SetClickPosLongitudeAndLatitudeAndHeight(clickPos) {
@@ -1126,24 +1121,26 @@ SetClickPosLongitudeAndLatitudeAndHeight(clickPos) {
 
     if (clossPoint != null) {
         // 交点を球面座標系に変換する
-        var closs_Pos = GeoMath.gocs_to_iscs(clossPoint, {});
+        var closs_geoPoint = new mapray.GeoPoint();
+        closs_geoPoint.setFromGocs( clossPoint );
 
         // UIを更新する
-        document.getElementById("LongitudeValue").innerText = closs_Pos.longitude.toFixed(6);
-        document.getElementById("LatitudeValue").innerText = closs_Pos.latitude.toFixed(6);
-        document.getElementById("HeightValue").innerText = closs_Pos.height.toFixed(6);
+        document.getElementById( "LongitudeValue" ).innerText = closs_geoPoint.longitude.toFixed(6);
+        document.getElementById( "LatitudeValue" ).innerText = closs_geoPoint.latitude.toFixed(6);
+        document.getElementById( "HeightValue" ).innerText = closs_geoPoint.height.toFixed(6);
     }
 }
 ```
 
 #### カメラ位置の前進
-144～155行目がカメラ位置の前進メソッドです。このサンプルコードでは、カメラの位置が視線方向に移動します。
-まず、146行目のiscs_to_gocs_matrix関数で、カメラ位置の地心直交座標への変換行列を作成します。次に、149～151行目で、視線方向ベクトルと前進、後退時の移動量の補正値を使って、前進させたカメラ位置を求めます。最後に、154行目のgocs_to_iscs関数で、前進させたカメラ位置の球面座標を取得します。
+146～163行目がカメラ位置の前進メソッドです。このサンプルコードでは、カメラの位置が視線方向に移動します。
+まず、148～140行目のgetMlocsToGocsMatrix関数で、カメラ位置の地心直交座標への変換行列を作成します。次に、152～154行目で、視線方向ベクトルと前進、後退時の移動量の補正値を使って、前進させたカメラ位置を求めます。最後に、157～158行目のsetFromGocs関数で前進させたカメラ位置の球面座標を計算し、160～162行目でその座標をカメラ位置へ反映します。
 
 ```JavaScript
 ForwardCameraPos() {
     // 球面座標から地心直交座標へ変換
-    var camera_Pos_Gocs = GeoMath.iscs_to_gocs_matrix(this.camera_Pos, GeoMath.createMatrix());
+    var camera_geoPoint = new mapray.GeoPoint( this.camera_Pos.longitude, this.camera_Pos.latitude, this.camera_Pos.height );
+    var camera_Pos_Gocs = camera_geoPoint.getMlocsToGocsMatrix( GeoMath.createMatrix() );
 
     // 地心直交座標の平行移動成分を変更
     camera_Pos_Gocs[12] -= this.camera_Vec[0] * this.camera_Move_Correction;
@@ -1151,18 +1148,24 @@ ForwardCameraPos() {
     camera_Pos_Gocs[14] -= this.camera_Vec[2] * this.camera_Move_Correction;
 
     // 地心直交座標を球面座標に変換する
-    GeoMath.gocs_to_iscs([camera_Pos_Gocs[12], camera_Pos_Gocs[13], camera_Pos_Gocs[14]], this.camera_Pos);
+    var next_camera_geoPoint = new mapray.GeoPoint();
+    next_camera_geoPoint.setFromGocs( [camera_Pos_Gocs[12], camera_Pos_Gocs[13], camera_Pos_Gocs[14]] );
+
+    this.camera_Pos.longitude = next_camera_geoPoint.longitude;
+    this.camera_Pos.latitude = next_camera_geoPoint.latitude;
+    this.camera_Pos.height = next_camera_geoPoint.height;
 }
 ```
 
 #### カメラ位置の後進
-157～168行目がカメラ位置の後進メソッドです。このサンプルコードでは、カメラの位置が視線の逆方向に移動します。
+165～182行目がカメラ位置の後進メソッドです。このサンプルコードでは、カメラの位置が視線の逆方向に移動します。
 このメソッドは、前述したカメラ位置の前進メソッドを逆方向に動くようにしたメソッドです。
 
 ```JavaScript
 BackwardCameraPos() {
     // 球面座標から地心直交座標へ変換
-    var camera_Pos_Gocs = GeoMath.iscs_to_gocs_matrix(this.camera_Pos, GeoMath.createMatrix());
+    var camera_geoPoint = new mapray.GeoPoint( this.camera_Pos.longitude, this.camera_Pos.latitude, this.camera_Pos.height );
+    var camera_Pos_Gocs = camera_geoPoint.getMlocsToGocsMatrix( GeoMath.createMatrix() );
 
     // 地心直交座標の平行移動成分を変更
     camera_Pos_Gocs[12] += this.camera_Vec[0] * this.camera_Move_Correction;
@@ -1170,13 +1173,18 @@ BackwardCameraPos() {
     camera_Pos_Gocs[14] += this.camera_Vec[2] * this.camera_Move_Correction;
 
     // 地心直交座標を球面座標に変換する
-    GeoMath.gocs_to_iscs([camera_Pos_Gocs[12], camera_Pos_Gocs[13], camera_Pos_Gocs[14]], this.camera_Pos);
+    var next_camera_geoPoint = new mapray.GeoPoint();
+    next_camera_geoPoint.setFromGocs( [camera_Pos_Gocs[12], camera_Pos_Gocs[13], camera_Pos_Gocs[14]] );
+
+    this.camera_Pos.longitude = next_camera_geoPoint.longitude;
+    this.camera_Pos.latitude = next_camera_geoPoint.latitude;
+    this.camera_Pos.height = next_camera_geoPoint.height;
 }
 ```
 
 #### カメラの回転角度の更新
-170～187行目がカメラの回転角度の更新メソッドです。このサンプルコードでは、ドラッグした方向によってカメラの回転角度と仰俯角を更新します。
-まず、172～173行目でドラッグした方向とカメラの回転角度、仰俯角更新時の補正値を使って、カメラの回転角度と仰俯角の更新量を求めます。次に。先ほど求めた更新量の絶対値が0.3よりも小さい場合は、176～182行目で更新量を0にします。最後に、185～186行目でカメラの回転角度と仰俯角の更新量を使って、カメラの角度を更新します。
+184～201行目がカメラの回転角度の更新メソッドです。このサンプルコードでは、ドラッグした方向によってカメラの回転角度と仰俯角を更新します。
+まず、186～187行目でドラッグした方向とカメラの回転角度、仰俯角更新時の補正値を使って、カメラの回転角度と仰俯角の更新量を求めます。次に。先ほど求めた更新量の絶対値が0.3よりも小さい場合は、190～196行目で更新量を0にします。最後に、199～200行目でカメラの回転角度と仰俯角の更新量を使って、カメラの角度を更新します。
 
 ```JavaScript
 TurnCamera(drag_Vec) {
@@ -1200,8 +1208,8 @@ TurnCamera(drag_Vec) {
 ```
 
 #### カメラの高度の更新
-189～200行目がカメラの高度の更新メソッドです。このサンプルコードでは、ドラッグした方向によってカメラの高度を更新します。
-まず、191行目でドラッグした方向とカメラの高度更新時の補正値を使って、カメラの高度の更新量を求めます。次に、先ほど求めた更新量の絶対値が1よりも小さい場合は、194～196行目で更新量を0にします。最後に、199行目でカメラの高度の更新量を使って、高度を更新します。
+203～214行目がカメラの高度の更新メソッドです。このサンプルコードでは、ドラッグした方向によってカメラの高度を更新します。
+まず、205行目でドラッグした方向とカメラの高度更新時の補正値を使って、カメラの高度の更新量を求めます。次に、先ほど求めた更新量の絶対値が1よりも小さい場合は、208～210行目で更新量を0にします。最後に、213行目でカメラの高度の更新量を使って、高度を更新します。
 
 ```JavaScript
 UpdateCameraHeight(drag_Vec) {

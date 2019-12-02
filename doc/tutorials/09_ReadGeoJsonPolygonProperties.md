@@ -14,7 +14,8 @@
     <head>
         <meta charset="utf-8">
         <title>ReadGeoJsonPolygonPropertiesSample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+        <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <script src="ReadGeoJsonPolygonProperties.js" charset="utf-8"></script>
         <style>
             html, body {
@@ -37,7 +38,8 @@
 
             div#mapray-container {
                 display: flex;
-                height: 96%;
+                position: relative;
+                height: calc(100% - 37px);
             }
 
             div#OpacityBox {
@@ -47,24 +49,6 @@
                 width: 120px;
                 float: left;
                 border: inset 1px #000000;
-                align-items: center;
-            }
-
-            div#mapInfo{
-                display: flex;
-                width: 50px;
-                height: 16px;
-                margin-left: auto;
-                margin-right: 10px;
-                align-items: center;
-            }
-
-            div#geoJsonInfo{
-                display: flex;
-                width: 580px;
-                height: 16px;
-                margin-left: auto;
-                margin-right: 10px;
                 align-items: center;
             }
         </style>
@@ -81,9 +65,6 @@
                 <option value=1.0>1.0</option>
             </select>
         </div>
-
-        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
-        <div id="geoJsonInfo"><a href="http://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-mesh1000.html" style="font-size: 9px">国土数値情報　ダウンロードサービス 1kmメッシュ別将来推計人口（H29国政局推計）（shape形式からGeoJSON形式に変換）</a></div>
     </body>
 </html>
 ```
@@ -106,6 +87,12 @@ class ReadGeoJsonPolygonProperties extends mapray.RenderCallback {
             dem_provider: new mapray.CloudDemProvider(accessToken)
         });
 
+        // geoJSONファイルのライセンス表示
+        this.viewer.attribution_controller.addAttribution( {
+            display: "国土数値情報　ダウンロードサービス 1kmメッシュ別将来推計人口（H29国政局推計）（shape形式からGeoJSON形式に変換）",
+            link: "http://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-mesh1000.html"
+        } );        
+
         this.SetCamera();
 
         this.AddText();
@@ -124,7 +111,8 @@ class ReadGeoJsonPolygonProperties extends mapray.RenderCallback {
         var home_pos = { longitude: 139.529127, latitude: 35.677033, height: 100.0 };
 
         // 球面座標から地心直交座標へ変換
-        var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+        var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+        var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
         // 視線方向を定義
         var cam_pos = mapray.GeoMath.createVector3([0, 0, 100000]);
@@ -234,23 +222,22 @@ htmlのサンプルコードの詳細を以下で解説します。
 ```
 
 #### JavaScriptファイルのパス設定
-6～7行目で参照するJavaScripのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイルとポリゴンのプロパティを参照して対象データ表示するJavaScriptファイル（**ReadGeoJsonPolygonProperties.js**）を設定します。
+6～8行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、ポリゴンのプロパティを参照して対象データ表示するJavaScriptファイル（**ReadGeoJsonPolygonProperties.js**）を設定します。
 
 ```HTML
-<script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+<script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+<link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
 <script src="ReadGeoJsonPolygonProperties.js" charset="utf-8"></script>
 ```
 
 #### スタイルの設定
-8～59行目で表示する要素のスタイルを設定します。このサンプルコードでは、下記のスタイルを設定します。
+9～43行目で表示する要素のスタイルを設定します。このサンプルコードでは、下記のスタイルを設定します。
 - html
 - body
 - select
 - p
 - div#mapray-container（地図表示部分）
 - div#OpacityBox（透過率変更コンボボックス表示部分）
-- div#mapInfo（出典表示部分）
-- div#geoJsonInfo（GeonJSONデータ出典表示部分）
 
 ```HTML
 <style>
@@ -274,7 +261,8 @@ htmlのサンプルコードの詳細を以下で解説します。
 
     div#mapray-container {
         display: flex;
-        height: 96%;
+        position: relative;
+        height: calc(100% - 37px);
     }
 
     div#OpacityBox {
@@ -286,49 +274,27 @@ htmlのサンプルコードの詳細を以下で解説します。
         border: inset 1px #000000;
         align-items: center;
     }
-
-    div#mapInfo{
-        display: flex;
-        width: 50px;
-        height: 16px;
-        margin-left: auto;
-        margin-right: 10px;
-        align-items: center;
-    }
-
-    div#geoJsonInfo{
-        display: flex;
-        width: 580px;
-        height: 16px;
-        margin-left: auto;
-        margin-right: 10px;
-        align-items: center;
-    }
 </style>
 ```
 
 #### loadイベントの処理
-画面を表示するときに、ポリゴンのプロパティを参照して対象データ表示するクラスを生成します。そのため、62行目で、ページの読み込み時に、ポリゴンのプロパティを参照して対象データ表示するクラスのインスタンスを生成するメソッド（**CreateReadGeoJsonPolygonPropertiesInstance**）を呼ぶように設定します。
+画面を表示するときに、ポリゴンのプロパティを参照して対象データ表示するクラスを生成します。そのため、46行目で、ページの読み込み時に、ポリゴンのプロパティを参照して対象データ表示するクラスのインスタンスを生成するメソッド（**CreateReadGeoJsonPolygonPropertiesInstance**）を呼ぶように設定します。
 ポリゴンのプロパティを参照して対象データ表示するクラスのインスタンスを生成するメソッドは、JavaScriptのサンプルコードの詳細で説明します。
 
 ```HTML
 <body onload="CreateReadGeoJsonPolygonPropertiesInstance('mapray-container');">
 ```
 
-#### 地図表示部分と出典表示部分の指定
-63行目で地図表示部分になるブロックを記述し、74行目で出典を明記するためのブロックを記述します。
+#### 地図表示部分の指定
+47行目で地図表示部分のブロックを記述します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```HTML
 <div id="mapray-container"></div>
-
-中略
-
-<div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
 ```
 
 #### 透過率変更のUI
-65～72行目で透過率変更コンボボックス表示部分のブロックを記述します。このブロックの中には、透過率を変更するコンボボックスを用意します。このサンプルコードでは、0.0、0.5、1.0を設定します。
+49～56行目で透過率変更コンボボックス表示部分のブロックを記述します。このブロックの中には、透過率を変更するコンボボックスを用意します。このサンプルコードでは、0.0、0.5、1.0を設定します。
 透過率を変更するコンボボックスが変更された時のイベント（onchange）に、透過率のコンボボックス変更時に呼び出す関数（**OpacityValueChanged**）を設定します。
 透過率のコンボボックス変更時に呼び出す関数はJavaScriptのサンプルコードの詳細で説明します。
 
@@ -343,18 +309,11 @@ htmlのサンプルコードの詳細を以下で解説します。
 </div>
 ```
 
-#### GeoJSONデータの出典表示部分の設定
-75行目で、GeoJSONデータの出典を明記するためのブロックを記述します。
-
-```HTML
-<div id="geoJsonInfo"><a href="http://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-mesh1000.html" style="font-size: 9px">国土数値情報　ダウンロードサービス 1kmメッシュ別将来推計人口（H29国政局推計）（shape形式からGeoJSON形式に変換）</a></div>
-```
-
 ### JavaScriptのサンプルコードの詳細
 JavaScriptのサンプルコードの詳細を以下で解説します。
 
 #### クラスの説明
-3～117行目で、ポリゴンのGeoJSONデータを読み込み、そのデータが持つプロパティを参照して対象データ表示するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
+3～123行目で、ポリゴンのGeoJSONデータを読み込み、そのデータが持つプロパティを参照して対象データ表示するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
 ポリゴンのプロパティを参照して対象データ表示するクラスは、mapray.RenderCallbackクラスを継承します。
 また、1行目でプロパティを参照して対象データを表示するクラスのグローバル変数を定義します。
 
@@ -369,7 +328,7 @@ class ReadGeoJsonPolygonProperties extends mapray.RenderCallback {
 ```
 
 #### コンストラクタ
-4～22行目が線のGeoJSONデータを読み込み、そのデータが持つプロパティを参照して対象データ表示するクラスのコンストラクタです。引数として渡されるブロックのidに対して、mapray.Viewerを作成し、カメラの位置・向きの設定メソッドを呼び出します。その後、文字の表示メソッドとGeoJSONデータのロードメソッドを呼び出します。viewerを作成する際の画像プロバイダは画像プロバイダの生成メソッドから取得します。
+4～22行目が線のGeoJSONデータを読み込み、そのデータが持つプロパティを参照して対象データ表示するクラスのコンストラクタです。引数として渡されるブロックのidに対して、mapray.Viewerを作成し、geoJSONファイルの出典情報を追加します。そして、カメラの位置・向きの設定メソッドを呼び出します。その後、文字の表示メソッドとGeoJSONデータのロードメソッドを呼び出します。viewerを作成する際の画像プロバイダは画像プロバイダの生成メソッドから取得します。
 mapray.Viewerの作成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -386,6 +345,12 @@ constructor(container) {
         dem_provider: new mapray.CloudDemProvider(accessToken)
     });
 
+    // geoJSONファイルのライセンス表示
+    this.viewer.attribution_controller.addAttribution( {
+        display: "国土数値情報　ダウンロードサービス 1kmメッシュ別将来推計人口（H29国政局推計）（shape形式からGeoJSON形式に変換）",
+        link: "http://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-mesh1000.html"
+    } );
+
     this.SetCamera();
 
     this.AddText();
@@ -395,7 +360,7 @@ constructor(container) {
 ```
 
 #### 画像プロバイダの生成
-25～27行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
+31～33行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
 画像プロバイダの生成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -406,7 +371,7 @@ createImageProvider() {
 ```
 
 #### カメラの位置・向きの設定
-30～53行目がカメラの位置・向きの設定メソッドです。
+36～60行目がカメラの位置・向きの設定メソッドです。
 カメラの位置・向きの設定は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -416,7 +381,8 @@ SetCamera() {
     var home_pos = { longitude: 139.529127, latitude: 35.677033, height: 100.0 };
 
     // 球面座標から地心直交座標へ変換
-    var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+    var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+    var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
     // 視線方向を定義
     var cam_pos = mapray.GeoMath.createVector3([0, 0, 100000]);
@@ -438,7 +404,7 @@ SetCamera() {
 ```
 
 #### 文字の表示
-56～67行目で、地名を表現する文字をmapray.Viewerのシーンに追加します。
+63～74行目で、地名を表現する文字をmapray.Viewerのシーンに追加します。
 文字の表示方法の詳細は、ヘルプページ『**文字の表示（addTextを使った表示）**』を参照してください。
 
 ```JavaScript
@@ -458,10 +424,10 @@ AddText() {
 ```
 
 #### シーンのロード
-70～79行目がシーンのロードメソッドです。mapray.GeoJSONLoaderでシーンを読み込みます。
+77～85行目がシーンのロードメソッドです。mapray.GeoJSONLoaderでシーンを読み込みます。
 GeoJSONLoaderクラス生成時の引数には、GeoJSONファイルのエンティティを追加するシーン、読み込むGeoJSONファイルのURL、オプション集合の順に指定します。このサンプルコードでは、viewerクラスのシーン、GeoJSONファイルのURL、オプション集合の順に指定します。オプション集合には、シーンのロードが終了した時のコールバック関数、ポリゴンの色、指定高度優先可否、指定高度をの順に指定します。このサンプルコードでは、GeoJSONデータのプロパティに応じた内容にするため、ポリゴンの色には、プロパティの値に応じた色が取得できるメソッドを設定しています。なお、プロパティの値に応じた色が取得できるメソッドの詳細は後述します。
 また、読み込むGeoJSONファイルのURLは、httpもしくはhttpsでアクセスできるURLを指定します。
-最後に、78行目のload関数を呼び出すことでシーンの読み込みができます。
+最後に、84行目のload関数を呼び出すことでシーンの読み込みができます。
 なお、GeoJSONLoaderクラスは、GeoJSONデータのfeatureごとのロード時にコールバック関数が呼ばれ、GeoJSONデータの任意のproperty属性にアクセスすることができます。また、propertyに書かれているkeyの値をコールバック関数内で取得することも可能です。
 
 ```JavaScript
@@ -478,7 +444,7 @@ LoadGeoJson() {
 ```
 
 #### プロパティの値に応じた色の変更
-82～104行目がプロパティの値に応じた色が取得できるメソッドです。読み込んだGeoJSONデータのプロパティを参照して、適切な色を返します。
+88～110行目がプロパティの値に応じた色が取得できるメソッドです。読み込んだGeoJSONデータのプロパティを参照して、適切な色を返します。
 このサンプルコードでは、人口密度が高くなるにつれて、赤色から黄色になるように設定しています。
 
 ```JavaScript
@@ -509,7 +475,7 @@ GetFillColor( properties={} ) {
 ```
 
 #### 透過率の変更
-106～115行目が透過率変更メソッドです。108行目で透過率を変更するコンボボックスから値を取得します。そして、112行目のviewer.sceneのgetEntity関数でポリゴンのエンティティを順に取得し、113行目で取得した値を指定することで、ポリゴンの透過率を変更します。このサンプルコードでは、GeoJSONデータはポリゴンのエンティティとなり、インデックスは1番目以降となるため、getEntity関数には1以降のすべてのエンティティを指定します。
+112～121行目が透過率変更メソッドです。114行目で透過率を変更するコンボボックスから値を取得します。そして、118行目のviewer.sceneのgetEntity関数でポリゴンのエンティティを順に取得し、119行目で取得した値を指定することで、ポリゴンの透過率を変更します。このサンプルコードでは、GeoJSONデータはポリゴンのエンティティとなり、インデックスは1番目以降となるため、getEntity関数には1以降のすべてのエンティティを指定します。
 
 ```JavaScript
 ChangeOpacity() {
@@ -525,7 +491,7 @@ ChangeOpacity() {
 ```
 
 #### ポリゴンのプロパティを参照して対象データ表示するクラスのインスタンス生成
-119～121行目の関数は、引数として渡されるブロックのidを利用して、ポリゴンのプロパティを参照して対象データ表示するクラスのインスタンスを生成します。
+125～127行目の関数は、引数として渡されるブロックのidを利用して、ポリゴンのプロパティを参照して対象データ表示するクラスのインスタンスを生成します。
 
 ```JavaScript
 function CreateReadGeoJsonPolygonPropertiesInstance(container) {
@@ -534,7 +500,7 @@ function CreateReadGeoJsonPolygonPropertiesInstance(container) {
 ```
 
 #### 透過率変更時のイベント
-123～125行目の関数は、透過率変更時に呼ばれ、ポリゴンのプロパティを参照して対象データ表示するクラスの透過率変更メソッドを呼び出します。
+129～131行目の関数は、透過率変更時に呼ばれ、ポリゴンのプロパティを参照して対象データ表示するクラスの透過率変更メソッドを呼び出します。
 
 ```JavaScript
 function OpacityValueChanged() {
@@ -549,3 +515,30 @@ function OpacityValueChanged() {
 
 初期状態から、透過率を1.0にした時の出力イメージは下図のようになります。
 ![出力イメージ](image/ReadGeoJsonPolygonProperties_opacity.png)
+
+
+### クランプ機能を用いたサンプル
+ポリゴンのGeoJSONデータを読み込む際に、クランプ機能（ポリゴンを地表面上に作図する）を用いたサンプルコードが、**ReadGeoJsonPolygonPropertiesVer2.html**及び、**ReadGeoJsonPolygonPropertiesVer2.js**です。
+シーンファイル（**climatological_normal.json**）は、[国土交通省](http://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-G02.html)から取得した実データのため、詳細説明は割愛します。
+このサンプルコードでは、富士山近郊の気温の平年値に応じて、ポリゴンの色をグラデーション表示し、クランプ機能を用いて、ポリゴンを地表面上に表示します。
+
+#### クランプ機能を用いたシーンのロード
+クランプ機能を用いるには、シーンのロードメソッド内で、getAltitudeModeにmapray.AltitudeMode.CLAMPを設定します。下記に示すコードの6行目にあたる部分になります。
+この設定を行うことで、読みこんだGeoJSONファイルを表示する際に、全てのポリゴンが地表面上に沿った形で表示されます。
+
+```JavaScript
+// GeoJSONの読み込み
+LoadGeoJson() {
+    var loader = new mapray.GeoJSONLoader( this._viewer.scene, "./data/climatological_normal.json", {
+        onLoad: ( loader, isSuccess ) => { console.log( "success load geojson" ) },
+        getFillColor: d => d.properties ? this.GetFillColor( d.properties ) : [1.0, 0.0, 1.0, 0.5],
+        getAltitudeMode: () => mapray.AltitudeMode.CLAMP
+    } );
+
+    loader.load();
+}
+```
+
+### 出力イメージ
+このサンプルコードの出力イメージは下図のようになります。
+![出力イメージ](image/ReadGeoJsonPolygonPropertiesVer2.png)
