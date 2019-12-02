@@ -117,12 +117,17 @@ class Texture {
             wrap_t:     gl.REPEAT
         };
 
-        if ( opts.usage === Texture.Usage.TEXT ) {
+        if ( opts.usage === Texture.Usage.SIMPLETEXT ) {
             params.format     = gl.ALPHA;
             params.min_filter = gl.LINEAR;
             params.wrap_s     = gl.CLAMP_TO_EDGE;
             params.wrap_t     = gl.CLAMP_TO_EDGE;
-        }
+        } 
+        else if ( opts.usage === Texture.Usage.TEXT) {
+            params.min_filter = gl.LINEAR;
+            params.wrap_s     = gl.CLAMP_TO_EDGE;
+            params.wrap_t     = gl.CLAMP_TO_EDGE;
+        } 
         else if ( opts.usage === Texture.Usage.COLOR ) {
             params.mag_filter = gl.NEAREST;
             params.min_filter = gl.NEAREST;

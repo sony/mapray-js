@@ -156,7 +156,7 @@ class ImageIconEntity extends Entity {
 class PrimitiveProducer extends Entity.PrimitiveProducer {
 
     /**
-     * @param {mapray.TextEntity} entity
+     * @param {mapray.ImageIconEntity} entity
      */
     constructor( entity )
     {
@@ -828,7 +828,7 @@ class Layout {
 
     /**
      * @summary アイテムの配置を設定
-     * @param  {array.<mapray.TextEntity.RowLayout>} row_layouts
+     * @param  {array.<mapray.ImageIconEntity.RowLayout>} row_layouts
      * @return {object}                              キャンバスサイズ
      * @private
      */
@@ -1004,7 +1004,7 @@ class RowLayout {
      * @desc
      * <p>レイアウトされた、またはレイアウトに失敗したアイテムは src_items から削除される。</p>
      * <p>レイアウトに失敗したアイテムは取り消し (is_canceled) になる。</p>
-     * @param {array.<mapray.TextEntity.LItem>} src_items  アイテムリスト
+     * @param {array.<mapray.ImageIconEntity.LItem>} src_items  アイテムリスト
      */
     constructor( src_items )
     {
@@ -1057,7 +1057,7 @@ class RowLayout {
 
     /**
      * 
-     * @type {array.<mapray.TextEntity.LItem>}
+     * @type {array.<mapray.ImageIconEntity.LItem>}
      * @readonly
      */
     get items()

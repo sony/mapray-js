@@ -42,6 +42,11 @@ start => <SCENE>
   font_size?: Number = 16
   font_family?: String = "sans-serif"
   color?: <PARAM-VEC3> = [1, 1, 1]
+  stroke_color?: <PARAM-VEC3> = [0, 0, 0]
+  stroke_width?: Number = 0.48
+  enable_stroke?: Boolean = false
+  bg_color?:  <PARAM-VEC3> = [0.3, 0.3, 0.3]
+  enable_bg: Boolean = false
 
 <POLYGON-CONTENT> =>
   type: "polygon"
@@ -74,6 +79,10 @@ start => <SCENE>
   font_size?: Number
   font_family?: String
   color?: <PARAM-VEC3>
+  stroke_color?: <PARAM-VEC3>
+  stroke_width?: Number
+  enable_stroke?: Boolean
+  bg_color?:  <PARAM-VEC3>
 }
 
 <BOUNDARY> => {

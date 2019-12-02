@@ -5,11 +5,11 @@ import image_icon_fs_code from "./shader/image_icon.frag";
 
 
 /**
- * @summary テキストマテリアル
+ * @summary イメージアイコンマテリアル
  * @memberof mapray
  * @extends mapray.EntityMaterial
  * @private
- * @see mapray.TextEntity
+ * @see mapray.ImageIconEntity
  */
 class ImageIconMaterial extends EntityMaterial {
 

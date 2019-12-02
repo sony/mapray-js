@@ -3,11 +3,13 @@ import Primitive from "./Primitive";
 import Mesh from "./Mesh";
 import Texture from "./Texture";
 import TextMaterial from "./TextMaterial";
+import SimpleTextMaterial from "./SimpleTextMaterial";
 import GeoMath from "./GeoMath";
 import GeoPoint from "./GeoPoint";
 import AltitudeMode from "./AltitudeMode";
 import EntityRegion from "./EntityRegion";
 import Dom from "./util/Dom";
+import Color from "./util/Color";
 
 /**
  * @summary テキストエンティティ
@@ -32,15 +34,17 @@ class TextEntity extends Entity {
 
         // テキストの親プロパティ
         this._text_parent_props = {
-            font_style:  "normal",
-            font_weight: "normal",
-            font_size:   TextEntity.DEFAULT_FONT_SIZE,
-            font_family: TextEntity.DEFAULT_FONT_FAMILY,
-            color: GeoMath.createVector3f( TextEntity.DEFAULT_COLOR )
+            font_style:   "normal",
+            font_weight:  "normal",
+            font_size:    TextEntity.DEFAULT_FONT_SIZE,
+            font_family:  TextEntity.DEFAULT_FONT_FAMILY,
+            color:        Color.generateOpacityColor( TextEntity.DEFAULT_COLOR ),
+            stroke_color: Color.generateOpacityColor( TextEntity.DEFAULT_STROKE_COLOR ),
+            stroke_width: TextEntity.DEFAULT_STROKE_WIDTH,
+            bg_color:     Color.generateOpacityColor( TextEntity.DEFAULT_BG_COLOR ),
+            enable_stroke: false,
+            enable_bg: false
         };
-
-        // Entity.PrimitiveProducer インスタンス
-        this._primitive_producer = new PrimitiveProducer( this );
 
         // 生成情報から設定
         if ( opts && opts.json ) {
@@ -114,9 +118,55 @@ class TextEntity extends Entity {
      */
     setColor( color )
     {
-        this._setVector3Property( "color", color );
+        this._setColorProperty( "color", color );
     }
 
+    /**
+     * @summary テキスト縁の色を設定
+     * @param {mapray.Vector3} color  縁の色
+     */
+    setStrokeColor( color )
+    {
+        this._setColorProperty( "stroke_color", color );
+    }
+
+    /**
+     * @summary テキスト縁の太さを設定
+     * @param {mapray.number} width  縁の線幅
+     */
+    setStrokeLineWidth( width )
+    {
+        this._setValueProperty( "stroke_width", width );
+    }
+
+    /**
+     * @summary テキスト縁を有効にするかどうか
+     * @param {boolean} enable  trueなら有効
+     */
+    setEnableStroke( enable )
+    {
+        this._setValueProperty( "enable_stroke", enable );
+        this._primitive_producer = new PrimitiveProducer( this );
+    }
+
+    /**
+     * @summary テキスト背景の色を設定
+     * @param {mapray.Vector3} color  テキストの色
+     */
+    setBackgroundColor( color )
+    {
+        this._setColorProperty( "bg_color", color );
+    }
+
+        /**
+     * @summary テキスト縁を有効にするかどうか
+     * @param {boolean} enable  trueなら有効
+     */
+    setEnableBackground( enable )
+    {
+        this._setValueProperty( "enable_bg", enable );
+        this._primitive_producer = new PrimitiveProducer( this );
+    }
 
     /**
      * @summary テキストを追加
@@ -127,11 +177,16 @@ class TextEntity extends Entity {
      * @param {string}         [props.font_weight]  フォントの太さ   ("normal" | "bold")
      * @param {number}         [props.font_size]    フォントの大きさ (Pixels)
      * @param {string}         [props.font_family]  フォントファミリー
-     * @param {mapray.Vector3} [props.color]        テキストの色
+     * @param {mapray.Color}   [props.color]        テキストの色
+     * @param {mapray.Color}   [props.stroke_color] テキスト縁の色
+     * @param {number}         [props.stroke_width] テキスト縁の幅
+     * @param {mapray.Color}   [props.bg_color]     テキスト背景色
+     * @param {boolean}        [props.enable_stroke] テキストの縁取りを有効にするか
      */
     addText( text, position, props )
     {
         this._entries.push( new Entry( this, text, position, props ) );
+        this._primitive_producer = new PrimitiveProducer( this );
         this._primitive_producer.onAddTextEntry();
     }
 
@@ -150,6 +205,19 @@ class TextEntity extends Entity {
         return scene._TextEntity_text_material;
     }
 
+    /**
+     * @summary テキストだけを描画する専用マテリアルを取得
+     * @private
+     */
+    _getSimpleTextMaterial()
+    {
+        var scene = this.scene;
+        if ( !scene._SimpleTextEntity_text_material ) {
+            // scene にマテリアルをキャッシュ
+            scene._SimpleTextEntity_text_material = new SimpleTextMaterial( scene.glenv );
+        }
+        return scene._SimpleTextEntity_text_material;
+    }
 
     /**
      * @private
@@ -167,11 +235,11 @@ class TextEntity extends Entity {
     /**
      * @private
      */
-    _setVector3Property( name, value )
+    _setColorProperty( name, value )
     {
         var dst = this._text_parent_props[name];
-        if ( dst[0] != value[0] || dst[1] != value[1] || dst[2] != value[2] ) {
-            GeoMath.copyVector3( value, dst );
+        if ( dst.r != value[0] || dst.g != value[1] || dst.b != value[2] ) {
+            Color.setOpacityColor( value, dst );
             this._primitive_producer.onChangeParentProperty();
         }
     }
@@ -189,11 +257,24 @@ class TextEntity extends Entity {
             this.addText( entry.text, position, entry );
         }
 
-        if ( json.font_style  !== undefined ) this.setFontStyle( json.font_style );
-        if ( json.font_weight !== undefined ) this.setFontWeight( json.font_weight );
-        if ( json.font_size   !== undefined ) this.setFontSize( json.font_size );
-        if ( json.font_family !== undefined ) this.setFontFamily( json.font_family );
-        if ( json.color       !== undefined ) this.setColor( json.color );
+        if ( json.font_style    !== undefined ) this.setFontStyle( json.font_style );
+        if ( json.font_weight   !== undefined ) this.setFontWeight( json.font_weight );
+        if ( json.font_size     !== undefined ) this.setFontSize( json.font_size );
+        if ( json.font_family   !== undefined ) this.setFontFamily( json.font_family );
+        if ( json.color         !== undefined ) this.setColor( json.color );
+        if ( json.stroke_color  !== undefined ) this.setStrokeColor ( json.stroke_color );
+        if ( json.stroke_width  !== undefined ) this.setStrokeLineWidth ( json.stroke_width );
+        if ( json.enable_stroke !== undefined ) this.setEnableStroke ( json.enable_stroke );
+        if ( json.bg_color      !== undefined ) this.setBackgroundColor( json.bg_color );
+        if ( json.enable_bg     !== undefined ) this.setEnableBackground ( json.enable_bg );
+    }
+
+    /**
+     * @private
+     */
+    _enableStroke( )
+    {
+        return this._text_parent_props["enable_stroke"];
     }
 
 }
@@ -201,9 +282,12 @@ class TextEntity extends Entity {
 
 // クラス定数の定義
 {
-    TextEntity.DEFAULT_FONT_SIZE   = 16;
-    TextEntity.DEFAULT_FONT_FAMILY = "sans-serif";
-    TextEntity.DEFAULT_COLOR       = GeoMath.createVector3f( [1, 1, 1] );
+    TextEntity.DEFAULT_FONT_SIZE    = 16;
+    TextEntity.DEFAULT_FONT_FAMILY  = "sans-serif";
+    TextEntity.DEFAULT_COLOR        = [1, 1, 1];
+    TextEntity.DEFAULT_STROKE_COLOR = [0.0, 0.0, 0.0];
+    TextEntity.DEFAULT_STROKE_WIDTH = 0.48;
+    TextEntity.DEFAULT_BG_COLOR     = [0.3, 0.3, 0.3];
 
     TextEntity.DEFAULT_TEXT_UPPER  = 1.1;
     TextEntity.DEFAULT_TEXT_LOWER  = 0.38;
@@ -235,11 +319,19 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         // プリミティブの要素
         this._transform  = GeoMath.setIdentity( GeoMath.createMatrix() );
         this._properties = {
+            enable_bg: false,
             image: null  // テキスト画像
         };
 
         // プリミティブ
-        var primitive = new Primitive( this._glenv, null, entity._getTextMaterial(), this._transform );
+        var material = null;
+        if ( this._isSimpleText() ) {
+            material = entity._getSimpleTextMaterial();
+        } else {
+            material = entity._getTextMaterial();
+        }
+        var primitive = new Primitive( this._glenv, null, material, this._transform );
+
         primitive.properties = this._properties;
         this._primitive = primitive;
 
@@ -334,6 +426,7 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
             // 更新する必要はない
             return this._primitives;
         }
+        this._updateProperties();
 
         if ( this.entity._entries.length == 0 ) {
             this._primitives = [];
@@ -364,13 +457,23 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         properties.image = layout.texture;
 
         // メッシュ生成
-        var mesh_data = {
-            vtype: [
+        var vtype = [];
+        if ( this._isSimpleText() ) {
+            vtype = [
                 { name: "a_position", size: 3 },
                 { name: "a_offset",   size: 2 },
                 { name: "a_texcoord", size: 2 },
                 { name: "a_color",    size: 4 }
-            ],
+            ];
+        } else {
+            vtype = [
+                { name: "a_position", size: 3 },
+                { name: "a_offset",   size: 2 },
+                { name: "a_texcoord", size: 2 },
+            ];
+        }
+        var mesh_data = {
+            vtype,
             vertices: layout.vertices,
             indices:  layout.indices
         };
@@ -388,6 +491,27 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         this._primitives = [primitive];
         this._dirty = false;
         return this._primitives;
+    }
+
+    /**
+     * @summary プロパティを更新
+     *
+     * @desc
+     * <pre>
+     * 入力:
+     *   this.entity
+     * 出力:
+     *   this._properties
+     * </pre>
+     *
+     * @private
+     */
+    _updateProperties()
+    {
+        let entity = this.entity;
+        let props  = this._properties;
+
+        props.enable_bg = entity._text_parent_props.enable_bg;
     }
 
 
@@ -491,6 +615,35 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         return flat_array;
     }
 
+     /**
+     * @summary シンプルテキストモードかどうかを確認
+     *
+     *
+     * @return {boolean}  シンプルテキストモードならtrue.
+     * @private
+     */
+    _isSimpleText() 
+    {
+        let entity = this.entity;
+        let props  = this._properties;
+
+        let enable = true;
+        // check enable bg color or stroke;
+        if ( entity._text_parent_props.enable_bg || entity._text_parent_props.enable_stroke ) {
+            enable = false;
+        }
+
+        // check enable stroke
+        let i = 0;
+        while ( enable && entity._entries.length > i ) {
+            let entry = entity._entries[i];
+            enable = !entry.enable_stroke;
+            i++;
+        }
+
+        return enable;
+    }
+
 }
 
 
@@ -510,7 +663,10 @@ class Entry {
      * @param {string}            [props.font_weight]  フォントの太さ   ("normal" | "bold")
      * @param {number}            [props.font_size]    フォントの大きさ (Pixels)
      * @param {string}            [props.font_family]  フォントファミリー
-     * @param {mapray.Vector3}    [props.color]        テキストの色
+     * @param {mapray.Color}      [props.color]        テキストの色
+     * @param {mapray.Color}      [props.stroke_color] テキスト縁の色
+     * @param {number}            [props.stroke_width] テキスト縁の幅
+     * @param {number}            [props.enable_stroke] テキストの縁取りを有効にするか
      */
     constructor( owner, text, position, props )
     {
@@ -518,8 +674,11 @@ class Entry {
         this._text     = text;
         this._position = position.clone();
 
-        this._props = Object.assign( {}, props );  // props の複製
-        this._copyPropertyVector3f( "color" );     // deep copy
+        this._props = Object.assign( {}, props );   // props の複製
+        this._copyColorProperty( "color" );         // deep copy
+        this._copyColorProperty( "stroke_color" );  // deep copy
+        this._copyColorProperty( "bg_color" );      // deep copy
+
     }
 
 
@@ -590,15 +749,74 @@ class Entry {
         return style + " " + variant + " " + weight + " " + this.size + "px " + family;
     }
 
+    /**
+     * @summary テキスト縁の色
+     * @type {mapray.Color}
+     * @readonly
+     */
+    get stroke_color()
+    {
+        var props  = this._props;
+        var parent = this._owner._text_parent_props;
+        return props.stroke_color || parent.stroke_color;
+    }
+
+    /**
+     * @summary 縁の幅 (Pixels)
+     * @type {number}
+     * @readonly
+     */
+    get stroke_width()
+    {
+        var props  = this._props;
+        var parent = this._owner._text_parent_props;
+        return props.stroke_width || parent.stroke_width;
+    }
+
+    /**
+     * @summary 縁を描画するか
+     * @type {boolean}
+     * @readonly
+     */
+    get enable_stroke()
+    {
+        var props  = this._props;
+        var parent = this._owner._text_parent_props;
+        return props.enable_stroke || parent.enable_stroke;
+    }
+
+    /**
+     * @summary 背景色
+     * @type {mapray.Color}
+     * @readonly
+     */
+    get bg_color()
+    {
+        var props  = this._props;
+        var parent = this._owner._text_parent_props;
+        return props.bg_color || parent.bg_color;
+    }
+
+    /**
+     * @summary 背景描画するか
+     * @type {boolean}
+     * @readonly
+     */
+    get enable_background()
+    {
+        // Enable or Disable background can be set by parent.
+        var parent = this._owner._text_parent_props;
+        return parent.enable_bg;
+    }
 
     /**
      * @private
      */
-    _copyPropertyVector3f( name )
+    _copyColorProperty( name )
     {
         var props = this._props;
         if ( props.hasOwnProperty( name ) ) {
-            props[name] = GeoMath.createVector3f( props[name] );
+            props[name] = Color.generateOpacityColor( props[name] );
         }
     }
 
@@ -639,8 +857,13 @@ class Layout {
         // アイテムの配置の設定とキャンバスサイズの決定
         var size = this._setupLocation( row_layouts );
 
-        this._texture  = this._createTexture( size.width, size.height );
-        this._vertices = this._createVertices( size.width, size.height, gocs_array );
+        if ( this._isSimpleTextWithAllItems( this._items ) ) { 
+            this._texture  = this._createTextureForSimple( size.width, size.height );
+            this._vertices = this._createVerticesForSimple( size.width, size.height, gocs_array );
+        } else {
+            this._texture  = this._createTexture( size.width, size.height );
+            this._vertices = this._createVertices( size.width, size.height, gocs_array );
+        }
         this._indices  = this._createIndices();
     }
 
@@ -759,7 +982,13 @@ class Layout {
         for ( var i = 0; i < items.length; ++i ) {
             var item = items[i];
             if ( item.is_canceled ) continue;
+            if ( item._entry.enable_background ) {
+                item.drawRect( context );
+            }
             item.drawText( context );
+            if ( item._entry.enable_stroke ) {
+                item.drawStrokeText( context );
+            }
         }
 
         var glenv = this._owner._glenv;
@@ -794,11 +1023,107 @@ class Layout {
         for ( var i = 0; i < items.length; ++i ) {
             var item = items[i];
             if ( item.is_canceled ) continue;
+            // テキストの位置 (モデル座標系)
+            var ibase = 3 * i;
+            var xm = gocs_array[ibase]     - xo;
+            var ym = gocs_array[ibase + 1] - yo;
+            var zm = gocs_array[ibase + 2] - zo;
+
+            // ベースライン左端 (キャンバス座標系)
+            var xc = item.pos_x;
+            var yc = item.pos_y;
+
+            var upper = item.upper;
+            var lower = item.lower;
+            var xsize = item.width;
+
+            var xn = 1 / width;
+            var yn = 1 / height;
+
+            // 左下
+            vertices.push( xm, ym, zm );                                // a_position
+            vertices.push( -xsize / 2, -lower );                        // a_offset
+            vertices.push( xc * xn, 1 - (yc + lower) * yn );            // a_texcoord
+
+            // 右下
+            vertices.push( xm, ym, zm );                                // a_position
+            vertices.push( xsize / 2, -lower );                         // a_offset
+            vertices.push( (xc + xsize) * xn, 1 - (yc + lower) * yn );  // a_texcoord
+
+            // 左上
+            vertices.push( xm, ym, zm );                                // a_position
+            vertices.push( -xsize / 2, upper );                         // a_offset
+            vertices.push( xc * xn, 1 - (yc - upper) * yn );            // a_texcoord
+
+            // 右上
+            vertices.push( xm, ym, zm );                                // a_position
+            vertices.push( xsize / 2, upper );                          // a_offset
+            vertices.push( (xc + xsize) * xn, 1 - (yc - upper) * yn );  // a_texcoord
+        }
+
+        return vertices;
+    }
+
+
+    /**
+     * @summary 単純テキスト用テクスチャを生成
+     * @param  {number} width    横幅
+     * @param  {number} height   高さ
+     * @return {mapray.Texture}  テキストテクスチャ
+     * @private
+     */
+    _createTextureForSimple( width, height )
+    {
+        var context = Dom.createCanvasContext( width, height );
+
+        context.textAlign    = "left";
+        context.textBaseline = "alphabetic";
+        context.fillStyle    = "rgba( 255, 255, 255, 1.0 )";
+
+        var items = this._items;
+        for ( var i = 0; i < items.length; ++i ) {
+            var item = items[i];
+            if ( item.is_canceled ) continue;
+            item.drawText( context );
+        }
+
+        var glenv = this._owner._glenv;
+        var  opts = {
+            usage: Texture.Usage.SIMPLETEXT
+        };
+        return new Texture( glenv, context.canvas, opts );
+    }
+
+
+    /**
+     * @summary 単純テキスト用頂点配列を生成
+     *
+     * @param  {number}   width       横幅
+     * @param  {number}   height      高さ
+     * @param  {number[]} gocs_array  GOCS 平坦化配列
+     * @return {array.<number>}  頂点配列 [左下0, 右下0, 左上0, 右上0, ...]
+     *
+     * @private
+     */
+    _createVerticesForSimple( width, height, gocs_array )
+    {
+        var vertices = [];
+
+        // テキスト集合の原点 (GOCS)
+        var transform = this._owner._transform;
+        var xo = transform[12];
+        var yo = transform[13];
+        var zo = transform[14];
+
+        var items = this._items;
+        for ( var i = 0; i < items.length; ++i ) {
+            var item = items[i];
+            if ( item.is_canceled ) continue;
 
             var entry = item.entry;
 
             // テキストの色
-            var color = entry.color;
+            var color = entry.color.toVector4();
 
             // テキストの位置 (モデル座標系)
             var ibase = 3 * i;
@@ -893,6 +1218,39 @@ class Layout {
             height: height
         };
     }
+
+    /**
+     * @summary シンプルテキストモードかどうか
+     * @param  {mapray.TextEntity.LItem} item
+     * @return {boolean}                 シンプルテキストモードならtrue
+     * @private
+     */
+    _isSimpleText( item ) 
+    {
+        if ( item._entry.enable_background || item._entry.enable_stroke ) {
+            return false;
+        }
+        return true;
+    } 
+
+    /**
+     * @summary シンプルテキストモードかどうか
+     * @param  {array.<mapray.TextEntity.LItem>} items
+     * @return {boolean}                 シンプルテキストモードならtrue
+     * @private
+     */
+    _isSimpleTextWithAllItems( items ) 
+    {
+        let enable = true;
+        let i = 0;
+        while( enable && items.length > i) 
+        {
+            let item = items[i];
+            enable = this._isSimpleText( item );
+            i++;
+        }
+        return enable;
+    } 
 
 }
 
@@ -1044,6 +1402,25 @@ class LItem {
 
 
     /**
+     * @summary テキストだけを描画 (stokeやfillRectとは組み合わせ不可)
+     * @desc
+     * <p>context は以下のように設定していること。</p>
+     * <pre>
+     *   context.textAlign    = "left";
+     *   context.textBaseline = "alphabetic";
+     *   context.fillStyle    = "rgba( 255, 255, 255, 1.0 )";
+     * </pre>
+     * @param {CanvasRenderingContext2D} context  描画先コンテキスト
+     */
+    drawTextOnly( context )
+    {
+        var entry = this._entry;
+        context.font = entry.font;
+        context.fillText( entry.text, this._pos_x, this._pos_y );
+    }
+
+
+    /**
      * @summary テキストを描画
      * @desc
      * <p>context は以下のように設定していること。</p>
@@ -1057,10 +1434,45 @@ class LItem {
     drawText( context )
     {
         var entry = this._entry;
+
         context.font = entry.font;
+        context.fillStyle =  entry.color.toRGBString();
         context.fillText( entry.text, this._pos_x, this._pos_y );
     }
 
+ 
+    /**
+     * @summary テキストの淵を描画
+     * @desc
+     * <p>drawTextOnlyとは組み合わせ不可</p>
+
+     * @param {CanvasRenderingContext2D} context  描画先コンテキスト
+     */
+    drawStrokeText( context )
+    {
+        var entry = this._entry;
+
+        context.strokeStyle = entry.stroke_color.toRGBString();
+        context.lineWidth = entry.stroke_width;
+        context.lineJoin = "round";
+        context.strokeText( entry.text, this._pos_x, this._pos_y );
+    }
+
+
+    /**
+     * @summary テキストの背景を描画
+     * @desc
+     * <p>drawTextOnlyとは組み合わせ不可</p>
+
+     * @param {CanvasRenderingContext2D} context  描画先コンテキスト
+     */
+    drawRect( context )
+    {
+        var entry = this._entry;
+
+        context.fillStyle = entry.bg_color.toRGBString();
+        context.fillRect( this._pos_x - TextEntity.SAFETY_PIXEL_MARGIN, this._pos_y - this._upper - TextEntity.SAFETY_PIXEL_MARGIN, this.width_pixel + TextEntity.SAFETY_PIXEL_MARGIN, this.height_pixel + TextEntity.SAFETY_PIXEL_MARGIN );
+    }
 }
 
 

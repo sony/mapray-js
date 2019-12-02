@@ -1,7 +1,7 @@
 import EntityMaterial from "./EntityMaterial";
 import GeoMath from "./GeoMath";
-import text_vs_code from "./shader/text.vert";
-import text_fs_code from "./shader/text.frag";
+import text_vs_code from "./shader/simple_text.vert";
+import text_fs_code from "./shader/simple_text.frag";
 
 
 /**
@@ -11,7 +11,7 @@ import text_fs_code from "./shader/text.frag";
  * @private
  * @see mapray.TextEntity
  */
-class TextMaterial extends EntityMaterial {
+class SimpleTextMaterial extends EntityMaterial {
 
     /**
      * @param {mapray.GLEnv} glenv
@@ -22,7 +22,7 @@ class TextMaterial extends EntityMaterial {
 
         // 不変パラメータを事前設定
         this.bindProgram();
-        this.setInteger( "u_image", TextMaterial.TEXUNIT_IMAGE );
+        this.setInteger( "u_image", SimpleTextMaterial.TEXUNIT_IMAGE );
     }
 
 
@@ -31,9 +31,8 @@ class TextMaterial extends EntityMaterial {
      */
     isTranslucent( stage, primitive )
     {
-        var  props = primitive.properties;
-        // If drawing background color, alpha is disable.
-        return !props.enable_bg;
+        // アンチエイリアス用のブレンドのため常に半透明
+        return true;
     }
 
 
@@ -49,7 +48,7 @@ class TextMaterial extends EntityMaterial {
 
         // 画面パラメータ: {2/w, 2/h}
         // vec2 u_sparam
-        var sparam = TextMaterial._sparam;
+        var sparam = SimpleTextMaterial._sparam;
         sparam[0] = 2 / stage._width;
         sparam[1] = 2 / stage._height;
         this.setVector2( "u_sparam", sparam );
@@ -57,7 +56,7 @@ class TextMaterial extends EntityMaterial {
         // テクスチャのバインド
         // sampler2D u_image
         var image_tex = props["image"];
-        this.bindTexture2D( TextMaterial.TEXUNIT_IMAGE, image_tex.handle );
+        this.bindTexture2D( SimpleTextMaterial.TEXUNIT_IMAGE, image_tex.handle );
     }
 
 }
@@ -65,11 +64,11 @@ class TextMaterial extends EntityMaterial {
 
 // クラス定数の定義
 {
-    TextMaterial.TEXUNIT_IMAGE = 0;  // 画像のテクスチャユニット
+    SimpleTextMaterial.TEXUNIT_IMAGE = 0;  // 画像のテクスチャユニット
 
     // 計算用一時領域
-    TextMaterial._sparam = GeoMath.createVector2f();
+    SimpleTextMaterial._sparam = GeoMath.createVector2f();
 }
 
 
-export default TextMaterial;
+export default SimpleTextMaterial;
