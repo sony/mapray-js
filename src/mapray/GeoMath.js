@@ -462,7 +462,7 @@ class GeoMath {
      * @param  {mapray.Matrix}  dst                  結果を代入する行列
      * @return {mapray.Matrix}                       dst
      *
-     * @deprecated {@link maplay.GeoPoint.mlocs_to_gocs_matrix} の使用を推奨
+     * @deprecated {@link mapray.GeoPoint#getMlocsToGocsMatrix} の使用を推奨
      */
     static iscs_to_gocs_matrix( position, dst )
     {
@@ -512,7 +512,7 @@ class GeoMath {
      * @param  {number}         dst.height     高度 (Meters)
      * @return {object}                        dst
      *
-     * @deprecated {@link mapray.GeoPoint.setFromGocs} の使用を推奨
+     * @deprecated {@link mapray.GeoPoint#setFromGocs} の使用を推奨
      */
     static gocs_to_iscs( src, dst )
     {
@@ -695,7 +695,7 @@ class GeoMath {
      * @package
      * @see https://developers.google.com/kml/documentation/kmlreference#model
      *
-     * @deprecated {@link maplay.Orientation.transform_matrix} の使用を推奨
+     * @deprecated {@link mapray.Orientation#getTransformMatrix} の使用を推奨
      */
     static kml_model_matrix( heading, tilt, roll, scale, dst )
     {
@@ -934,10 +934,10 @@ class GeoPoint {
      *
      * @desc
      * <p>longitude, latitude, altitude の順序で格納されている配列 position によりプロパティを設定する。</p>
-     * <p>position の長は 2 または 3 で、長が 2 なら altitude は 0 に設定される。</p>
+     * <p>position の長さは 2 または 3 で、長さが 2 なら altitude は 0 に設定される。</p>
      *
      * @param  {number[]} position  [longitude, latitude, altitude] または [longitude, latitude]
-     * @return {GeoPoint} this
+     * @return {mapray.GeoPoint} this
      */
     setFromArray( position )
     {
@@ -956,7 +956,7 @@ class GeoPoint {
      * <p>地心直交座標 position を球面座標に変換して this に設定する。</p>
      *
      * @param  {mapray.Vector3} position  入力 GOCS 座標 (Meters)
-     * @return {GeoPoint}  this
+     * @return {mapray.GeoPoint}  this
      */
     setFromGocs( position )
     {
@@ -995,8 +995,8 @@ class GeoPoint {
     /**
      * @summary 地心直交座標として取得
      *
-     * @param  {Vector3} dst  結果を格納するオブジェクト
-     * @return {Vector3}      dst
+     * @param  {mapray.Vector3} dst  結果を格納するオブジェクト
+     * @return {mapray.Vector3}      dst
      */
     getAsGocs( dst )
     {

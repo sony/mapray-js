@@ -300,10 +300,11 @@ class FlakeCollector {
      * </ul>
      * @param  {number} x  X 座標
      * @param  {number} y  Y 座標
+     * @param  {number} r  GOGS 原点からの距離 (Meters)
      * @return {number}    地表詳細レベル
      * @private
      */
-    _calcLOD( x, y )
+    _calcLOD( x, y, r )
     {
         var sinλ = Math.sin( x );
         var cosλ = Math.cos( x );
@@ -311,7 +312,6 @@ class FlakeCollector {
         var ey2   = ey * ey;
         var sinφ = (ey2 - 1) / (ey2 + 1);
         var cosφ =   2 * ey  / (ey2 + 1);
-        var     r = GeoMath.EARTH_RADIUS;
 
         // N
         var N = this._view_dir_N;
@@ -328,7 +328,7 @@ class FlakeCollector {
 
         // w U.V
         var  wU = this._view_dir_wU;
-        var wUV = GeoMath.dot3( wU, V );
+        var wUV = GeoMath.dot3( wU, V );  // > 0 (表示される Flake 前提なので正数)
 
         //          r Cos[φ]
         // 1/d = ---------------
@@ -367,11 +367,14 @@ class FlakeCollector {
         var my_min =  pi - (y + 1) * msize;
         var my_max =  pi - y * msize;
 
+        // GOCS 原点からの距離
+        var r = GeoMath.EARTH_RADIUS + flake.base_height;
+
         // 四隅の地表詳細レベル
-        rflake.lod_00 = this._calcLOD( mx_min, my_min );
-        rflake.lod_10 = this._calcLOD( mx_max, my_min );
-        rflake.lod_01 = this._calcLOD( mx_min, my_max );
-        rflake.lod_11 = this._calcLOD( mx_max, my_max );
+        rflake.lod_00 = this._calcLOD( mx_min, my_min, r );
+        rflake.lod_10 = this._calcLOD( mx_max, my_min, r );
+        rflake.lod_01 = this._calcLOD( mx_min, my_max, r );
+        rflake.lod_11 = this._calcLOD( mx_max, my_max, r );
     }
 
 
