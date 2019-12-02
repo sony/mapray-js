@@ -115,7 +115,7 @@ class PinEntity extends Entity {
      * @summary テキストアイコンのフォントを設定
      * @param {string} font_family  フォントファミリー
      */
-    setBGColor( font_family )
+    setFontFamily( font_family )
     {
         this._setValueProperty( "font_family", font_family );
     }
