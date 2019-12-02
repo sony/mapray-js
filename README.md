@@ -9,7 +9,7 @@ maprayJS is a JavaScript library for a high quality interactive 3D globes and ma
 ## Installation
 ### CDN
 ```html
-  <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+  <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
 ```
 
 ### npm
@@ -26,7 +26,8 @@ Mapray cloud managed by [Sony Network Communications Inc.](https://www.sonynetwo
 <head>
     <meta charset="UTF-8">
     <title>Hello Globe</title>
-    <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+    <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+    <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
 </head>
 <style>
     html, body {
@@ -61,7 +62,8 @@ Mapray cloud managed by [Sony Network Communications Inc.](https://www.sonynetwo
        // Setting the position of camera
        var home_pos = { longitude: 138.247739, latitude: 35.677604, height: 3000 };
 
-       var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix( home_pos, mapray.GeoMath.createMatrix());
+       var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+       var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
        var cam_pos = mapray.GeoMath.createVector3( [-3000, 2600, 1000] );
        var cam_end_pos    = mapray.GeoMath.createVector3( [0, 0, 0] );

@@ -15,9 +15,9 @@ maprayJSはJavaScriptファイルを`<head>`で直接読み込むか(以下CDN�
 #### CDN方式
 HTMLファイルでJavaScriptを読み込みます。`<head>`タグ内で以下のようにインクルードして下さい。
 ```html
-  <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+  <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
 ```
-上記はバージョン0.7.0の場合です。`v0.7.0`には任意のバージョンを指定して下さい。
+上記はバージョン0.7.1の場合です。`v0.7.1`には任意のバージョンを指定して下さい。
 リリースされている該当のバージョンがあれば、アクセスすることができます。
 
 #### モジュール形式
@@ -87,7 +87,8 @@ var accessToken = 'AbCdEfGhIjKlMnOpQrStU';
 <head>
     <meta charset="UTF-8">
     <title>Hello Globe</title>
-    <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+    <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+    <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
 </head>
 <style>
     html, body {
@@ -125,7 +126,8 @@ var accessToken = 'AbCdEfGhIjKlMnOpQrStU';
        var home_pos = { longitude: 138.247739, latitude: 35.677604, height: 3000 };
 
        // 球面座標から
-       var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix( home_pos, mapray.GeoMath.createMatrix());
+       var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+       var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
        // 視線方向を定義
        var cam_pos = mapray.GeoMath.createVector3( [-3000, 2600, 1000] );
