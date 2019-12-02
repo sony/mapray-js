@@ -14,7 +14,8 @@
     <head>
         <meta charset="utf-8">
         <title>ChangeLineFormatSample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+        <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <script src="ChangeLineFormat.js" charset="utf-8"></script>
         <style>
             html, body {
@@ -41,7 +42,8 @@
 
             div#mapray-container {
                 display: flex;
-                height: 96%;
+                position: relative;
+                height: calc(100% - 34px);
             }
 
             div#LineWidthBox {
@@ -61,15 +63,6 @@
                 width: 145px;
                 float: left;
                 border: inset 1px #000000;
-                align-items: center;
-            }
-
-            div#mapInfo{
-                display: flex;
-                width: 50px;
-                height: 32px;
-                margin-left: auto;
-                margin-right: 10px;
                 align-items: center;
             }
         </style>
@@ -94,8 +87,6 @@
             <p>Line Color</p>
             <input type="color" id="LineColorPallet" name="LineColorPallet" value="#ffffff" onchange="LineColorValueChanged()">
         </div>
-
-        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
     </body>
 </html>
 ```
@@ -139,7 +130,8 @@ class ChangeLineFormat {
         var home_pos = { longitude: 139.749486, latitude: 35.671190, height: 50 };
 
         // 球面座標から地心直交座標へ変換
-        var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+        var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+        var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
         // 視線方向を定義
         var cam_pos = mapray.GeoMath.createVector3([0, 0, 7500]);
@@ -275,10 +267,11 @@ htmlのサンプルコードの詳細を以下で解説します。
 ```
 
 #### JavaScriptファイルのパス設定
-6～7行目でで参照するJavaScriptのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイルと線のフォーマットを変えるJavaScriptファイル（**ChangeLineFormat.js**）を設定します。線のフォーマットを変えるJavaScriptファイルの文字コードはutf-8に設定します。
+6～8行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、線のフォーマットを変えるJavaScriptファイル（**ChangeLineFormat.js**）を設定します。線のフォーマットを変えるJavaScriptファイルの文字コードはutf-8に設定します。
 
 ```HTML
-<script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+<script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+<link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
 <script src="ChangeLineFormat.js" charset="utf-8"></script>
 ```
 
@@ -292,7 +285,6 @@ htmlのサンプルコードの詳細を以下で解説します。
 - div#mapray-container（地図表示部分）
 - div#LineWidthBox（線幅変更コンボボックス表示部分）
 - div#LineColorBox（線色変更ボタン表示部分）
-- div#mapInfo（出典表示部分）
 
 ```HTML
 <style>
@@ -320,7 +312,8 @@ htmlのサンプルコードの詳細を以下で解説します。
 
     div#mapray-container {
         display: flex;
-        height: 96%;
+        position: relative;
+        height: calc(100% - 34px);
     }
 
     div#LineWidthBox {
@@ -342,41 +335,27 @@ htmlのサンプルコードの詳細を以下で解説します。
         border: inset 1px #000000;
         align-items: center;
     }
-
-    div#mapInfo{
-        display: flex;
-        width: 50px;
-        height: 32px;
-        margin-left: auto;
-        margin-right: 10px;
-        align-items: center;
-    }
-
 </style>
 ```
 
 #### loadイベントの設定
-画面を表示するときに、線フォーマット変更クラスを生成します。そのため、67行目でページ読み込み時に、線のフォーマットを変更するクラスのインスタンスを生成する関数（**CreateChangeLineFormatInstance**）を呼ぶように設定します。
+画面を表示するときに、線フォーマット変更クラスを生成します。そのため、60行目でページ読み込み時に、線のフォーマットを変更するクラスのインスタンスを生成する関数（**CreateChangeLineFormatInstance**）を呼ぶように設定します。
 線のフォーマットを変更するクラスのインスタンスを生成する関数は、JavaScriptのサンプルコードの詳細で説明します。
 
 ```HTML
 <body onload="CreateChangeLineFormatInstance('mapray-container');">
 ```
 
-#### 地図表示部分と出典表示部分の指定
-68行目で地図表示部分になるブロックを記述し、87行目で出典を明記するためのブロックを記述します。
+#### 地図表示部分の指定
+61行目で地図表示部分のブロックを記述します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```HTML
 <div id="mapray-container"></div>
-
-中略
-
-<div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
 ```
 
 #### 線の幅変更のUI
-70～80行目で線幅変更コンボボックス表示部分のブロックを記述します。このブロックの中には、線幅を変更するコンボボックスを用意します。このサンプルコードでは、1、3、7、13、17、21を設定します。
+63～73行目で線幅変更コンボボックス表示部分のブロックを記述します。このブロックの中には、線幅を変更するコンボボックスを用意します。このサンプルコードでは、1、3、7、13、17、21を設定します。
 線幅を変更するコンボボックスが変更された時のイベント（onchange）に、線幅のコンボボックス変更時に呼び出す関数（**LineWidthValueChanged**）を設定します。
 線幅のコンボボックス変更時に呼び出す関数はJavaScriptのサンプルコードの詳細で説明します。
 
@@ -395,7 +374,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 ```
 
 #### 線の色変更のUI
-82～85行目で線色変更ボタン表示部分のブロックを記述します。このブロックの中には、線色変更ボタンを用意します。
+75～78行目で線色変更ボタン表示部分のブロックを記述します。このブロックの中には、線色変更ボタンを用意します。
 線色変更ボタンには、カラーピッカーの色が変更された時のイベント（onchange）に、線色変更時に呼び出す関数（**LineColorValueChanged**）を設定します。
 線色変更時に呼び出す関数はJavaScriptのサンプルコードの詳細で説明します。
 
@@ -410,7 +389,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 JavaScriptのサンプルコードの詳細を以下で解説します。
 
 #### クラスとグローバル変数の説明
-3～140行目で線のフォーマットを変更するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
+3～141行目で線のフォーマットを変更するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
 また、1行目で線のフォーマットを変更するクラスのグローバル変数を定義します。
 
 ```JavaScript
@@ -462,7 +441,7 @@ createImageProvider() {
 ```
 
 #### カメラの位置・向きの設定
-31～55行目がカメラの位置・向きの設定メソッドです。
+31～56行目がカメラの位置・向きの設定メソッドです。
 カメラの位置・向きの設定は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -473,7 +452,8 @@ SetCamera() {
     var home_pos = { longitude: 139.749486, latitude: 35.671190, height: 50 };
 
     // 球面座標から地心直交座標へ変換
-    var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+    var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+    var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
     // 視線方向を定義
     var cam_pos = mapray.GeoMath.createVector3([0, 0, 7500]);
@@ -495,9 +475,9 @@ SetCamera() {
 ```
 
 #### 線の作成
-57～85行目が線の作成メソッドです。画面で設定した線幅及び線色で皇居、東京タワー間を結ぶ線を作成、表示します。
-線の幅は、73行目で線幅を変更するコンボボックスから値を取得し、それを80行目の線幅を設定する関数（MarkerLineEntityのsetLineWidth）を利用して設定します。
-線の色は、74行目でカラーピッカーから値を取得し、77行目でRGB配列を作成した後に、それを81行目の線色を設定する関数（MarkerLineEntityのsetColor）を利用して設定します。カラーピッカーの値からRGB配列を作成するメソッドの詳細は後述します。
+58～86行目が線の作成メソッドです。画面で設定した線幅及び線色で皇居、東京タワー間を結ぶ線を作成、表示します。
+線の幅は、74行目で線幅を変更するコンボボックスから値を取得し、それを81行目の線幅を設定する関数（MarkerLineEntityのsetLineWidth）を利用して設定します。
+線の色は、75行目でカラーピッカーから値を取得し、78行目でRGB配列を作成した後に、それを82行目の線色を設定する関数（MarkerLineEntityのsetColor）を利用して設定します。カラーピッカーの値からRGB配列を作成するメソッドの詳細は後述します。
 線の表示方法の詳細は、ヘルプページ『**線の表示（addPointsを使った表示）**』を参照してください。
 
 ```JavaScript
@@ -533,7 +513,7 @@ MakeUIFormatLine() {
 ```
 
 #### 文字の表示
-87～107行目が文字の表示メソッドです。皇居と東京タワーの文字を表示します。
+88～108行目が文字の表示メソッドです。皇居と東京タワーの文字を表示します。
 文字の表示方法の詳細は、ヘルプページ『**文字の表示（addTextを使った表示）**』のヘルプページを参照してください。
 
 ```JavaScript
@@ -561,7 +541,7 @@ SetLinePointStr() {
 ```
 
 #### 線の幅変更
-109～116行目が線幅変更メソッドです。111行目で線幅を変更するコンボボックスから値を取得します。そして、114行目のviewer.sceneのgetEntity関数で表示している線のエンティティを取得し、115行目で取得した値を指定することで、線の幅を変更します。このサンプルコードでは、線のエンティティのインデックスは0となるため、getEntity関数には0を指定します。
+110～117行目が線幅変更メソッドです。112行目で線幅を変更するコンボボックスから値を取得します。そして、115行目のviewer.sceneのgetEntity関数で表示している線のエンティティを取得し、116行目で取得した値を指定することで、線の幅を変更します。このサンプルコードでは、線のエンティティのインデックスは0となるため、getEntity関数には0を指定します。
 
 ```JavaScript
 ChangeLineWidth() {
@@ -575,7 +555,7 @@ ChangeLineWidth() {
 ```
 
 #### 線の色変更
-118～128行目が線色変更メソッドです。120行目でカラーピッカーから値を取得し、123行目でカラーピッカーの値をRGBの配列に変換します。そして、126行目のviewer.sceneのgetEntity関数で表示している線のエンティティを取得し、127行目でその値を指定することで、線の色を変更します。このサンプルコードでは、線のエンティティのインデックスは0となるため、getEntity関数には0を指定します。
+119～129行目が線色変更メソッドです。121行目でカラーピッカーから値を取得し、124行目でカラーピッカーの値をRGBの配列に変換します。そして、127行目のviewer.sceneのgetEntity関数で表示している線のエンティティを取得し、128行目でその値を指定することで、線の色を変更します。このサンプルコードでは、線のエンティティのインデックスは0となるため、getEntity関数には0を指定します。
 
 ```JavaScript
 ChangeLineColor() {
@@ -592,7 +572,7 @@ ChangeLineColor() {
 ```
 
 #### 色情報の変換
-130～138行目が色情報の変換メソッドです。
+131～139行目が色情報の変換メソッドです。
 色情報の変換方法の詳細は、ヘルプページ『**文字のフォーマットの変更**』を参照してください。
 
 ```JavaScript
@@ -608,7 +588,7 @@ convertColorChordToRGB(colorChord) {
 ```
 
 #### 線のフォーマット変更クラスのインスタンス生成
-142～144行目の関数は、引数として渡されるブロックのidを利用して、線フォーマット変更クラスのインスタンスを生成します。
+143～145行目の関数は、引数として渡されるブロックのidを利用して、線フォーマット変更クラスのインスタンスを生成します。
 
 ```JavaScript
 function CreateChangeLineFormatInstance(container) {
@@ -617,7 +597,7 @@ function CreateChangeLineFormatInstance(container) {
 ```
 
 #### 線幅変更時のイベント
-146～148行目の関数は、線幅変更時に呼ばれ、線フォーマット変更クラスの線幅変更メソッドを呼び出します。
+147～149行目の関数は、線幅変更時に呼ばれ、線フォーマット変更クラスの線幅変更メソッドを呼び出します。
 
 ```JavaScript
 function LineWidthValueChanged() {
@@ -626,7 +606,7 @@ function LineWidthValueChanged() {
 ```
 
 #### 線色変更時のイベント
-150～152行目の関数は、線色変更時に呼ばれ、線フォーマット変更クラスの線色変更メソッドを呼び出します。
+151～153行目の関数は、線色変更時に呼ばれ、線フォーマット変更クラスの線色変更メソッドを呼び出します。
 
 ```JavaScript
 function LineColorValueChanged() {

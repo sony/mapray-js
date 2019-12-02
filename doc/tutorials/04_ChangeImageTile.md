@@ -14,7 +14,8 @@
     <head>
         <meta charset="utf-8">
         <title>ChangeImageTileSample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+        <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <script src="ChangeImageTile.js"></script>
         <style>
             html, body {
@@ -37,7 +38,8 @@
 
             div#mapray-container {
                 display: flex;
-                height: 96%;
+                position: relative;
+                height: calc(100% - 34px);
             }
 
             div#MapTileBox {
@@ -48,15 +50,6 @@
                 border: inset 1px #000000;
                 align-items: center;
                 float:left;
-            }
-
-            div#mapInfo{
-                display: flex;
-                width: 50px;
-                height: 32px;
-                margin-left: auto;
-                margin-right: 10px;
-                align-items: center;
             }
         </style>
     </head>
@@ -71,8 +64,6 @@
                 <option value="std">Standard</option>
             </select>
         </div>
-
-        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
     </body>
 </html>
 ```
@@ -122,7 +113,8 @@ class ViewerImageControl {
         var home_pos = { longitude: 139.7528, latitude: 35.685175, height: 45000 };
 
         // 球面座標から地心直交座標へ変換
-        var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+        var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+        var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
         // 視線方向を定義
         var cam_pos = mapray.GeoMath.createVector3([0, 0, 7000]);
@@ -186,22 +178,22 @@ htmlのサンプルコードの詳細を以下で解説します。
 ```
 
 #### JavaScriptファイルのパス設定
-6～7行目で参照するJavaScriptのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイルとベース地図を変更するJavaScriptファイル（**ChangeImageTile.js**）を設定します。
+6～8行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、ベース地図を変更するJavaScriptファイル（**ChangeImageTile.js**）を設定します。
 
 ```HTML
-<script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+<script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+<link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
 <script src="ChangeImageTile.js"></script>
 ```
 
 #### スタイルの設定
-8～50行目で表示する要素のスタイルを設定します。このサンプルコードでは、下記のスタイルを設定します。
+9～43行目で表示する要素のスタイルを設定します。このサンプルコードでは、下記のスタイルを設定します。
 - html
 - body
 - select
 - p
 - div#mapray-container（地図表示部分）
 - div#MapTileBox（ベース地図変更コンボボックス表示部分）
-- div#mapInfo（出典表示部分）
 
 ```HTML
 <style>
@@ -225,7 +217,8 @@ htmlのサンプルコードの詳細を以下で解説します。
 
     div#mapray-container {
         display: flex;
-        height: 96%;
+        position: relative;
+        height: calc(100% - 34px);
     }
 
     div#MapTileBox {
@@ -237,20 +230,11 @@ htmlのサンプルコードの詳細を以下で解説します。
         align-items: center;
         float:left;
     }
-
-    div#mapInfo{
-        display: flex;
-        width: 50px;
-        height: 32px;
-        margin-left: auto;
-        margin-right: 10px;
-        align-items: center;
-    }
 </style>
 ```
 
 #### loadイベントの設定
-画面を表示する時に、ベース地図変更クラスを生成します。そのため、53行目でページの読み込み時に、ベース地図変更クラスのインスタンスを生成する関数（**CreateViewerImageControlInstance**）を呼ぶように設定します。
+画面を表示する時に、ベース地図変更クラスを生成します。そのため、46行目でページの読み込み時に、ベース地図変更クラスのインスタンスを生成する関数（**CreateViewerImageControlInstance**）を呼ぶように設定します。
 ベース地図変更クラスのインスタンスを生成する関数は、JavaScriptのサンプルコードの詳細で説明します。
 
 ```HTML
@@ -258,9 +242,9 @@ htmlのサンプルコードの詳細を以下で解説します。
 ```
 
 #### 表示する要素の記述
-54～64行目で表示する要素を記述します。このサンプルコードでは、地図表示部分、ベース地図変更コンボボックス表示部分、出典表示部分のブロックを記述します。
+47～55行目で表示する要素を記述します。このサンプルコードでは、地図表示部分、ベース地図変更コンボボックス表示部分を記述します。
 ベース地図変更コンボボックス表示部分のブロックには、ベース地図を変更するコンボボックスを定義します。このサンプルコードでは、photo（写真表示）、Standard（標準地図表示）を設定します。また、コンボボックスが変更された時のイベント（onchange）に、コンボボックス表示時に呼び出す関数（MapTileValueChanged）を設定します。ベース地図の変更メソッドを呼び出す関数はJavaScriptのサンプルコードの詳細で説明します。
-また、地図表示部分、出典表示部分の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
+また、地図表示部分の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```HTML
 <div id="mapray-container"></div>
@@ -272,15 +256,13 @@ htmlのサンプルコードの詳細を以下で解説します。
         <option value="std">Standard</option>
     </select>
 </div>
-
-<div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
 ```
 
 ### JavaScriptのサンプルコードの詳細
 JavaScriptのサンプルコードの詳細を以下で解説します。
 
 #### クラスとグローバル変数
-3～78行目でベース地図を変更するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
+3～79行目でベース地図を変更するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
 また、1行目でベース地図を変更するクラスのグローバル変数を定義します。
 
 ```JavaScript
@@ -338,7 +320,7 @@ createImageProvider() {
 ```
 
 #### カメラの位置・向きの設定
-36～61行目がカメラの位置・向きの設定メソッドです。
+36～62行目がカメラの位置・向きの設定メソッドです。
 カメラの位置・向きの設定は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -346,10 +328,12 @@ SetCamera() {
     // カメラ位置の設定
 
     // 球面座標系（経度、緯度、高度）で視点を設定。座標は皇居
-    var home_pos = { longitude: 139.7528, latitude: 35.685175, height: 45000 };
+    var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+    var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
     // 球面座標から地心直交座標へ変換
-    var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+    var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+    var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
     // 視線方向を定義
     var cam_pos = mapray.GeoMath.createVector3([0, 0, 7000]);
@@ -371,7 +355,7 @@ SetCamera() {
 ```
 
 #### ベース地図の変更
-63～76行目がベース地図の変更メソッドです。
+64～77行目がベース地図の変更メソッドです。
 mapray.Viewerに設定されているベース地図の画像プロバイダを変更するには、mapray.Viewerを破棄する必要があります。
 そのため、65行目でメンバのviewerをdestroy関数で破棄をしてから、mapray.Viewerの作成、カメラの位置・向きの設定をします。
 
@@ -393,7 +377,7 @@ ChangeMapTile() {
 ```
 
 #### ベース地図変更クラスのインスタンス生成
-80～82行目の関数は、引数として渡されるブロックのidを利用して、ベース地図変更クラスのインスタンスを生成します。
+81～83行目の関数は、引数として渡されるブロックのidを利用して、ベース地図変更クラスのインスタンスを生成します。
 
 ```JavaScript
 function CreateViewerImageControlInstance(container) {
@@ -402,7 +386,7 @@ function CreateViewerImageControlInstance(container) {
 ```
 
 #### ベース地図変更時のイベント
-84～86行目の関数は、ベース地図変更時に呼ばれ、ベース地図変更クラスのベース地図変更メソッドを呼び出します。
+85～87行目の関数は、ベース地図変更時に呼ばれ、ベース地図変更クラスのベース地図変更メソッドを呼び出します。
 
 ```JavaScript
 function MapTileValueChanged() {

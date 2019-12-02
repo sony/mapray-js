@@ -3,7 +3,8 @@
     <head>
         <meta charset="utf-8">
         <title>ReadGeoJsonPolygonPropertiesSample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+        <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <script src="ReadGeoJsonPolygonProperties.js" charset="utf-8"></script>
         <style>
             html, body {
@@ -26,7 +27,8 @@
 
             div#mapray-container {
                 display: flex;
-                height: 96%;
+                position: relative;
+                height: calc(100% - 37px);
             }
 
             div#OpacityBox {
@@ -36,24 +38,6 @@
                 width: 120px;
                 float: left;
                 border: inset 1px #000000;
-                align-items: center;
-            }
-
-            div#mapInfo{
-                display: flex;
-                width: 50px;
-                height: 16px;
-                margin-left: auto;
-                margin-right: 10px;
-                align-items: center;
-            }
-
-            div#geoJsonInfo{
-                display: flex;
-                width: 580px;
-                height: 16px;
-                margin-left: auto;
-                margin-right: 10px;
                 align-items: center;
             }
         </style>
@@ -70,8 +54,5 @@
                 <option value=1.0>1.0</option>
             </select>
         </div>
-
-        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
-        <div id="geoJsonInfo"><a href="http://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-mesh1000.html" style="font-size: 9px">国土数値情報　ダウンロードサービス 1kmメッシュ別将来推計人口（H29国政局推計）（shape形式からGeoJSON形式に変換）</a></div>
     </body>
 </html>

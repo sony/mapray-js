@@ -12,7 +12,8 @@ mapray.MarkerLineEntityのaddPointsを使って線を表示する**AddLine.html*
     <head>
         <meta charset="UTF-8">
         <title>AddLineSample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+        <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <style>
             html, body {
                 height: 100%;
@@ -21,23 +22,14 @@ mapray.MarkerLineEntityのaddPointsを使って線を表示する**AddLine.html*
 
             div#mapray-container {
                 display: flex;
-                height: 97%;
-            }
-
-            div#mapInfo{
-                display: flex;
-                width: 50px;
-                height: 25px;
-                margin-left: auto;
-                margin-right: 10px;
-                align-items: center;
+                position: relative;
+                height: 100%;
             }
         </style>
     </head>
 
     <body>
         <div id="mapray-container"></div>
-        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
     </body>
 </html>
 
@@ -59,7 +51,8 @@ mapray.MarkerLineEntityのaddPointsを使って線を表示する**AddLine.html*
     var home_pos = { longitude: 139.749486, latitude: 35.671190, height: 50 };
 
     // 球面座標から地心直交座標へ変換
-    var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+    var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+    var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
     // 視線方向を定義
     var cam_pos = mapray.GeoMath.createVector3([0, 0, 7500]);
@@ -120,7 +113,7 @@ mapray.MarkerLineEntityのaddPointsを使って線を表示する**AddLine.html*
 このサンプルコードの詳細を以下で解説します。
 
 #### htmlの記述
-1～33行目がでhtmlの定義です。ヘルプページ『**緯度経度によるカメラ位置の指定**』で示したhtmlファイルからタイトルのみを変更します。
+1～25行目がでhtmlの定義です。ヘルプページ『**緯度経度によるカメラ位置の指定**』で示したhtmlファイルからタイトルのみを変更します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```HTML
@@ -129,7 +122,8 @@ mapray.MarkerLineEntityのaddPointsを使って線を表示する**AddLine.html*
     <head>
         <meta charset="UTF-8">
         <title>AddLineSample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+        <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <style>
             html, body {
                 height: 100%;
@@ -138,29 +132,20 @@ mapray.MarkerLineEntityのaddPointsを使って線を表示する**AddLine.html*
 
             div#mapray-container {
                 display: flex;
-                height: 97%;
-            }
-
-            div#mapInfo{
-                display: flex;
-                width: 50px;
-                height: 25px;
-                margin-left: auto;
-                margin-right: 10px;
-                align-items: center;
+                position: relative;
+                height: 100%;
             }
         </style>
     </head>
 
     <body>
         <div id="mapray-container"></div>
-        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
     </body>
 </html>
 ```
 
 #### カメラ位置・向きの設定
-37～70行目でMapray.Viewerクラスを作成し、カメラ位置・向きを設定します。
+29～63行目でMapray.Viewerクラスを作成し、カメラ位置・向きを設定します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -181,7 +166,8 @@ viewer = new mapray.Viewer(
 var home_pos = { longitude: 139.749486, latitude: 35.671190, height: 50 };
 
 // 球面座標から地心直交座標へ変換
-var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
 // 視線方向を定義
 var cam_pos = mapray.GeoMath.createVector3([0, 0, 7500]);
@@ -202,7 +188,7 @@ viewer.camera.far = 500000;
 ```
 
 #### MarkerLineEntityの生成
-線を表示するためには、線の情報を管理するクラス（MarkerLineEntity）が必要です。そのため、73行目でMarkerLineEntityのインスタンスを生成します。コンストラクタの引数には、作成したMapray.Viewerのシーン（Mapray.Viewer.scene）を指定します。
+線を表示するためには、線の情報を管理するクラス（MarkerLineEntity）が必要です。そのため、66行目でMarkerLineEntityのインスタンスを生成します。コンストラクタの引数には、作成したMapray.Viewerのシーン（Mapray.Viewer.scene）を指定します。
 
 ```JavaScript
 //直線のエンティティを作成
@@ -210,7 +196,7 @@ var line_entity = new mapray.MarkerLineEntity(viewer.scene);
 ```
 
 #### 線の表示座標の定義
-76～79行目で、線の端点となる皇居と東京タワーの経度・緯度・高度を定義します。
+69～72行目で、線の端点となる皇居と東京タワーの経度・緯度・高度を定義します。
 
 ```JavaScript
 // 皇居の座標を設定
@@ -221,7 +207,7 @@ var line_second_position = { longitude: 139.745433, latitude: 35.658581, height:
 ```
 
 #### 線の座標の設定
-線の座標を設定するaddPoints関数は、線の座標の配列を引数で指定します。そのため、82～83行目で先ほど定義した皇居と東京タワーの座標を配列に格納します。ただし、線の座標の配列は、対象の座標を緯度、経度、高度の順で格納することとします。その配列を84行目のaddPoints関数に渡すことで、線の座標を設定します。
+線の座標を設定するaddPoints関数は、線の座標の配列を引数で指定します。そのため、75～76行目で先ほど定義した皇居と東京タワーの座標を配列に格納します。ただし、線の座標の配列は、対象の座標を緯度、経度、高度の順で格納することとします。その配列を80行目のaddPoints関数に渡すことで、線の座標を設定します。
 
 ```JavaScript
 // 各座標を配列に保存して、直線を追加
@@ -231,7 +217,7 @@ line_entity.addPoints(position_array);
 ```
 
 #### MarkerLineEntityの追加
-87行目でMarkerLineEntityを作成したmapray.Viewerのシーンに追加します。mapray.Viewerのシーンに追加することで線が表示されます。
+80行目でMarkerLineEntityを作成したmapray.Viewerのシーンに追加します。mapray.Viewerのシーンに追加することで線が表示されます。
 
 ```JavaScript
 // エンティティをシーンに追加
@@ -239,7 +225,7 @@ viewer.scene.addEntity(line_entity);
 ```
 
 #### 文字の表示
-90～107行目で、それぞれの地名を表示するための文字をmapray.Viewerのシーンに追加します。文字の表示方法の詳細は、ヘルプページ『**文字の表示（addTextを使った表示）**』を参照してください。
+83～100行目で、それぞれの地名を表示するための文字をmapray.Viewerのシーンに追加します。文字の表示方法の詳細は、ヘルプページ『**文字の表示（addTextを使った表示）**』を参照してください。
 
 ```JavaScript
 // 文字のエンティティを作成

@@ -1,44 +1,26 @@
 ﻿<!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <title>LoadglTFModelSample</title>
-    <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
-    <script src="LoadglTFModelVer2.js"></script>
-    <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-        }
+    <head>
+        <meta charset="UTF-8">
+        <title>LoadglTFModelSample</title>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+        <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
+        <script src="LoadglTFModelVer2.js"></script>
+        <style>
+            html, body {
+                height: 100%;
+                margin: 0;
+            }
 
-        div#mapray-container {
-            display: flex;
-            height: 96%;
-        }
+            div#mapray-container {
+                display: flex;
+                position: relative;
+                height: 100%;
+            }
+        </style>
+    </head>
 
-        div#mapInfo{
-            display: flex;
-            width: 50px;
-            height: 16px;
-            margin-left: auto;
-            margin-right: 10px;
-            align-items: center;
-        }
-        
-        div#modelInfo{
-            display: flex;
-            width: 287px;
-            height: 16px;
-            margin-left: auto;
-            margin-right: 10px;
-            align-items: center;
-        }
-    </style>
-</head>
-
-<body onload="new LoadModel('mapray-container');">
-    <div id="mapray-container"></div>
-    <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
-    <div id="modelInfo"><a href="https://sketchfab.com/3d-models/kokura-castle-aba23531911c45439067a6e0aaccad07" style="font-size: 9px">Kokura Castle by AVATTA: Creative Commons - Attribution</a></div>
-</body>
+    <body onload="new LoadModel('mapray-container');">
+        <div id="mapray-container"></div>
+    </body>
 </html>

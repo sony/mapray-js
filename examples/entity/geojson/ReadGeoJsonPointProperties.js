@@ -13,6 +13,12 @@ class ReadGeoJsonPointProperties extends mapray.RenderCallback {
             dem_provider: new mapray.CloudDemProvider(accessToken)
         });
 
+        // geoJSONファイルのライセンス表示
+        this.viewer.attribution_controller.addAttribution( {
+            display: "指定緊急避難場所データ_13東京都 by 一般社団法人社会基盤情報流通推進協議会: Creative Commons - Attribution",
+            link: "https://www.geospatial.jp/ckan/dataset/hinanbasho/resource/3abdb68d-f91a-4d4d-9643-2d6ccc6e63fa"
+        } );
+
         this.SetCamera();
 
         this.AddText();
@@ -31,7 +37,8 @@ class ReadGeoJsonPointProperties extends mapray.RenderCallback {
         var home_pos = { longitude: 139.529127, latitude: 35.677033, height: 100.0 };
 
         // 球面座標から地心直交座標へ変換
-        var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+        var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+        var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
         // 視線方向を定義
         var cam_pos = mapray.GeoMath.createVector3([0, 0, 100000]);

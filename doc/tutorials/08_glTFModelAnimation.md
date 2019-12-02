@@ -6,7 +6,7 @@
 このサンプルコードでは、glTFモデルが京都御所沿いの道路を北上したのち、西向きに向きを変え、さらに西進するアニメーションを表現します。
 
 #### glTFデータの入手
-[Sketchfab](https://sketchfab.com/3d-models/truck-wip-33e925207e134652bd8c2465e5c16957)へアクセスし、glTFファイルフォーマットのデータをダウンロードする、もしくは[ダウンロードリンク](https://storage.cloud.google.com/mapray-examples/model/download/truck_wip.zip)をクリックしてダウンロードしてください。ダウンロードリンクからダウンロードした場合はzipファイルを展開してご利用ください。展開したデータは解答した結果できたディレクトリを含めて、mapray-jsのルートディレクトリからの相対パスで以下のディレクトリに保存されているという想定で以下の説明を行います。
+[Sketchfab](https://sketchfab.com/3d-models/truck-wip-33e925207e134652bd8c2465e5c16957)へアクセスし、glTFファイルフォーマットのデータをダウンロードする、もしくは[ダウンロードリンク](https://storage.cloud.google.com/mapray-examples/model/download/truck_wip.zip)をクリックしてダウンロードしてください。ダウンロードリンクからダウンロードした場合はzipファイルを展開してご利用ください。展開したデータは解凍した結果できたディレクトリを含めて、mapray-jsのルートディレクトリからの相対パスで以下のディレクトリに保存されているという想定で以下の説明を行います。
 
 ```
 ./examples/entity/gltf/data/
@@ -23,7 +23,8 @@
     <head>
         <meta charset="utf-8">
         <title>glTFModelAnimationSample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+        <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <script src="glTFModelAnimation.js"></script>
         <style>
             html, body {
@@ -33,33 +34,14 @@
 
             div#mapray-container {
                 display: flex;
-                height: 94%;
-            }
-
-            div#mapInfo{
-                display: flex;
-                width: 50px;
-                height: 25px;
-                margin-left: auto;
-                margin-right: 10px;
-                align-items: center;
-            }
-
-            div#modelInfo{
-                display: flex;
-                width: 270px;
-                height: 25px;
-                margin-left: auto;
-                margin-right: 10px;
-                align-items: center;
+                position: relative;
+                height: 100%;
             }
         </style>
     </head>
 
     <body onload="new ModelAnimation('mapray-container');">
         <div id="mapray-container"></div>
-        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
-        <div id="modelInfo"><a href="https://sketchfab.com/3d-models/truck-wip-33e925207e134652bd8c2465e5c16957" style="font-size: 9px">Created by modifying truck-wip by Renafox: Creative Commons - Attribution</a></div>
     </body>
 </html>
 ```
@@ -80,6 +62,12 @@ class ModelAnimation extends mapray.RenderCallback {
             image_provider: this.createImageProvider(),
             dem_provider: new mapray.CloudDemProvider(accessToken)
         });
+
+        // glTFモデルのライセンス表示
+        this.viewer.attribution_controller.addAttribution( {
+            display: "Created by modifying truck-wip by Renafox: Creative Commons - Attribution",
+            link: "https://sketchfab.com/3d-models/truck-wip-33e925207e134652bd8c2465e5c16957"
+        } );        
 
         this.animation_Path = [{ longitude: 135.759309, latitude: 35.024954, height: 55.0 },    // モデルを移動させるパス。場所は鳥丸通の鳥丸下長者町交差点付近
                                { longitude: 135.759309, latitude: 35.026257, height: 55.0 },    // 場所は鳥丸通と一条通の交差点付近
@@ -145,7 +133,8 @@ class ModelAnimation extends mapray.RenderCallback {
         var home_pos = { longitude: 135.759366, latitude: 35.025891, height: 50.0 };
 
         // 球面座標から地心直交座標へ変換
-        var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+        var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+        var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
         // 視線方向を定義
         var cam_pos = mapray.GeoMath.createVector3([-400, 10, 400]);
@@ -248,20 +237,16 @@ htmlのサンプルコードの詳細を以下で解説します。
 ```
 
 #### JavaScriptファイルのパス設定
-6～7行目で参照するJavaScripのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイルとモデルのアニメーションJavaScriptファイル（**glTFModelAnimation.js**）を設定します。
+6～8行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、モデルのアニメーションJavaScriptファイル（**glTFModelAnimation.js**）を設定します。
 
 ```HTML
-<script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+<script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+<link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
 <script src="glTFModelAnimation.js"></script>
 ```
 
 #### スタイルの設定
-8～36行目で表示する要素のスタイルを設定します。このサンプルコードでは、下記のスタイルを設定します。
-- html
-- body
-- div#mapray-container（地図表示部分）
-- div#mapInfo（出典表示部分）
-- div#modelInfo（モデル出典表示部分）
+9～20行目で表示する要素のスタイルを設定します。スタイルの詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```HTML
 <style>
@@ -272,58 +257,33 @@ htmlのサンプルコードの詳細を以下で解説します。
 
     div#mapray-container {
         display: flex;
-        height: 94%;
-    }
-
-    div#mapInfo{
-        display: flex;
-        width: 50px;
-        height: 25px;
-        margin-left: auto;
-        margin-right: 10px;
-        align-items: center;
-    }
-
-    div#modelInfo{
-        display: flex;
-        width: 270px;
-        height: 25px;
-        margin-left: auto;
-        margin-right: 10px;
-        align-items: center;
+        position: relative;
+        height: 100%;
     }
 </style>
 ```
 
 #### loadイベントの処理
-画面を表示するときに、glTFモデルアニメーションクラスを作成します。そのため、39行目でページの読み込み時に、地図表示部分のブロックのidからglTFモデルアニメーションクラスのインスタンスを生成します。
+画面を表示するときに、glTFモデルアニメーションクラスを作成します。そのため、23行目でページの読み込み時に、地図表示部分のブロックのidからglTFモデルアニメーションクラスのインスタンスを生成します。
 glTFモデルアニメーションクラスはJavaScriptのサンプルコードの詳細で説明します。
 
 ```HTML
 <body onload="new ModelAnimation('mapray-container');">
 ```
 
-#### 地図表示部分と出典表示部分の指定
-40行目で地図表示部分になるブロックを記述し、41行目で出典を明記するためのブロックを記述します。
+#### 地図表示部分の指定
+24行目で地図表示部分のブロックを記述します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```HTML
 <div id="mapray-container"></div>
-<div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
-```
-
-#### glTFモデルの出典表示部分の設定
-42行目で、glTFモデルの出典を明記するためのブロックを記述します。
-
-```HTML
-<div id="modelInfo"><a href="https://sketchfab.com/3d-models/truck-wip-33e925207e134652bd8c2465e5c16957" style="font-size: 9px">Created by modifying truck-wip by Renafox: Creative Commons - Attribution</a></div>
 ```
 
 ### JavaScriptのサンプルコードの詳細
 JavaScriptのサンプルコードの詳細を以下で解説します。
 
 #### クラスとグローバル変数の説明
-1～141行目のクラスは、glTFモデルアニメーションクラスです。アニメーションを表現するために、glTFモデルアニメーション作成クラスは、mapray.RenderCallbackクラスを継承します。
+1～148行目のクラスは、glTFモデルアニメーションクラスです。アニメーションを表現するために、glTFモデルアニメーション作成クラスは、mapray.RenderCallbackクラスを継承します。
 
 ```JavaScript
 class ModelAnimation extends mapray.RenderCallback {
@@ -334,8 +294,8 @@ class ModelAnimation extends mapray.RenderCallback {
 ```
 
 #### コンストラクタ
-2～31行目がモデルのアニメーションクラスのコンストラクタです。
-まず、引数として渡されるブロックのidに対して、mapray.Viewerを作成します。mapray.Viewerのベース地図の画像プロバイダは、画像プロバイダの生成メソッドで取得した画像プロバイダを設定します。mapray.Viewerの作成の詳細は、ヘルプページ『**カメラのアニメーション**』を参照してください。
+2～37行目がモデルのアニメーションクラスのコンストラクタです。
+まず、引数として渡されるブロックのidに対して、mapray.Viewerを作成し、glTFモデルの出典情報を追加します。mapray.Viewerのベース地図の画像プロバイダは、画像プロバイダの生成メソッドで取得した画像プロバイダを設定します。mapray.Viewerの作成の詳細は、ヘルプページ『**カメラのアニメーション**』を参照してください。
 次に、glTFモデルの操作に関する初期値を下記のように設定します。
 - 移動時の経由点の緯度、経度、高度　⇒　開始位置、方向転換開始位置、方向転換終了位置、終了位置
 - 現在の位置の緯度、経度、高度　⇒　開始位置
@@ -363,6 +323,12 @@ constructor(container) {
         dem_provider: new mapray.CloudDemProvider(accessToken)
     });
 
+    // glTFモデルのライセンス表示
+    this.viewer.attribution_controller.addAttribution( {
+        display: "Created by modifying truck-wip by Renafox: Creative Commons - Attribution",
+        link: "https://sketchfab.com/3d-models/truck-wip-33e925207e134652bd8c2465e5c16957"
+    } );
+
     this.animation_Path = [{ longitude: 135.759309, latitude: 35.024954, height: 55.0 },    // モデルを移動させるパス。場所は鳥丸通の鳥丸下長者町交差点付近
                             { longitude: 135.759309, latitude: 35.026257, height: 55.0 },    // 場所は鳥丸通と一条通の交差点付近
                             { longitude: 135.759309, latitude: 35.026257, height: 55.0 },    // 場所は鳥丸通と一条通の交差点付近
@@ -383,7 +349,7 @@ constructor(container) {
 ```
 
 #### レンダリングループの開始時のコールバックメソッド
-34～38行目がレンダリングループの開始時のコールバックメソッドです。
+40～44行目がレンダリングループの開始時のコールバックメソッドです。
 レンダリングループの開始時のコールバックメソッドの詳細は、ヘルプページ『**パスに沿ったカメラアニメーション**』を参照してください。
 
 ```JavaScript
@@ -396,9 +362,9 @@ onStart()
 ```
 
 #### フレームレンダリング前のコールバックメソッド（glTFモデルの位置・向きの後進処理）
-41～66行目がフレームレンダリング前のコールバックメソッドです。このサンプルコードでは、この中で、glTFモデルが正常に読み込まれている場合は、glTFモデルの位置・向きの更新処理を行います。
-まず、50～57行目で、引数の経過時間をもとに、線形補間時の現在の割合を計算します。その際、現在の割合が1より大きくなった場合は、線形補間対象となる区間番号を1つ増やし、現在の割合を0に設定します。また、全ての区間を補間し終えた場合は、区間番号0にリセットします。
-次に、59～61行目で、線形補間の対象区間の緯度・経度・高度を線形補間し、現在の位置となる緯度・経度・高度を求めます。また、64行目で、線形補間の対象区間のglTFモデルの向きを線形補間し、現在のglTFモデルの向きを求めます。
+47～72行目がフレームレンダリング前のコールバックメソッドです。このサンプルコードでは、この中で、glTFモデルが正常に読み込まれている場合は、glTFモデルの位置・向きの更新処理を行います。
+まず、56～63行目で、引数の経過時間をもとに、線形補間時の現在の割合を計算します。その際、現在の割合が1より大きくなった場合は、線形補間対象となる区間番号を1つ増やし、現在の割合を0に設定します。また、全ての区間を補間し終えた場合は、区間番号0にリセットします。
+次に、65～67行目で、線形補間の対象区間の緯度・経度・高度を線形補間し、現在の位置となる緯度・経度・高度を求めます。また、69行目で、線形補間の対象区間のglTFモデルの向きを線形補間し、現在のglTFモデルの向きを求めます。
 最後に、glTFモデルの姿勢変換行列の設定メソッドを呼び出し、現在の位置、向きを用いて、glTFモデルの姿勢変換行列を現在の状態に更新します。なお、glTFモデルの姿勢変換行列の詳細は後述します。
 
 ```JavaScript
@@ -432,7 +398,7 @@ onUpdateFrame(delta_time)
 ```
 
 #### 画像プロバイダの生成
-69～71行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
+75～77行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
 画像プロバイダの生成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -443,7 +409,7 @@ createImageProvider() {
 ```
 
 #### カメラの位置・向きの設定
-74～97行目がカメラの位置・向きの設定メソッドです。
+80～104行目がカメラの位置・向きの設定メソッドです。
 カメラの位置・向きの設定は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -453,7 +419,8 @@ SetCamera() {
     var home_pos = { longitude: 135.759366, latitude: 35.025891, height: 50.0 };
 
     // 球面座標から地心直交座標へ変換
-    var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+    var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+    var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
     // 視線方向を定義
     var cam_pos = mapray.GeoMath.createVector3([-400, 10, 400]);
@@ -475,7 +442,7 @@ SetCamera() {
 ```
 
 #### シーンのロード
-100～112行目がシーンのロードメソッドです。
+107～119行目がシーンのロードメソッドです。
 シーンのロードは、ヘルプページ『**glTFモデルの表示（SceneLoaderを使った表示）**』を参照してください。
 
 ```JavaScript
@@ -496,7 +463,7 @@ LoadScene() {
 ```
 
 #### リソース要求変換
-114～120行目がリソース要求変換メソッドです。
+121～127行目がリソース要求変換メソッドです。
 リソース要求変換は、ヘルプページ『**glTFモデルの表示（SceneLoaderを使った表示）**』を参照してください。
 
 ```JavaScript
@@ -510,7 +477,7 @@ onTransform(url, type) {
 ```
 
 #### シーンのロード終了イベント
-122～128行目がシーンのロード終了イベントメソッドです。引数のisSuccessには、読み込み結果が格納されており、trueの場合のみ読み込んだglTFモデルを表示し、glTFモデルを操作できるようにします。
+129～135行目がシーンのロード終了イベントメソッドです。引数のisSuccessには、読み込み結果が格納されており、trueの場合のみ読み込んだglTFモデルを表示し、glTFモデルを操作できるようにします。
 glTFモデルのロード成功可否をtrueにし、glTFモデルの表示位置を設定するメソッドを呼び出します。glTFモデルの表示位置を設定するメソッドの詳細は後述します。
 
 ```JavaScript
@@ -524,8 +491,8 @@ onLoadScene(loader, isSuccess) {
 ```
 
 #### glTFモデルの表示位置の設定
-130～139行目がglTFモデルの表示位置の設定メソッドです。モデルの表示位置、向きをモデルのエンティティに反映します。
-135行目でモデルの表示位置を、138行目でモデルの向きをそれぞれ設定します。
+137～146行目がglTFモデルの表示位置の設定メソッドです。モデルの表示位置、向きをモデルのエンティティに反映します。
+142行目でモデルの表示位置を、144行目でモデルの向きをそれぞれ設定します。
 なお、読み込んだモデルは1つ目のエンティティとなるため、エンティティ取得時の引数には0を指定します。
 
 ```JavaScript

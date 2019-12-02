@@ -13,7 +13,8 @@
     <head>
         <meta charset="UTF-8">
         <title>AddLayerSample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+        <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <style>
             html, body {
                 height: 100%;
@@ -22,23 +23,14 @@
 
             div#mapray-container {
                 display: flex;
-                height: 97%;
-            }
-
-            div#mapInfo{
-                display: flex;
-                width: 50px;
-                height: 25px;
-                margin-left: auto;
-                margin-right: 10px;
-                align-items: center;
+                position: relative;
+                height: 100%;
             }
         </style>
     </head>
 
     <body>
         <div id="mapray-container"></div>
-        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
     </body>
 </html>
 
@@ -61,7 +53,8 @@
     var home_pos = { longitude: 139.751891, latitude: 35.70564, height: 50.0 };
 
     // 球面座標から地心直交座標へ変換
-    var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+    var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+    var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
     // 視線方向を定義
     var cam_pos = mapray.GeoMath.createVector3([-500, 500, 200]);
@@ -85,7 +78,7 @@
 このサンプルコードの詳細を以下で解説します。
 
 #### htmlの記述
-1～33行目がhtmlの定義です。ヘルプページ『**緯度経度によるカメラ位置の指定**』で示したhtmlファイルからタイトルのみを変更します。
+1～25行目がhtmlの定義です。ヘルプページ『**緯度経度によるカメラ位置の指定**』で示したhtmlファイルからタイトルのみを変更します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```HTML
@@ -94,7 +87,8 @@
     <head>
         <meta charset="UTF-8">
         <title>AddLayerSample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+        <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <style>
             html, body {
                 height: 100%;
@@ -103,29 +97,20 @@
 
             div#mapray-container {
                 display: flex;
-                height: 97%;
-            }
-
-            div#mapInfo{
-                display: flex;
-                width: 50px;
-                height: 25px;
-                margin-left: auto;
-                margin-right: 10px;
-                align-items: center;
+                position: relative;
+                height: 100%;
             }
         </style>
     </head>
 
     <body>
         <div id="mapray-container"></div>
-        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
     </body>
 </html>
 ```
 
 #### レイヤの設定
-レイヤーを表示するためには、mapray.Viewerのlayersにレイヤーの情報を設定する必要があります。そのため、44行目でmapray.Viewerにレイヤの情報を設定します。設定するレイヤーの情報は、画像プロバイダと不透明度です。画像プロバイダはimage_providerに、不透明度はopacityに設定します。このサンプルコードでは、image_providerに国土地理院の標準地図のタイルを、opacityには半透明の0.5を設定します。
+レイヤーを表示するためには、mapray.Viewerのlayersにレイヤーの情報を設定する必要があります。そのため、36行目でmapray.Viewerにレイヤの情報を設定します。設定するレイヤーの情報は、画像プロバイダと不透明度です。画像プロバイダはimage_providerに、不透明度はopacityに設定します。このサンプルコードでは、image_providerに国土地理院の標準地図のタイルを、opacityには半透明の0.5を設定します。
 その他のアクセストークンの設定部分やmapray.Viewerの生成部分の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -143,7 +128,7 @@ viewer = new mapray.Viewer(
 ```
 
 #### カメラの位置・向きの設定
-51～71行目でカメラ位置・向きを設定します。
+43～64行目でカメラ位置・向きを設定します。
 ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -153,7 +138,8 @@ viewer = new mapray.Viewer(
 var home_pos = { longitude: 139.751891, latitude: 35.70564, height: 50.0 };
 
 // 球面座標から地心直交座標へ変換
-var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
 // 視線方向を定義
 var cam_pos = mapray.GeoMath.createVector3([-500, 500, 200]);

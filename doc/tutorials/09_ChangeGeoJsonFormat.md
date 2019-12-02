@@ -14,7 +14,8 @@ GeoJSONデータのフォーマットを変更する**ChangeGeoJsonFormat.html**
     <head>
         <meta charset="utf-8">
         <title>ChangeGeoJSONFormatSample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+        <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <script src="ChangeGeoJSONFormat.js" charset="utf-8"></script>
         <style>
             html, body {
@@ -41,7 +42,8 @@ GeoJSONデータのフォーマットを変更する**ChangeGeoJsonFormat.html**
 
             div#mapray-container {
                 display: flex;
-                height: 96%;
+                position: relative;
+                height: calc(100% - 34px);
             }
 
             div#LineWidthBox {
@@ -61,15 +63,6 @@ GeoJSONデータのフォーマットを変更する**ChangeGeoJsonFormat.html**
                 width: 145px;
                 float: left;
                 border: inset 1px #000000;
-                align-items: center;
-            }
-
-            div#mapInfo{
-                display: flex;
-                width: 50px;
-                height: 32px;
-                margin-left: auto;
-                margin-right: 10px;
                 align-items: center;
             }
         </style>
@@ -94,8 +87,6 @@ GeoJSONデータのフォーマットを変更する**ChangeGeoJsonFormat.html**
             <p>Line Color</p>
             <input type="color" id="LineColorPallet" name="LineColorPallet" value="#0000ff" onchange="LineColorValueChanged()">
         </div>
-
-        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
     </body>
 </html>
 ```
@@ -138,7 +129,8 @@ class ChangeGeoJSONFormat extends mapray.RenderCallback {
         var home_pos = { longitude: 135.642749, latitude: 34.849955, height: 500.0 };
 
         // 球面座標から地心直交座標へ変換
-        var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+        var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+        var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
         // 視線方向を定義
         var cam_pos = mapray.GeoMath.createVector3([0, 0, 70000]);
@@ -253,15 +245,16 @@ htmlのサンプルコードの詳細を以下で解説します。
 ```
 
 #### JavaScriptファイルのパス設定
-6～7行目でで参照するJavaScriptのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイルとGeoJSONデータのフォーマットを変えるJavaScriptファイル（**ChangeGeoJsonFormat.js**）を設定します。GeoJSONデータのフォーマットを変えるJavaScriptファイルの文字コードはutf-8に設定します。
+6～8行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、GeoJSONデータのフォーマットを変えるJavaScriptファイル（**ChangeGeoJsonFormat.js**）を設定します。GeoJSONデータのフォーマットを変えるJavaScriptファイルの文字コードはutf-8に設定します。
 
 ```HTML
-<script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+<script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+<link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
 <script src="ChangeGeoJSONFormat.js" charset="utf-8"></script>
 ```
 
 #### スタイルの設定
-8～64行目で表示する要素のスタイルを設定します。このサンプルコードでは、下記のスタイルを設定します。
+9～57行目で表示する要素のスタイルを設定します。このサンプルコードでは、下記のスタイルを設定します。
 - html
 - body
 - select
@@ -270,7 +263,6 @@ htmlのサンプルコードの詳細を以下で解説します。
 - div#mapray-container（地図表示部分）
 - div#LineWidthBox（線幅変更コンボボックス表示部分）
 - div#LineColorBox（線色変更ボタン表示部分）
-- div#mapInfo（出典表示部分）
 
 ```HTML
 <style>
@@ -298,7 +290,8 @@ htmlのサンプルコードの詳細を以下で解説します。
 
     div#mapray-container {
         display: flex;
-        height: 96%;
+        position: relative;
+        height: calc(100% - 34px);
     }
 
     div#LineWidthBox {
@@ -320,40 +313,27 @@ htmlのサンプルコードの詳細を以下で解説します。
         border: inset 1px #000000;
         align-items: center;
     }
-
-    div#mapInfo{
-        display: flex;
-        width: 50px;
-        height: 32px;
-        margin-left: auto;
-        margin-right: 10px;
-        align-items: center;
-    }
 </style>
 ```
 
 #### loadイベントの設定
-画面を表示するときに、GeoJSONデータフォーマット変更クラスを生成します。そのため、67行目でページ読み込み時に、GeoJSONデータのフォーマットを変更するクラスのインスタンスを生成する関数（**CreateChangeGeoJSONFormatInstance**）を呼ぶように設定します。
+画面を表示するときに、GeoJSONデータフォーマット変更クラスを生成します。そのため、60行目でページ読み込み時に、GeoJSONデータのフォーマットを変更するクラスのインスタンスを生成する関数（**CreateChangeGeoJSONFormatInstance**）を呼ぶように設定します。
 GeoJSONデータのフォーマットを変更するクラスのインスタンスを生成する関数は、JavaScriptのサンプルコードの詳細で説明します。
 
 ```HTML
 <body onload="CreateChangeGeoJSONFormatInstance('mapray-container');">
 ```
 
-#### 地図表示部分と出典表示部分の指定
-68行目で地図表示部分になるブロックを記述し、87行目で出典を明記するためのブロックを記述します。
+#### 地図表示部分の指定
+61行目で地図表示部分のブロックを記述します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```HTML
 <div id="mapray-container"></div>
-
-中略
-
-<div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
 ```
 
 #### 線の幅変更のUI
-70～80行目で線幅変更コンボボックス表示部分のブロックを記述します。このブロックの中には、線幅を変更するコンボボックスを用意します。このサンプルコードでは、1、3、7、13、17、21を設定します。
+63～73行目で線幅変更コンボボックス表示部分のブロックを記述します。このブロックの中には、線幅を変更するコンボボックスを用意します。このサンプルコードでは、1、3、7、13、17、21を設定します。
 線幅を変更するコンボボックスが変更された時のイベント（onchange）に、線幅のコンボボックス変更時に呼び出す関数（**LineWidthValueChanged**）を設定します。
 線幅のコンボボックス変更時に呼び出す関数はJavaScriptのサンプルコードの詳細で説明します。
 
@@ -372,7 +352,7 @@ GeoJSONデータのフォーマットを変更するクラスのインスタン�
 ```
 
 #### 線の色変更のUI
-82～85行目で線色変更ボタン表示部分のブロックを記述します。このブロックの中には、線色変更ボタンを用意します。
+75～78行目で線色変更ボタン表示部分のブロックを記述します。このブロックの中には、線色変更ボタンを用意します。
 線色変更ボタンには、カラーピッカーの色が変更された時のイベント（onchange）に、線色変更時に呼び出す関数（**LineColorValueChanged**）を設定します。
 線色変更時に呼び出す関数はJavaScriptのサンプルコードの詳細で説明します。
 
@@ -387,7 +367,7 @@ GeoJSONデータのフォーマットを変更するクラスのインスタン�
 JavaScriptのサンプルコードの詳細を以下で解説します。
 
 #### クラスとグローバル変数の説明
-3～119行目で、GeoJSONデータのフォーマットを変更するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
+3～120行目で、GeoJSONデータのフォーマットを変更するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
 GeoJSONデータのフォーマットを変更するクラスは、mapray.RenderCallbackクラスを継承します。
 また、1行目でGeoJSONデータのフォーマットを変更するクラスのグローバル変数を定義します。
 
@@ -441,7 +421,7 @@ createImageProvider() {
 ```
 
 #### カメラの位置・向きの設定
-31～54行目がカメラの位置・向きの設定メソッドです。
+31～55行目がカメラの位置・向きの設定メソッドです。
 カメラの位置・向きの設定は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -451,7 +431,8 @@ SetCamera() {
     var home_pos = { longitude: 135.642749, latitude: 34.849955, height: 500.0 };
 
     // 球面座標から地心直交座標へ変換
-    var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+    var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+    var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
     // 視線方向を定義
     var cam_pos = mapray.GeoMath.createVector3([0, 0, 70000]);
@@ -473,7 +454,7 @@ SetCamera() {
 ```
 
 #### 文字の表示
-57～73行目で、それぞれの駅名を表示するための文字をmapray.Viewerのシーンに追加します。文字の表示方法の詳細は、ヘルプページ『**文字の表示（addTextを使った表示）**』を参照してください。
+58～74行目で、それぞれの駅名を表示するための文字をmapray.Viewerのシーンに追加します。文字の表示方法の詳細は、ヘルプページ『**文字の表示（addTextを使った表示）**』を参照してください。
 
 ```JavaScript
 // テキストの表示
@@ -497,8 +478,8 @@ AddText() {
 ```
 
 #### シーンのロード
-76～86行目がシーンのロードメソッドです。mapray.GeoJSONLoaderでシーンを読み込みます。
-GeoJSONLoaderクラス生成時の引数には、GeoJSONファイルのエンティティを追加するシーン、読み込むGeoJSONファイルのURL、オプション集合の順に指定します。このサンプルコードでは、viewerクラスのシーン、GeoJSONファイルのURL、オプション集合の順に指定します。オプション集合には、シーンのロードが終了した時のコールバック関数、線の色、線の幅、指定高度優先可否、指定高度をの順に指定します。読み込むGeoJSONファイルのURLは、httpもしくはhttpsでアクセスできるURLを指定します。最後に、85行目のload関数を呼び出すことでシーンの読み込みができます。
+77～87行目がシーンのロードメソッドです。mapray.GeoJSONLoaderでシーンを読み込みます。
+GeoJSONLoaderクラス生成時の引数には、GeoJSONファイルのエンティティを追加するシーン、読み込むGeoJSONファイルのURL、オプション集合の順に指定します。このサンプルコードでは、viewerクラスのシーン、GeoJSONファイルのURL、オプション集合の順に指定します。オプション集合には、シーンのロードが終了した時のコールバック関数、線の色、線の幅、指定高度優先可否、指定高度をの順に指定します。読み込むGeoJSONファイルのURLは、httpもしくはhttpsでアクセスできるURLを指定します。最後に、86行目のload関数を呼び出すことでシーンの読み込みができます。
 なお、GeoJSONLoaderクラスは、GeoJSONデータのfeatureごとのロード時にコールバック関数が呼ばれ、GeoJSONデータの任意のproperty属性にアクセスすることができます。また、propertyに書かれているkeyの値をコールバック関数内で取得することも可能です。
 
 ```JavaScript
@@ -516,7 +497,7 @@ LoadScene() {
 ```
 
 #### 線の幅変更
-88～95行目が線幅変更メソッドです。90行目で線幅を変更するコンボボックスから値を取得します。そして、93行目のviewer.sceneのgetEntity関数で表示している線のエンティティを取得し、94行目で取得した値を指定することで、線の幅を変更します。このサンプルコードでは、GeoJSONデータは線のエンティティとなり、インデックスは1番目となるため、getEntity関数には1を指定します。
+89～96行目が線幅変更メソッドです。91行目で線幅を変更するコンボボックスから値を取得します。そして、94行目のviewer.sceneのgetEntity関数で表示している線のエンティティを取得し、95行目で取得した値を指定することで、線の幅を変更します。このサンプルコードでは、GeoJSONデータは線のエンティティとなり、インデックスは1番目となるため、getEntity関数には1を指定します。
 
 ```JavaScript
 ChangeLineWidth() {
@@ -530,7 +511,7 @@ ChangeLineWidth() {
 ```
 
 #### 線の色変更
-97～107行目が線色変更メソッドです。99行目でカラーピッカーから値を取得し、102行目でカラーピッカーの値をRGBの配列に変換します。そして、105行目のviewer.sceneのgetEntity関数で表示している線のエンティティを取得し、106行目でその値を指定することで、線の色を変更します。このサンプルコードでは、GeoJSONデータは線のエンティティとなり、インデックスは1番目となるため、getEntity関数には1を指定します。
+98～108行目が線色変更メソッドです。100行目でカラーピッカーから値を取得し、103行目でカラーピッカーの値をRGBの配列に変換します。そして、106行目のviewer.sceneのgetEntity関数で表示している線のエンティティを取得し、107行目でその値を指定することで、線の色を変更します。このサンプルコードでは、GeoJSONデータは線のエンティティとなり、インデックスは1番目となるため、getEntity関数には1を指定します。
 
 ```JavaScript
 ChangeLineColor() {
@@ -547,7 +528,7 @@ ChangeLineColor() {
 ```
 
 #### 色情報の変換
-109～117行目が色情報の変換メソッドです。
+110～118行目が色情報の変換メソッドです。
 色情報の変換方法の詳細は、ヘルプページ『**文字のフォーマットの変更**』を参照してください。
 
 ```JavaScript
@@ -563,7 +544,7 @@ convertColorChordToRGB(colorChord) {
 ```
 
 #### GeoJSONデータのフォーマット変更クラスのインスタンス生成
-121～123行目の関数は、引数として渡されるブロックのidを利用して、GeoJSONデータのフォーマット変更クラスのインスタンスを生成します。
+122～124行目の関数は、引数として渡されるブロックのidを利用して、GeoJSONデータのフォーマット変更クラスのインスタンスを生成します。
 
 ```JavaScript
 function CreateChangeGeoJSONFormatInstance(container) {
@@ -572,7 +553,7 @@ function CreateChangeGeoJSONFormatInstance(container) {
 ```
 
 #### 線幅変更時のイベント
-125～127行目の関数は、線幅変更時に呼ばれ、GeoJSONデータのフォーマット変更クラスの線幅変更メソッドを呼び出します。
+126～128行目の関数は、線幅変更時に呼ばれ、GeoJSONデータのフォーマット変更クラスの線幅変更メソッドを呼び出します。
 
 ```JavaScript
 function LineWidthValueChanged() {
@@ -581,7 +562,7 @@ function LineWidthValueChanged() {
 ```
 
 #### 線色変更時のイベント
-129～131行目の関数は、線色変更時に呼ばれ、GeoJSONデータのフォーマット変更クラスの線色変更メソッドを呼び出します。
+130～132行目の関数は、線色変更時に呼ばれ、GeoJSONデータのフォーマット変更クラスの線色変更メソッドを呼び出します。
 
 ```JavaScript
 function LineColorValueChanged() {

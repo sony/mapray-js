@@ -80,12 +80,8 @@ class ExtrudePolygonProperties extends mapray.RenderCallback {
 
         var c_distance = this.distance;
 
-        var base_to_gocs = mapray.GeoMath.createMatrix();
-        mapray.GeoMath.iscs_to_gocs_matrix({
-            longitude: this.longitude,
-            latitude: this.latitude,
-            height: this.height
-        }, base_to_gocs);
+        var base_geoPoint = new mapray.GeoPoint( this.longitude, this.latitude, this.height );
+        var base_to_gocs = base_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
         var d = c_distance;
 

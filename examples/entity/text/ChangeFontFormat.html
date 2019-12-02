@@ -3,7 +3,8 @@
     <head>
         <meta charset="utf-8">
         <title>ChangeFontFormatSample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+        <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <script src="ChangeFontFormat.js" charset="utf-8"></script>
         <style>
             html, body {
@@ -30,7 +31,8 @@
 
             div#mapray-container {
                 display: flex;
-                height: 96%;
+                position: relative;
+                height: calc(100% - 34px);
             }
 
             div#FontStyleBox{
@@ -52,7 +54,6 @@
                 border:inset 1px #000000;
                 align-items:center;
             }
-
 
             div#FontSizeBox{
                 display: flex;
@@ -83,20 +84,12 @@
                 border:inset 1px #000000;
                 align-items:center;
             }
-
-            div#mapInfo{
-                display: flex;
-                width: 50px;
-                height: 32px;
-                margin-left: auto;
-                margin-right: 10px;
-                align-items: center;
-            }
         </style>
     </head>
 
     <body onload="CreateChangeFontStyleInstance('mapray-container');">
         <div id="mapray-container"></div>
+        
         <div id="FontStyleBox">
             <p>Font Style</p>
             <select name="FontStylePullDown" id="FontStylePullDown" onchange="FontStyleValueChanged()">
@@ -140,7 +133,5 @@
                 <option value="vardana" style="font-family:vardana">vardana</option>
             </select>
         </div>
-
-        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
     </body>
 </html>

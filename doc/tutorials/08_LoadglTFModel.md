@@ -7,7 +7,7 @@ mapray.SceneLoaderを使ってglTFモデルを表示する**LoadglTFModel.html**
 このサンプルコードでは、薬師寺の場所に3Dモデルを表示します。
 
 #### glTFデータの入手
-[PART Community](https://b2b.partcommunity.com/community/knowledge/ja/detail/435/Yakushi-ji)へアクセスし、glTFファイルフォーマットのデータをダウンロードする、もしくは[ダウンロードリンク](https://storage.cloud.google.com/mapray-examples/model/download/Yakushiji_Temple.zip)をクリックしてダウンロードしてください。ダウンロードリンクからダウンロードした場合はzipファイルを展開してご利用ください。展開したデータは展開したデータは解答した結果できたディレクトリを含めて、mapray-jsのルートディレクトリからの相対パスで以下のディレクトリに保存されているという想定で以下の説明を行います。
+[PART Community](https://b2b.partcommunity.com/community/knowledge/ja/detail/435/Yakushi-ji)へアクセスし、glTFファイルフォーマットのデータをダウンロードする、もしくは[ダウンロードリンク](https://storage.cloud.google.com/mapray-examples/model/download/Yakushiji_Temple.zip)をクリックしてダウンロードしてください。ダウンロードリンクからダウンロードした場合はzipファイルを展開してご利用ください。展開したデータは解凍した結果できたディレクトリを含めて、mapray-jsのルートディレクトリからの相対パスで以下のディレクトリに保存されているという想定で以下の説明を行います。
 
 ```
 ./examples/entity/gltf/data/
@@ -24,7 +24,8 @@ mapray.SceneLoaderを使ってglTFモデルを表示する**LoadglTFModel.html**
     <head>
         <meta charset="UTF-8">
         <title>LoadglTFModelSample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+        <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <script src="LoadglTFModel.js"></script>
         <style>
             html, body {
@@ -34,33 +35,14 @@ mapray.SceneLoaderを使ってglTFモデルを表示する**LoadglTFModel.html**
 
             div#mapray-container {
                 display: flex;
-                height: 94%;
-            }
-
-            div#mapInfo{
-                display: flex;
-                width: 50px;
-                height: 25px;
-                margin-left: auto;
-                margin-right: 10px;
-                align-items: center;
-            }
-
-            div#modelInfo{
-                display: flex;
-                width: 520px;
-                height: 25px;
-                margin-left: auto;
-                margin-right: 10px;
-                align-items: center;
+                position: relative;
+                height: 100%;
             }
         </style>
     </head>
 
     <body onload="new LoadModel('mapray-container');">
         <div id="mapray-container"></div>
-        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
-        <div id="modelInfo"><a href="https://b2b.partcommunity.com/community/knowledge/ja/detail/435/Yakushi-ji" style="font-size: 9px">Yakushiji Temple by Daily CAD is licensed under: Creative Commons - Attribution-ShareAlike International</a></div>
     </body>
 </html>
 ```
@@ -80,6 +62,12 @@ class LoadModel {
             }
         );
 
+        // glTFモデルのライセンス表示
+        this.viewer.attribution_controller.addAttribution( {
+            display: "Yakushiji Temple by Daily CAD is licensed under: Creative Commons - Attribution - ShareAlike International",
+            link: "https://b2b.partcommunity.com/community/knowledge/ja/detail/435/Yakushi-ji"
+        } );
+
         this.SetCamera();
 
         this.LoadScene();
@@ -97,7 +85,8 @@ class LoadModel {
         var home_pos = { longitude: 135.784682, latitude: 34.668107, height: 100.0 };
 
         // 球面座標から地心直交座標へ変換
-        var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+        var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+        var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
         // 視線方向を定義
         var cam_pos = mapray.GeoMath.createVector3([100, -300, 100]);
@@ -186,20 +175,16 @@ htmlのサンプルコードの詳細を以下で解説します。
 ```
 
 #### JavaScriptファイルのパス設定
-6～7行目で参照するJavaScriptのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイルとモデルのシーンを読み込むJavaScriptファイル（**Load3DModel.js**）を設定します。
+6～8行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、モデルのシーンを読み込むJavaScriptファイル（**Load3DModel.js**）を設定します。
 
 ```HTML
-<script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+<script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+<link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
 <script src="LoadglTFModel.js"></script>
 ```
 
 #### スタイルの設定
-8～36行目で表示する要素のスタイルを設定します。このサンプルコードでは、下記のスタイルを設定します。
-- html
-- body
-- div#mapray-container（地図表示部分）
-- div#mapInfo（出典表示部分）
-- div#modelInfo（モデル出典表示部分）
+9～20行目で表示する要素のスタイルを設定します。スタイルの詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```HTML
 <style>
@@ -210,59 +195,33 @@ htmlのサンプルコードの詳細を以下で解説します。
 
     div#mapray-container {
         display: flex;
-        height: 94%;
-    }
-
-    div#mapInfo{
-        display: flex;
-        width: 50px;
-        height: 25px;
-        margin-left: auto;
-        margin-right: 10px;
-        align-items: center;
-    }
-
-    div#modelInfo{
-        display: flex;
-        width: 520px;
-        height: 25px;
-        margin-left: auto;
-        margin-right: 10px;
-        align-items: center;
+        position: relative;
+        height: 100%;
     }
 </style>
 ```
 
 #### loadイベントの処理
-画面を表示するときに、モデルシーン読み込みクラスを生成します。そのため、39行目でページの読み込み時に、地図表示部分のブロックのidからモデルシーン読み込みクラスのインスタンスを生成します。
+画面を表示するときに、モデルシーン読み込みクラスを生成します。そのため、23行目でページの読み込み時に、地図表示部分のブロックのidからモデルシーン読み込みクラスのインスタンスを生成します。
 モデルシーン読み込みクラスはJavaScriptのサンプルコードの詳細で説明します。
 
 ```HTML
 <body onload="new LoadModel('mapray-container');">
 ```
 
-#### 地図表示部分と出典表示部分の指定
-40行目で地図表示部分になるブロックを記述し、41行目で出典を明記するためのブロックを記述します。
+#### 地図表示部分の指定
+24行目で地図表示部分のブロックを記述します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```HTML
 <div id="mapray-container"></div>
-<div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
 ```
-
-#### glTFモデルの出典表示部分の設定
-42行目で、glTFモデルの出典を明記するためのブロックを記述します。
-
-```HTML
-<div id="modelInfo"><a href="https://b2b.partcommunity.com/community/knowledge/ja/detail/435/Yakushi-ji" style="font-size: 9px">Yakushiji Temple by Daily CAD is licensed under: Creative Commons - Attribution-ShareAlike International</a></div>
-```
-
 
 ### JavaScriptのサンプルコードの詳細
 JavaScriptのサンプルコードの詳細を以下で解説します。
 
 #### クラスの説明
-2～84行目で、モデルシーンを読み込み、表示するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
+2～91行目で、モデルシーンを読み込み、表示するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
 
 ```JavaScript
 class LoadModel {
@@ -273,7 +232,7 @@ class LoadModel {
 ```
 
 #### コンストラクタ
-2～17行目がモデルシーンを読み込み、表示するクラスのコンストラクタです。引数として渡されるブロックのidに対して、mapray.Viewerを作成し、カメラの位置・向きの設定メソッドを呼び出します。その後、シーンのロードメソッドを呼び出します。viewerを作成する際の画像プロバイダは画像プロバイダの生成メソッドから取得します。
+2～23行目がモデルシーンを読み込み、表示するクラスのコンストラクタです。引数として渡されるブロックのidに対して、mapray.Viewerを作成し、glTFモデルの出典情報を追加します。そして、カメラの位置・向きの設定メソッドを呼び出します。その後、シーンのロードメソッドを呼び出します。viewerを作成する際の画像プロバイダは画像プロバイダの生成メソッドから取得します。
 mapray.Viewerの作成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -289,6 +248,12 @@ constructor(container) {
         }
     );
 
+    // glTFモデルのライセンス表示
+    this.viewer.attribution_controller.addAttribution( {
+        display: "Yakushiji Temple by Daily CAD is licensed under: Creative Commons - Attribution - ShareAlike International",
+        link: "https://b2b.partcommunity.com/community/knowledge/ja/detail/435/Yakushi-ji"
+    } );
+
     this.SetCamera();
 
     this.LoadScene();
@@ -296,7 +261,7 @@ constructor(container) {
 ```
 
 #### 画像プロバイダの生成
-20～23行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
+26～29行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
 画像プロバイダの生成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -308,7 +273,7 @@ createImageProvider() {
 ```
 
 #### カメラの位置・向きの設定
-26～49行目がカメラの位置・向きの設定メソッドです。
+32～56行目がカメラの位置・向きの設定メソッドです。
 カメラの位置・向きの設定は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -318,7 +283,8 @@ SetCamera() {
     var home_pos = { longitude: 135.784682, latitude: 34.668107, height: 100.0 };
 
     // 球面座標から地心直交座標へ変換
-    var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+    var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+    var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
     // 視線方向を定義
     var cam_pos = mapray.GeoMath.createVector3([100, -300, 100]);
@@ -340,8 +306,8 @@ SetCamera() {
 ```
 
 #### シーンのロード
-52～64行目がシーンのロードメソッドです。mapray.SceneLoaderでシーンを読み込みます。
-SceneLoaderクラス生成時の引数には、シーンファイルのエンティティを追加するシーン、読み込むシーンファイルのURL、オプション集合の順に指定します。このサンプルコードでは、viewerクラスのシーン、54行目で設定したURL、リソース要求変換関数、シーンのロードが終了した時のコールバック関数の順に指定します。読み込むシーンのURLはhttpもしくはhttpsでアクセスできるURLを指定します。最後に、63行目のload関数を呼び出すことでシーンの読み込みができます。
+59～71行目がシーンのロードメソッドです。mapray.SceneLoaderでシーンを読み込みます。
+SceneLoaderクラス生成時の引数には、シーンファイルのエンティティを追加するシーン、読み込むシーンファイルのURL、オプション集合の順に指定します。このサンプルコードでは、viewerクラスのシーン、61行目で設定したURL、リソース要求変換関数、シーンのロードが終了した時のコールバック関数の順に指定します。読み込むシーンのURLはhttpもしくはhttpsでアクセスできるURLを指定します。最後に、70行目のload関数を呼び出すことでシーンの読み込みができます。
 
 ```JavaScript
 // シーンの読み込み
@@ -361,7 +327,7 @@ LoadScene() {
 ```
 
 #### リソース要求変換
-66～72行目はリソース要求変換メソッドです。リソースのリクエスト時にURLなどを変換する内容を定義します。このサンプルコードでは、特に指定はしないので、リファレンスに沿った内容で定義します。
+73～79行目はリソース要求変換メソッドです。リソースのリクエスト時にURLなどを変換する内容を定義します。このサンプルコードでは、特に指定はしないので、リファレンスに沿った内容で定義します。
 
 ```JavaScript
 onTransform(url, type) {
@@ -374,8 +340,8 @@ onTransform(url, type) {
 ```
 
 #### シーンのロード終了イベント
-74～82行目がシーンのロード終了イベントメソッドです。引数のisSuccessには、読み込み結果が格納されており、trueの場合のみ読み込んだglTFモデルを表示します。
-読み込んだモデルの向きを調整するため、80行目で、適切な向きをエンティティに反映させることで、地図上にglTFモデルを表示します。なお、読み込んだモデルは1つ目のエンティティとなるため、エンティティ取得時の引数には0を指定します。
+81～89行目がシーンのロード終了イベントメソッドです。引数のisSuccessには、読み込み結果が格納されており、trueの場合のみ読み込んだglTFモデルを表示します。
+読み込んだモデルの向きを調整するため、87行目で、適切な向きをエンティティに反映させることで、地図上にglTFモデルを表示します。なお、読み込んだモデルは1つ目のエンティティとなるため、エンティティ取得時の引数には0を指定します。
 
 ```JavaScript
 onLoadScene(loader, isSuccess) {
@@ -457,7 +423,8 @@ SetCamera() {
     var home_pos = { longitude: 130.873921, latitude: 33.884291, height: 3.0 };
 
     // 球面座標から地心直交座標へ変換
-    var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+    var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+    var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
     // 視線方向を定義
     var cam_pos = mapray.GeoMath.createVector3([200, 200, 100]);

@@ -15,7 +15,8 @@ mapray.SceneLoaderを使って線を表示する**LoadLineScene.html**及び**Lo
     <head>
         <meta charset="UTF-8">
         <title>LoadLineSceneSample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+        <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <script src="LoadLineScene.js" charset="utf-8"></script>
         <style>
             html, body {
@@ -25,23 +26,14 @@ mapray.SceneLoaderを使って線を表示する**LoadLineScene.html**及び**Lo
 
             div#mapray-container {
                 display: flex;
-                height: 97%;
-            }
-
-            div#mapInfo{
-                display: flex;
-                width: 50px;
-                height: 25px;
-                margin-left: auto;
-                margin-right: 10px;
-                align-items: center;
+                position: relative;
+                height: 100%;
             }
         </style>
     </head>
 
     <body onload="new LoadLine('mapray-container');">
         <div id="mapray-container"></div>
-        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
     </body>
 </html>
 ```
@@ -80,7 +72,8 @@ class LoadLine {
         var home_pos = { longitude: 139.783217, latitude: 35.685173, height: 50 };
 
         // 球面座標から地心直交座標へ変換
-        var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+        var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+        var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
         // 視線方向を定義
         var cam_pos = mapray.GeoMath.createVector3([0, 0, 16000]);
@@ -189,14 +182,15 @@ htmlのサンプルコードの詳細を以下で解説します。
 ```
 
 #### JavaScriptファイルのパス設定
-6～7行目で参照するJavaScripのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイルと線のシーンを読み込むJavaScriptファイル（**LoadLineScene.js**）を設定します。線のシーンを読み込むJavaScriptファイルは文字コードをutf-8に設定します。
+6～8行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、線のシーンを読み込むJavaScriptファイル（**LoadLineScene.js**）を設定します。線のシーンを読み込むJavaScriptファイルは文字コードをutf-8に設定します。
 ```HTML
-<script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+<script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+<link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
 <script src="LoadLineScene.js" charset="utf-8"></script>
 ```
 
 #### スタイルの設定
-8～27行目で表示する要素のスタイルを設定します。
+9～20行目で表示する要素のスタイルを設定します。
 スタイルの詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```HTML
@@ -208,42 +202,33 @@ htmlのサンプルコードの詳細を以下で解説します。
 
     div#mapray-container {
         display: flex;
-        height: 97%;
-    }
-
-    div#mapInfo{
-        display: flex;
-        width: 50px;
-        height: 25px;
-        margin-left: auto;
-        margin-right: 10px;
-        align-items: center;
+        position: relative;
+        height: 100%;
     }
 </style>
 ```
 
 #### loadイベントの処理
-画面を表示する時に、線シーン読み込みクラスを生成します。そのため、30行目でページの読み込み時に、地図表示部分のブロックのidから線シーン読み込みクラスのインスタンスを生成します。
+画面を表示する時に、線シーン読み込みクラスを生成します。そのため、23行目でページの読み込み時に、地図表示部分のブロックのidから線シーン読み込みクラスのインスタンスを生成します。
 線シーン読み込みクラスは、JavaScriptのサンプルコードの詳細で説明します。
 
 ```HTML
 <body onload="new LoadLine('mapray-container');">
 ```
 
-#### 地図表示部分と出典表示部分の指定
-31～32行目で表示する要素を記述します。
+#### 地図表示部分の指定
+24行目で地図表示部分のブロックを記述します。
 要素の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```HTML
 <div id="mapray-container"></div>
-<div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
 ```
 
 ### JavaScriptのサンプルコードの詳細
 JavaScriptのサンプルコードの詳細を以下で解説します。
 
 #### クラス
-1～109行目で線シーンを読み込み、表示するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
+1～110行目で線シーンを読み込み、表示するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
 
 ```JavaScript
 class LoadLine {
@@ -289,7 +274,7 @@ createImageProvider() {
 ```
 
 #### カメラの位置・向きの設定
-26～51行目がカメラの位置・向きの設定メソッドです。
+26～52行目がカメラの位置・向きの設定メソッドです。
 カメラの位置・向きの設定は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
 ```JavaScript
@@ -300,7 +285,8 @@ SetCamera() {
     var home_pos = { longitude: 139.783217, latitude: 35.685173, height: 50 };
 
     // 球面座標から地心直交座標へ変換
-    var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+    var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+    var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
     // 視線方向を定義
     var cam_pos = mapray.GeoMath.createVector3([0, 0, 16000]);
@@ -322,8 +308,8 @@ SetCamera() {
 ```
 
 #### シーンのロード
-53～62行目がシーンのロードメソッドです。mapray.SceneLoaderでシーンを読み込みます。
-SceneLoaderの引数は、シーンファイルのエンティティを追加するシーン、読み込むシーンファイルのURL、オプション集合の順に指定します。このサンプルコードでは、viewerのシーン、54行目で設定したURL、シーンのロードが終了した時のコールバック関数の順に指定します。読み込むシーンのURLはhttpもしくはhttpsでアクセスできるURLを指定します。最後に、61行目のload関数を呼び出すことでシーンの読み込みができます。
+54～63行目がシーンのロードメソッドです。mapray.SceneLoaderでシーンを読み込みます。
+SceneLoaderの引数は、シーンファイルのエンティティを追加するシーン、読み込むシーンファイルのURL、オプション集合の順に指定します。このサンプルコードでは、viewerのシーン、55行目で設定したURL、シーンのロードが終了した時のコールバック関数の順に指定します。読み込むシーンのURLはhttpもしくはhttpsでアクセスできるURLを指定します。最後に、62行目のload関数を呼び出すことでシーンの読み込みができます。
 
 ```JavaScript
 LoadScene() {
@@ -339,7 +325,7 @@ LoadScene() {
 ```
 
 #### シーンのロード終了イベント
-64～78行目がシーンのロード終了イベントメソッドです。引数のisSuccessには、読み込み結果が格納されており、trueの場合のみ追加の線を作成します。最後に、場所の説明用の文字を表示するメソッドを呼び出します。
+65～79行目がシーンのロード終了イベントメソッドです。引数のisSuccessには、読み込み結果が格納されており、trueの場合のみ追加の線を作成します。最後に、場所の説明用の文字を表示するメソッドを呼び出します。
 なお、ラインエンティティは、addPoints関数で追加した頂点を順に線で結ばれます。そのため、このサンプルコードでは、73行目で取得したラインエンティティに対して頂点を追加することで、シーンファイルで読み込んだ頂点及び後から追加した頂点が結ばれた線が表示されます。
 線の座標の追加は、ヘルプページ『**線の表示（addPointsを使った表示）**』を参照してください。
 
@@ -362,7 +348,7 @@ onLoadScene(loader, isSuccess) {
 ```
 
 #### 文字の表示
-80～107行目が文字の表示メソッドです。皇居、東京タワー、東京スカイツリーの文字を表示します。
+81～108行目が文字の表示メソッドです。皇居、東京タワー、東京スカイツリーの文字を表示します。
 文字の表示は、ヘルプページ『**文字の表示（addTextを使った表示）**』のヘルプページを参照してください。
 
 ```JavaScript

@@ -3,7 +3,8 @@
     <head>
         <meta charset="utf-8">
         <title>ChangeLineFormatSample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+        <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <script src="ChangeLineFormat.js" charset="utf-8"></script>
         <style>
             html, body {
@@ -30,7 +31,8 @@
 
             div#mapray-container {
                 display: flex;
-                height: 96%;
+                position: relative;
+                height: calc(100% - 34px);
             }
 
             div#LineWidthBox {
@@ -50,15 +52,6 @@
                 width: 145px;
                 float: left;
                 border: inset 1px #000000;
-                align-items: center;
-            }
-
-            div#mapInfo{
-                display: flex;
-                width: 50px;
-                height: 32px;
-                margin-left: auto;
-                margin-right: 10px;
                 align-items: center;
             }
         </style>
@@ -83,7 +76,5 @@
             <p>Line Color</p>
             <input type="color" id="LineColorPallet" name="LineColorPallet" value="#ffffff" onchange="LineColorValueChanged()">
         </div>
-
-        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
     </body>
 </html>

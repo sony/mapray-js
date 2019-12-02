@@ -13,7 +13,13 @@ class ChangeAltitudeMode {
                 dem_provider: new mapray.CloudDemProvider(accessToken)
             }
         );
-        
+
+        // glTFモデルのライセンス表示
+        this.viewer.attribution_controller.addAttribution( {
+            display: "Plane by osmosikum: Creative Commons - Attribution",
+            link: "https://sketchfab.com/3d-models/plane-cedc8a07370747f7b0d14400cdf2faf9"
+        } );
+
         this.model_Point = new mapray.GeoPoint(140.379528, 35.758832, 40.0);    //モデルの球面座標(経度、緯度、高度)
         this.altitude_mode = mapray.AltitudeMode.ABSOLUTE;
 
@@ -34,7 +40,8 @@ class ChangeAltitudeMode {
         var home_pos = { longitude: 140.379528, latitude: 35.758832, height: 40 };
 
         // 球面座標から地心直交座標へ変換
-        var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+        var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+        var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
         // 視線方向を定義
         var cam_pos = mapray.GeoMath.createVector3([-500, -1500, 500]);
@@ -133,6 +140,9 @@ class ChangeAltitudeMode {
                 break;
             case mapray.AltitudeMode.RELATIVE.id:
                     this.altitude_mode = mapray.AltitudeMode.RELATIVE;
+                break;
+            case mapray.AltitudeMode.CLAMP.id:
+                this.altitude_mode = mapray.AltitudeMode.CLAMP;
                 break;
         }
 

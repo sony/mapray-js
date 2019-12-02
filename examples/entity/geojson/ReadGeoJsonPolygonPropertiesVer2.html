@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>ReadGeoJsonPolygonPropertiesSample</title>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+        <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
+        <script src="ReadGeoJsonPolygonPropertiesVer2.js" charset="utf-8"></script>
+        <style>
+            html,
+            body {
+                height: 100%;
+                margin: 0;
+                background-color: #E0E0E0;
+            }
+
+            select {
+                height: 22px;
+                vertical-align: middle;
+                font-size: 13px;
+                margin-left: 10px;
+            }
+
+            p {
+                font-size: 13px;
+                margin-left: 5px;
+            }
+
+            div#mapray-container {
+                display: flex;
+                position: relative;
+                height: calc(100% - 37px);
+            }
+
+            div#OpacityBox {
+                display: flex;
+                background-color: #E0E0E0;
+                height: 35px;
+                width: 120px;
+                float: left;
+                border: inset 1px #000000;
+                align-items: center;
+            }
+        </style>
+    </head>
+
+    <body onload="CreateReadGeoJsonPolygonPropertiesInstance('mapray-container');">
+        <div id="mapray-container"></div>
+
+        <div id="OpacityBox">
+            <p>Opacity</p>
+            <select name="OpacityPullDown" id="OpacityPullDown" onchange="OpacityValueChanged()">
+                <option value=0.0>0.0</option>
+                <option value=0.5 selected>0.5</option>
+                <option value=1.0>1.0</option>
+            </select>
+        </div>
+    </body>
+</html>
