@@ -3,7 +3,8 @@
     <head>
         <meta charset="utf-8">
         <title>CameraAnimationSample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
+        <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <style>
             html, body {
                 height: 100%;
@@ -12,23 +13,14 @@
 
             div#mapray-container {
                 display: flex;
-                height: 97%;
-            }
-
-            div#mapInfo{
-                display: flex;
-                width: 50px;
-                height: 25px;
-                margin-left: auto;
-                margin-right: 10px;
-                align-items: center;
+                position: relative;
+                height: 100%;
             }
         </style>
     </head>
     
     <body>
         <div id="mapray-container"></div>
-        <div id="mapInfo"><a href="https://maps.gsi.go.jp/development/ichiran.html" style="font-size: 9px">国土地理院</a></div>
     </body>
 </html>
 
@@ -65,12 +57,8 @@
         var camera = this.viewer.camera;
 
         // 基準座標系から GOCS への変換行列を生成
-        var base_to_gocs = mapray.GeoMath.createMatrix();
-        mapray.GeoMath.iscs_to_gocs_matrix({
-            longitude: this.longitude,
-            latitude: this.latitude,
-            height: this.height
-        }, base_to_gocs);
+        var base_geoPoint = new mapray.GeoPoint( this.longitude, this.latitude, this.height );
+        var base_to_gocs = base_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
         // カメラの相対位置を計算し、姿勢を決める
         var d = this.distance;
@@ -117,4 +105,3 @@
     // CameraAnimationのインスタンス作成
     var cam_Animation = new CameraAnimation();
 </script>
-

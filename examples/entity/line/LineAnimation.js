@@ -1,6 +1,4 @@
 // JavaScript source code
-var GeoMath = mapray.GeoMath;
-
 class LineAnimation extends mapray.RenderCallback {
 
     constructor(container) {
@@ -44,7 +42,8 @@ class LineAnimation extends mapray.RenderCallback {
         var home_pos = { longitude: 139.7528, latitude: 35.685175, height: 20000 };
 
         // 球面座標から地心直交座標へ変換
-        var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+        var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+        var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
         // 視線方向を定義
         var cam_pos = mapray.GeoMath.createVector3([0, 0, 7000]);
@@ -108,14 +107,14 @@ class LineAnimation extends mapray.RenderCallback {
         var vec = [this.line_Pos_Array[this.line_Pos_Index + 1].longitude - this.line_Pos_Array[this.line_Pos_Index].longitude,
                    this.line_Pos_Array[this.line_Pos_Index + 1].latitude - this.line_Pos_Array[this.line_Pos_Index].latitude,
                    this.line_Pos_Array[this.line_Pos_Index + 1].height - this.line_Pos_Array[this.line_Pos_Index].height];
-        GeoMath.normalize3(vec, vec);
+        mapray.GeoMath.normalize3(vec, vec);
 
         // 外積で補正方向算出
-        var closs_Vec = GeoMath.cross3(vec, [0, 0, 1], GeoMath.createVector3());
+        var closs_Vec = mapray.GeoMath.cross3(vec, [0, 0, 1], mapray.GeoMath.createVector3());
 
         // 次のラインの緯度経度高度を算出
-        var line_Point = {longitude: (this.line_Pos_Array[this.line_Pos_Index].longitude * (1 - this.ratio) + this.line_Pos_Array[this.line_Pos_Index + 1].longitude * this.ratio) + (closs_Vec[0] * 0.02) * Math.sin(this.ratio * 180 * GeoMath.DEGREE),
-                          latitude: (this.line_Pos_Array[this.line_Pos_Index].latitude * (1 - this.ratio) + this.line_Pos_Array[this.line_Pos_Index + 1].latitude * this.ratio) + (closs_Vec[1] * 0.02) * Math.sin(this.ratio * 180 * GeoMath.DEGREE),
+        var line_Point = {longitude: (this.line_Pos_Array[this.line_Pos_Index].longitude * (1 - this.ratio) + this.line_Pos_Array[this.line_Pos_Index + 1].longitude * this.ratio) + (closs_Vec[0] * 0.02) * Math.sin(this.ratio * 180 * mapray.GeoMath.DEGREE),
+            latitude: ( this.line_Pos_Array[this.line_Pos_Index].latitude * ( 1 - this.ratio ) + this.line_Pos_Array[this.line_Pos_Index + 1].latitude * this.ratio ) + ( closs_Vec[1] * 0.02 ) * Math.sin( this.ratio * 180 * mapray.GeoMath.DEGREE),
                           height: this.line_Pos_Array[this.line_Pos_Index].height * (1 - this.ratio) + this.line_Pos_Array[this.line_Pos_Index + 1].height * this.ratio};
 
         // 次の点を追加

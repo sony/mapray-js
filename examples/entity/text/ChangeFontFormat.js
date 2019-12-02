@@ -65,7 +65,8 @@ class ChangeFontFormat {
         var home_pos = { longitude: 138.736758, latitude: 35.359326, height: 4000 };
 
         // 球面座標から地心直交座標へ変換
-        var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+        var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+        var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
         // 視線方向を定義
         var cam_pos = mapray.GeoMath.createVector3([3000, -2600, 1500]);
@@ -167,4 +168,3 @@ function FontColorValueChanged() {
 function FontFamilyValueChanged() {
     change_Font_Format.ChangeFontFamily();
 }
-

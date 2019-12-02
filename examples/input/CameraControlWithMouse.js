@@ -77,7 +77,8 @@ class CameraControl extends mapray.RenderCallback{
         // カメラ位置の設定
 
         // 球面座標から地心直交座標へ変換
-        var camera_Pos_Gocs = GeoMath.iscs_to_gocs_matrix(this.camera_Pos, GeoMath.createMatrix());
+        var camera_geoPoint = new mapray.GeoPoint( this.camera_Pos.longitude, this.camera_Pos.latitude, this.camera_Pos.height );
+        var camera_Pos_Gocs = camera_geoPoint.getMlocsToGocsMatrix( GeoMath.createMatrix() );
 
         var camera_End_Pos_Mat = GeoMath.createMatrix();
         GeoMath.setIdentity(camera_End_Pos_Mat);
@@ -133,18 +134,20 @@ class CameraControl extends mapray.RenderCallback{
 
         if (clossPoint != null) {
             // 交点を球面座標系に変換する
-            var closs_Pos = GeoMath.gocs_to_iscs(clossPoint, {});
+            var closs_geoPoint = new mapray.GeoPoint();
+            closs_geoPoint.setFromGocs( clossPoint );
 
             // UIを更新する
-            document.getElementById("LongitudeValue").innerText = closs_Pos.longitude.toFixed(6);
-            document.getElementById("LatitudeValue").innerText = closs_Pos.latitude.toFixed(6);
-            document.getElementById("HeightValue").innerText = closs_Pos.height.toFixed(6);
+            document.getElementById( "LongitudeValue" ).innerText = closs_geoPoint.longitude.toFixed(6);
+            document.getElementById( "LatitudeValue" ).innerText = closs_geoPoint.latitude.toFixed(6);
+            document.getElementById( "HeightValue" ).innerText = closs_geoPoint.height.toFixed(6);
         }
     }
 
     ForwardCameraPos() {
         // 球面座標から地心直交座標へ変換
-        var camera_Pos_Gocs = GeoMath.iscs_to_gocs_matrix(this.camera_Pos, GeoMath.createMatrix());
+        var camera_geoPoint = new mapray.GeoPoint( this.camera_Pos.longitude, this.camera_Pos.latitude, this.camera_Pos.height );
+        var camera_Pos_Gocs = camera_geoPoint.getMlocsToGocsMatrix( GeoMath.createMatrix() );
 
         // 地心直交座標の平行移動成分を変更
         camera_Pos_Gocs[12] -= this.camera_Vec[0] * this.camera_Move_Correction;
@@ -152,12 +155,18 @@ class CameraControl extends mapray.RenderCallback{
         camera_Pos_Gocs[14] -= this.camera_Vec[2] * this.camera_Move_Correction;
 
         // 地心直交座標を球面座標に変換する
-        GeoMath.gocs_to_iscs([camera_Pos_Gocs[12], camera_Pos_Gocs[13], camera_Pos_Gocs[14]], this.camera_Pos);
+        var next_camera_geoPoint = new mapray.GeoPoint();
+        next_camera_geoPoint.setFromGocs( [camera_Pos_Gocs[12], camera_Pos_Gocs[13], camera_Pos_Gocs[14]] );
+        
+        this.camera_Pos.longitude = next_camera_geoPoint.longitude;
+        this.camera_Pos.latitude = next_camera_geoPoint.latitude;
+        this.camera_Pos.height = next_camera_geoPoint.height;
     }
 
     BackwardCameraPos() {
         // 球面座標から地心直交座標へ変換
-        var camera_Pos_Gocs = GeoMath.iscs_to_gocs_matrix(this.camera_Pos, GeoMath.createMatrix());
+        var camera_geoPoint = new mapray.GeoPoint( this.camera_Pos.longitude, this.camera_Pos.latitude, this.camera_Pos.height );
+        var camera_Pos_Gocs = camera_geoPoint.getMlocsToGocsMatrix( GeoMath.createMatrix() );
 
         // 地心直交座標の平行移動成分を変更
         camera_Pos_Gocs[12] += this.camera_Vec[0] * this.camera_Move_Correction;
@@ -165,7 +174,12 @@ class CameraControl extends mapray.RenderCallback{
         camera_Pos_Gocs[14] += this.camera_Vec[2] * this.camera_Move_Correction;
 
         // 地心直交座標を球面座標に変換する
-        GeoMath.gocs_to_iscs([camera_Pos_Gocs[12], camera_Pos_Gocs[13], camera_Pos_Gocs[14]], this.camera_Pos);
+        var next_camera_geoPoint = new mapray.GeoPoint();
+        next_camera_geoPoint.setFromGocs( [camera_Pos_Gocs[12], camera_Pos_Gocs[13], camera_Pos_Gocs[14]] );
+
+        this.camera_Pos.longitude = next_camera_geoPoint.longitude;
+        this.camera_Pos.latitude = next_camera_geoPoint.latitude;
+        this.camera_Pos.height = next_camera_geoPoint.height;
     }
 
     TurnCamera(drag_Vec) {

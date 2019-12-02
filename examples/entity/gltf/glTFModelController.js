@@ -3,7 +3,6 @@ var model_Controller;
 
 class ModelController {
     constructor(container) {
-
         // Access Tokenを設定
         var accessToken = "<your access token here>";
 
@@ -14,6 +13,12 @@ class ModelController {
                 dem_provider: new mapray.CloudDemProvider(accessToken)
             }
         );
+
+        // glTFモデルのライセンス表示
+        this.viewer.attribution_controller.addAttribution( {
+            display: "Created by modifying truck-wip by Renafox: Creative Commons - Attribution",
+            link: "https://sketchfab.com/3d-models/truck-wip-33e925207e134652bd8c2465e5c16957"
+        } );
 
         this.model_Point = new mapray.GeoPoint(135.759309, 35.025891, 55.0);    // モデルの球面座標(経度、緯度、高度)
         this.move_Vec = [0, 1, 0];                                              // モデルの移動方向(X:経度 Y:緯度 Z:高度)
@@ -38,7 +43,8 @@ class ModelController {
         var home_pos = { longitude: 135.759366, latitude: 35.025891, height: 50.0 };
 
         // 球面座標から地心直交座標へ変換
-        var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+        var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+        var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
         // 視線方向を定義
         var cam_pos = mapray.GeoMath.createVector3([-400, 10, 400]);

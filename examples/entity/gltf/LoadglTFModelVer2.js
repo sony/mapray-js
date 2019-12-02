@@ -12,6 +12,12 @@ class LoadModel {
             }
         );
 
+        // glTFモデルのライセンス表示
+        this.viewer.attribution_controller.addAttribution( {
+            display: "Kokura Castle by AVATTA: Creative Commons - Attribution",
+            link: "https://sketchfab.com/3d-models/kokura-castle-aba23531911c45439067a6e0aaccad07"
+        } );
+
         this.SetCamera();
 
         this.LoadScene();
@@ -29,7 +35,8 @@ class LoadModel {
         var home_pos = { longitude: 130.873921, latitude: 33.884291, height: 3.0 };
 
         // 球面座標から地心直交座標へ変換
-        var home_view_to_gocs = mapray.GeoMath.iscs_to_gocs_matrix(home_pos, mapray.GeoMath.createMatrix());
+        var home_view_geoPoint = new mapray.GeoPoint( home_pos.longitude, home_pos.latitude, home_pos.height );
+        var home_view_to_gocs = home_view_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
         // 視線方向を定義
         var cam_pos = mapray.GeoMath.createVector3([200, 200, 100]);

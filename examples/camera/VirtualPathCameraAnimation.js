@@ -1,6 +1,4 @@
 // JavaScript source code
-var GeoMath = mapray.GeoMath;
-
 class VirtualPathCameraAnimation extends mapray.RenderCallback {
 
     constructor(container) {
@@ -40,7 +38,7 @@ class VirtualPathCameraAnimation extends mapray.RenderCallback {
         var camera = this.viewer.camera;
 
         // カメラに変換行列を設定
-        GeoMath.mul_AA(this.createInterpolationBaseToGocsMatrix(), this.createViewToBaseMatrix(), camera.view_to_gocs);
+        mapray.GeoMath.mul_AA(this.createInterpolationBaseToGocsMatrix(), this.createViewToBaseMatrix(), camera.view_to_gocs);
 
         // カメラに近接遠方平面を設定
         camera.near = this.distance / 2;
@@ -72,12 +70,8 @@ class VirtualPathCameraAnimation extends mapray.RenderCallback {
             height: this.path_Pos_Array[this.path_Pos_Index].height * (1 - this.ratio) + this.path_Pos_Array[this.path_Pos_Index + 1].height * this.ratio
         };
 
-        var base_to_gocs = GeoMath.createMatrix();
-        GeoMath.iscs_to_gocs_matrix({
-            longitude: interpolation_Pos.longitude,
-            latitude: interpolation_Pos.latitude,
-            height: interpolation_Pos.height
-        }, base_to_gocs);
+        var base_geoPoint = new mapray.GeoPoint( interpolation_Pos.longitude, interpolation_Pos.latitude, interpolation_Pos.height );
+        var base_to_gocs = base_geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
 
         return base_to_gocs;
     }
@@ -86,19 +80,19 @@ class VirtualPathCameraAnimation extends mapray.RenderCallback {
     createViewToBaseMatrix() {
         var d = this.distance;
 
-        var mat = GeoMath.createMatrix();
+        var mat = mapray.GeoMath.createMatrix();
 
-        var camera_pos_mat = GeoMath.createMatrix();
-        GeoMath.setIdentity(camera_pos_mat);
+        var camera_pos_mat = mapray.GeoMath.createMatrix();
+        mapray.GeoMath.setIdentity(camera_pos_mat);
 
         // カメラの位置をY軸方向に距離分移動させる
         camera_pos_mat[13] = -d;
         
         // x軸でpitch_angle分回転させる回転行列を求める
-        var pitch_Mat = GeoMath.rotation_matrix([1, 0, 0], this.pitch_angle, GeoMath.createMatrix());
+        var pitch_Mat = mapray.GeoMath.rotation_matrix( [1, 0, 0], this.pitch_angle, mapray.GeoMath.createMatrix());
         
         // カメラの位置にX軸の回転行列をかける
-        GeoMath.mul_AA(pitch_Mat, camera_pos_mat, camera_pos_mat);
+        mapray.GeoMath.mul_AA(pitch_Mat, camera_pos_mat, camera_pos_mat);
 
         // 視線方向を定義
         var cam_pos = mapray.GeoMath.createVector3([camera_pos_mat[12], camera_pos_mat[13], camera_pos_mat[14]]);
