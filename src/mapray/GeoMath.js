@@ -150,6 +150,22 @@ class GeoMath {
 
 
     /**
+     * @summary 2 次ベクトルを代入
+     * @desc
+     * <p>src を dst に代入する。</p>
+     * @param  {mapray.Vector2} src  代入元
+     * @param  {mapray.Vector2} dst  代入先
+     * @return {mapray.Vector2}      dst
+     */
+    static copyVector2( src, dst )
+    {
+        dst[0] = src[0];
+        dst[1] = src[1];
+        return dst;
+    }
+
+
+    /**
      * @summary 恒等行列を設定
      * @param  {mapray.Matrix} dst  結果を代入する行列
      * @return {mapray.Matrix}      dst
