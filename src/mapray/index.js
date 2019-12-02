@@ -28,6 +28,9 @@ import DebugStats from "./DebugStats";
 import MaprayApi from "./MaprayApi";
 import Resource, { URLResource } from "./Resource";
 
+// マウス・Attribution開発
+import LogoController from "./LogoController";
+import AttributionController from "./AttributionController";
 
 /**
  * Mapray 関連の機能全体が含まれる名前空間
@@ -62,7 +65,9 @@ var mapray = {
     GeoJSONLoader,
     URLResource,
     MaprayApi,
-    DebugStats
+    DebugStats,
+    LogoController,          // マウス・Attribution開発
+    AttributionController    // マウス・Attribution開発
 };
 
 

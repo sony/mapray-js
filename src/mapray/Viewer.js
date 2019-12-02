@@ -11,6 +11,10 @@ import GeoMath from "./GeoMath";
 import Scene from "./Scene";
 import SceneLoader from "./SceneLoader";
 
+// マウス・Attribution開発
+import LogoController from "./LogoController";
+import AttributionController from "./AttributionController";
+import ContainerController from "./ContainerController";
 
 /**
  * @summary 表示管理
@@ -21,16 +25,18 @@ import SceneLoader from "./SceneLoader";
 class Viewer {
 
     /**
-     * @param {string|Element}           container                   コンテナ (ID または要素)
-     * @param {object}                   [options]                   生成オプション
-     * @param {mapray.DemProvider}       [options.dem_provider]      DEM プロバイダ
-     * @param {mapray.ImageProvider}     [options.image_provider]    画像プロバイダ
-     * @param {array}                    [options.layers]            地図レイヤー情報の配列
-     * @param {boolean}                  [options.ground_visibility=true]  地表の可視性
-     * @param {boolean}                  [options.entity_visibility=true]  エンティティの可視性
-     * @param {mapray.RenderCallback}    [options.render_callback]   レンダリングコールバック
-     * @param {mapray.Viewer.RenderMode} [options.render_mode]       レンダリングモード
-     * @param {mapray.DebugStats}        [options.debug_stats]       デバッグ統計オブジェクト
+     * @param {string|Element}                  container                           コンテナ (ID または要素)
+     * @param {object}                          [options]                           生成オプション
+     * @param {mapray.DemProvider}              [options.dem_provider]              DEM プロバイダ
+     * @param {mapray.ImageProvider}            [options.image_provider]            画像プロバイダ
+     * @param {array}                           [options.layers]                    地図レイヤー情報の配列
+     * @param {boolean}                         [options.ground_visibility=true]    地表の可視性
+     * @param {boolean}                         [options.entity_visibility=true]    エンティティの可視性
+     * @param {mapray.RenderCallback}           [options.render_callback]           レンダリングコールバック
+     * @param {mapray.Viewer.RenderMode}        [options.render_mode]               レンダリングモード
+     * @param {mapray.DebugStats}               [options.debug_stats]               デバッグ統計オブジェクト
+     * @param {mapray.LogoController}           [options.logo_controller]           ロゴ表示制御オブジェクト
+     * @param {mapray.AttributionController}    [options.attribution_controller]    著作権表示制御オブジェクト
      */
     constructor( container, options )
     {
@@ -65,6 +71,16 @@ class Viewer {
         this._frame_req_id       = 0;
         this._previous_time      = undefined;
         this._is_destroyed       = false;
+
+        // マウス・Attribution開発
+        this._logo_controller = ( options && options.logo_controller ) || new LogoController( this._container_element );
+        this._attribution_controller = ( options && options.attribution_controller ) || new AttributionController( this._container_element );
+
+        // ロゴ・著作権表示用コンテナの作成
+        this._createLogoAttributionContainer()
+
+        this._logo_controller.createContainer();
+        this._attribution_controller.createContainer();
 
         // 最初のフレームの準備
         this._requestNextFrame();
@@ -121,6 +137,13 @@ class Viewer {
 
         // 各 SceneLoader の読み込みを取り消す
         this._scene.cancelLoaders();
+
+        // マウス・Attribution開発
+        this._logo_controller._destroy();
+        this._attribution_controller._destroy();
+
+        // ロゴ・著作権用コンテナの削除
+        this._deleteLogoAttributionContainer();
 
         // 破棄確定
         this._is_destroyed = true;
@@ -198,6 +221,35 @@ class Viewer {
         return callback;
     }
 
+    /**
+     * @summary ロゴ・著作権表示用コンテナの作成
+     *
+     * @memberof Viewer
+     */
+    _createLogoAttributionContainer()
+    {
+        for ( var position of Viewer._positions )
+        {
+            var container = document.createElement( "div" );
+            container.className = position
+            this._container_element.appendChild( container );
+        }
+    }
+
+    /**
+     * @summary ロゴ・著作権表示用コンテナの削除
+     *
+     * @memberof Viewer
+     */
+    _deleteLogoAttributionContainer()
+    {
+        for ( var position of Viewer._positions )
+        {
+            var container = document.getElementById( position );
+
+            if ( container ) { this._container_element.removeChild( position ); }
+        }
+    }
 
     /**
      * ブール値のオプションを取得
@@ -322,6 +374,21 @@ class Viewer {
      */
     get tile_texture_cache() { return this._tile_texture_cache; }
 
+    /**
+     *
+     * @type {mapray.LogoController}
+     * @readonly
+     * @memberof Viewer
+     */
+    get logo_controller() { return this._logo_controller; }
+
+    /**
+     *
+     * @type {mapray.AttributionController}
+     * @readonly
+     * @memberof Viewer
+     */
+    get attribution_controller() { return this._attribution_controller; }    
 
     /**
      * @summary 可視性を設定
@@ -660,11 +727,16 @@ var RenderMode = {
 
 };
 
-
 // クラス定数の定義
 {
-Viewer.Category   = Category;
-Viewer.RenderMode = RenderMode;
+    Viewer.Category   = Category;
+    Viewer.RenderMode = RenderMode;
+
+    // マウス・Attribution開発
+    Viewer.ContainerPosition = ContainerController.ContainerPosition;
+
+    // ロゴ・著作権表示用コンテナ名称
+    Viewer._positions = ["control-top-left", "control-top-right", "control-bottom-left", "control-bottom-right"];
 }
 
 
