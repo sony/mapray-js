@@ -1,4 +1,20 @@
 # Change Log
+## 0.7.1
+### Added
+- Support ClampTpTerrian mode for all entities [#60](https://github.com/sony/mapray-js/issues/60)
+- Support altitude mode and extruded mode for GeoJSON Loader [#63](https://github.com/sony/mapray-js/issues/63), [#69](https://github.com/sony/mapray-js/issues/69)
+- Add altitude controller [#78](https://github.com/sony/mapray-js/issues/78)
+- Add UI Engine [#78](https://github.com/sony/mapray-js/issues/78)
+- Support Text stroke and background color in TextEngity[#78] (https://github.com/sony/mapray-js/issues/72)
+- Update Examples and tutorials [#65](https://github.com/sony/mapray-js/issues/65), [#68](https://github.com/sony/mapray-js/issues/68) [#70](https://github.com/sony/mapray-js/issues/70)
+
+### Bug fix
+[#67](https://github.com/sony/mapray-js/issues/67)
+[#73](https://github.com/sony/mapray-js/issues/73)
+[#74](https://github.com/sony/mapray-js/issues/74)
+[#75](https://github.com/sony/mapray-js/issues/75)
+[#80](https://github.com/sony/mapray-js/issues/80)
+
 
 ## 0.7.0
 ### Added
