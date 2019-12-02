@@ -5,7 +5,7 @@
 - Support altitude mode and extruded mode for GeoJSON Loader [#63](https://github.com/sony/mapray-js/issues/63), [#69](https://github.com/sony/mapray-js/issues/69)
 - Add altitude controller [#78](https://github.com/sony/mapray-js/issues/78)
 - Add UI Engine [#78](https://github.com/sony/mapray-js/issues/78)
-- Support Text stroke and background color in TextEngity[#78] (https://github.com/sony/mapray-js/issues/72)
+- Support Text stroke and background color in TextEntity [#78](https://github.com/sony/mapray-js/issues/72)
 - Update Examples and tutorials [#65](https://github.com/sony/mapray-js/issues/65), [#68](https://github.com/sony/mapray-js/issues/68) [#70](https://github.com/sony/mapray-js/issues/70)
 
 ### Bug fix
