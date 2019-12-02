@@ -625,7 +625,6 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
     _isSimpleText() 
     {
         let entity = this.entity;
-        let props  = this._properties;
 
         let enable = true;
         // check enable bg color or stroke;
