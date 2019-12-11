@@ -87,6 +87,18 @@ class GeoMath {
 
 
     /**
+     * @summary 2 次ベクトルの生成
+     * <p>vec を複製して 2 次ベクトルを生成する。ただし vec を省略したときは、すべての要素が 0 のベクトルを生成する。</p>
+     * @param  {mapray.Vector2} [vec]  入力ベクトル
+     * @return {mapray.Vector2}        新しいベクトル
+     */
+    static createVector2( vec )
+    {
+        return new Float64Array( vec || 2 );
+    }
+
+
+    /**
      * @summary 2 次ベクトル (単精度) の生成
      * @param  {mapray.Vector2} [vec]  入力ベクトル
      * @return {mapray.Vector2}        新しいベクトル
