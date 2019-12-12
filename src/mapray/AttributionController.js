@@ -19,12 +19,16 @@ class AttributionController extends ContainerController
      * @param {string}                                  options.attributions.link       リンク
      * @memberof AttributionController
      */
-    constructor( options )
+    constructor( container, options )
     {
-        super( options );
-
+        super( container, options );
         this._position = ( options && options.position ) || ContainerController.ContainerPosition.BOTTOM_RIGHT;
-        this._attributions = ( options && options.attributions ) || [AttributionController._default_attribution ];
+        this._attributions = [];
+        if ( options && options.attributions ) {
+            this.copyAttributions(options.attributions);
+        } else {
+            this.copyAttributions(AttributionController._default_attribution);
+        }
     }
 
     /**
@@ -120,15 +124,28 @@ class AttributionController extends ContainerController
         this._sizeChanged();
     }
 
+    copyAttributions( src )
+    {
+        this._attributions = src.map(d => d);
+    }
 }
 
 // クラス変数の定義
 {
-    AttributionController._default_attribution =
+    AttributionController._default_attribution = [
     {
-        display: "国土地理院",
+        display: "©Mapray",
+        link: "https://mapray.com"
+    },
+    {
+        display: "©JAXA",
+        link: "http://www.jaxa.jp/"
+    },
+    {
+        display: "測量法に基づく国土地理院長承認（複製）H30JHf626",
         link: "http://maps.gsi.go.jp/development/ichiran.html"
-    };
+    }
+];
 }
 
 export default AttributionController;

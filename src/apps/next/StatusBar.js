@@ -8,9 +8,8 @@ class StatusBar {
 
     /**
      * @param {Inou.Viewer} viewer
-     * @param {string}      provider_name  データプロバイダ名
      */
-    constructor( viewer, provider_name )
+    constructor( viewer )
     {
         this._position    = GeoMath.createVector3();  // カメラ位置 (GOCS)
         this._height      = 0;  // カメラの高度
@@ -33,10 +32,7 @@ class StatusBar {
         this._elem_cnt_vert = document.getElementById( "cnt-vert" );
         this._elem_reqs_dem = document.getElementById( "reqs-dem" );
         this._elem_reqs_img = document.getElementById( "reqs-img" );
-        this._elem_provider = document.getElementById( "provider" );
-
-        this._elem_provider.innerHTML = provider_name;
-
+        
         this._debug_stats = viewer.debug_stats;
         this._time        = StatusBar.UPDATE_INTERVAL;
         this._debug_console_count = 0;

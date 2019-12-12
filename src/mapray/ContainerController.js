@@ -17,7 +17,18 @@ class ContainerController
     {
         this._visibility = ( options && options.visibility ) || true;
         this._position = ( options && options.position ) || ContainerPosition.TOP_LEFT;
-        this._viewer_container = container;
+
+        var container_element;
+        if ( typeof container == "string" ) {
+            // コンテナを ID 指定したとき
+            container_element = document.getElementById( container );
+        }
+        else {
+            // コンテナを直接要素で指定のとき
+            container_element = container;
+        }
+
+        this._viewer_container = container_element;
         this._container = null;
         this._is_compact = false;
 
