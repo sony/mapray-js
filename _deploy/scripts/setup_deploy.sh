@@ -41,6 +41,6 @@ echo "NEXT VESRION is ${_NEXT_VERSION}"
 mkdir -p ${PUBLIC}/v${_NEXT_VERSION} 2>/dev/null
 cp -r ${DIST}/mapray.js ${PUBLIC}/v${_NEXT_VERSION}/ || exit $?
 cp -r ${DIST}/maprayui.js ${PUBLIC}/v${_NEXT_VERSION}/ || exit $?
-cp -r ${DIST}/mapray.css ${PUBLIC}/styles/v${RESOURCE_VERSION}/ || exit $?
+cp -r ${DIST}/mapray.css ${DEPLOY_DIR}/styles/v${RESOURCE_VERSION}/ || exit $?
 
 echo "mapray-js file URL:./mapray-js/v${_NEXT_VERSION}/mapray.js"
