@@ -2,7 +2,6 @@ import Commander from "./Commander";
 import DragMoveHelper from "../rambler/DragMoveHelper";
 import StatusBar from "./StatusBar";
 import BingMapsImageProvider from "../rambler/BingMapsImageProvider";
-import AttributionController from "../../mapray/AttributionController";
 
 var Viewer  = mapray.Viewer;
 var GeoMath = mapray.GeoMath;

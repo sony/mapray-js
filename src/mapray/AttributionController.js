@@ -107,8 +107,10 @@ class AttributionController extends ContainerController
             if ( attribution.display )
             {
                 var attribution_container = document.createElement( "a" );
-                attribution_container.href = ( attribution.link ) || "";
-                attribution_container.target = "_blank";
+                if (attribution.link) {
+                    attribution_container.href = ( attribution.link );
+                    attribution_container.target = "_blank";
+                }
                 var text = document.createTextNode( attribution.display )
                 attribution_container.appendChild( text );
 
@@ -143,7 +145,7 @@ class AttributionController extends ContainerController
     },
     {
         display: "測量法に基づく国土地理院長承認（複製）H30JHf626",
-        link: "http://maps.gsi.go.jp/development/ichiran.html"
+        link: "https://www.gsi.go.jp/kiban/index.html"
     }
 ];
 }
