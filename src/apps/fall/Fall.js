@@ -19,6 +19,10 @@ class Fall {
         this._viewer = new mapray.Viewer( container, { image_provider:  this._image_provider,
                                                        dem_provider:    new mapray.CloudDemProvider(accessToken),
                                                        render_callback: this._render_callback } );
+        this._viewer.attribution_controller.addAttribution({
+            display: "国土地理院",
+            link: "http://maps.gsi.go.jp/development/ichiran.html"
+        });                                   
     }
 
 
