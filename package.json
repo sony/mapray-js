@@ -16,7 +16,7 @@
     "doc": "doc"
   },
   "scripts": {
-    "release": "run-p css mapray ui apps jsdoc",
+    "release": "run-p css mapray ui jsdoc",
     "debug": "run-p css-devel mapray-devel ui-devel apps-devel jsdoc-devel start-server",
     "mapray": "cross-env WEBPACK_ENV=dist webpack -p",
     "mapray-devel": "webpack --watch -d",
