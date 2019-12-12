@@ -17,8 +17,7 @@
                 padding: 0;">JavaScriptが無効になっています。MaprayのWebサイトを正しく表示するためにはJavaScriptを有効にして下さい。</p>
         </div>
     </noscript>
-    <script type="text/javascript" src="mapray.js"></script>
-    <script type="text/javascript" src="nextRambler.js"></script>
+    <link rel="stylesheet" href="../dist/mapray.css">
     <style>
         html, body {
             height:  100%;
@@ -34,6 +33,7 @@
         div#mapray-container {
             height:    0;
             flex-grow: 1;
+            position: relative;
         }
         div#statusbar {
             display:          flex;
@@ -102,4 +102,6 @@
     </div>
 </div>
 </body>
+<script type="text/javascript" src="../build/mapray.js"></script>
+<script type="text/javascript" src="../build/nextRambler.js"></script>
 </html>

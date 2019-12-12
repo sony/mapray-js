@@ -30,8 +30,7 @@
     "jsdoc-devel": "jsdoc --recurse --destination ./doc/jsdoc --package ./package.json --readme ./doc/config/reference_top.md --private  --configure ./doc/config/jsdoc.json ./src/mapray",
     "tests-devel": "cross-env WEBPACK_ENV=tests webpack --watch -d",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start-server": "st --no-cache -H 0.0.0.0 --port 7776 --index index.html .",
-    "build-token": "node build/generate-access-token-script.js"
+    "start-server": "st --no-cache -H 0.0.0.0 --port 7776 --index index.html ."
   },
   "contributors": [
     {

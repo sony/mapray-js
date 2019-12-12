@@ -19,13 +19,14 @@
     </noscript>
     <link rel='stylesheet' href='../dist/mapray.css'/>
     <style>
-      #inou-container {
+      #mapray-container {
         width: 98%;
         height: 95%;
         margin: 0;
         overflow: hidden;
         padding: 0;
         border: solid 2px blue;
+        position: relative;
       }
       html {
         height: 100%;
@@ -40,9 +41,9 @@
   </head>
   <body>
     <div>
-      <input type="button" value="start" onclick="startApp('inou-container');"/>
+      <input type="button" value="start" onclick="startApp('mapray-container');"/>
     </div>
-    <div id="inou-container">
+    <div id="mapray-container">
     </div>
     <div style="font-size:0.55rem; color: #696969; margin-left: 16px">
       この地図の作成に当たっては、国土地理院の承認を得て、同院発行の基盤地図情報を使用した。（承認番号　平30情使、 第626号）, <a href="http://maps.gsi.go.jp/development/ichiran.html">国土地理院</a>
