@@ -25,9 +25,9 @@ class ModelEntity extends Entity {
     {
         super( scene, opts );
 
-        this._position    = new GeoPoint( 0, 0, 0 );
-        this._orientation = new Orientation( 0, 0, 0 );
-        this._scale       = GeoMath.createVector3( [1, 1, 1] );
+        this._position = new GeoPoint( 0, 0, 0 );
+        this._rotation = GeoMath.setIdentity( GeoMath.createMatrix() );
+        this._scale    = GeoMath.createVector3( [1, 1, 1] );
 
         this._primitive_producer = new PrimitiveProducer( this );
 
@@ -129,7 +129,7 @@ class ModelEntity extends Entity {
      */
     setOrientation( value )
     {
-        this._orientation.assign( value );
+        value.getTransformMatrix( sameScaleVector3, this._rotation );
     }
 
 
@@ -236,7 +236,7 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         this._updateAbsPosition();
 
         var  mlocs_to_gocs  = this._abs_position.getMlocsToGocsMatrix( GeoMath.createMatrix() );
-        var entity_to_mlocs = entity._orientation.getTransformMatrix( entity._scale, GeoMath.createMatrix() );
+        var entity_to_mlocs = mul_RS( entity._rotation, entity._scale, GeoMath.createMatrix() );
         var entity_to_gocs  = GeoMath.mul_AA( mlocs_to_gocs, entity_to_mlocs, GeoMath.createMatrix() );
 
         // Primitive#transform を設定
@@ -304,6 +304,52 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         }
     }
 
+}
+
+
+// 等倍を表すベクトル
+const sameScaleVector3 = GeoMath.createVector3( [1, 1, 1] );
+
+
+/**
+ * @summary 回転行列 * 倍率
+ *
+ * @param {mapray.Matrix}  rmat  回転行列
+ * @param {mapray.Vector3} svec  倍率ベクトル
+ * @param {mapray.Matrix}  dst   結果
+ *
+ * @return {mapray.Matrix}  dst
+ *
+ * @private
+ */
+function
+mul_RS( rmat, svec, dst )
+{
+    let sx = svec[0];
+    let sy = svec[1];
+    let sz = svec[2];
+        
+    dst[ 0] = rmat[ 0] * sx;
+    dst[ 1] = rmat[ 1] * sx;
+    dst[ 2] = rmat[ 2] * sx;
+    dst[ 3] = 0;
+
+    dst[ 4] = rmat[ 4] * sy;
+    dst[ 5] = rmat[ 5] * sy;
+    dst[ 6] = rmat[ 6] * sy;
+    dst[ 7] = 0;
+
+    dst[ 8] = rmat[ 8] * sz;
+    dst[ 9] = rmat[ 9] * sz;
+    dst[10] = rmat[10] * sz;
+    dst[11] = 0;
+
+    dst[12] = 0;
+    dst[13] = 0;
+    dst[14] = 0;
+    dst[15] = 1;
+    
+    return dst;
 }
 
 
