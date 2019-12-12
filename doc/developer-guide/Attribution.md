@@ -21,7 +21,7 @@ MaprayのワードマークはMaprayの図形と文字商標になります。�
 ### テキストによる表示
 テキストによる著作権表示は少なくとも、以下の３つのリンクが必要になります
 
-- a: [©Mapray](https://mapray.com")
+- a: [©Mapray](https://mapray.com)
 - b: [©JAXA](http://www.jaxa.jp/)
 - c: [測量法に基づく国土地理院長承認（複製）H30JHf626](https://www.gsi.go.jp/kiban/index.html)
 
