@@ -1,4 +1,5 @@
 import AltitudeMode from "./AltitudeMode";
+import EasyBindingBlock from "./animation/EasyBindingBlock";
 
 
 /**
@@ -36,11 +37,25 @@ class Entity {
 
         this._need_to_create_regions = false;
 
+        // animation.BindingBlock
+        //   今のところ Entity (基底クラス) 自体のアニメーション可能パラメータと
+        //   子孫は存在しないので animation には何も追加しない
+        this._animation = new EasyBindingBlock();
+
         // 生成情報から設定
         if ( opts && opts.json ) {
             this._setupEntityByJson( opts.json );
         }
     }
+
+
+    /**
+     * @summary アニメーションパラメータ設定
+     *
+     * @type {mapray.animation.BindingBlock}
+     * @readonly
+     */
+    get animation() { return this._animation; }
 
 
     /**

@@ -1,3 +1,6 @@
+import EasyBindingBlock from "./animation/EasyBindingBlock";
+
+
 /**
  * @summary モデルシーン
  *
@@ -21,6 +24,10 @@ class Scene {
         this._glenv      = glenv;
         this._enode_list = [];  // ENode のリスト
         this._loaders    = [];  // 現在読み込み中の SceneLoader (取り消し用)
+
+        // animation.BindingBlock
+        this._animation = new EasyBindingBlock();
+        this._animation.addDescendantUnbinder( () => { this._unbindDescendantAnimations(); } );
     }
 
 
@@ -39,6 +46,15 @@ class Scene {
      * @readonly
      */
     get viewer() { return this._viewer; }
+
+
+    /**
+     * @summary アニメーションパラメータ設定
+     *
+     * @type {mapray.animation.BindingBlock}
+     * @readonly
+     */
+    get animation() { return this._animation; }
 
 
     /**
@@ -286,6 +302,20 @@ class Scene {
         }
 
         return producers;
+    }
+
+
+    /**
+     * EasyBindingBlock.DescendantUnbinder 処理
+     *
+     * @private
+     */
+    _unbindDescendantAnimations()
+    {
+        // すべてのエンティティを解除
+        for ( let {entity} of this._enode_list ) {
+            entity.animation.unbindAllRecursively();
+        }
     }
 
 }
