@@ -3,6 +3,7 @@ HOME=$(cd $(dirname $0)/../..; pwd)
 DIST=$(cd $(dirname $0)/../../dist; pwd)
 DEPLOY_DIR=$(cd $(dirname $0)/../public; pwd)
 PUBLIC=${DEPLOY_DIR}/mapray-js
+RESOURCE_VERSION=1
 
 set -eu
 
@@ -39,5 +40,7 @@ echo "NEXT VESRION is ${_NEXT_VERSION}"
 # copy
 mkdir -p ${PUBLIC}/v${_NEXT_VERSION} 2>/dev/null
 cp -r ${DIST}/mapray.js ${PUBLIC}/v${_NEXT_VERSION}/ || exit $?
+cp -r ${DIST}/maprayui.js ${PUBLIC}/v${_NEXT_VERSION}/ || exit $?
+cp -r ${DIST}/mapray.css ${PUBLIC}/styles/v${RESOURCE_VERSION}/ || exit $?
 
 echo "mapray-js file URL:./mapray-js/v${_NEXT_VERSION}/mapray.js"
