@@ -10,7 +10,7 @@
     ],
     "headers": [ 
       {
-        "source" : "**/*.@(svg|jpg|jpeg|gif|png|ico)",
+        "source" : "**/*.@(svg|jpg|jpeg|gif|png|ico|css)",
         "headers" : [ 
           {
             "key" : "Access-Control-Allow-Origin",
@@ -19,7 +19,7 @@
         ]
        }, 
        {
-        "source" : "**/*.@(svg|jpg|jpeg|gif|png|ico)",
+        "source" : "**/*.@(svg|jpg|jpeg|gif|png|ico|css)",
         "headers" : [ 
           {
             "key" : "Cache-Control",
@@ -29,6 +29,15 @@
       }, 
       {
         "source" : "/mapray-js/**/mapray.js",
+        "headers" : [ 
+          {
+            "key" : "Cache-Control",
+            "value" : "max-age=86400"
+          } 
+        ]
+      },
+      {
+        "source" : "/mapray-js/**/maprayui.js",
         "headers" : [ 
           {
             "key" : "Cache-Control",

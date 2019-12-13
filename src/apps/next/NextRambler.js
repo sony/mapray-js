@@ -7,11 +7,7 @@ var Viewer  = mapray.Viewer;
 var GeoMath = mapray.GeoMath;
 var CloudDemPrivider = mapray.CloudDemProvider;
 
-const accessToken = "";
-const NATS_JSON_URL = "https://firebasestorage.googleapis.com/v0/b/ino-sandbox.appspot.com/o/inousample%2FthreeDModel%2FNATS%2FNATS.json?alt=media&token=081ad161-ad70-449e-b279-c2ea2beb109b";
-const NATS_MARKER_JSON_URL = "https://firebasestorage.googleapis.com/v0/b/ino-sandbox.appspot.com/o/inousample%2Fmarker%2FDemoNATS.json?alt=media&token=ba0298fb-042a-4ae0-b0fd-3427b457cf8a";
-const AED_JSON_URL = "https://firebasestorage.googleapis.com/v0/b/ino-sandbox.appspot.com/o/inousample%2Fmarker%2FDemoAED.json?alt=media&token=04715b01-d890-4f18-b22f-aa831598ab39";
-const MOUNTAIN_JSON_URL = "https://firebasestorage.googleapis.com/v0/b/ino-sandbox.appspot.com/o/inousample%2Fmarker%2FDemoMountain.json?alt=media&token=18b2b427-bac0-43ec-aace-8d34cdc30d07";
+const accessToken = "<your access token here>";
 
 // Attirbute
 const DEM_ATTRIBUTE = "この地図の作成に当たっては、国土地理院の承認を得て、同院発行の基盤地図情報を使用した。（承認番号　平30情使、 第626号）";
@@ -59,7 +55,6 @@ class Rambler extends mapray.RenderCallback {
         this._dmove_helper = null;
 
         // DEMOコンテンツ
-        this._isGIS     = false;
         this._isBing    = false;
         this._layer_transparency = 10; //layer
     }
@@ -95,7 +90,6 @@ class Rambler extends mapray.RenderCallback {
         this._viewer = null;
         this._commander = null;
         this._statusBar = null;
-        this._isGIS = false;
         this._layer_transparency = 10;
     }
 
@@ -113,54 +107,6 @@ class Rambler extends mapray.RenderCallback {
     _createLayerImageProvider()
     {
         return new mapray.StandardImageProvider( "https://cyberjapandata.gsi.go.jp/xyz/20160414kumamoto_0429dol1/",".png",256,10,18);
-    }
-
-    /**
-     * GIS情報の表示
-     */
-    _loadGISInfo()
-    {
-        // シーンの読み込みを開始
-        // 3D
-      /*  new mapray.SceneLoader( this._viewer.scene, NATS_JSON_URL, {
-            transform: (url, type) => this._onTransform( url, type ),
-            callback: (loader, isSuccess) => {
-                this._onLoadScene( loader, isSuccess );
-            }
-        } );
-
-        // NATS marker
-        new mapray.SceneLoader( this._viewer.scene, NATS_MARKER_JSON_URL, {
-            transform: (url, type) => this._onTransform( url, type ),
-            callback: (loader, isSuccess) => {
-                this._onLoadScene( loader, isSuccess );
-            }
-        } );
-        // AED
-        new mapray.SceneLoader( this._viewer.scene, AED_JSON_URL, {
-            callback: (loader, isSuccess) => { this._onLoadScene( loader, isSuccess ); }
-        } );
-        // Mountain
-        new mapray.SceneLoader( this._viewer.scene, MOUNTAIN_JSON_URL, {
-            callback: (loader, isSuccess) => { this._onLoadScene( loader, isSuccess ); }
-        } ); */
-
-        // GeoJSON
-        new mapray.GeoJSONLoader( this._viewer.scene, "./shinjuku_linestring.json", {
-            onLoad: (loader, isSuccess) => { console.log("success load geojson") },
-            getLineColor: d => d.properties && d.properties.color ? d.properties.color : [0, 255, 255, 255],
-            getLineWidth: d => d.properties && d.properties.width ? d.properties.width : 3,
-            getExtrudedHeight: () => null,
-            getAltitude: () => 40
-        } );
-    }
-
-    /**
-     * GIS情報の非表示
-     */
-    _clearGISInfo()
-    {
-        this._viewer.scene.clearEntities();
     }
 
     /**
@@ -237,7 +183,6 @@ class Rambler extends mapray.RenderCallback {
         this._updateViewerCarera( altitude );
         this._updateRenderMode();
         this._updateLayerParams(layer);
-        this._updateGISMode();
         this._updateBingLayerParams();
 
         // ステータスバーを更新
@@ -617,23 +562,6 @@ class Rambler extends mapray.RenderCallback {
                 this._viewer = this._createViewer(this._createBingImageProvider());
                 this._commander = new Commander( this._viewer );
                 this._statusbar = new StatusBar( this._viewer, DEM_ATTRIBUTE + ", " + BING_ATTRIBUTE);
-            }
-        }
-    }
-
-    /**
-     * @summary Viewer のレンダリングモードを更新
-     * @private
-     */
-    _updateGISMode()
-    {
-        if ( this._commander.isGISModeChanged() ) {
-            if ( this._isGIS ) {
-                this._isGIS = false;
-                this._clearGISInfo();
-            } else {
-                this._isGIS = true;
-                this._loadGISInfo();
             }
         }
     }

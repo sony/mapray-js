@@ -1,13 +1,17 @@
 var GeoMath = mapray.GeoMath;
 
+const accessToken = "<your access token here>";
+
 class Turning extends mapray.RenderCallback {
 
     constructor( container )
     {
         super();
         new mapray.Viewer( container, { render_callback: this,
-                                        image_provider: this.createImageProvider() } );
-
+                                        image_provider: this.createImageProvider(),
+                                        dem_provider:    new mapray.CloudDemProvider(accessToken)
+                                    } );
+                                
         this.longitude = 138.730647;
         this.latitude  = 35.362773;
         this.height    = 3776.24;
