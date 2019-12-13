@@ -217,6 +217,12 @@ buildディレクトリにmapray.js, maprayui.jsとmapファイル、distディ�
 - fall: http://localhost:7776/html
 - nextRambler: http://localhost:7776/html/nextRambler.html
  
+##### リリースモードでのビルド
+リリース用のjsを生成する方法は以下です。
+```
+$ npm run release
+```
+distディレクトリにmapray.js、maprayui.jsとmapray.cssが生成されます。
 
 ### データのライセンス
 ソースコードは[LICENSE](https://github.com/sony/mapray-js/blob/master/LICENSE)が適応されますので、ご自由に２次利用可能ですが、
