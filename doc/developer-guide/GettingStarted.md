@@ -3,6 +3,7 @@
 maprayJSはWebブラウザ上で動作するJavaScriptライブラリで、3D地図データを高速に美しく表現することができます。また、mapray cloudはmaprayJSに最適化されたデータを保存・配信するクラウドサービスです。世界規模の地形データを強力なクラウドインフラで配信することができます。
 mapray cloudはソニーネットワークコミュニケーションズ（株）によって運営されているクラウドサービスです。
 maprayJSはオープンソースプロジェクトです。([Github.comへのリンク](https://github.com/sony/mapray-js))
+ご利用の際には[Attribution](./Attribution.md)も参照の上、著作権表示に気をつけてご利用下さい。
 
 ## QuickStart
 このドキュメントではmapray cloudへのアカウト登録はすでに終了しているという前提で記載しています。
@@ -70,6 +71,7 @@ yarn add mapray-js
 
 ### 3. Hello Globe !!
 ここでははじめてのアプリケーションを作成します。完成するとお使いのWebブラウザ内に地球が表示されます。
+（CDN形式での説明になります）
 このサンプルプログラムは、日本で２番目に標高の高い北岳付近より、１番目に標高の高い富士山を眺めたものになります。
 以下のプログラムの
 `<your access token here>`を上記で作成したAccess Tokenで書き換えて下さい。
@@ -87,7 +89,7 @@ var accessToken = 'AbCdEfGhIjKlMnOpQrStU';
 <head>
     <meta charset="UTF-8">
     <title>Hello Globe</title>
-    <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+    <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
 </head>
 <style>
     html, body {
@@ -103,7 +105,7 @@ var accessToken = 'AbCdEfGhIjKlMnOpQrStU';
     <div id="mapray-container"></div>
 </body>
 </html>
-
+<script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
 <script>
      // Access Tokenを設定
        var accessToken = "<your access token here>";
@@ -119,6 +121,11 @@ var accessToken = 'AbCdEfGhIjKlMnOpQrStU';
            }
        );
 
+       // 地図タイルの著作権表示
+       viewer.attribution_controller.addAttribution({
+         display: "国土地理院",
+         link: "http://maps.gsi.go.jp/development/ichiran.html"
+         });
        // カメラ位置の設定
 
        // 球面座標系で視点を設定。

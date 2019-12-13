@@ -28,8 +28,15 @@ class Rambler extends mapray.RenderCallback {
 
         this._container = container;
         this._viewer = this._createViewer(this._createImageProvider());
+        if ( this._viewer )
+        {
+            this._viewer.attribution_controller.addAttribution({
+                display: "国土地理院",
+                link: "http://maps.gsi.go.jp/development/ichiran.html"
+            });
+        }
         this._commander = new Commander( this._viewer );
-        this._statusbar = new StatusBar( this._viewer, DEM_ATTRIBUTE + ", " + GSI_ATTRIBUTE);
+        this._statusbar = new StatusBar( this._viewer );
 
         // カメラの初期設定
         this._init_camera = {
@@ -555,13 +562,26 @@ class Rambler extends mapray.RenderCallback {
             if ( this._isBing ) {
                 this._isBing = false;
                 this._viewer = this._createViewer(this._createImageProvider());
+                if ( this._viewer )
+                {
+                    this._viewer.attribution_controller.addAttribution({
+                        display: GSI_ATTRIBUTE,
+                        link: "http://maps.gsi.go.jp/development/ichiran.html"
+                    });
+                }
                 this._commander = new Commander( this._viewer );
-                this._statusbar = new StatusBar( this._viewer, DEM_ATTRIBUTE + ", " + GSI_ATTRIBUTE);
+                this._statusbar = new StatusBar( this._viewer );
             } else {
                 this._isBing = true;
                 this._viewer = this._createViewer(this._createBingImageProvider());
+                if ( this._viewer )
+                {
+                    this._viewer.attribution_controller.addAttribution({
+                        display: BING_ATTRIBUTE
+                    });
+                }
                 this._commander = new Commander( this._viewer );
-                this._statusbar = new StatusBar( this._viewer, DEM_ATTRIBUTE + ", " + BING_ATTRIBUTE);
+                this._statusbar = new StatusBar( this._viewer );
             }
         }
     }

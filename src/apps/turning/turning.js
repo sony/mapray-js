@@ -7,11 +7,14 @@ class Turning extends mapray.RenderCallback {
     constructor( container )
     {
         super();
-        new mapray.Viewer( container, { render_callback: this,
+        var viewer = new mapray.Viewer( container, { render_callback: this,
                                         image_provider: this.createImageProvider(),
                                         dem_provider:    new mapray.CloudDemProvider(accessToken)
                                     } );
-                                
+        viewer.attribution_controller.addAttribution({
+            display: "国土地理院",
+            link: "http://maps.gsi.go.jp/development/ichiran.html"
+        });     
         this.longitude = 138.730647;
         this.latitude  = 35.362773;
         this.height    = 3776.24;

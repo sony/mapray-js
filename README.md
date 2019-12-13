@@ -26,7 +26,7 @@ Mapray cloud managed by [Sony Network Communications Inc.](https://www.sonynetwo
 <head>
     <meta charset="UTF-8">
     <title>Hello Globe</title>
-    <script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
+    <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
 </head>
 <style>
     html, body {
@@ -42,7 +42,7 @@ Mapray cloud managed by [Sony Network Communications Inc.](https://www.sonynetwo
     <div id="mapray-container"></div>
 </body>
 </html>
-
+<script src="https://resource.mapray.com/mapray-js/v0.7.0/mapray.js"></script>
 <script>
      // Set Access Token for mapray cloud
        var accessToken = "<your access token here>";
@@ -57,7 +57,10 @@ Mapray cloud managed by [Sony Network Communications Inc.](https://www.sonynetwo
                dem_provider: new mapray.CloudDemProvider(accessToken)
            }
        );
-
+       viewer.attribution_controller.addAttribution({
+           display: "国土地理院",
+           link: "http://maps.gsi.go.jp/development/ichiran.html"
+        });
        // Setting the position of camera
        var home_pos = { longitude: 138.247739, latitude: 35.677604, height: 3000 };
 
