@@ -1,6 +1,6 @@
 language: node_js
 node_js:
-  - "10.16.0"
+  - "12.13.1"
 
 git:
   depth: false
@@ -10,9 +10,7 @@ before_install:
 
 script: 
   - echo "npm test temporarily disabled"
-  - npm run dist
-  - npm run jsdoc
-  - npm pack
+  - npm run release
 
 deploy:
   - provider: script
