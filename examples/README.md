@@ -31,7 +31,7 @@ const accessToken = "<your access token here>";
 |              | Change a line color                | Change a line color when UI button is clicked                    | ChangeLineFormat.html               | ChangeLineFormat.js                        | -           |
 |              | Change a line width                |                                                                  |                                     |                                            |             |
 |              | Line animation                     | Connect the Imperial Palace, Tokyo Tower, Sky Tree, Tokyo Dome with a curve | LineAnimation.html       | LineAnimation.js                           | -           |
-| Entity/text  | Add a text entity with SceneLoader | Set the text entity from scene file v                             | WriteStringWithSceneLoder.html      | -                                          | font.json   |
+| Entity/text  | Add a text entity with SceneLoader | Set the text entity from scene file v                             | WriteStringWithSceneLoder.html  
 |              | Add a text entity                  | Set the text entity with API                                     | WriteStringWithAddText.html         | -                                          | -           |
 |              | Change a font style                | Change font style, weight, size, color, font family from button  | ChangeFontFormat.html               | ChangeFontFormat.js                        | -           |
 |              | Change a font width                |                                                                  |                                     |                                            |             |
@@ -46,6 +46,9 @@ const accessToken = "<your access token here>";
 |  Entity/geojson      | Load GeoJSON  | Load and Dislay GeoJSON from GeoJSONLoader              | LoadGeoJSON.html                 | LoadGeoJSON.js                          | RouteLine.json    |
 |        | Change data properties  | Change data properties when loading file and push button     | ChangeGeoJsonFormat.html                 | ChangeGeoJsonFormat.js                          | RouteLine.json    |
 |        | Read GeoJSON Line properties  | Load GeoJSON file and change data properties when loading file in callback function    | ReadGeoJsonLineProperties.html                 | ReadGeoJsonLineProperties.js                          | shinjuku_barrier)free_line.json    |
+|        |  |    | ReadGeoJsonLinePropertiesVer2.html                 | ReadGeoJsonLinePropertiesVer2.js                          | hyogo_buss.json   |
 |        | Read GeoJSON Point properties  | Load GeoJSON file and change data properties when loading file in callback function    | ReadGeoJsonPointProperties.html                 | ReadGeoJsonPointProperties.js                          | tokyo_evacuation_area_point.json   |
+|        |   |   | ReadGeoJsonPointPropertiesVer2.html                 | ReadGeoJsonPointPropertiesVer2.js                          | kyoto_school.json   |
 |        | Read GeoJSON Polygon properties  | Load GeoJSON file and change data properties when loading file in callback function    | ReadGeoJsonPolygonProperties.html                 | ReadGeoJsonPolygonProperties.js                          | tokyo_population.json   |
+|        |   |     | ReadGeoJsonPolygonPropertiesVer2.html                 | ReadGeoJsonPolygonPropertiesVer2.js                          | climatological_normal.json   |
 |  Entity/icon      | Add image icon  | Load and Dislay image icon entity        | AddImageIcon.html                 |                       | TokyoTower.jpg    |

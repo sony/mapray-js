@@ -1,4 +1,27 @@
 # Change Log
+## 0.7.1
+### Added
+- Support ClampTpTerrian mode for all entities [#60](https://github.com/sony/mapray-js/issues/60)
+- Support altitude mode and extruded mode for GeoJSON Loader [#63](https://github.com/sony/mapray-js/issues/63), [#69](https://github.com/sony/mapray-js/issues/69)
+- Add attribution controller [#85](https://github.com/sony/mapray-js/issues/85)
+- Organize copyright notices [#86](https://github.com/sony/mapray-js/issues/86)
+- Add UI Engine [#78](https://github.com/sony/mapray-js/issues/78) [#82](https://github.com/sony/mapray-js/issues/82)
+- Support Text stroke and background color in TextEntity [#72](https://github.com/sony/mapray-js/issues/72)
+- Update Examples and tutorials [#65](https://github.com/sony/mapray-js/issues/65), [#68](https://github.com/sony/mapray-js/issues/68) [#70](https://github.com/sony/mapray-js/issues/70)
+- Add CSS files and support to generate css file [#84](https://github.com/sony/mapray-js/issues/84)
+
+
+### Bug fix
+- [#67](https://github.com/sony/mapray-js/issues/67)
+- [#74](https://github.com/sony/mapray-js/issues/74)
+- [#75](https://github.com/sony/mapray-js/issues/75)
+- [#79](https://github.com/sony/mapray-js/issues/79)
+- [#80](https://github.com/sony/mapray-js/issues/80)
+- [#81](https://github.com/sony/mapray-js/issues/81)
+
+### Breaking change
+Renamed `height` variable to `altitude` in GeoPoint. 
+[#73](https://github.com/sony/mapray-js/issues/73)
 
 ## 0.7.0
 ### Added
@@ -12,7 +35,7 @@
 
 ### Breaking changes
 - Change the coordination for mapray scene file and API [#50](https://github.com/sony/mapray-js/issues/50)
-- Remove Generic Entity [#50](https://github.com/sony/mapray-js/issues/50
+- Remove Generic Entity [#50](https://github.com/sony/mapray-js/issues/50)
 
 ## 0.6.0
 ### Added
