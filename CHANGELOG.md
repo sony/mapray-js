@@ -1,4 +1,8 @@
 # Change Log
+## 0.7.2
+### Bug fix
+- fixed deployment error for npmcom [#89](https://github.com/sony/mapray-js/pull/89)
+
 ## 0.7.1
 ### Added
 - Support ClampTpTerrian mode for all entities [#60](https://github.com/sony/mapray-js/issues/60)
