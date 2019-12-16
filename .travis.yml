@@ -10,8 +10,8 @@ before_install:
 
 script: 
   - echo "npm test temporarily disabled"
-  - npm pack
   - npm run release
+  - npm pack
 
 deploy:
   - provider: script
