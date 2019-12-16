@@ -141,6 +141,7 @@ class Viewer {
         // マウス・Attribution開発
         this._logo_controller._destroy();
         this._attribution_controller._destroy();
+        this._attribution_controller = null;
 
         // ロゴ・著作権用コンテナの削除
         this._deleteLogoAttributionContainer();

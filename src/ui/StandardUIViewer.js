@@ -679,12 +679,12 @@ class StandardUIViewer extends mapray.RenderCallback
             // 球とレイの交点計算
             var variable_A = Math.pow( this._getVectorLength( ray.direction ), 2 );
             var variable_B = 2 * GeoMath.dot3( ray.position, ray.direction );
-            var variable_C = Math.pow( this._getVectorLength( ray.position ), 2 ) - Math.pow( start_spherical_position.height + GeoMath.EARTH_RADIUS, 2 );
+            var variable_C = Math.pow( this._getVectorLength( ray.position ), 2 ) - Math.pow( start_spherical_position.altitude + GeoMath.EARTH_RADIUS, 2 );
             var variable_D = variable_B * variable_B - 4 * variable_A * variable_C;
 
             // カメラより選択した場所の高度が高い、交点が取れない場合は補正しない
-            if ( start_spherical_position.height < this._camera_parameter.height &&
-                 end_spherical_position.height < this._camera_parameter.height &&
+            if ( start_spherical_position.altitude < this._camera_parameter.height &&
+                 end_spherical_position.altitude < this._camera_parameter.height &&
                  variable_D > 0 )
             {
                 var variable_t1 = ( -variable_B + Math.sqrt( variable_D ) ) / 2 * variable_A;
@@ -775,7 +775,7 @@ class StandardUIViewer extends mapray.RenderCallback
 
             this._camera_parameter.latitude = new_spherical_position.latitude;
             this._camera_parameter.longitude = new_spherical_position.longitude;
-            this._camera_parameter.height = new_spherical_position.height;
+            this._camera_parameter.height = new_spherical_position.altitude;
             this._camera_parameter.yaw += yaw_angle;
             this._camera_parameter.pitch = after_pitch;
 
@@ -863,12 +863,12 @@ class StandardUIViewer extends mapray.RenderCallback
             // 30,000m以上は線形にする
             if ( this._camera_parameter.height > 30000 )
             {
-                factor = Math.abs( this._camera_parameter.height - center_spherical_position.height ) / 30000;
+                factor = Math.abs( this._camera_parameter.height - center_spherical_position.altitude ) / 30000;
             }
             else
             {
                 // マウスカーソルの下の地表面から2次曲線の傾きを求める（地表面で係数が収束するように）
-                var gradient = 3 / Math.pow( center_spherical_position.height / 1000 - 30, 2 )
+                var gradient = 3 / Math.pow( center_spherical_position.altitude / 1000 - 30, 2 )
 
                 // 30,000mを基点にする。
                 var km_height = this._camera_parameter.height / 1000 - 30;
@@ -905,7 +905,7 @@ class StandardUIViewer extends mapray.RenderCallback
 
                 this._camera_parameter.latitude = new_camera_spherical_position.latitude;
                 this._camera_parameter.longitude = new_camera_spherical_position.longitude;
-                this._camera_parameter.height = new_camera_spherical_position.height;
+                this._camera_parameter.height = new_camera_spherical_position.altitude;
             }
 
             this._zoom_wheel = 0;

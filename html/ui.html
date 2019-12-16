@@ -4,9 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>StandardUITest</title>
-    <script type="text/javascript" src="mapray.js"></script>
-    <script type="text/javascript" src="maprayui.js"></script>
-    <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
+    <link rel="stylesheet" href="../dist/mapray.css">
     <style>
         html,
         body {
@@ -33,7 +31,8 @@
 <body>
     <div id="mapray-container"></div>
 </body>
-
+<script type="text/javascript" src="../build/mapray.js"></script>
+<script type="text/javascript" src="../build/maprayui.js"></script>
 <script>
     var access_token = "<your access token here>";
 
@@ -65,7 +64,7 @@
     UIViewer.viewer.logo_controller.setPosition( mapray.Viewer.ContainerPosition.TOP_RIGHT );
 
     // 著作権の追加
-    var attribution = { display: "mapray", link: "https://mapray.com/"}
+    var attribution = { display: "国土地理院", link: "http://maps.gsi.go.jp/development/ichiran.html"}
     UIViewer.viewer.attribution_controller.addAttribution( attribution );
 </script>
 

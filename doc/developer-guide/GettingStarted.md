@@ -3,6 +3,7 @@
 maprayJSはWebブラウザ上で動作するJavaScriptライブラリで、3D地図データを高速に美しく表現することができます。また、mapray cloudはmaprayJSに最適化されたデータを保存・配信するクラウドサービスです。世界規模の地形データを強力なクラウドインフラで配信することができます。
 mapray cloudはソニーネットワークコミュニケーションズ（株）によって運営されているクラウドサービスです。
 maprayJSはオープンソースプロジェクトです。([Github.comへのリンク](https://github.com/sony/mapray-js))
+ご利用の際には[Attribution](./Attribution.md)も参照の上、著作権表示に気をつけてご利用下さい。
 
 ## QuickStart
 このドキュメントではmapray cloudへのアカウト登録はすでに終了しているという前提で記載しています。
@@ -70,6 +71,7 @@ yarn add mapray-js
 
 ### 3. Hello Globe !!
 ここでははじめてのアプリケーションを作成します。完成するとお使いのWebブラウザ内に地球が表示されます。
+（CDN形式での説明になります）
 このサンプルプログラムは、日本で２番目に標高の高い北岳付近より、１番目に標高の高い富士山を眺めたものになります。
 以下のプログラムの
 `<your access token here>`を上記で作成したAccess Tokenで書き換えて下さい。
@@ -87,7 +89,6 @@ var accessToken = 'AbCdEfGhIjKlMnOpQrStU';
 <head>
     <meta charset="UTF-8">
     <title>Hello Globe</title>
-    <script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
     <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
 </head>
 <style>
@@ -104,7 +105,7 @@ var accessToken = 'AbCdEfGhIjKlMnOpQrStU';
     <div id="mapray-container"></div>
 </body>
 </html>
-
+<script src="https://resource.mapray.com/mapray-js/v0.7.1/mapray.js"></script>
 <script>
      // Access Tokenを設定
        var accessToken = "<your access token here>";
@@ -120,6 +121,11 @@ var accessToken = 'AbCdEfGhIjKlMnOpQrStU';
            }
        );
 
+       // 地図タイルの著作権表示
+       viewer.attribution_controller.addAttribution({
+         display: "国土地理院",
+         link: "http://maps.gsi.go.jp/development/ichiran.html"
+         });
        // カメラ位置の設定
 
        // 球面座標系で視点を設定。
@@ -183,11 +189,13 @@ Github.comのmapray-js[リポジトリ](https://github.com/sony/mapray-js)で公
 - [Fall](https://github.com/sony/mapray-js/tree/master/src/apps/fall):　富士山に向かって滑らかなカメラアニメーションを行うアプリケーションです。
 
 - [nextRambler](https://github.com/sony/mapray-js/tree/master/src/apps/next):　
-  [DEMOサイト](https://mapray.com/nextRambler.html)で動作しているアプリケーションです。
-  キーボードとマウスで自由にカメラを操作できます。また、クラウドから3Dモデル、文字、ラインのデータを取得して表示できます。
+  キーボードとマウスで自由にカメラを操作できます。
   
-#### 動かしてみよう
-mapray-js[リポジトリ](https://github.com/sony/mapray-js)でサンプルを動かす方法を解説します。
+- [UI Framework](https://github.com/sony/mapray-js/tree/master/html/ui.html):　
+  uiモジュールを利用して簡単にマウスによるリアルタイム操作の制御ができるサンプルです。
+
+#### 開発者向けの説明
+mapray-js[リポジトリ](https://github.com/sony/mapray-js)でmaprayJSをビルドして動かす方法を解説します。
 デバッグ情報付きで動作させる方法になりますので、データサイズが大きくなります。
 各説明はルートディレクトリを基点とします。以下の手順の前に一度だけ
 
@@ -196,39 +204,33 @@ $ npm install
 ```
 を呼び出してセットアップを終了してください。
 
-##### 1. mapray.jsのビルド
-```
-$ npm run mapray-devel
-```
-buildディレクトリにmapray.jsとmapファイルが生成されます。
 
-##### 2. アクセストークンの設定
+##### 1. アクセストークンの設定
 ###### Fallの場合
 [Fall.js](https://github.com/sony/mapray-js/blob/master/src/apps/fall/Fall.js)の**accessToken**をmapray cloudで取得したTokenで置き換えます。
 ###### nextRamblerの場合
 [NextRambler.js](https://github.com/sony/mapray-js/blob/master/src/apps/next/NextRambler.js)の**accessToken**をmapray cloudで取得したTokenで置き換えます。
 また、Bing Mapsに衛星写真地図を切り替えたい場合(デモ起動後キーボードのBで切り替え)で、かつ、Bing MapsのAPI Keyをお持ちの場合はNextRambler.jsの[\<your Bing Maps Key here\>](https://github.com/sony/mapray-js/blob/master/src/apps/next/NextRambler.js#L644)をBing Mapsで取得したAPI Keyで置き換えます。Bing Mapsを表示しない場合はそのままで結構です。
-##### 3. アプリケーションのビルド
+##### 他のアプリの場合
+基本的には、**accessToken**を書き換えていただくと起動します。
+
+##### 2. ビルド
 ```
-$ npm run apps-devel
+$ npm run debug
 ```
-buildディレクトリにアプリケーションファイルとそのmapファイルが生成されます。
-##### 4. htmlのコピー
-build以下にアプリケーションのhtmlファイルをコピーします。
-```
-$ cp ./html/*.html ./build/
-```
-##### 5. ローカルサーバーの起動
- お好みのツールでbuild以下のhtml, jsファイルをホストします。
- 以下、python2系でローカルサーバーを動かす例です。
- ```
- $ cd build
- $ python -m SimpleHTTPServer 8080
- ``` 
-##### 6. 実行
-- fall: http://localhost:8080
-- nextRambler: http://localhost:8080/nextRambler.html
+buildディレクトリにmapray.js, maprayui.jsとmapファイル、distディレクトリにmapray.cssが生成されます。
+また、開発用のローカルサーバーが自動的に起動します。ソースコードを監視しており変更があれば即座に反映されます。
+
+##### 3. 実行
+- fall: http://localhost:7776/html
+- nextRambler: http://localhost:7776/html/nextRambler.html
  
+##### リリースモードでのビルド
+リリース用のjsを生成する方法は以下です。
+```
+$ npm run release
+```
+distディレクトリにmapray.js、maprayui.jsとmapray.cssが生成されます。
 
 ### データのライセンス
 ソースコードは[LICENSE](https://github.com/sony/mapray-js/blob/master/LICENSE)が適応されますので、ご自由に２次利用可能ですが、

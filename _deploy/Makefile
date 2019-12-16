@@ -30,8 +30,8 @@ build: build-mapray-js pack-mapray-js
 
 .PHONY: build-mapray-js
 build-mapray-js: # build mapray-js
-	cd $(MAPRAY_JS_DIR); yarn run dist;
+	cd $(MAPRAY_JS_DIR); npm run release;
 
 .PHONY: pack-mapray-js
 pack-mapray-js: # pack mapray-js
-	cd $(MAPRAY_JS_DIR); yarn pack;
+	cd $(MAPRAY_JS_DIR); npm pack;
