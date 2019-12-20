@@ -140,7 +140,7 @@ class CameraControl extends mapray.RenderCallback{
             // UIを更新する
             document.getElementById( "LongitudeValue" ).innerText = closs_geoPoint.longitude.toFixed(6);
             document.getElementById( "LatitudeValue" ).innerText = closs_geoPoint.latitude.toFixed(6);
-            document.getElementById( "HeightValue" ).innerText = closs_geoPoint.height.toFixed(6);
+            document.getElementById( "HeightValue" ).innerText = closs_geoPoint.altitude.toFixed(6);
         }
     }
 
@@ -160,7 +160,7 @@ class CameraControl extends mapray.RenderCallback{
         
         this.camera_Pos.longitude = next_camera_geoPoint.longitude;
         this.camera_Pos.latitude = next_camera_geoPoint.latitude;
-        this.camera_Pos.height = next_camera_geoPoint.height;
+        this.camera_Pos.height = next_camera_geoPoint.altitude;
     }
 
     BackwardCameraPos() {
@@ -179,7 +179,7 @@ class CameraControl extends mapray.RenderCallback{
 
         this.camera_Pos.longitude = next_camera_geoPoint.longitude;
         this.camera_Pos.latitude = next_camera_geoPoint.latitude;
-        this.camera_Pos.height = next_camera_geoPoint.height;
+        this.camera_Pos.height = next_camera_geoPoint.altitude;
     }
 
     TurnCamera(drag_Vec) {
