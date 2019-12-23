@@ -219,6 +219,11 @@ var Usage = {
     TEXT: { id: "TEXT" },
 
     /**
+     * シンプルテキスト表示
+     */
+    SIMPLETEXT: { id: "SIMPLETEXT" },
+
+    /**
      * アイコン
      */
     ICON: { id: "ICON" }
