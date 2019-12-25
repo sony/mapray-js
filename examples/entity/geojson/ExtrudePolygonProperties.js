@@ -41,7 +41,7 @@ class ExtrudePolygonProperties extends mapray.RenderCallback {
         super();
 
         // Set access Token
-        var accessToken = "";
+        var accessToken = "<your access token here>";
 
         new mapray.Viewer(container, {
             render_callback: this,
