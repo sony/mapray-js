@@ -24,7 +24,7 @@ mapray.SceneLoaderを使ってglTFモデルを表示する**LoadglTFModel.html**
     <head>
         <meta charset="UTF-8">
         <title>LoadglTFModelSample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.7.2/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.3/mapray.js"></script>
         <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <script src="LoadglTFModel.js"></script>
         <style>
@@ -178,7 +178,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 6～8行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、モデルのシーンを読み込むJavaScriptファイル（**Load3DModel.js**）を設定します。
 
 ```HTML
-<script src="https://resource.mapray.com/mapray-js/v0.7.2/mapray.js"></script>
+<script src="https://resource.mapray.com/mapray-js/v0.7.3/mapray.js"></script>
 <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
 <script src="LoadglTFModel.js"></script>
 ```

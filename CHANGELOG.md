@@ -1,4 +1,7 @@
 # Change Log
+## 0.7.3
+- fixed that glTF rendering is black and nolighting [#97](https://github.com/sony/mapray-js/issues/97)
+
 ## 0.7.2
 ### Bug fix
 - fixed deployment error for npmcom [#89](https://github.com/sony/mapray-js/pull/89)

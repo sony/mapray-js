@@ -13,7 +13,7 @@ mapray.GeoJSONLoaderを使ってGeoJSONデータを表示する**LoadGeoJSON.htm
     <head>
         <meta charset="utf-8">
         <title>LoadGeoJSONSample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.7.2/mapray.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.7.3/mapray.js"></script>
         <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <script src="LoadGeoJSON.js"></script>
         <style>
@@ -194,7 +194,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 6～8行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、モデルのシーンを読み込むJavaScriptファイル（**LoadGeoJSON.js**）を設定します。
 
 ```HTML
-<script src="https://resource.mapray.com/mapray-js/v0.7.2/mapray.js"></script>
+<script src="https://resource.mapray.com/mapray-js/v0.7.3/mapray.js"></script>
 <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
 <script src="LoadGeoJSON.js"></script>
 ```

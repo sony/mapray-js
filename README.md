@@ -9,7 +9,7 @@ maprayJS is a JavaScript library for a high quality interactive 3D globes and ma
 ## Installation
 ### CDN
 ```html
-  <script src="https://resource.mapray.com/mapray-js/v0.7.2/mapray.js"></script>
+  <script src="https://resource.mapray.com/mapray-js/v0.7.3/mapray.js"></script>
 ```
 
 ### npm
@@ -42,7 +42,7 @@ Mapray cloud managed by [Sony Network Communications Inc.](https://www.sonynetwo
     <div id="mapray-container"></div>
 </body>
 </html>
-<script src="https://resource.mapray.com/mapray-js/v0.7.2/mapray.js"></script>
+<script src="https://resource.mapray.com/mapray-js/v0.7.3/mapray.js"></script>
 <script>
      // Set Access Token for mapray cloud
        var accessToken = "<your access token here>";
