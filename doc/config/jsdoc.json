@@ -1,6 +1,6 @@
 {
   "source": {
-    "exclude": [ "src/mapray/tests/" ]
+    "exclude": [ "packages/mapray/tests/" ]
   },
   "templates": {
     "default": {

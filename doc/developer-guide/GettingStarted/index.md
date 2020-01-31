@@ -142,8 +142,8 @@ Access Tokenを書き換えたファイルを任意の名前で保存し、ブ�
 
 ## 4. Example
 [mapray-jsリポジトリ (Github)](https://github.com/sony/mapray-js)で公開されているサンプルプログラムを動作させる方法をご説明します。下記二つのサンプルプログラムを動作させることができます。（今後さらに追加していく予定です）
-- [Fall](https://github.com/sony/mapray-js/tree/master/src/apps/fall): 富士山に向かって滑らかなカメラアニメーションを行うアプリケーションです。
-- [nextRambler](https://github.com/sony/mapray-js/tree/master/src/apps/next): キーボードとマウスで自由にカメラを操作することができるアプリケーションです([DEMO](https://mapray.com/nextRambler.html))。
+- [Fall](https://github.com/sony/mapray-js/tree/master/apps/fall): 富士山に向かって滑らかなカメラアニメーションを行うアプリケーションです。
+- [nextRambler](https://github.com/sony/mapray-js/tree/master/apps/next): キーボードとマウスで自由にカメラを操作することができるアプリケーションです([DEMO](https://mapray.com/nextRambler.html))。
 
 それぞれ、下記の手順でビルド・実行します。
 
@@ -164,10 +164,10 @@ buildディレクトリにmapray.jsとmapファイルが生成されます。
 
 ### 4. アクセストークンの設定
 #### Fallの場合
-[Fall.js](https://github.com/sony/mapray-js/blob/master/src/apps/fall/Fall.js)の**accessToken**をmapray cloudで取得したTokenで置き換えます。
+[Fall.js](https://github.com/sony/mapray-js/blob/master/apps/fall/Fall.js)の**accessToken**をmapray cloudで取得したTokenで置き換えます。
 #### nextRamblerの場合
-[NextRambler.js](https://github.com/sony/mapray-js/blob/master/src/apps/next/NextRambler.js)の**accessToken**をmapray cloudで取得したTokenで置き換えます。
-（また、Bing Mapsの衛星写真地図に切り替えるには、Bing MapsのAPI Keyをご用意いただき、NextRambler.jsの[<your Bing Maps Key here>](https://github.com/sony/mapray-js/blob/master/src/apps/next/NextRambler.js#L642)を置き換えます。アプリケーション起動後キーボードのBでBing Mapsに切り替えることができるようになります。）
+[NextRambler.js](https://github.com/sony/mapray-js/blob/master/apps/next/NextRambler.js)の**accessToken**をmapray cloudで取得したTokenで置き換えます。
+（また、Bing Mapsの衛星写真地図に切り替えるには、Bing MapsのAPI Keyをご用意いただき、NextRambler.jsの[<your Bing Maps Key here>](https://github.com/sony/mapray-js/blob/master/apps/next/NextRambler.js#L642)を置き換えます。アプリケーション起動後キーボードのBでBing Mapsに切り替えることができるようになります。）
 
 
 ### 5. アプリケーションのビルド

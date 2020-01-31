@@ -38,7 +38,7 @@ MaprayのワードマークはMaprayの図形と文字商標になります。�
 - c: [測量法に基づく国土地理院長承認（複製）H30JHf626](https://www.gsi.go.jp/kiban/index.html)
 
 bとcはMapray cloudが配信する地形データを生成するためにこれら団体が提供している元データを利用しているためであり、Mapray Cloudが配信する地形データを利用している場合は明記する必要があります。cに関しては、[測量法第２９条の規定に基づく承認取扱要領](https://www.gsi.go.jp/common/000219764.pdf)の第４条に記載されている通り、表記が困難である場合は説明のページや説明書等への記載でも認められます。
-上記の著作権表示はmaprayJSがデフォルトで自動的に表示を行うようになっておりますが、Mapray Cloudを利用しない場合は表記を変更することができます。詳細は[AttributionContoller](https://github.com/sony/mapray-js/blob/master/src/mapray/AttributionController.js)を参照して下さい。
+上記の著作権表示はmaprayJSがデフォルトで自動的に表示を行うようになっておりますが、Mapray Cloudを利用しない場合は表記を変更することができます。詳細は[AttributionContoller](https://github.com/sony/mapray-js/blob/master/packages/mapray/AttributionController.js)を参照して下さい。
 
 ## 地形データの改変・複製について
 Mapray Cloudが配信するデータは当社が測量法第２９条により許可を得て作成・配信しているものであり複製・改変を行うことはできません。当該地形データは当社の著作物であり権利は当社にあると同時に、測量法第２９条により国土地理院からの利用規約上、ユーザーの皆様が当社の地形データを複製することは認められておりません。
