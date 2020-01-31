@@ -1,3 +1,4 @@
+import animation from "./animation/index";
 import Viewer from "./Viewer";
 import Camera from "./Camera";
 import GeoMath from "./GeoMath";
@@ -37,6 +38,7 @@ import AttributionController from "./AttributionController";
  * @namespace mapray
  */
 var mapray = {
+    animation,
     Viewer,
     Camera,
     GeoMath,

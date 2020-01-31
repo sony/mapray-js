@@ -10,6 +10,7 @@ import NullRenderCallback from "./NullRenderCallback";
 import GeoMath from "./GeoMath";
 import Scene from "./Scene";
 import SceneLoader from "./SceneLoader";
+import EasyBindingBlock from "./animation/EasyBindingBlock";
 
 // マウス・Attribution開発
 import LogoController from "./LogoController";
@@ -57,6 +58,7 @@ class Viewer {
         this._canvas_element     = canvas;
         this._glenv              = new GLEnv( canvas );
         this._camera             = new Camera( canvas );
+        this._animation          = this._createAnimationBindingBlock();
         this._dem_provider       = this._createDemProvider( options );
         this._image_provider     = this._createImageProvider( options );
         this._layers             = this._createLayerCollection( options );
@@ -182,6 +184,18 @@ class Viewer {
 
 
     /**
+     * animation.BindingBlock を生成
+     * @private
+     */
+    _createAnimationBindingBlock()
+    {
+        let abb = new EasyBindingBlock();
+        abb.addDescendantUnbinder( () => { this._unbindDescendantAnimations(); } );
+        return abb;
+    }
+
+
+    /**
      * ImageProvider を生成
      * @private
      */
@@ -277,6 +291,14 @@ class Viewer {
      * @readonly
      */
     get canvas_element() { return this._canvas_element; }
+
+
+    /**
+     * @summary アニメーションパラメータ設定
+     * @type {mapray.animation.BindingBlock}
+     * @readonly
+     */
+    get animation() { return this._animation; }
 
 
     /**
@@ -676,6 +698,17 @@ class Viewer {
 
         // 統計の更新を通知
         stats.onUpdate();
+    }
+
+
+    /**
+     * EasyBindingBlock.DescendantUnbinder 処理
+     *
+     * @private
+     */
+    _unbindDescendantAnimations()
+    {
+        this._scene.animation.unbindAllRecursively();
     }
 
 }
