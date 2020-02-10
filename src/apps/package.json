@@ -1,0 +1,66 @@
+{
+    "name": "mapray-js",
+    "version": "0.7.3",
+    "description": "3D Rendering Engine for GIS",
+    "keywords": [
+      "3D",
+      "sdk",
+      "api",
+      "webgl",
+      "map",
+      "geospatial",
+      "globe"
+    ],
+    "main": "dist/mapray.js",
+    "directories": {
+      "doc": "doc"
+    },
+    "scripts": {
+      "apps": "cross-env WEBPACK_ENV=apps webpack -p",
+      "apps-devel": "cross-env WEBPACK_ENV=apps webpack --watch -d",
+      "start-server": "st --no-cache -H 0.0.0.0 --port 7776 --index index.html ."
+    },
+    "contributors": [
+      {
+        "name": "Yasuhisa Tanioka"
+      },
+      {
+        "name": "Daisuke Matsumoto",
+        "url": "https://github.com/daisuke201"
+      },
+      {
+        "name": "masa-sony"
+      }
+    ],
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/sony/mapray-js.git"
+    },
+    "bugs": {
+      "url": "https://github.com/sony/mapray-js/issues"
+    },
+    "homepage": "https://github.com/sony/mapray-js",
+    "private": true,
+    "workspaces": [
+      "src/mapray",
+      "src/ui"
+    ],
+    "devDependencies": {
+      "babel-core": "^6.21.0",
+      "babel-loader": "^6.2.10",
+      "babel-plugin-add-module-exports": "^0.2.1",
+      "babel-preset-env": "^1.7.0",
+      "cross-env": "^5.1.0",
+      "cssnano": "^4.1.10",
+      "jsdoc": "^3.5.0",
+      "npm-run-all": "^4.1.5",
+      "postcss-cli": "^6.1.3",
+      "postcss-inline-svg": "^4.1.0",
+      "raw-loader": "^0.5.1",
+      "semver": "^5.6.0",
+      "st": "^2.0.0",
+      "webpack": "^1.14.0"
+    },
+    "dependencies": {}
+  }
