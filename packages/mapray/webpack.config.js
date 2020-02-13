@@ -2,19 +2,24 @@
 // see https://webpack.github.io/docs/configuration.html
 
 var path = require( "path" );
-var  env = process.env.WEBPACK_ENV;
-
-var outdir = ( env == "dist" ) || ( env == "dist-ui" ) ? "dist" : "build";
-
+var outdir = "dist";
 
 // configuration for mapray library
-var mapray_config = {
+mapray_config = (env, args) => {
 
+    console.log('env ' + env);
+    console.log('mode:' + args.mode);
+
+    var fsuffix = ( args.mode == "production" ) ? "" : "-dev";
+
+    return {
     // base directory for resolving the entry option
     context: path.join( __dirname, "src" ),
 
     // entry point for the bundle
-    entry: "./mapray/index.js",
+    entry: "./index.js",
+
+    devtool: args.mode === "development" ? "source-map" : "none",
 
     // options affecting the output of the compilation
     output: {
@@ -22,8 +27,7 @@ var mapray_config = {
         path: path.join( __dirname, outdir ),
 
         // specifies the name of each output file on disk
-        filename: "mapray.js",
-
+        filename: "mapray" + fsuffix + ".js",
         library: "mapray",
         libraryTarget: "umd",
         umdNamedDefine: true
@@ -32,34 +36,39 @@ var mapray_config = {
     // options affecting the normal modules (NormalModuleFactory)
     module: {
         // array of automatically applied loaders
-        loaders: [
+        rules: [
             {
                 test: /\.js$/,
                 exclude: /node_modules/,
-                loader: "babel-loader",
-                query: {
-                    presets: ["env"],
-                    plugins: ["add-module-exports"]
-                }
+                use: [
+                    {
+                        loader: "babel-loader",
+                        options: {
+                            presets: ['@babel/preset-env']
+                        }
+                    }
+                ]
             },
             {
                 test: /\.(vert|frag|glsl)$/,
-                loader: "raw-loader"
+                loader: 'raw-loader'
             }
         ]
     }
+}
 
 };
 
 
 // configuration for tests
-var tests_config = {
+var tests_config = (env, args) => {
 
+    return {
     // base directory for resolving the entry option
     context: path.join( __dirname, "src" ),
 
     // entry point for the bundle
-    entry: "./mapray/tests/index.js",
+    entry: "./tests/index.js",
 
     // options affecting the output of the compilation
     output: {
@@ -73,118 +82,35 @@ var tests_config = {
     // options affecting the normal modules (NormalModuleFactory)
     module: {
         // array of automatically applied loaders
-        loaders: [
+        rules: [
             {
                 test: /\.js$/,
                 exclude: /node_modules/,
-                loader: "babel-loader",
-                query: {
-                    presets: [
-                        ["env", { "targets": { "chrome": 75 } } ]
-                    ]
-                }
+                use: [
+                    {
+                        loader: "babel-loader",
+                        options: {
+                            presets: [
+                                "@babel/preset-env", {
+                                    "targets": { "chrome": 75 } 
+                                } 
+                            ]
+                        }
+                    }
+                ]
             }
         ]
     }
-
-};
-
-// configuration for mapray UI library
-var ui_config = {
-
-    // base directory for resolving the entry option
-    context: path.join( __dirname, "src" ),
-
-    // entry point for the bundle
-    entry: "./ui/index.js",
-
-    // options affecting the output of the compilation
-    output: {
-        // output directory as an absolute path (required)
-        path: path.join( __dirname, outdir ),
-
-        // specifies the name of each output file on disk
-        filename: "maprayui.js",
-
-        library: "maprayui",
-        libraryTarget: "umd",
-        umdNamedDefine: true
-    },
-
-    // options affecting the normal modules (NormalModuleFactory)
-    module: {
-        // array of automatically applied loaders
-        loaders: [
-            {
-                test: /\.js$/,
-                exclude: /node_modules/,
-                loader: "babel-loader",
-                query: {
-                    presets: ["env"],
-                    plugins: ["add-module-exports"]
-                }
-            },
-            {
-                test: /\.(vert|frag|glsl)$/,
-                loader: "raw-loader"
-            }
-        ]
-    }
-
-};
-
-// configuration for apps
-var apps_config = {
-
-    // base directory for resolving the entry option
-    context: path.join( __dirname, "src" ),
-
-    // entry point for the bundle
-    entry: {
-        fall: "./apps/fall/index.js",
-        turning: "./apps/turning/turning.js",
-        nextRambler: "./apps/next/index.js"
-    },
-
-    // options affecting the output of the compilation
-    output: {
-        // output directory as an absolute path (required)
-        path: path.join( __dirname, outdir ),
-
-        // specifies the name of each output file on disk
-        filename: "[name].js"
-    },
-    
-    // options affecting the normal modules (NormalModuleFactory)
-    module: {
-        // array of automatically applied loaders
-        loaders: [
-            {
-                test: /\.js$/,
-                exclude: /node_modules/,
-                loader: "babel-loader",
-                query: {
-                    presets: ["env"]
-                }
-            }
-        ]
-    }
-
-};
-
-
-switch ( env ) {
-case "apps":
-    module.exports = apps_config;
-    break;
-case "tests":
-    module.exports = tests_config;
-    break;
-case "ui":
-case "dist-ui":
-    module.exports = ui_config;
-	break;
-default:
-    module.exports = mapray_config;
-    break;
 }
+};
+
+module.exports = (env, args) => {
+    switch ( env && env.NODE_ENV ) {
+        case "tests":
+            return tests_config(env, args);
+            break;
+    }
+    return mapray_config(env, args);
+}
+
+

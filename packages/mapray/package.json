@@ -1,57 +1,59 @@
 {
-    "name": "mapray-js",
-    "version": "0.7.3",
-    "description": "3D Rendering Engine for GIS",
-    "keywords": [
-      "3D",
-      "sdk",
-      "api",
-      "webgl",
-      "map",
-      "geospatial",
-      "globe"
-    ],
-    "main": "dist/mapray.js",
-    "directories": {
-      "doc": "doc"
+  "name": "mapray-js",
+  "version": "0.7.3",
+  "description": "3D Rendering Engine for GIS",
+  "keywords": [
+    "3D",
+    "sdk",
+    "api",
+    "webgl",
+    "map",
+    "geospatial",
+    "globe"
+  ],
+  "main": "dist/mapray.js",
+  "directories": {
+    "doc": "doc"
+  },
+  "scripts": {
+    "build-prod": "cross-env webpack --mode=production",
+    "build-dev": "webpack --mode=development",
+    "build-watch": "webpack --watch --mode=development",
+    "jsdoc": "jsdoc --recurse --destination ./../../doc/jsdoc --package ./package.json --readme ./../../doc/config/reference_top.md --access undefined,public,protected  --configure ./../../doc/config/jsdoc.json ./src/",
+    "jsdoc-devel": "jsdoc --recurse --destination ./../../doc/jsdoc --package ./package.json --readme ./../../doc/config/reference_top.md --private  --configure ./../../doc/config/jsdoc.json ./src/",
+    "tests-devel": "cross-env webpack --watch --mode=development --env.NODE_ENV=tests",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "contributors": [
+    {
+      "name": "Yasuhisa Tanioka"
     },
-    "scripts": {
-      "release": "cross-env WEBPACK_ENV=dist webpack -p",
-      "debug": "webpack --watch -d",
-      "jsdoc": "jsdoc --recurse --destination ./../../doc/jsdoc --package ./package.json --readme ./../../doc/config/reference_top.md --access undefined,public,protected  --configure ./../../doc/config/jsdoc.json ./src/mapray",
-      "jsdoc-devel": "jsdoc --recurse --destination ./../../doc/jsdoc --package ./package.json --readme ./../../doc/config/reference_top.md --private  --configure ./../../doc/config/jsdoc.json ./src/mapray",
-      "tests-devel": "cross-env WEBPACK_ENV=tests webpack --watch -d",
-      "test": "echo \"Error: no test specified\" && exit 1"
+    {
+      "name": "Daisuke Matsumoto",
+      "url": "https://github.com/daisuke201"
     },
-    "contributors": [
-      {
-        "name": "Yasuhisa Tanioka"
-      },
-      {
-        "name": "Daisuke Matsumoto",
-        "url": "https://github.com/daisuke201"
-      },
-      {
-        "name": "masa-sony"
-      }
-    ],
-    "license": "MIT",
-    "repository": {
-      "type": "git",
-      "url": "https://github.com/sony/mapray-js.git"
-    },
-    "bugs": {
-      "url": "https://github.com/sony/mapray-js/issues"
-    },
-    "homepage": "https://github.com/sony/mapray-js",
-    "devDependencies": {
-      "babel-core": "^6.21.0",
-      "babel-loader": "^6.2.10",
-      "babel-plugin-add-module-exports": "^0.2.1",
-      "babel-preset-env": "^1.7.0",
-      "cross-env": "^5.1.0",
-      "jsdoc": "^3.5.0",
-      "webpack": "^1.14.0"
-    },
-    "dependencies": {}
-  }
+    {
+      "name": "masa-sony"
+    }
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sony/mapray-js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sony/mapray-js/issues"
+  },
+  "homepage": "https://github.com/sony/mapray-js",
+  "devDependencies": {
+    "@babel/core": "^7.8.4",
+    "@babel/preset-env": "^7.8.4",
+    "babel-loader": "^8.0.6",
+    "cross-env": "^7.0.0",
+    "jsdoc": "^3.5.0",
+    "raw-loader": "^4.0.0",
+    "webpack": "^4.41.6",
+    "webpack-cli": "^3.3.11"
+  },
+  "dependencies": {}
+}

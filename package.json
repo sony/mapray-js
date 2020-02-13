@@ -11,10 +11,12 @@
     "globe"
   ],
   "scripts": {
+    "release2": "run-p ui",
     "release": "run-p mapray ui jsdoc",
+    "debug2": "run-ui-devel",
     "debug": "run-p mapray-devel ui-devel jsdoc-devel",
-    "mapray": "yarn workspace mapray-js release",
-    "mapray-devel": "yarn workspace mapray-js debug",
+    "mapray": "yarn workspace mapray-js build-prod",
+    "mapray-devel": "yarn workspace mapray-js build-watch",
     "ui": "yarn workspace ui release",
     "ui-devel": "yarn workspace ui debug",
     "jsdoc": "yarn workspace mapray-js jsdoc",

@@ -47,7 +47,6 @@
       "babel-plugin-add-module-exports": "^0.2.1",
       "babel-preset-env": "^1.7.0",
       "cross-env": "^5.1.0",
-      "raw-loader": "^0.5.1",
       "st": "^2.0.0",
       "webpack": "^1.14.0"
     },
