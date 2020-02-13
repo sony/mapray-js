@@ -11,15 +11,15 @@
     "geospatial",
     "globe"
   ],
-  "main": "dist/index.js",
+  "main": "dist/mapray-ui.js",
   "directories": {
     "doc": "doc"
   },
   "scripts": {
-    "release": "cross-env WEBPACK_ENV=dist-ui webpack --mode=production",
-    "debug": "cross-env WEBPACK_ENV=ui webpack --watch --mode=development",
+    "build-prod": "cross-env webpack --mode=production",
+    "build-dev": "cross-env webpack --watch --mode=development",
     "css": "postcss -o dist/mapray.css src/css/mapray.css",
-    "css-devel": "postcss --watch -o dist/mapray.css src/css/mapray.css"
+    "css-dev": "postcss --watch -o dist/mapray.css src/css/mapray.css"
   },
   "contributors": [
     {
@@ -48,7 +48,6 @@
     "babel-loader": "^8.0.6",
     "cross-env": "^7.0.0",
     "cssnano": "^4.1.10",
-    "jsdoc": "^3.5.0",
     "postcss-cli": "^7.1.0",
     "postcss-inline-svg": "^4.1.0",
     "webpack": "^4.41.6",

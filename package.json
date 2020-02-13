@@ -13,12 +13,12 @@
   "scripts": {
     "release2": "run-p ui",
     "release": "run-p mapray ui jsdoc",
-    "debug2": "run-ui-devel",
+    "debug2": "run-p ui-devel",
     "debug": "run-p mapray-devel ui-devel jsdoc-devel",
     "mapray": "yarn workspace mapray-js build-prod",
     "mapray-devel": "yarn workspace mapray-js build-watch",
-    "ui": "yarn workspace ui release",
-    "ui-devel": "yarn workspace ui debug",
+    "ui": "yarn workspace ui build-prod",
+    "ui-devel": "yarn workspace ui build-dev",
     "jsdoc": "yarn workspace mapray-js jsdoc",
     "jsdoc-devel": "yarn workspace mapray-js jsdoc-devel",
     "start-server": "st --no-cache -H 0.0.0.0 --port 7776 --index index.html ."

@@ -13,50 +13,49 @@ mapray_config = (env, args) => {
     var fsuffix = ( args.mode == "production" ) ? "" : "-dev";
 
     return {
-    // base directory for resolving the entry option
-    context: path.join( __dirname, "src" ),
+        // base directory for resolving the entry option
+        context: path.join( __dirname, "src" ),
 
-    // entry point for the bundle
-    entry: "./index.js",
+        // entry point for the bundle
+        entry: "./index.js",
 
-    devtool: args.mode === "development" ? "source-map" : "none",
+        devtool: args.mode === "development" ? "source-map" : "none",
 
-    // options affecting the output of the compilation
-    output: {
-        // output directory as an absolute path (required)
-        path: path.join( __dirname, outdir ),
+        // options affecting the output of the compilation
+        output: {
+            // output directory as an absolute path (required)
+            path: path.join( __dirname, outdir ),
 
-        // specifies the name of each output file on disk
-        filename: "mapray" + fsuffix + ".js",
-        library: "mapray",
-        libraryTarget: "umd",
-        umdNamedDefine: true
-    },
+            // specifies the name of each output file on disk
+            filename: "mapray" + fsuffix + ".js",
+            library: "mapray",
+            libraryTarget: "umd",
+            umdNamedDefine: true
+        },
 
-    // options affecting the normal modules (NormalModuleFactory)
-    module: {
-        // array of automatically applied loaders
-        rules: [
-            {
-                test: /\.js$/,
-                exclude: /node_modules/,
-                use: [
-                    {
-                        loader: "babel-loader",
-                        options: {
-                            presets: ['@babel/preset-env']
+        // options affecting the normal modules (NormalModuleFactory)
+        module: {
+            // array of automatically applied loaders
+            rules: [
+                {
+                    test: /\.js$/,
+                    exclude: /node_modules/,
+                    use: [
+                        {
+                            loader: "babel-loader",
+                            options: {
+                                presets: ['@babel/preset-env']
+                            }
                         }
-                    }
-                ]
-            },
-            {
-                test: /\.(vert|frag|glsl)$/,
-                loader: 'raw-loader'
-            }
-        ]
+                    ]
+                },
+                {
+                    test: /\.(vert|frag|glsl)$/,
+                    loader: 'raw-loader'
+                }
+            ]
+        }
     }
-}
-
 };
 
 
@@ -64,44 +63,44 @@ mapray_config = (env, args) => {
 var tests_config = (env, args) => {
 
     return {
-    // base directory for resolving the entry option
-    context: path.join( __dirname, "src" ),
+        // base directory for resolving the entry option
+        context: path.join( __dirname, "src" ),
 
-    // entry point for the bundle
-    entry: "./tests/index.js",
+        // entry point for the bundle
+        entry: "./tests/index.js",
 
-    // options affecting the output of the compilation
-    output: {
-        // output directory as an absolute path (required)
-        path: path.join( __dirname, outdir ),
+        // options affecting the output of the compilation
+        output: {
+            // output directory as an absolute path (required)
+            path: path.join( __dirname, outdir ),
 
-        // specifies the name of each output file on disk
-        filename: "tests.js"
-    },
+            // specifies the name of each output file on disk
+            filename: "tests.js"
+        },
 
-    // options affecting the normal modules (NormalModuleFactory)
-    module: {
-        // array of automatically applied loaders
-        rules: [
-            {
-                test: /\.js$/,
-                exclude: /node_modules/,
-                use: [
-                    {
-                        loader: "babel-loader",
-                        options: {
-                            presets: [
-                                "@babel/preset-env", {
-                                    "targets": { "chrome": 75 } 
-                                } 
-                            ]
+        // options affecting the normal modules (NormalModuleFactory)
+        module: {
+            // array of automatically applied loaders
+            rules: [
+                {
+                    test: /\.js$/,
+                    exclude: /node_modules/,
+                    use: [
+                        {
+                            loader: "babel-loader",
+                            options: {
+                                presets: [
+                                    "@babel/preset-env", {
+                                        "targets": { "chrome": 75 } 
+                                    } 
+                                ]
+                            }
                         }
-                    }
-                ]
-            }
-        ]
+                    ]
+                }
+            ]
+        }
     }
-}
 };
 
 module.exports = (env, args) => {
