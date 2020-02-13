@@ -1,5 +1,5 @@
 {
-  "name": "mapray-js",
+  "name": "@mapray/mapray-js",
   "version": "0.7.3",
   "description": "3D Rendering Engine for GIS",
   "keywords": [
@@ -15,6 +15,11 @@
   "directories": {
     "doc": "doc"
   },
+  "private": true,
+  "files": [
+    "dist",
+    "src"
+  ],
   "scripts": {
     "build-prod": "cross-env webpack --mode=production",
     "build-dev": "webpack --mode=development",
