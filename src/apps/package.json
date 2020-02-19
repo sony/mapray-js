@@ -40,7 +40,7 @@
     "bugs": {
       "url": "https://github.com/sony/mapray-js/issues"
     },
-    "homepage": "https://github.com/sony/mapray-js",
+    "homepage": "https://mapray.com",
     "devDependencies": {
       "babel-core": "^6.21.0",
       "babel-loader": "^6.2.10",

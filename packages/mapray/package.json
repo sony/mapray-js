@@ -1,6 +1,6 @@
 {
-  "name": "@mapray/mapray-js",
-  "version": "0.7.3",
+  "name": "@mapray/mapray-js-dummy",
+  "version": "0.0.1",
   "description": "3D Rendering Engine for GIS",
   "keywords": [
     "3D",
@@ -15,7 +15,6 @@
   "directories": {
     "doc": "doc"
   },
-  "private": true,
   "files": [
     "dist",
     "src"
@@ -49,7 +48,7 @@
   "bugs": {
     "url": "https://github.com/sony/mapray-js/issues"
   },
-  "homepage": "https://github.com/sony/mapray-js",
+  "homepage": "https://mapray.com",
   "devDependencies": {
     "@babel/core": "^7.8.4",
     "@babel/preset-env": "^7.8.4",
