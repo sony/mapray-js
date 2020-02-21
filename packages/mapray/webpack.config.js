@@ -30,7 +30,8 @@ mapray_config = (env, args) => {
             filename: "mapray" + fsuffix + ".js",
             library: "mapray",
             libraryTarget: "umd",
-            umdNamedDefine: true
+            umdNamedDefine: true,
+            globalObject : 'this'
         },
 
         // options affecting the normal modules (NormalModuleFactory)
