@@ -11,7 +11,7 @@
     "globe"
   ],
   "scripts": {
-    "release2": "run-p mapray ui",
+    "release2": "run-p mapray",
     "release": "run-p mapray ui jsdoc",
     "debug2": "run-p mapray-devel ui-devel",
     "debug": "run-p mapray-devel ui-devel jsdoc-devel",

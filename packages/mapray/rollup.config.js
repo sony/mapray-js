@@ -1,8 +1,7 @@
 import { terser } from 'rollup-plugin-terser'
 import babel from 'rollup-plugin-babel'
-import commonjs from 'rollup-plugin-commonjs'
 import replace from 'rollup-plugin-replace'
-import resolve from 'rollup-plugin-node-resolve'
+import { string } from "rollup-plugin-string";
 
 import pkg from './package.json'
 const extensions = ['.vert', '.frag', '.glsl']
@@ -26,13 +25,11 @@ export default [
       ...Object.keys(pkg.dependencies || {}),
       ...Object.keys(pkg.peerDependencies || {})
     ]),
-    plugin: [
-        resolve(),
+    plugins: [
+        string({
+          include: ["**/*.vert", "**/*.frag", "**/*glsl"]
+        }),
         babel({
-          extensions,
-          plugins: [
-              ['raw-loader']
-          ],
           runtimeHelpers: true
       })
     ]
@@ -42,14 +39,12 @@ export default [
   {
     input: 'src/index.js',
     output: { file: outdir+'es/mapray.js', format: 'es', indent: false },
-    plugin: [
-      resolve(),
-      babel({
-        extensions,
-        plugins: [
-          ['raw-loader']
-        ],
-        runtimeHelpers: true
+    plugins: [
+        string({
+          include: ["**/*.vert", "**/*.frag", "**/*glsl"]
+        }),
+        babel({
+          runtimeHelpers: true
       })
     ]
   },
@@ -57,14 +52,12 @@ export default [
   // ES for Browsers
   {
     input: 'src/index.js',
-    output: { file: 'es/mapray.mjs', format: 'es', indent: false },
+    output: { file: outdir+'es/mapray.mjs', format: 'es', indent: false },
     plugins: [
-      resolve(),
+      string({
+        include: ["**/*.vert", "**/*.frag", "**/*glsl"]
+      }),
       babel({
-        extensions,
-        plugins: [
-          ['raw-loader']
-        ],
         runtimeHelpers: true
       }),
       replace({
@@ -85,18 +78,16 @@ export default [
   {
     input: 'src/index.js',
     output: {
-      file: outdir+'dist/redux.js',
+      file: outdir+'dist/mapray.js',
       format: 'umd',
       name: 'mapray',
       indent: false
     },
     plugins: [
-      resolve(),
+      string({
+        include: ["**/*.vert", "**/*.frag", "**/*glsl"]
+      }),
       babel({
-        extensions,
-        plugins: [
-          ['raw-loader']
-        ],
         runtimeHelpers: true
       }),
       replace({
@@ -109,18 +100,16 @@ export default [
   {
     input: 'src/index.js',
     output: {
-      file: outdir+'dist/redux.min.js',
+      file: outdir+'dist/mapray.min.js',
       format: 'umd',
       name: 'mapray',
       indent: false
     },
     plugins: [
-      resolve(),
+      string({
+        include: ["**/*.vert", "**/*.frag", "**/*glsl"]
+      }),
       babel({
-        extensions,
-        plugins: [
-          ['raw-loader']
-        ],
         runtimeHelpers: true
       }),
       replace({
@@ -137,4 +126,3 @@ export default [
     ]
   }
 ]
-
