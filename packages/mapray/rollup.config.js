@@ -1,50 +1,25 @@
 import { terser } from 'rollup-plugin-terser'
 import babel from 'rollup-plugin-babel'
-import replace from 'rollup-plugin-replace'
-import { string } from "rollup-plugin-string";
+import { string } from 'rollup-plugin-string'
+import resolve from 'rollup-plugin-node-resolve'
+import commonjs from 'rollup-plugin-commonjs'
 
-import pkg from './package.json'
-const extensions = ['.vert', '.frag', '.glsl']
-
+const extensions = ['**/*.vert', '**/*.frag', '**/*.glsl']
 var outdir = "dist/";
 
-const makeExternalPredicate = externalArr => {
-  if (externalArr.length === 0) {
-    return () => false
-  }
-  const pattern = new RegExp(`^(${externalArr.join('|')})($|/)`)
-  return id => pattern.test(id)
-}
-
-export default [
-  // CommonJS
-  {
-    input: 'src/index.js',
-    output: { file: outdir+'lib/mapray.js', format: 'cjs', indent: false },
-    external: makeExternalPredicate([
-      ...Object.keys(pkg.dependencies || {}),
-      ...Object.keys(pkg.peerDependencies || {})
-    ]),
-    plugins: [
-        string({
-          include: ["**/*.vert", "**/*.frag", "**/*glsl"]
-        }),
-        babel({
-          runtimeHelpers: true
-      })
-    ]
-  },
-  
+export default [  
   // ES
   {
     input: 'src/index.js',
     output: { file: outdir+'es/mapray.js', format: 'es', indent: false },
     plugins: [
-        string({
-          include: ["**/*.vert", "**/*.frag", "**/*glsl"]
-        }),
-        babel({
-          runtimeHelpers: true
+      commonjs(),
+      resolve(),
+      string({
+        include: extensions
+      }),
+      babel({
+        exclude: 'node_modules/**'
       })
     ]
   },
@@ -54,23 +29,15 @@ export default [
     input: 'src/index.js',
     output: { file: outdir+'es/mapray.mjs', format: 'es', indent: false },
     plugins: [
+      commonjs(),
+      resolve(),
       string({
-        include: ["**/*.vert", "**/*.frag", "**/*glsl"]
+        include: extensions
       }),
       babel({
-        runtimeHelpers: true
+        exclude: 'node_modules/**'
       }),
-      replace({
-        'process.env.NODE_ENV': JSON.stringify('production')
-      }),
-      terser({
-        compress: {
-          pure_getters: true,
-          unsafe: true,
-          unsafe_comps: true,
-          warnings: false
-        }
-      })
+      terser()
     ]
   },
   
@@ -78,20 +45,20 @@ export default [
   {
     input: 'src/index.js',
     output: {
-      file: outdir+'dist/mapray.js',
+      file: outdir+'umd/mapray.js',
       format: 'umd',
       name: 'mapray',
-      indent: false
+      indent: false,
+      sourcemap: true
     },
     plugins: [
+      commonjs(),
+      resolve(),
       string({
-        include: ["**/*.vert", "**/*.frag", "**/*glsl"]
+        include: extensions
       }),
       babel({
-        runtimeHelpers: true
-      }),
-      replace({
-        'process.env.NODE_ENV': JSON.stringify('development')
+        exclude: 'node_modules/**'
       })
     ]
   },
@@ -100,29 +67,21 @@ export default [
   {
     input: 'src/index.js',
     output: {
-      file: outdir+'dist/mapray.min.js',
+      file: outdir+'umd/mapray.min.js',
       format: 'umd',
       name: 'mapray',
       indent: false
     },
     plugins: [
+      commonjs(),
+      resolve(),
       string({
-        include: ["**/*.vert", "**/*.frag", "**/*glsl"]
+        include: extensions
       }),
       babel({
-        runtimeHelpers: true
+        exclude: 'node_modules/**'
       }),
-      replace({
-        'process.env.NODE_ENV': JSON.stringify('production')
-      }),
-      terser({
-        compress: {
-          pure_getters: true,
-          unsafe: true,
-          unsafe_comps: true,
-          warnings: false
-        }
-      })
+      terser()
     ]
   }
 ]

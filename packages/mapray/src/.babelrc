@@ -1,6 +1,11 @@
 {
     "presets": [
-      ["@babel/env", {"modules": false}]
+      [
+          "@babel/preset-env", 
+          {
+              "useBuiltIns": "usage",
+              "corejs": 3
+          }
+        ]
     ]
   }
-  

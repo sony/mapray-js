@@ -1,6 +1,6 @@
 {
   "name": "@mapray/mapray-js-dummy",
-  "version": "0.0.3",
+  "version": "0.0.5",
   "description": "3D Rendering Engine for GIS",
   "keywords": [
     "3D",
@@ -11,8 +11,9 @@
     "geospatial",
     "globe"
   ],
-  "main": "dist/mapray.js",
-  "module": "dist/mapray.js",
+  "main": "dist/umd/mapray.js",
+  "unpkg": "dist/umd/mapray.min.js",
+  "module": "dist/es/mapray.js",
   "directories": {
     "doc": "doc"
   },
@@ -54,11 +55,13 @@
     "@babel/core": "^7.8.4",
     "@babel/preset-env": "^7.8.4",
     "babel-loader": "^8.0.6",
+    "core-js": "3",
     "cross-env": "^7.0.0",
     "jsdoc": "^3.5.0",
     "rollup": "^1.31.1",
     "rollup-plugin-babel": "^4.3.3",
-    "rollup-plugin-replace": "^2.2.0",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-string": "^3.0.0",
     "rollup-plugin-terser": "^5.2.0",
     "webpack": "^4.41.6",
