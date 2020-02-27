@@ -22,9 +22,7 @@
     "src"
   ],
   "scripts": {
-    "build-prod": "rollup -c",
-    "build-dev": "webpack --mode=development",
-    "build-watch": "webpack --watch --mode=development",
+    "build": "rollup -c",
     "jsdoc": "jsdoc --recurse --destination ./../../doc/jsdoc --package ./package.json --readme ./../../doc/config/reference_top.md --access undefined,public,protected  --configure ./../../doc/config/jsdoc.json ./src/",
     "jsdoc-devel": "jsdoc --recurse --destination ./../../doc/jsdoc --package ./package.json --readme ./../../doc/config/reference_top.md --private  --configure ./../../doc/config/jsdoc.json ./src/",
     "tests-devel": "cross-env webpack --watch --mode=development --env.NODE_ENV=tests",
@@ -63,9 +61,7 @@
     "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-string": "^3.0.0",
-    "rollup-plugin-terser": "^5.2.0",
-    "webpack": "^4.41.6",
-    "webpack-cli": "^3.3.11"
+    "rollup-plugin-terser": "^5.2.0"
   },
   "dependencies": {}
 }

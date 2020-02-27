@@ -1,6 +1,6 @@
 {
   "name": "@mapray/ui-dummy",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "3D Rendering Engine for GIS",
   "keywords": [
     "3D",
@@ -20,8 +20,7 @@
     "src"
   ],
   "scripts": {
-    "build-prod": "cross-env webpack --mode=production",
-    "build-dev": "cross-env webpack --watch --mode=development",
+    "build": "rollup -c",
     "css": "postcss -o dist/mapray.css src/css/mapray.css",
     "css-dev": "postcss --watch -o dist/mapray.css src/css/mapray.css"
   },
@@ -50,15 +49,21 @@
     "@babel/core": "^7.8.4",
     "@babel/preset-env": "^7.8.4",
     "babel-loader": "^8.0.6",
+    "core-js": "^3.6.4",
     "cross-env": "^7.0.0",
     "cssnano": "^4.1.10",
     "postcss-cli": "^7.1.0",
     "postcss-inline-svg": "^4.1.0",
+    "rollup": "^1.31.1",
+    "rollup-plugin-babel": "^4.3.3",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "rollup-plugin-terser": "^5.2.0",
     "webpack": "^4.41.6",
     "webpack-cli": "^3.3.11"
   },
   "dependencies": {},
   "peerDependencies": {
-    "@mapray/mapray-js": "^0.7.3"
+    "@mapray/mapray-js-dummy": "^0.0.1"
   }
 }
