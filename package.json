@@ -11,14 +11,11 @@
     "globe"
   ],
   "scripts": {
-    "release2": "run-p mapray ui",
-    "release": "run-p mapray ui jsdoc",
-    "debug2": "run-p mapray-devel ui-devel",
-    "debug": "run-p mapray-devel ui-devel jsdoc-devel",
+    "build": "run-p mapray ui jsdoc",
     "mapray": "yarn workspace @mapray/mapray-js-dummy build",
-    "mapray-devel": "yarn workspace @mapray/mapray-js-dummy build-watch",
+    "mapray-watch": "yarn workspace @mapray/mapray-js-dummy build-watch",
     "ui": "yarn workspace @mapray/ui-dummy build",
-    "ui-devel": "yarn workspace @mapray/ui-dummy build-dev",
+    "ui-watch": "yarn workspace @mapray/ui-dummy build-watch",
     "jsdoc": "yarn workspace @mapray/mapray-js-dummy jsdoc",
     "jsdoc-devel": "yarn workspace @mapray/mapray-js-dummy jsdoc-devel",
     "start-server": "st --no-cache -H 0.0.0.0 --port 7776 --index index.html ."

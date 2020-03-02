@@ -23,6 +23,7 @@
   ],
   "scripts": {
     "build": "rollup -c",
+    "build-watch": "rollup -c -w",
     "jsdoc": "jsdoc --recurse --destination ./../../doc/jsdoc --package ./package.json --readme ./../../doc/config/reference_top.md --access undefined,public,protected  --configure ./../../doc/config/jsdoc.json ./src/",
     "jsdoc-devel": "jsdoc --recurse --destination ./../../doc/jsdoc --package ./package.json --readme ./../../doc/config/reference_top.md --private  --configure ./../../doc/config/jsdoc.json ./src/",
     "tests-devel": "cross-env webpack --watch --mode=development --env.NODE_ENV=tests",
