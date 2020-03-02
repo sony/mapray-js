@@ -80,6 +80,7 @@ export default [
         '@mapray/mapray-js-dummy': 'mapray'
       }
     },
+    external: ['@mapray/mapray-js-dummy'],
     plugins: [
       commonjs(),
       resolve(),
@@ -87,7 +88,6 @@ export default [
         exclude: 'node_modules/**'
       }),
       terser()
-    ],
-    external: ['@mapray/mapray-js-dummy']
+    ]
   }
 ]
