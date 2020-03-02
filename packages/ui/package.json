@@ -1,6 +1,6 @@
 {
   "name": "@mapray/ui-dummy",
-  "version": "0.0.3",
+  "version": "0.0.5",
   "description": "3D Rendering Engine for GIS",
   "keywords": [
     "3D",
@@ -11,7 +11,9 @@
     "geospatial",
     "globe"
   ],
-  "main": "dist/mapray-ui.js",
+  "main": "dist/umd/maprayui.js",
+  "unpkg": "dist/umd/maprayui.min.js",
+  "module": "dist/es/maprayui.js",
   "directories": {
     "doc": "doc"
   },
@@ -60,10 +62,12 @@
     "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-terser": "^5.2.0",
     "webpack": "^4.41.6",
-    "webpack-cli": "^3.3.11"
+    "webpack-cli": "^3.3.11",
+    "@mapray/mapray-js-dummy": "^0.0.5"
   },
-  "dependencies": {},
+  "dependencies": {
+  },
   "peerDependencies": {
-    "@mapray/mapray-js-dummy": "^0.0.1"
+    "@mapray/mapray-js-dummy": "^0.0.5"
   }
 }

@@ -3,17 +3,31 @@ import babel from 'rollup-plugin-babel'
 import resolve from 'rollup-plugin-node-resolve'
 import commonjs from 'rollup-plugin-commonjs'
 
+import pkg from './package.json'
+
 var outdir = "dist/";
+
+const makeExternalPredicate = externalArr => {
+  if (externalArr.length === 0) {
+    return () => false
+  }
+  const pattern = new RegExp(`^(${externalArr.join('|')})($|/)`)
+  return id => pattern.test(id)
+}
 
 export default [  
   // ES
   {
     input: 'src/index.js',
     output: { file: outdir+'es/maprayui.js', format: 'es', indent: false },
+    external: makeExternalPredicate([
+      ...Object.keys(pkg.dependencies || {}),
+      ...Object.keys(pkg.peerDependencies || {})
+    ]),
     plugins: [
-      babel({
-        exclude: 'node_modules/**'
-      })
+      commonjs(),
+      resolve(),
+      babel()
     ]
   },
   
@@ -22,6 +36,8 @@ export default [
     input: 'src/index.js',
     output: { file: outdir+'es/maprayui.mjs', format: 'es', indent: false },
     plugins: [
+      commonjs(),
+      resolve(),
       babel({
         exclude: 'node_modules/**'
       }),
@@ -35,11 +51,17 @@ export default [
     output: {
       file: outdir+'umd/maprayui.js',
       format: 'umd',
-      name: 'mapray',
+      name: 'maprayui',
       indent: false,
-      sourcemap: true
+      sourcemap: true,
+      globals: {
+        '@mapray/mapray-js-dummy': 'mapray'
+      }
     },
+    external: ['@mapray/mapray-js-dummy'],
     plugins: [
+      commonjs(),
+      resolve(),
       babel({
         exclude: 'node_modules/**'
       })
@@ -52,14 +74,20 @@ export default [
     output: {
       file: outdir+'umd/maprayui.min.js',
       format: 'umd',
-      name: 'mapray',
-      indent: false
+      name: 'maprayui',
+      indent: false,
+      globals: {
+        '@mapray/mapray-js-dummy': 'mapray'
+      }
     },
     plugins: [
+      commonjs(),
+      resolve(),
       babel({
         exclude: 'node_modules/**'
       }),
       terser()
-    ]
+    ],
+    external: ['@mapray/mapray-js-dummy']
   }
 ]

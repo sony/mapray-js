@@ -1,3 +1,5 @@
+import mapray from '@mapray/mapray-js-dummy';
+
 var GeoMath = mapray.GeoMath;
 var GeoPoint = mapray.GeoPoint;
 
