@@ -1,5 +1,5 @@
+import '../../../packages/ui/dist/mapray.css';
 import AppClass from "./NextRambler";
-
 
 // 現在のアプリインスタンス
 var appInstance;
@@ -11,6 +11,11 @@ var appInstance;
  */
 function startApp( container )
 {
+    if ( appInstance ) {
+        // すでに動作していれば停止して消去
+        appInstance.destroy();
+        appInstance = null;
+    }
     appInstance = new AppClass( container );
 }
 

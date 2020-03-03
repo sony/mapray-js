@@ -1,3 +1,4 @@
+import mapray from "../../../packages/mapray/dist/es/mapray.js";
 var GeoMath = mapray.GeoMath;
 
 
@@ -8,11 +9,11 @@ class StatusBar {
 
     /**
      * @param {Inou.Viewer} viewer
+     * @param {string}      provider_name  データプロバイダ名
      */
-    constructor( viewer )
+    constructor( viewer, provider_name )
     {
-        this._position    = GeoMath.createVector3();  // カメラ位置 (GOCS)
-        this._height      = 0;  // カメラの高度
+        this._position    = { latitude: 0, longitude: 0, height: 0 }; // カメラ位置
         this._elevation   = 0;  // 地表面の標高
         this._direction   = GeoMath.createVector3();  // 方位角
         this._pitch_angle = 0;  // 仰俯角
@@ -32,7 +33,10 @@ class StatusBar {
         this._elem_cnt_vert = document.getElementById( "cnt-vert" );
         this._elem_reqs_dem = document.getElementById( "reqs-dem" );
         this._elem_reqs_img = document.getElementById( "reqs-img" );
-        
+        this._elem_provider = document.getElementById( "provider" );
+
+        this._elem_provider.innerHTML = provider_name;
+
         this._debug_stats = viewer.debug_stats;
         this._time        = StatusBar.UPDATE_INTERVAL;
         this._debug_console_count = 0;
@@ -41,13 +45,14 @@ class StatusBar {
 
     /**
      * @summary カメラの位置を設定
-     * @param {Inou.Vector3} position  標高 0 面上でのカメラ位置 (GOCS)
+     * @param {object} position  標高 0 面上でのカメラ位置
      * @param {number}       height    カメラの高度
      */
-    setCameraPosition( position, height )
+    setCameraPosition( position)
     {
-        GeoMath.copyVector3( position, this._position );
-        this._height = height;
+        this._position.latitude = position.latitude;
+        this._position.longitude = position.longitude;
+        this._position.height = position.height;
     }
 
 
@@ -104,13 +109,11 @@ class StatusBar {
         this._time = StatusBar.UPDATE_INTERVAL;
 
         // 要素の内容を更新
-        var spos = GeoMath.gocs_to_iscs( this._position, {} );
-
-        this._updateElement( this._elem_latitude,  this._formatNumber( spos.latitude,  5 ) );
-        this._updateElement( this._elem_longitude, this._formatNumber( spos.longitude, 5 ) );
-        this._updateElement( this._elem_height,    this._formatNumber( this._height,   1 ) );
+        this._updateElement( this._elem_latitude,  this._formatNumber( this._position.latitude,  5 ) );
+        this._updateElement( this._elem_longitude, this._formatNumber( this._position.longitude, 5 ) );
+        this._updateElement( this._elem_height, this._formatNumber( this._position.height,   1 ) );
         this._updateElement( this._elem_elevation, this._formatNumber( this._elevation, 1 ) );
-        this._updateElement( this._elem_yaw_angle,   this._formatNumber( this._calcYawAngle( spos.latitude, spos.longitude ), 1 ) );
+        this._updateElement( this._elem_yaw_angle, this._formatNumber( this._calcYawAngle( this._position.latitude, this._position.longitude ), 1 ) );
         this._updateElement( this._elem_pitch_angle, this._formatNumber( this._pitch_angle, 1 ) );
         this._updateElement( this._elem_fov_angle,   this._formatNumber( this._fov_angle,   1 ) );
         this._updateElement( this._elem_layer,       this._formatNumber( this._layer_mode,   0 ) );
