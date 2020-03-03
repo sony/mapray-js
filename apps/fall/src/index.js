@@ -1,5 +1,5 @@
+import '../../../packages/ui/dist/mapray.css';
 import AppClass from "./Fall";
-
 
 // 現在のアプリインスタンス
 var appInstance;
