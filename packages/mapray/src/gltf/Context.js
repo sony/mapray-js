@@ -386,7 +386,7 @@ class Context {
             this._rewriteBuffersForByteOrder();
             this._splitBuffersAndRebuildAccessors();
             this._rebuildTextureInfo();
-            this._resolve( new Content( this._scenes, this._default_scene_index ) );
+            this._resolve( new Content( this, this._scenes, this._default_scene_index ) );
             this._settled = true;
         }
     }

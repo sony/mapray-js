@@ -1,4 +1,5 @@
 import Node from "./Node";
+import CommonData from "./CommonData";
 
 
 /**
@@ -22,17 +23,23 @@ class Scene {
         // glTF の scene オブジェクト
         const jscene = ctx.gjson.scenes[index];
 
+        this._commonData = new CommonData( jscene, ctx );
+
         this._root_nodes = [];
-        this._name       = null;
 
         for ( const node_index of jscene.nodes || [] ) {
             this._root_nodes.push( new Node( ctx, node_index ) );
         }
-
-        if ( typeof jscene.name == 'string' ) {
-            this._name = jscene.name;
-        }
     }
+
+
+    /**
+     * glTF オブジェクトの共通データ
+     *
+     * @type {mapray.gltf.CommonData}
+     * @readonly
+     */
+    get commonData() { return this._commonData; }
 
 
     /**
@@ -55,7 +62,7 @@ class Scene {
      * @type {?string}
      * @readonly
      */
-    get name() { return this._name; }
+    get name() { return this._commonData.getName(); }
 
 }
 
