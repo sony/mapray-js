@@ -1,3 +1,4 @@
+import mapray from "../../../packages/mapray/dist/es/mapray.js";
 var GeoMath = mapray.GeoMath;
 
 

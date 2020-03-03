@@ -5,7 +5,7 @@ import resolve from 'rollup-plugin-node-resolve'
 import commonjs from 'rollup-plugin-commonjs'
 
 const extensions = ['**/*.vert', '**/*.frag', '**/*.glsl']
-var outdir = "dist/";
+var outdir = "dist/"
 
 export default [  
   // ES

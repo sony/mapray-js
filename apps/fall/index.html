@@ -17,7 +17,7 @@
                 padding: 0;">JavaScriptが無効になっています。MaprayのWebサイトを正しく表示するためにはJavaScriptを有効にして下さい。</p>
       </div>
     </noscript>
-    <link rel='stylesheet' href='../dist/mapray.css'/>
+    <link rel='stylesheet' href="./../../packages/mapray/dist/mapray.css"/>
     <style>
       #mapray-container {
         width: 98%;
@@ -41,11 +41,10 @@
   </head>
   <body>
     <div>
-      <input type="button" value="start" onclick="startApp('mapray-container');"/>
+      <input type="button" value="start" onclick="window.startApp('mapray-container');"/>
     </div>
     <div id="mapray-container">
     </div>
   </body>
-  <script type="text/javascript" src="../build/mapray.js"></script>
-  <script type="text/javascript" src="../build/fall.js"></script>
+  <script type="text/javascript" src="./dist/bundle.js"></script>
 </html>

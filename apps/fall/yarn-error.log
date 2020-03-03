@@ -1,0 +1,47 @@
+Arguments: 
+  /usr/local/Cellar/node/13.8.0/bin/node /usr/local/Cellar/yarn/1.22.0/libexec/bin/yarn.js add -D @babel/core @babel/preset-env @babel-loader rollup rollup-plugin-babel rollup-plugin-terser
+
+PATH: 
+  /Users/daisuke/.rbenv/shims:/Users/daisuke/.rbenv/shims:/Users/daisuke/.pyenv/shims:/usr/local/bin:/usr/bin:/usr/local/go/bin:/Users/daisuke/go/bin:/Users/daisuke/.nodebrew/current/bin:/usr/local/apache-maven-3.3.9/bin:/Users/daisuke/gcp/google-cloud-sdk/platform/google_appengine/:/Users/daisuke/.pyenv/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/go/bin:/Users/daisuke/gcp/google-cloud-sdk/bin:/Users/daisuke/.rbenv/shims:/Users/daisuke/.pyenv/shims:/Users/daisuke/go/bin:/Users/daisuke/.nodebrew/current/bin:/usr/local/apache-maven-3.3.9/bin:/Users/daisuke/gcp/google-cloud-sdk/platform/google_appengine/:/Users/daisuke/.pyenv/bin
+
+Yarn version: 
+  1.22.0
+
+Node version: 
+  13.8.0
+
+Platform: 
+  darwin x64
+
+Trace: 
+  Error: https://registry.yarnpkg.com/@babel-loader: Request "https://registry.yarnpkg.com/@babel-loader" returned a 405
+      at Request.params.callback [as _callback] (/usr/local/Cellar/yarn/1.22.0/libexec/lib/cli.js:66984:18)
+      at Request.self.callback (/usr/local/Cellar/yarn/1.22.0/libexec/lib/cli.js:140727:22)
+      at Request.emit (events.js:321:20)
+      at Request.<anonymous> (/usr/local/Cellar/yarn/1.22.0/libexec/lib/cli.js:141699:10)
+      at Request.emit (events.js:321:20)
+      at IncomingMessage.<anonymous> (/usr/local/Cellar/yarn/1.22.0/libexec/lib/cli.js:141621:12)
+      at Object.onceWrapper (events.js:427:28)
+      at IncomingMessage.emit (events.js:333:22)
+      at endReadableNT (_stream_readable.js:1201:12)
+      at processTicksAndRejections (internal/process/task_queues.js:84:21)
+
+npm manifest: 
+  {
+      "name": "fall",
+      "version": "0.0.0",
+      "license": "MIT",
+      "scripts": {
+        "start": "roll -c -w",
+        "start-local": "webpack-dev-server --env.local --progress --hot --open",
+        "build": "webpack -p"
+      },
+      "devDependencies": {
+      }
+    }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile

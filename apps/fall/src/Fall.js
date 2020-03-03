@@ -1,3 +1,4 @@
+import mapray from "../../../packages/mapray/dist/es/mapray.js";
 import FallRenderCallback from "./FallRenderCallback";
 
 
@@ -24,7 +25,6 @@ class Fall {
             link: "http://maps.gsi.go.jp/development/ichiran.html"
         });                                   
     }
-
 
     /**
      * アプリを停止してから削除する。
