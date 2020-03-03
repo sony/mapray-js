@@ -32,6 +32,7 @@ class Context {
         this._resolve  = null;  // Promise の resolve() 関数
         this._reject   = null;  // Promise の reject() 関数
 
+        this._used_extensions     = new Set();  // コンテンツが使用する拡張機能名の集合
         this._scenes              = [];
         this._default_scene_index = -1;
 
@@ -72,6 +73,7 @@ class Context {
                 }
             }
 
+            this._loadExtensionsUsed();
             this._loadScenes();
             this._loadDefaultSceneIndex();
             this._onFinishLoadBody();
@@ -143,6 +145,20 @@ class Context {
 
 
     /**
+     * @summary コンテンツが使用する拡張機能を読み込む
+     *
+     * @desc
+     * <p>extensionsUsed プロパティを読み込み this._used_extensions を設定する。</p>
+     *
+     * @private
+     */
+    _loadExtensionsUsed()
+    {
+        this._used_extensions = new Set( this._gjson.extensionsUsed || [] );
+    }
+
+
+    /**
      * @summary すべてのシーンを読み込む
      *
      * <p>シーンを読み込み、オブジェクトを this._scenes の配列に設定する。</p>
@@ -183,6 +199,31 @@ class Context {
      * @readonly
      */
     get gjson() { return this._gjson; }
+
+
+    /**
+     * @summary 拡張機能の抽出
+     *
+     * @desc
+     * <p>拡張機能固有オブジェクト extensions から extensionsUsed
+     *    に存在するものだけを抽出する。</p>
+     *
+     * @param {object} extensions
+     *
+     * @return {object}
+     */
+    extractUsedExtensions( extensions )
+    {
+        let dict = {};
+
+        for ( let key in extensions ) {
+            if ( this._used_extensions.has( key ) ) {
+                dict[key] = extensions[key];
+            }
+        }
+
+        return dict;
+    }
 
 
     /**
