@@ -14,6 +14,9 @@ main()
 {
     gl_Position = u_obj_to_clip * a_position;
 
-    v_normal   =  normalize( vec3( u_obj_to_view * vec4( a_normal, 0.0 ) ) );  // 法線 (視点座標系)
+#ifndef UNLIT
+    v_normal = normalize( vec3( u_obj_to_view * vec4( a_normal, 0.0 ) ) );  // 法線 (視点座標系)
+#endif
+
     v_texcoord = a_texcoord;
 }
