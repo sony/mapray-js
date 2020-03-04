@@ -72,7 +72,7 @@ class ModelContainer {
     static
     getSupportedExtensions_glTF()
     {
-        return [];
+        return ["KHR_materials_unlit"];
     }
 
 
@@ -438,14 +438,25 @@ class Builder {
      */
     _createMaterial( iprim )
     {
-        var scene = this._mr_scene;
+        // キャッシュの場所とオプションを決定
+        let cache_suffix = "basic";
+        let options      = {};
 
-        if ( !scene._ModelEntity_model_material ) {
-            // scene にマテリアルをキャッシュ
-            scene._ModelEntity_model_material = new ModelMaterial( scene.glenv );
+        if ( iprim.material && iprim.material.commonData.getExtensions( "KHR_materials_unlit" ) ) {
+            cache_suffix     = "unlit";
+            options.is_unlit = true;
         }
 
-        return scene._ModelEntity_model_material;
+        // マテリアルのインスタンスを取得
+        const scene    = this._mr_scene;
+        const cache_id = "_ModelEntity_model_material_" + cache_suffix;
+
+        if ( !scene[cache_id] ) {
+            // scene にマテリアルをキャッシュ
+            scene[cache_id] = new ModelMaterial( scene.glenv, options );
+        }
+
+        return scene[cache_id];
     }
 
 
