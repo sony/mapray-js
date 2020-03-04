@@ -61,6 +61,22 @@ class ModelContainer {
 
 
     /**
+     * @summary 対応可能な glTF 拡張機能の配列を取得
+     *
+     * @desc
+     * <p>例えば {@link mapray.gltf.Tools.load} の supported_extensions オプションのために使用する。</p>
+     * <p>glTF のコンテンツがこれらの拡張機能だけで対応できないとき、読み込みに失敗することがある。</p>
+     *
+     * @return {string[]}
+     */
+    static
+    getSupportedExtensions_glTF()
+    {
+        return [];
+    }
+
+
+    /**
      * @summary オフセット用の変換行列を設定
      *
      * @param {mapray.Matrix} matrix  モデルの頂点座標を変換する変換行列
