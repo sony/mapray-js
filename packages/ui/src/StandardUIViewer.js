@@ -1,4 +1,5 @@
 import mapray from '@mapray/mapray-js-dummy';
+// import mapray from "../../../packages/mapray/dist/es/mapray.js";
 
 var GeoMath = mapray.GeoMath;
 var GeoPoint = mapray.GeoPoint;
@@ -113,6 +114,8 @@ class StandardUIViewer extends mapray.RenderCallback
 
         // イベントリスナーの追加
         this._addEventListener();
+        
+        return this._viewer;
     }
 
     /**
