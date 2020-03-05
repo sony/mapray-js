@@ -19,7 +19,12 @@ export default [
   // ES
   {
     input: 'src/index.js',
-    output: { file: outdir+'es/maprayui.js', format: 'es', indent: false },
+    output: { 
+      file: outdir+'es/maprayui.js', 
+      format: 'es', 
+      indent: false,
+      sourcemap: 'inline'
+    },
     external: makeExternalPredicate([
       ...Object.keys(pkg.dependencies || {}),
       ...Object.keys(pkg.peerDependencies || {})

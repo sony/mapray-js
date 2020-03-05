@@ -1,7 +1,7 @@
-//import mapray from "../../../packages/mapray/dist/es/mapray.js";
-//import maprayui from "../../../packages/ui/dist/es/maprayui.js";
-import mapray from '@mapray/mapray-js-dummy';
-import maprayui from '@mapray/ui-dummy';
+import mapray from "../../../packages/mapray/dist/es/mapray.js";
+import maprayui from "../../../packages/ui/dist/es/maprayui.js";
+//import mapray from '@mapray/mapray-js-dummy';
+//import maprayui from '@mapray/ui-dummy';
 
 import BingMapsImageProvider from "./BingMapsImageProvider"
 import StatusBar from "./StatusBar";
