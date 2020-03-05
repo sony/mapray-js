@@ -21,5 +21,9 @@
     "rollup-plugin-resolve": "^0.0.1-predev.1",
     "rollup-plugin-terser": "^5.2.0",
     "st": "^2.0.0"
+  },
+  "dependencies": {
+    "@mapray/mapray-js-dummy": "^0.0.7",
+    "@mapray/ui-dummy": "^0.0.7"
   }
 }

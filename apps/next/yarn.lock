@@ -710,6 +710,16 @@
     lodash "^4.17.13"
     to-fast-properties "^2.0.0"
 
+"@mapray/mapray-js-dummy@^0.0.7":
+  version "0.0.7"
+  resolved "https://registry.yarnpkg.com/@mapray/mapray-js-dummy/-/mapray-js-dummy-0.0.7.tgz#e5c5e0376aeb0526b13f59501271b0888910c90c"
+  integrity sha512-S9BYQjAJLLxww3tB7XWhX+rLv9TSc/A0jBbre6wz987snZCyEtKv7HoVf1vw/6o99HeM/EF8u66C/Fhkkg2MsQ==
+
+"@mapray/ui-dummy@^0.0.7":
+  version "0.0.7"
+  resolved "https://registry.yarnpkg.com/@mapray/ui-dummy/-/ui-dummy-0.0.7.tgz#96767c1910e6a0bfaba554baf8bc867aa53d1c65"
+  integrity sha512-mGyhNhxd0OVeOk3BV+APzitBap4GlOjUPuMPilf02drK2QmKMYAtjhiGbzve3UgjQ0wnn96zx67lYEQw4NsZQw==
+
 "@types/estree@*":
   version "0.0.42"
   resolved "https://registry.yarnpkg.com/@types/estree/-/estree-0.0.42.tgz#8d0c1f480339efedb3e46070e22dd63e0430dd11"

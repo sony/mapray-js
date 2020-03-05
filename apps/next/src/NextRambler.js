@@ -1,9 +1,13 @@
-import mapray from "../../../packages/mapray/dist/es/mapray.js";
-import maprayui from "../../../packages/ui/dist/es/maprayui.js";
+//import mapray from "../../../packages/mapray/dist/es/mapray.js";
+//import maprayui from "../../../packages/ui/dist/es/maprayui.js";
+import mapray from '@mapray/mapray-js-dummy';
+import maprayui from '@mapray/ui-dummy';
+
 import BingMapsImageProvider from "./BingMapsImageProvider"
 import StatusBar from "./StatusBar";
+import Commander from "./Commander";
 
-const accessToken = "MTU0ODcyODQ5OTczOTBjZmVmZjBjY2VhYmEyNTE3";
+const accessToken = "<your access token here>";
 
 const NATS_JSON_URL = "https://firebasestorage.googleapis.com/v0/b/ino-sandbox.appspot.com/o/inousample%2FthreeDModel%2FNATS%2FNATS.json?alt=media&token=081ad161-ad70-449e-b279-c2ea2beb109b";
 const NATS_MARKER_JSON_URL = "https://firebasestorage.googleapis.com/v0/b/ino-sandbox.appspot.com/o/inousample%2Fmarker%2FDemoNATS.json?alt=media&token=ba0298fb-042a-4ae0-b0fd-3427b457cf8a";
@@ -22,12 +26,18 @@ class NextRambler extends maprayui.StandardUIViewer {
      */
     constructor( container )
     {
-        super( container, accessToken, { debug_stats: new mapray.DebugStats() } );
+        super( container, accessToken, { 
+            debug_stats: new mapray.DebugStats()/*, 
+           image_provider: new BingMapsImageProvider( {
+                uriScheme: "https",
+                key: "<your Bing Maps Key here>"
+            } )*/
+        } 
+        );
 
-        this.addLayer( { image_provider: this._createLayerImageProvider(), opacity: 1.0 } );
-
+        // this.addLayer( { image_provider: this._createLayerImageProvider(), opacity: 1.0 } );
+        this._commander = new Commander( this._viewer );
         this._statusbar = new StatusBar( this._viewer, DEM_ATTRIBUTE + ", " + GSI_ATTRIBUTE );
-
         this._container = container;
 
         // カメラの初期設定
@@ -57,8 +67,6 @@ class NextRambler extends maprayui.StandardUIViewer {
         // コンテンツ制御
         this._isChangedGIS = false;
         this._isChangedBing = false;
-        this._isChangedRenderMode = false;
-        this._isChangedRenderMode = false;
         this._layerUpParameter = 0;
 
         // DEMOコンテンツ
@@ -73,6 +81,7 @@ class NextRambler extends maprayui.StandardUIViewer {
     _closeViewer() 
     {
         this.destroy();
+        this._commander = null;
         this._statusBar = null;
         this._isGIS = false;
         this._layer_transparency = 10;
@@ -156,10 +165,16 @@ class NextRambler extends maprayui.StandardUIViewer {
 
     onUpdateFrame( delta_time )
     {
+        if (!this._viewer) {
+            return;
+        }
         super.onUpdateFrame( delta_time );
 
+        var layer = this._commander.getLayer();
+
+
         this._updateRenderMode();
-        this._updateLayerParams();
+        this._updateLayerParams(layer);
         this._updateGISMode();
         this._updateBingLayerParams();
 
@@ -177,41 +192,14 @@ class NextRambler extends maprayui.StandardUIViewer {
         statusbar.setFovAngle( this._camera_parameter.fov );
         statusbar.updateElements( delta_time );
         statusbar.setLayer( this._layer_transparency );
+
+        this._commander.endFrame();
     }
 
     _onKeyDown( event )
     {
         super._onKeyDown( event );
-
-        switch ( event.key )
-        {
-            // [m] レンダリングモードの変更
-            case "m": 
-            case "M":
-                this._isChangedRenderMode = true;
-                break;
-
-            // [>] 透過率UP
-            case ">":
-                this._layerUpParameter = 1;
-                break;
-
-            // [>] 透過率DOWN
-            case "<":
-                this._layerUpParameter = -1;
-                break;
-
-            // [g] GISモードの変更
-            case "g": case "G":
-                this._isChangedGIS = true;
-                break;
-
-            
-            // [b] Bingモードの変更
-            case "b": case "B":
-                this._isChangedBing = true;
-                break;
-        }
+        this._commander.OnKeyDown( event );
     }
 
     /**
@@ -220,68 +208,77 @@ class NextRambler extends maprayui.StandardUIViewer {
      */
     _updateRenderMode()
     {
-        if ( this._isChangedRenderMode )
-        {
+        if ( this._commander.isRenderModeChanged() ) {
             var RenderMode = mapray.Viewer.RenderMode;
-            var viewer = this._viewer;
-            var rmode = viewer.render_mode;
-            if ( rmode === RenderMode.SURFACE )
-            {
+            var     viewer = this._viewer;
+            var      rmode = viewer.render_mode;
+            if ( rmode === RenderMode.SURFACE ) {
                 viewer.render_mode = RenderMode.WIREFRAME;
             }
-            else
-            {
+            else {
                 viewer.render_mode = RenderMode.SURFACE;
             }
-
-            this._isChangedRenderMode = false;
         }
     }
 
     /**
      * @summary Layerパラメータ更新
      * @desc
+     * <p>入力パラメータ</p>
+     * <pre>
+     * this._layer  Layer
+     * layer      layer更新
+     * </pre>
+     * <p>出力パラメータ</p>
+     * <pre>
+     * this._fov  画角
+     * </pre>
+     * @param {number} value 増減値
      * @private
      */
-    _updateLayerParams()
+    _updateLayerParams(value)
     {
-        if ( this._layerUpParameter != 0 )
-        {
-            this._layer_transparency = this._layer_transparency + this._layerUpParameter;
-            if ( this._layer_transparency > 10 )
-            {
+        if ( value != 0 ){
+            this._layer_transparency = this._layer_transparency + value;
+            if ( this._layer_transparency > 10 ) {
                 this._layer_transparency = 10;
-            } else if ( this._layer_transparency < 0 )
-            {
+            } else if ( this._layer_transparency < 0 ) {
                 this._layer_transparency = 0;
             }
             var d = ( this._layer_transparency ) / 10.0;
-            if ( this._viewer.layers && this._viewer.layers.getLayer( 0 ) )
-            {
-                this._viewer.layers.getLayer( 0 ).setOpacity( d );
+            if (this._viewer.layers && this._viewer.layers.getLayer(0)) {
+                this._viewer.layers.getLayer(0).setOpacity(d);
             }
-
-            this._layerUpParameter = 0;
         }
     }
 
     _updateBingLayerParams()
     {
-        if ( this._isChangedBing )
-        {
-            if ( this._isBing )
-            {
+        if ( this._commander.isBingModeChanged() ) {
+            if ( this._isBing ) {
                 this._isBing = false;
-                this.createViewer( this._container, accessToken, { debug_stats: new mapray.DebugStats() } );
-                this._statusbar = new StatusBar( this._viewer, DEM_ATTRIBUTE + ", " + GSI_ATTRIBUTE );
-            } else
-            {
+                this._viewer = this.createViewer(
+                    this._container, 
+                    accessToken, 
+                    { 
+                        debug_stats: new mapray.DebugStats()                    
+                    } 
+                );
+                this._commander = new Commander( this._viewer );
+                this._statusbar = new StatusBar( this._viewer, DEM_ATTRIBUTE + ", " + GSI_ATTRIBUTE);
+            } else {
                 this._isBing = true;
-                this.createViewer( this._container, accessToken, { image_provider: this._createBingImageProvider(), debug_stats: new mapray.DebugStats() } );
-                this._statusbar = new StatusBar( this._viewer, DEM_ATTRIBUTE + ", " + BING_ATTRIBUTE );
+                this._viewer = this.createViewer(
+                    this._container, 
+                    accessToken, 
+                    { 
+                        debug_stats: new mapray.DebugStats(),
+                        image_provider: this._createBingImageProvider()
+                    } 
+                );
+                this._commander = new Commander( this._viewer );
+                this._statusbar = new StatusBar( this._viewer, DEM_ATTRIBUTE + ", " + BING_ATTRIBUTE);
             }
-
-            this._isChangedBing = false;
         }
     }
 
@@ -291,19 +288,14 @@ class NextRambler extends maprayui.StandardUIViewer {
      */
     _updateGISMode()
     {
-        if ( this._isChangedGIS )
-        {
-            if ( this._isGIS )
-            {
+        if ( this._commander.isGISModeChanged() ) {
+            if ( this._isGIS ) {
                 this._isGIS = false;
                 this._clearGISInfo();
-            } else
-            {
+            } else {
                 this._isGIS = true;
                 this._loadGISInfo();
             }
-
-            this._isChangedGIS = false;
         }
     }
 

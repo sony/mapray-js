@@ -12,11 +12,20 @@ if (process.env.MAPRAY_ACCESS_TOKEN)  {
     accessToken = JSON.stringify(process.env.MAPRAY_ACCESS_TOKEN)
 }
 
+let bingAccessToken = '"<your Bing Maps Key here>"'
+if (process.env.BINGMAP_ACCESS_TOKEN)  {
+    bingAccessToken = JSON.stringify(process.env.BINGMAP_ACCESS_TOKEN)
+}
+
 const getPluginsConfig = (prod) => {
     const params = [
         postcss(),
         replace({
             '"<your access token here>"': accessToken,
+            delimiters: ['', '']
+        }),
+        replace({
+            '"<your Bing Maps Key here>"': bingAccessToken,
             delimiters: ['', '']
         }),
         commonjs(),
@@ -50,7 +59,8 @@ export default () => {
         output: { 
             file: outdir+'bundle.js', 
             format: 'iife', 
-            indent: false
+            indent: false,
+            sourcemap: true
         },
         plugins: [
             postcss(),

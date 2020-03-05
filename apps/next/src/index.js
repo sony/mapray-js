@@ -1,5 +1,5 @@
 import '../../../packages/ui/dist/mapray.css';
-import AppClass from "./NextRambler";
+import App from './app';
 
 // 現在のアプリインスタンス
 var appInstance;
@@ -16,7 +16,7 @@ function startApp( container )
         appInstance.destroy();
         appInstance = null;
     }
-    appInstance = new AppClass( container );
+    appInstance = new App( container );
 }
 
 

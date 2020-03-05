@@ -1,4 +1,5 @@
-import mapray from "../../../packages/mapray/dist/es/mapray.js";
+//import mapray from "../../../packages/mapray/dist/es/mapray.js";
+import mapray from '@mapray/mapray-js-dummy';
 
 var ImageProvider = mapray.ImageProvider;
 var        Status = ImageProvider.Status;
