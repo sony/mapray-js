@@ -40,6 +40,9 @@ export default [
   {
     input: 'src/index.js',
     output: { file: outdir+'es/maprayui.mjs', format: 'es', indent: false },
+    external: makeExternalPredicate([
+      ...Object.keys(pkg.peerDependencies || {})
+    ]),
     plugins: [
       commonjs(),
       resolve(),

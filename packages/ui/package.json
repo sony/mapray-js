@@ -1,6 +1,6 @@
 {
   "name": "@mapray/ui-dummy",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "3D Rendering Engine for GIS",
   "keywords": [
     "3D",
@@ -63,12 +63,11 @@
     "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-terser": "^5.2.0",
     "webpack": "^4.41.6",
-    "webpack-cli": "^3.3.11",
-    "@mapray/mapray-js-dummy": "^0.0.5"
+    "webpack-cli": "^3.3.11"
   },
   "dependencies": {
   },
   "peerDependencies": {
-    "@mapray/mapray-js-dummy": "^0.0.5"
+    "@mapray/mapray-js-dummy": "^0.0.7"
   }
 }
