@@ -1,7 +1,11 @@
+import path from 'path'
 import { terser } from 'rollup-plugin-terser'
 import babel from 'rollup-plugin-babel'
 import replace from 'rollup-plugin-replace'
 import postcss from 'rollup-plugin-postcss'
+import resolve from 'rollup-plugin-node-resolve'
+import commonjs from 'rollup-plugin-commonjs'
+import { addLocalSettings } from '../rollup.config.local.js'
 
 var outdir = "dist/"
 
@@ -17,6 +21,8 @@ const getPluginsConfig = (prod) => {
             '"<your access token here>"': accessToken,
             delimiters: ['', '']
         }),
+        commonjs(),
+        resolve(),
         babel({
             exclude: 'node_modules/**'
         })
@@ -39,17 +45,32 @@ const getPluginsConfig = (prod) => {
     return params;
 }
 
-
-export default () => {
+const config = (build) => {
     const bundle = {
         input: 'src/index.js',
         output: { 
             file: outdir+'bundle.js', 
             format: 'iife', 
-            indent: false
+            indent: false,
+            sourcemap: true
         }
     }
-    bundle.plugins = getPluginsConfig(process.env.BUILD)
+    bundle.plugins = getPluginsConfig(build)
 
     return bundle
+}
+
+// get the setting when developing in local environment
+const loadLocalSetting = (env) => {
+    const appDir = path.join(__dirname, '../')
+    let bundle = config(env.BUILD)
+    bundle = addLocalSettings(env, appDir, bundle)
+    return bundle
+}
+
+export default () => {
+    if (process.env.local) {
+        return loadLocalSetting(process.env)
+    }
+    return config(process.env.BUILD);
 }
