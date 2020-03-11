@@ -8,6 +8,7 @@ import AltitudeMode from "./AltitudeMode";
 import EntityRegion from "./EntityRegion";
 import AreaUtil from "./AreaUtil";
 import QAreaManager from "./QAreaManager";
+import Type from "./animation/Type";
 
 
 /**
@@ -42,6 +43,8 @@ class MarkerLineEntity extends Entity {
             this._producer = new PrimitiveProducer( this );
             this._is_flake_mode = false;
         }
+
+        this._setupAnimationBindingBlock();
 
         // 生成情報から設定
         if ( opts && opts.json ) {
@@ -85,14 +88,51 @@ class MarkerLineEntity extends Entity {
 
 
     /**
+     * アニメーションの BindingBlock を初期化
+     *
+     * @private
+     */
+    _setupAnimationBindingBlock()
+    {
+        const block = this.animation;  // 実体は EasyBindingBlock
+
+        const number  = Type.find( "number"  );
+        const vector3 = Type.find( "vector3" );
+
+        // パラメータ名: width
+        // パラメータ型: number
+        //   線の太さ
+        block.addEntry( "width", [number], null, value => {
+            this.setLineWidth( value );
+        } );
+        
+        // パラメータ名: color
+        // パラメータ型: vector3
+        //   色
+        block.addEntry( "color", [vector3], null, value => {
+            this.setColor( value );
+        } );
+        
+        // パラメータ名: opacity
+        // パラメータ型: number
+        //   不透明度
+        block.addEntry( "opacity", [number], null, value => {
+            this.setOpacity( value );
+        } );        
+    }
+
+
+    /**
      * @summary 線の太さを設定
      *
      * @param {number} width  線の太さ (画素単位)
      */
     setLineWidth( width )
     {
-        this._width = width;
-        this._producer.onChangeProperty();
+        if ( this._width !== width ) {
+            this._width = width;
+            this._producer.onChangeProperty();
+        }
     }
 
 
@@ -103,8 +143,13 @@ class MarkerLineEntity extends Entity {
      */
     setColor( color )
     {
-        GeoMath.copyVector3( color, this._color );
-        this._producer.onChangeProperty();
+        if ( this._color[0] !== color[0] ||
+             this._color[1] !== color[1] ||
+             this._color[2] !== color[2] ) {
+            // 位置が変更された
+            GeoMath.copyVector3( color, this._color );
+            this._producer.onChangeProperty();
+        }
     }
 
 
@@ -115,10 +160,11 @@ class MarkerLineEntity extends Entity {
      */
     setOpacity( opacity )
     {
-        this._opacity = opacity;
-        this._producer.onChangeProperty();
+        if ( this._opacity !== opacity ) {
+            this._opacity = opacity;
+            this._producer.onChangeProperty();
+        }
     }
-
 
     /**
      * @summary 複数の頂点を追加

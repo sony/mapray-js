@@ -10,6 +10,8 @@ import AltitudeMode from "./AltitudeMode";
 import EntityRegion from "./EntityRegion";
 import Dom from "./util/Dom";
 import Color from "./util/Color";
+import EasyBindingBlock from "./animation/EasyBindingBlock";
+import Type from "./animation/Type";
 
 /**
  * @summary テキストエンティティ
@@ -46,6 +48,9 @@ class TextEntity extends Entity {
             enable_bg: false
         };
 
+        this._animation.addDescendantUnbinder( () => { this._unbindDescendantAnimations(); } );
+        this._setupAnimationBindingBlock();
+
         // 生成情報から設定
         if ( opts && opts.json ) {
             this._setupByJson( opts.json );
@@ -68,6 +73,77 @@ class TextEntity extends Entity {
     onChangeAltitudeMode( prev_mode )
     {
         this._primitive_producer.onChangeAltitudeMode();
+    }
+
+
+    /**
+     * EasyBindingBlock.DescendantUnbinder 処理
+     *
+     * @private
+     */
+    _unbindDescendantAnimations()
+    {
+        // すべてのエントリーを解除
+        for ( let entry of this._entries ) {
+            entry.animation.unbindAllRecursively();
+        }
+    }
+
+
+    /**
+     * アニメーションの BindingBlock を初期化
+     *
+     * @private
+     */
+    _setupAnimationBindingBlock()
+    {
+        const block = this.animation;  // 実体は EasyBindingBlock
+
+        const number  = Type.find( "number"  );
+        const string  = Type.find( "string"  );
+        const vector3 = Type.find( "vector3" );
+        
+        // パラメータ名: font_style
+        // パラメータ型: string
+        //   フォントスタイル
+        block.addEntry( "font_style", [string], null, value => {
+            this.setFontStyle( value );
+        } );
+        
+        // パラメータ名: font_weight
+        // パラメータ型: string
+        //   フォントの太さ
+        block.addEntry( "font_weight", [string], null, value => {
+            this.setFontWeight( value );
+        } );
+        
+        // パラメータ名: font_size
+        // パラメータ型: number
+        //   フォントの大きさ
+        block.addEntry( "font_size", [number], null, value => {
+            this.setFontSize( value );
+        } );
+        
+        // パラメータ名: color
+        // パラメータ型: vector3
+        //   テキストの色
+        block.addEntry( "color", [vector3], null, value => {
+            this.setColor( value );
+        } );
+        
+        // パラメータ名: stroke_color
+        // パラメータ型: vector3
+        //   縁の色
+        block.addEntry( "stroke_color", [vector3], null, value => {
+            this.setStrokeColor( value );
+        } );
+        
+        // パラメータ名: stroke_width
+        // パラメータ型: number
+        //   縁の線幅
+        block.addEntry( "stroke_width", [number], null, value => {
+            this.setStrokeLineWidth( value );
+        } );
     }
 
 
@@ -158,8 +234,8 @@ class TextEntity extends Entity {
         this._setColorProperty( "bg_color", color );
     }
 
-        /**
-     * @summary テキスト縁を有効にするかどうか
+    /**
+     * @summary テキスト背景を有効にするかどうか
      * @param {boolean} enable  trueなら有効
      */
     setEnableBackground( enable )
@@ -182,12 +258,16 @@ class TextEntity extends Entity {
      * @param {number}         [props.stroke_width] テキスト縁の幅
      * @param {mapray.Color}   [props.bg_color]     テキスト背景色
      * @param {boolean}        [props.enable_stroke] テキストの縁取りを有効にするか
+     * @param {string}         [props.id]            Entryを識別するID
+     * @return {mapray.TextEntity.Entry}             追加したEntry
      */
     addText( text, position, props )
     {
-        this._entries.push( new Entry( this, text, position, props ) );
+        var entry = new Entry( this, text, position, props );
+        this._entries.push( entry );
         this._primitive_producer = new PrimitiveProducer( this );
         this._primitive_producer.onAddTextEntry();
+        return entry;
     }
 
 
@@ -277,6 +357,16 @@ class TextEntity extends Entity {
         return this._text_parent_props["enable_stroke"];
     }
 
+    
+    /**
+     * @summary IDでEntryを取得
+     * @param {string}  id  ID
+     * @return {mapray.TextEntity.Entry}  IDが一致するEntry（無ければundefined）
+     */
+    getEntry( id )
+    {
+        return this._entries.find((entry) => entry.id === id);
+    }
 }
 
 
@@ -377,6 +467,15 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
      * @summary 親プロパティが変更されたことを通知
      */
     onChangeParentProperty()
+    {
+        this._dirty = true;
+    }
+
+
+    /**
+     * @summary 子プロパティが変更されたことを通知
+     */
+    onChangeChildProperty()
     {
         this._dirty = true;
     }
@@ -648,8 +747,9 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
 /**
  * @summary テキスト要素
+ * @hideconstructor
  * @memberof mapray.TextEntity
- * @private
+ * @public
  */
 class Entry {
 
@@ -666,6 +766,7 @@ class Entry {
      * @param {mapray.Color}      [props.stroke_color] テキスト縁の色
      * @param {number}            [props.stroke_width] テキスト縁の幅
      * @param {number}            [props.enable_stroke] テキストの縁取りを有効にするか
+     * @param {string}            [props.id]            Entryを識別するID
      */
     constructor( owner, text, position, props )
     {
@@ -673,18 +774,23 @@ class Entry {
         this._text     = text;
         this._position = position.clone();
 
+        // animation.BindingBlock
+        this._animation = new EasyBindingBlock();
+        
+        this._setupAnimationBindingBlock();
+
         this._props = Object.assign( {}, props );   // props の複製
         this._copyColorProperty( "color" );         // deep copy
         this._copyColorProperty( "stroke_color" );  // deep copy
         this._copyColorProperty( "bg_color" );      // deep copy
-
     }
 
-
+    
     /**
      * @summary テキスト
      * @type {string}
      * @readonly
+     * @package
      */
     get text()
     {
@@ -696,17 +802,30 @@ class Entry {
      * @summary 位置
      * @type {mapray.GeoPoint}
      * @readonly
+     * @package
      */
     get position()
     {
         return this._position;
     }
 
+    
+    /**
+     * @summary ID
+     * @type {string}
+     * @readonly
+     */
+    get id()
+    {
+        return this._props.hasOwnProperty( "id" ) ? this._props.id : "";
+    }
+    
 
     /**
      * @summary フォントサイズ (Pixels)
      * @type {number}
      * @readonly
+     * @package
      */
     get size()
     {
@@ -720,6 +839,7 @@ class Entry {
      * @summary テキストの色
      * @type {mapray.Vector3}
      * @readonly
+     * @package
      */
     get color()
     {
@@ -733,6 +853,7 @@ class Entry {
      * @summary フォント
      * @type {string}
      * @readonly
+     * @package
      * @see https://developer.mozilla.org/ja/docs/Web/CSS/font
      */
     get font()
@@ -752,6 +873,7 @@ class Entry {
      * @summary テキスト縁の色
      * @type {mapray.Color}
      * @readonly
+     * @package
      */
     get stroke_color()
     {
@@ -764,6 +886,7 @@ class Entry {
      * @summary 縁の幅 (Pixels)
      * @type {number}
      * @readonly
+     * @package
      */
     get stroke_width()
     {
@@ -776,6 +899,7 @@ class Entry {
      * @summary 縁を描画するか
      * @type {boolean}
      * @readonly
+     * @package
      */
     get enable_stroke()
     {
@@ -788,6 +912,7 @@ class Entry {
      * @summary 背景色
      * @type {mapray.Color}
      * @readonly
+     * @package
      */
     get bg_color()
     {
@@ -800,6 +925,7 @@ class Entry {
      * @summary 背景描画するか
      * @type {boolean}
      * @readonly
+     * @package
      */
     get enable_background()
     {
@@ -807,6 +933,191 @@ class Entry {
         var parent = this._owner._text_parent_props;
         return parent.enable_bg;
     }
+
+    
+    /**
+     * @summary アニメーションパラメータ設定
+     *
+     * @type {mapray.animation.BindingBlock}
+     * @readonly
+     */
+    get animation() { return this._animation; }
+    
+    
+    /**
+     * アニメーションの BindingBlock を初期化
+     *
+     * @private
+     */
+    _setupAnimationBindingBlock()
+    {
+        const block = this.animation;  // 実体は EasyBindingBlock
+
+        const number  = Type.find( "number"  );
+        const string  = Type.find( "string"  );
+        const vector3 = Type.find( "vector3" );
+        
+        // パラメータ名: position
+        // パラメータ型: vector3
+        //   ベクトルの要素が longitude, latitude, altitude 順であると解釈
+        const position_temp = new GeoPoint();
+
+        block.addEntry( "position", [vector3], null, value => {
+            position_temp.setFromArray( value );  // Vector3 -> GeoPoint
+            this.setPosition( position_temp );
+        } );
+
+        // パラメータ名: font_style
+        // パラメータ型: string
+        //   フォントスタイル
+        block.addEntry( "font_style", [string], null, value => {
+            this.setFontStyle( value );
+        } );
+        
+        // パラメータ名: font_weight
+        // パラメータ型: string
+        //   フォントの太さ
+        block.addEntry( "font_weight", [string], null, value => {
+            this.setFontWeight( value );
+        } );
+        
+        // パラメータ名: font_size
+        // パラメータ型: number
+        //   フォントの大きさ
+        block.addEntry( "font_size", [number], null, value => {
+            this.setFontSize( value );
+        } );
+        
+        // パラメータ名: color
+        // パラメータ型: vector3
+        //   テキストの色
+        block.addEntry( "color", [vector3], null, value => {
+            this.setColor( value );
+        } );
+        
+        // パラメータ名: stroke_color
+        // パラメータ型: vector3
+        //   縁の色
+        block.addEntry( "stroke_color", [vector3], null, value => {
+            this.setStrokeColor( value );
+        } );
+        
+        // パラメータ名: stroke_width
+        // パラメータ型: number
+        //   縁の線幅
+        block.addEntry( "stroke_width", [number], null, value => {
+            this.setStrokeLineWidth( value );
+        } );
+
+        // パラメータ名: text
+        // パラメータ型: string
+        //   テキスト
+        block.addEntry( "text", [string], null, value => {
+            this.setText( value );
+        } );        
+    }
+
+
+    /**
+     * @summary テキスト原点位置を設定
+     *
+     * @param {mapray.GeoPoint} position  テキスト原点の位置
+     */
+    setPosition( position )
+    {
+        if ( this._position.longitude !== position.longitude ||
+             this._position.latitude  !== position.latitude  ||
+             this._position.altitude  !== position.altitude ) {
+            // 位置が変更された
+            this._position.assign( position );
+            this._owner.getPrimitiveProducer().onChangeChildProperty();
+        }
+    }
+
+
+    /**
+     * @summary フォントスタイルを設定
+     * @param {string} style  フォントスタイル ("normal" | "italic" | "oblique")
+     */
+    setFontStyle( style )
+    {
+        this._setValueProperty( "font_style", style );
+    }
+
+
+    /**
+     * @summary フォントの太さを設定
+     * @param {string} weight  フォントの太さ ("normal" | "bold")
+     */
+    setFontWeight( weight )
+    {
+        this._setValueProperty( "font_weight", weight );
+    }
+
+
+    /**
+     * @summary フォントの大きさを設定
+     * @param {number} size  フォントの大きさ (Pixels)
+     */
+    setFontSize( size )
+    {
+        this._setValueProperty( "font_size", size );
+    }
+
+
+    /**
+     * @summary テキストの色を設定
+     * @param {mapray.Vector3} color  テキストの色
+     */
+    setColor( color )
+    {
+        this._setColorProperty( "color", color );
+    }
+
+
+    /**
+     * @summary テキスト縁の色を設定
+     * @param {mapray.Vector3} color  縁の色
+     */
+    setStrokeColor( color )
+    {
+        this._setColorProperty( "stroke_color", color );
+    }
+
+
+    /**
+     * @summary テキスト縁の太さを設定
+     * @param {mapray.number} width  縁の線幅
+     */
+    setStrokeLineWidth( width )
+    {
+        this._setValueProperty( "stroke_width", width );
+    }
+
+
+    /**
+     * @summary テキスト縁を有効にするかどうか
+     * @param {boolean} enable  trueなら有効
+     */
+    setEnableStroke( enable )
+    {
+        this._setValueProperty( "enable_stroke", enable );
+        this._owner._primitive_producer = new PrimitiveProducer( this._owner );
+    }
+
+
+    /**
+     * @summary テキストを設定
+     * @param {string} text  テキスト
+     */
+    setText( text )
+    {
+        if ( this._text !== text ) {
+            this._text = text;
+            this._owner.getPrimitiveProducer().onChangeChildProperty();
+        }
+    }
+    
 
     /**
      * @private
@@ -819,7 +1130,42 @@ class Entry {
         }
     }
 
+
+    /**
+     * @private
+     */
+    _setValueProperty( name, value )
+    {
+        var props = this._props;
+        if ( props[name] != value ) {
+            props[name] = value;
+            this._owner.getPrimitiveProducer().onChangeChildProperty();
+        }
+    }
+
+
+    /**
+     * @private
+     */
+    _setColorProperty( name, value )
+    {
+        var dst = this._props[name];
+        if ( dst )
+        {
+            if ( dst.r != value[0] || dst.g != value[1] || dst.b != value[2] ) {
+                Color.setOpacityColor( value, dst );
+                this._owner.getPrimitiveProducer().onChangeChildProperty();
+            }
+        }
+        else
+        {
+            this._props[name] = Color.generateOpacityColor( value );
+            this._owner.getPrimitiveProducer().onChangeChildProperty();
+        }
+    }
 }
+
+TextEntity.Entry = Entry;
 
 
 /**

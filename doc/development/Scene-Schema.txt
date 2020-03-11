@@ -83,6 +83,7 @@ start => <SCENE>
   stroke_width?: Number
   enable_stroke?: Boolean
   bg_color?:  <PARAM-VEC3>
+  id?: <ID>
 }
 
 <BOUNDARY> => {

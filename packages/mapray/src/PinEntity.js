@@ -9,6 +9,9 @@ import AltitudeMode from "./AltitudeMode";
 import EntityRegion from "./EntityRegion";
 import IconLoader, { URLTemplateIconLoader, TextIconLoader } from "./IconLoader";
 import Dom from "./util/Dom";
+import EasyBindingBlock from "./animation/EasyBindingBlock";
+import Type from "./animation/Type";
+import AnimUtil from "./animation/AnimUtil";
 
 /**
  * @summary ピンエンティティ
@@ -56,6 +59,9 @@ class PinEntity extends Entity {
         // Entity.PrimitiveProducer インスタンス
         this._primitive_producer = new PrimitiveProducer( this );
 
+        this._animation.addDescendantUnbinder( () => { this._unbindDescendantAnimations(); } );
+        this._setupAnimationBindingBlock();
+
         // 生成情報から設定
         if ( opts && opts.json ) {
             this._setupByJson( opts.json );
@@ -78,6 +84,72 @@ class PinEntity extends Entity {
     onChangeAltitudeMode( prev_mode )
     {
         this._primitive_producer.onChangeAltitudeMode();
+    }
+
+
+    /**
+     * EasyBindingBlock.DescendantUnbinder 処理
+     *
+     * @private
+     */
+    _unbindDescendantAnimations()
+    {
+        // すべてのエントリーを解除
+        for ( let entry of this._entries ) {
+            entry.animation.unbindAllRecursively();
+        }
+    }
+
+
+    /**
+     * アニメーションの BindingBlock を初期化
+     *
+     * @private
+     */
+    _setupAnimationBindingBlock()
+    {
+        const block = this.animation;  // 実体は EasyBindingBlock
+
+        const number  = Type.find( "number" );
+        const vector2 = Type.find( "vector2" );
+        const vector3 = Type.find( "vector3" );
+
+        // パラメータ名: fg_color
+        // パラメータ型: vector3
+        //   アイコンの色
+        block.addEntry( "fg_color", [vector3], null, value => {
+            this.setFGColor( value );
+        } );
+        
+        // パラメータ名: bg_color
+        // パラメータ型: vector3
+        //   アイコン背景の色
+        block.addEntry( "bg_color", [vector3], null, value => {
+            this.setBGColor( value );
+        } );
+
+        // パラメータ名: size
+        // パラメータ型: vector2 | number
+        //   型が vector2 のとき アイコンのピクセルサイズX, Y 順であると解釈
+        //   型が number のとき アイコンのピクセルサイズX, Y は同値
+        const size_temp = GeoMath.createVector2();
+        let   size_type;
+
+        let size_tsolver = curve => {
+            size_type = AnimUtil.findFirstTypeSupported( curve, [vector2, number] );
+            return size_type;
+        };
+
+        block.addEntry( "size", [vector2, number], size_tsolver, value => {
+            if ( size_type === vector2 ) {
+                this.setSize( value );
+            }
+            else { // size_type === number
+                size_temp[0] = value;
+                size_temp[1] = value;
+                this.setSize( size_temp );
+            }
+        } );
     }
 
 
@@ -128,41 +200,51 @@ class PinEntity extends Entity {
      * @param {float}           [props.size]     アイコンサイズ
      * @param {mapray.Vector3}  [props.fg_color] アイコン色
      * @param {mapray.Vector3}  [props.bg_color] 背景色
+     * @param {string}          [props.id]       Entryを識別するID
+     * @return {mapray.PinEntity.TextPinEntry}   追加したEntry
      */
     addPin( position, props )
     {
-        this.addTextPin( "", position, props );
+        return this.addTextPin( "", position, props );
     }
 
     /**
      * Add Maki Icon Pin
-     * @param {string}          id      　       ID of Maki Icon
-     * @param {mapray.GeoPoint} position         位置
-     * @param {object}          [props]          プロパティ
-     * @param {float}           [props.size]     アイコンサイズ
-     * @param {mapray.Vector3}  [props.fg_color] アイコン色
-     * @param {mapray.Vector3}  [props.bg_color] 背景色
+     * @param {string}          id      　          ID of Maki Icon
+     * @param {mapray.GeoPoint} position            位置
+     * @param {object}          [props]             プロパティ
+     * @param {float}           [props.size]        アイコンサイズ
+     * @param {mapray.Vector3}  [props.fg_color]    アイコン色
+     * @param {mapray.Vector3}  [props.bg_color]    背景色
+     * @param {string}          [props.id]          Entryを識別するID
+     * @return {mapray.PinEntity.MakiIconPinEntry}  追加したEntry
      */
     addMakiIconPin( id, position, props )
     {
-        this._entries.push( new MakiIconPinEntry( this, id, position, props ) );
+        var entry = new MakiIconPinEntry( this, id, position, props );
+        this._entries.push( entry );
         this._primitive_producer.onAddEntry();
+        return entry;
     }
 
     /**
      * Add Text Pin
-     * @param {string}          text    　         ピンに表示されるテキスト
-     * @param {mapray.GeoPoint} position           位置
-     * @param {object}          [props]            プロパティ
-     * @param {float}           [props.size]       アイコンサイズ
-     * @param {mapray.Vector3}  [props.fg_color]   アイコン色
-     * @param {mapray.Vector3}  [props.bg_color]   背景色
+     * @param {string}          text    　          ピンに表示されるテキスト
+     * @param {mapray.GeoPoint} position            位置
+     * @param {object}          [props]             プロパティ
+     * @param {float}           [props.size]        アイコンサイズ
+     * @param {mapray.Vector3}  [props.fg_color]    アイコン色
+     * @param {mapray.Vector3}  [props.bg_color]    背景色
      * @param {string}          [props.font_family] フォントファミリー
+     * @param {string}          [props.id]          Entryを識別するID
+     * @return {mapray.PinEntity.TextPinEntry}      追加したEntry
      */
     addTextPin( text, position, props )
     {
-        this._entries.push( new TextPinEntry( this, text, position, props ) );
+        var entry = new TextPinEntry( this, text, position, props );
+        this._entries.push( entry );
         this._primitive_producer.onAddEntry();
+        return entry;
     }
 
 
@@ -201,7 +283,7 @@ class PinEntity extends Entity {
     {
         var dst = this._parent_props[name];
         if ( !dst ) {
-            dst = this._parent_props[name] = GeoMath.createVector2f( value );
+            dst = this._parent_props[name] = GeoMath.createVector3f( value );
         }
         else if ( dst[0] !== value[0] || dst[1] !== value[1] || dst[2] !== value[2] ) {
             GeoMath.copyVector3( value, dst );
@@ -245,6 +327,16 @@ class PinEntity extends Entity {
         if ( json.font_family ) this.setBGColor( json.font_family );
     }
 
+    
+    /**
+     * @summary IDでEntryを取得
+     * @param {string}  id  ID
+     * @return {mapray.PinEntity.MakiIconPinEntry|mapray.PinEntity.TextPinEntry}  IDが一致するEntry（無ければundefined）
+     */
+    getEntry( id )
+    {
+        return this._entries.find((entry) => entry.id === id);
+    }
 }
 
 
@@ -338,6 +430,15 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
      * @summary 親プロパティが変更されたことを通知
      */
     onChangeParentProperty()
+    {
+        this._dirty = true;
+    }
+
+
+    /**
+     * @summary 子プロパティが変更されたことを通知
+     */
+    onChangeChildProperty()
     {
         this._dirty = true;
     }
@@ -557,14 +658,21 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
 /**
  * @summary ピン要素
+ * @hideconstructor
  * @memberof mapray.PinEntity
- * @private
+ * @public
+ * @abstract
  */
 class AbstractPinEntry {
 
     constructor( owner, position, props ) {
         this._owner = owner;
         this._position = position.clone();
+
+        // animation.BindingBlock
+        this._animation = new EasyBindingBlock();
+        
+        this._setupAnimationBindingBlock();
 
         this._props = Object.assign( {}, props );  // props の複製
         this._copyPropertyVector3f( "fg_color" );  // deep copy
@@ -580,6 +688,7 @@ class AbstractPinEntry {
      * @summary 位置
      * @type {mapray.GeoPoint}
      * @readonly
+     * @package
      */
     get position()
     {
@@ -587,9 +696,20 @@ class AbstractPinEntry {
     }
 
     /**
+     * @summary ID
+     * @type {string}
+     * @readonly
+     */
+    get id()
+    {
+        return this._props.hasOwnProperty( "id" ) ? this._props.id : "";
+    }
+
+    /**
      * @summary アイコンサイズ (Pixels)
      * @type {mapray.Vector2}
      * @readonly
+     * @package
      */
     get size()
     {
@@ -608,6 +728,7 @@ class AbstractPinEntry {
      * @summary アイコン色
      * @type {mapray.Vector3}
      * @readonly
+     * @package
      */
     get fg_color()
     {
@@ -620,6 +741,7 @@ class AbstractPinEntry {
      * @summary アイコン背景色
      * @type {mapray.Vector3}
      * @readonly
+     * @package
      */
     get bg_color()
     {
@@ -628,6 +750,119 @@ class AbstractPinEntry {
         return props.bg_color || parent.bg_color || PinEntity.DEFAULT_BG_COLOR;
     }
 
+    /**
+     * @summary アニメーションパラメータ設定
+     *
+     * @type {mapray.animation.BindingBlock}
+     * @readonly
+     */
+    get animation() { return this._animation; }
+
+    /**
+     * アニメーションの BindingBlock を初期化
+     *
+     * @private
+     */
+    _setupAnimationBindingBlock()
+    {
+        const block = this.animation;  // 実体は EasyBindingBlock
+
+        const number = Type.find( "number" );
+        const vector2 = Type.find( "vector2" );
+        const vector3 = Type.find( "vector3" );
+        
+        // パラメータ名: position
+        // パラメータ型: vector3
+        //   ベクトルの要素が longitude, latitude, altitude 順であると解釈
+        const position_temp = new GeoPoint();
+
+        block.addEntry( "position", [vector3], null, value => {
+            position_temp.setFromArray( value );  // Vector3 -> GeoPoint
+            this.setPosition( position_temp );
+        } );
+
+        // パラメータ名: fg_color
+        // パラメータ型: vector3
+        //   アイコンの色
+        block.addEntry( "fg_color", [vector3], null, value => {
+            this.setFGColor( value );
+        } );
+        
+        // パラメータ名: bg_color
+        // パラメータ型: vector3
+        //   アイコン背景の色
+        block.addEntry( "bg_color", [vector3], null, value => {
+            this.setBGColor( value );
+        } );
+
+        // パラメータ名: size
+        // パラメータ型: vector2 | number
+        //   型が vector2 のとき アイコンのピクセルサイズX, Y 順であると解釈
+        //   型が number のとき アイコンのピクセルサイズX, Y は同値
+        const size_temp = GeoMath.createVector2();
+        let   size_type;
+
+        let size_tsolver = curve => {
+            size_type = AnimUtil.findFirstTypeSupported( curve, [vector2, number] );
+            return size_type;
+        };
+
+        block.addEntry( "size", [vector2, number], size_tsolver, value => {
+            if ( size_type === vector2 ) {
+                this.setSize( value );
+            }
+            else { // size_type === number
+                size_temp[0] = value;
+                size_temp[1] = value;
+                this.setSize( size_temp );
+            }
+        } );
+    }
+
+    /**
+     * @summary モデル原点位置を設定
+     *
+     * @param {mapray.GeoPoint} position  モデル原点の位置
+     */
+    setPosition( position )
+    {
+        if ( this._position.longitude !== position.longitude ||
+             this._position.latitude  !== position.latitude  ||
+             this._position.altitude  !== position.altitude ) {
+            // 位置が変更された
+            this._position.assign( position );
+            this._owner.getPrimitiveProducer().onChangeChildProperty();
+        }
+    }
+
+    /**
+     * @summary アイコンのピクセルサイズを指定
+     * @param {mapray.Vector3} size  アイコンのピクセルサイズ
+     */
+    setSize( size )
+    {
+        this._setVector2Property( "size", size );
+    }
+
+
+    /**
+     * @summary アイコンの色を設定
+     * @param {mapray.Vector3} color  アイコンの色
+     */
+    setFGColor( color )
+    {
+        this._setVector3Property( "fg_color", color );
+    }
+
+
+    /**
+     * @summary アイコン背景の色を設定
+     * @param {mapray.Vector3} color  アイコン背景の色
+     */
+    setBGColor( color )
+    {
+        this._setVector3Property( "bg_color", color );
+    }
 
     /**
      * @private
@@ -639,7 +874,6 @@ class AbstractPinEntry {
             props[name] = GeoMath.createVector3f( props[name] );
         }
     }
-
 
     /**
      * @private
@@ -656,6 +890,38 @@ class AbstractPinEntry {
             }
         }
     }
+    
+    /**
+     * @private
+     */
+    _setVector3Property( name, value )
+    {
+        var dst = this._props[name];
+        if ( !dst ) {
+            dst = this._props[name] = GeoMath.createVector3f( value );
+            this._owner.getPrimitiveProducer().onChangeChildProperty();
+        }
+        else if ( dst[0] !== value[0] || dst[1] !== value[1] || dst[2] !== value[2] ) {
+            GeoMath.copyVector3( value, dst );
+            this._owner.getPrimitiveProducer().onChangeChildProperty();
+        }
+    }
+
+    /**
+     * @private
+     */
+    _setVector2Property( name, value )
+    {
+        var dst = this._props[name];
+        if ( !dst ) {
+            this._props[name] = GeoMath.createVector2f( value );
+            this._owner.getPrimitiveProducer().onChangeChildProperty();
+        }
+        else if ( dst[0] !== value[0] || dst[1] !== value[1] ) {
+            GeoMath.copyVector2( value, dst );
+            this._owner.getPrimitiveProducer().onChangeChildProperty();
+        }
+    }
 
     isLoaded() {
         return this._icon.isLoaded();
@@ -670,34 +936,74 @@ class AbstractPinEntry {
     }
 }
 
+PinEntity.AbstractPinEntry = AbstractPinEntry;
 
 
 /**
  * @summary MakiIcon要素
+ * @hideconstructor
  * @memberof mapray.PinEntity
- * @private
+ * @extends mapray.PinEntity.AbstractPinEntry
+ * @public
  */
 class MakiIconPinEntry extends AbstractPinEntry {
 
     /**
-     * @param {mapray.PinEntity}  owner                所有者
-     * @param {string}            id                   MakiアイコンのID
-     * @param {mapray.GeoPoint}   position             位置
-     * @param {object}            [props]              プロパティ
-     * @param {float} [props.size]                     アイコンサイズ
-     * @param {mapray.Vector3} [props.fg_color]        アイコン色
-     * @param {mapray.Vector3} [props.bg_color]        背景色
+     * @param {mapray.PinEntity}    owner               所有者
+     * @param {string}              id                  MakiアイコンのID
+     * @param {mapray.GeoPoint}     position            位置
+     * @param {object}              [props]             プロパティ
+     * @param {float}               [props.size]        アイコンサイズ
+     * @param {mapray.Vector3}      [props.fg_color]    アイコン色
+     * @param {mapray.Vector3}      [props.bg_color]    背景色
+     * @param {string}              [props.id]          Entryを識別するID
      */
     constructor( owner, id, position, props )
     {
         super( owner, position, props );
-        this._id = id;
-        this._icon = MakiIconPinEntry.makiIconLoader.load( id );
-        this._icon.onEnd(item => {
-                this._owner.getPrimitiveProducer()._dirty = true;
-        });
+        
+        this.setId( id );
+        
+        this._setupMakiIconPinAnimationBindingBlock();
+    }
+
+    /**
+     * アニメーションの BindingBlock を初期化
+     *
+     * @private
+     */
+    _setupMakiIconPinAnimationBindingBlock()
+    {
+        const block = this.animation;  // 実体は EasyBindingBlock
+
+        const string = Type.find( "string" );
+
+        // パラメータ名: id
+        // パラメータ型: string
+        //   アイコンのID
+        block.addEntry( "id", [string], null, value => {
+            this.setId( value );
+        } );        
+    }
+
+    /**
+     * @summary アイコンのIDを設定
+     * @param {string} maki_id  アイコンのID
+     */
+    setId( maki_id )
+    {
+        if ( this._maki_id !== maki_id ) {
+            // アイコンのIDが変更された
+            this._maki_id = maki_id;
+            this._icon = MakiIconPinEntry.makiIconLoader.load( maki_id );
+            this._icon.onEnd(item => {
+                    this._owner.getPrimitiveProducer()._dirty = true;
+            });
+        }
     }
 }
+
+PinEntity.MakiIconPinEntry = MakiIconPinEntry;
 
 
 {
@@ -709,8 +1015,10 @@ class MakiIconPinEntry extends AbstractPinEntry {
 
 /**
  * @summary MakiIcon要素
+ * @hideconstructor
  * @memberof mapray.PinEntity
- * @private
+ * @extends mapray.PinEntity.AbstractPinEntry
+ * @public
  */
 class TextPinEntry extends AbstractPinEntry {
 
@@ -723,22 +1031,15 @@ class TextPinEntry extends AbstractPinEntry {
      * @param {mapray.Vector3}    [props.fg_color]     アイコン色
      * @param {mapray.Vector3}    [props.bg_color]     背景色
      * @param {string}            [props.font_family]  フォントファミリー
+     * @param {string}            [props.id]           Entryを識別するID
      */
     constructor( owner, text, position, props )
     {
         super( owner, position, props );
-        this._text = text;
-
-        this._icon = TextPinEntry.textIconLoader.load( {
-                text:  this._text,
-                props: {
-                    size: this.size,
-                    font_family: this.font_family,
-                }
-        } );
-        this._icon.onEnd(item => {
-                this._owner.getPrimitiveProducer()._dirty = true;
-        });
+        
+        this.setText( text );
+        
+        this._setupTextPinAnimationBindingBlock();
     }
 
 
@@ -746,6 +1047,7 @@ class TextPinEntry extends AbstractPinEntry {
      * @summary フォントファミリー
      * @type {string}
      * @readonly
+     * @package
      */
     get font_family()
     {
@@ -753,7 +1055,50 @@ class TextPinEntry extends AbstractPinEntry {
         const parent = this._owner._parent_props;
         return props.font_family || parent.font_family || PinEntity.DEFAULT_FONT_FAMILY;
     }
+
+    /**
+     * アニメーションの BindingBlock を初期化
+     *
+     * @private
+     */
+    _setupTextPinAnimationBindingBlock()
+    {
+        const block = this.animation;  // 実体は EasyBindingBlock
+
+        const string = Type.find( "string" );
+
+        // パラメータ名: text
+        // パラメータ型: string
+        //   テキスト
+        block.addEntry( "text", [string], null, value => {
+            this.setText( value );
+        } );        
+    }
+
+    /**
+     * @summary テキストを設定
+     * @param {string} text  テキスト
+     */
+    setText( text )
+    {
+        if ( this._text !== text ) {
+            // テキストが変更された
+            this._text = text;
+            this._icon = TextPinEntry.textIconLoader.load( {
+                    text:  this._text,
+                    props: {
+                        size: this.size,
+                        font_family: this.font_family,
+                    }
+            } );
+            this._icon.onEnd(item => {
+                    this._owner.getPrimitiveProducer()._dirty = true;
+            });
+        }
+    }
 }
+
+PinEntity.TextPinEntry = TextPinEntry;
 
 
 {
