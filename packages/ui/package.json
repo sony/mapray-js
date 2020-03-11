@@ -24,8 +24,8 @@
   "scripts": {
     "build": "rollup -c",
     "build-watch": "rollup -c -w",
-    "css": "postcss -o dist/mapray.css src/css/mapray.css",
-    "css-dev": "postcss --watch -o dist/mapray.css src/css/mapray.css"
+    "css": "postcss -c ./postcss.config.js -o dist/mapray.css src/css/mapray.css",
+    "css-dev": "postcss --watch -c ./postcss.config.js -o dist/mapray.css src/css/mapray.css"
   },
   "contributors": [
     {
