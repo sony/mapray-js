@@ -47,17 +47,7 @@ export default () => {
             file: outdir+'bundle.js', 
             format: 'iife', 
             indent: false
-        },
-        plugins: [
-            postcss(),
-            replace({
-                '"<your access token here>"': accessToken,
-                delimiters: ['', '']
-            }),
-            babel({
-                exclude: 'node_modules/**'
-            })
-        ]
+        }
     }
     bundle.plugins = getPluginsConfig(process.env.BUILD)
 

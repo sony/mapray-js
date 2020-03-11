@@ -1,5 +1,4 @@
 import NextRamber from './NextRambler';
-import maprayui from "../../../packages/ui/dist/es/maprayui.js";
 
 class App {
     constructor( container ) {
