@@ -1,5 +1,5 @@
 import '../../packages/ui/dist/mapray.css';
-import mapray from "../../packages/mapray/dist/es/mapray.js";
+import mapray from "@mapray/mapray-js-dummy";
 
 var GeoMath = mapray.GeoMath;
 
