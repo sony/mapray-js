@@ -5,13 +5,19 @@ node_js:
 git:
   depth: false
 
+cache:
+  yarn: true
+
 before_install:
   - npm install -g firebase-tools
 
 script: 
   - echo "npm test temporarily disabled"
-  - npm run release
-  - npm pack
+  - yarn build
+  - cd ${$TRAVIS_BUILD_DIR}/packages/mapray
+  - yarn publish
+  - cd ${$TRAVIS_BUILD_DIR}/packages/ui
+  - yarn publish
 
 deploy:
   - provider: script

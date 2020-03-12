@@ -37,7 +37,7 @@
         ]
       },
       {
-        "source" : "/mapray-js/**/maprayui.js",
+        "source" : "/ui/**/maprayui.js",
         "headers" : [ 
           {
             "key" : "Cache-Control",
