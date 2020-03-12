@@ -8,27 +8,6 @@ if [ $# -ne 2 ]; then
   exit 1
 fi
 
-usage_exit() {
-        echo "Usage: $0 [-t {mapray-js | ui} ] [-a {dev | staging | production}] " 1>&2
-        exit 1
-}
-
-while getopts t:a: OPT
-do
-    case $OPT in
-        t)  FLAG_A=1
-            ;;
-        a)  VALUE_D=$OPTARG
-            ;;
-        h)  usage_exit
-            ;;
-        \?) usage_exit
-            ;;
-    esac
-done
-
-shift $((OPTIND - 1))
-
 if [ $#=1 ]; then
   _PROJECT_ID=$1
 else
@@ -47,4 +26,3 @@ echo "PROJECT_ID in deploy_to_cdn:"${_PROJECT_ID}
 
 cd ${DEPLOYED_DIR}
 firebase deploy --project ${_PROJECT_ID} --token=${_TOKEN}
-
