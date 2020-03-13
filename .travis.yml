@@ -14,10 +14,10 @@ before_install:
 script: 
   - echo "npm test temporarily disabled"
   - yarn build
-  - cd ${TRAVIS_BUILD_DIR}/packages/mapray
-  - yarn publish
-  - cd ${TRAVIS_BUILD_DIR}/packages/ui
-  - yarn publish
+  - cd $TRAVIS_BUILD_DIR/packages/mapray
+  - yarn pack
+  - cd $TRAVIS_BUILD_DIR/packages/ui
+  - yarn pack
 
 deploy:
   - provider: script
