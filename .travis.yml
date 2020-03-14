@@ -14,6 +14,7 @@ before_install:
 script: 
   - echo "npm test temporarily disabled"
   - yarn build
+  - echo "TRAVIS_BUILD_DIR:"$TRAVIS_BUILD_DIR
   - cd $TRAVIS_BUILD_DIR/packages/mapray
   - yarn pack
   - cd $TRAVIS_BUILD_DIR/packages/ui
