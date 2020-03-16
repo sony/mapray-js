@@ -40,13 +40,6 @@ cd ${PACKAGE_ROOT}
 echo "//registry.npmjs.org/:_authToken="${_NPM_TOKEN}  > .npmrc
 echo "Command, yarn publish, is executed in "${PACKAGE_ROOT}
 
-#_VERSION=`git describe --tags --abbrev=0`
-_VERSION=`node -pe "require('${PACKAGE_ROOT}/package.json').version"`
-
-if [ ${_DEV_FLAG} = 1 ]; then
-  _VERSION=`git describe --tags`
-fi
-
 _NAME="null"
 
 if [ ${_TARGET} = "mapray" ]; then
@@ -55,12 +48,15 @@ elif [ ${_TARGET} = "ui" ]; then
   _NAME="ui-dummy"
 fi
 
+#_VERSION=`git describe --tags --abbrev=0`
+_VERSION=`node -pe "require('${PACKAGE_ROOT}/package.json').version"`
+_FILE_NAME=mapray-${_NAME}-v${_VERSION}.tgz
+
 if [ ${_DEV_FLAG} = 1 ]; then
+  _VERSION=`git describe --tags`
   sed -i -e "s/@mapray\/${_NAME}/@mapray\/${_NAME}-dev/g" ${PACKAGE_ROOT}/package.json
 fi
 
 cd ${PACKAGE_ROOT}
-echo "Will publish, yarn publish "mapray-${_NAME}-v${_VERSION}.tgz" version:"${_VERSION}" on `node -pe "require('${PACKAGE_ROOT}/package.json').name"`"
-yarn publish mapray-${_NAME}-v${_VERSION}.tgz --new-version ${_VERSION}
-
-
+echo "Will publish, yarn publish "${_FILE_NAME}" version:"${_VERSION}" on `node -pe "require('${PACKAGE_ROOT}/package.json').name"`"
+yarn publish ${_FILE_NAME} --new-version ${_VERSION}
