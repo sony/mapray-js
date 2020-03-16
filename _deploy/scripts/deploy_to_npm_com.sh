@@ -1,5 +1,4 @@
 #!/bin/bash
-HOME=$(cd $(dirname $0)/../..; pwd)
 
 set -eu
 
@@ -29,13 +28,26 @@ shift $((OPTIND - 1))
 
 [ "${_TARGET}" != "mapray" ] && [ "${_TARGET}" != "ui" ] && usage_exit
 
-echo "TARGET in setup_deploy:"${_TARGET}
-echo "NPM_TOKEN in setup_deploy:"${_NPM_TOKEN}
+echo "TARGET in deploy_to_npm_com:"${_TARGET}
+echo "NPM_TOKEN in deploy_to_npm_com:"${_NPM_TOKEN}
 
-////
-cd ${HOME}
+PACKAGE_ROOT=$(cd $(dirname $0)/../../packages/${_TARGET}; pwd)
+echo "PACKAGE_ROOT in deploy_to_npm_com:"${PACKAGE_ROOT}
+
+cd ${PACKAGE_ROOT}
 echo "//registry.npmjs.org/:_authToken="${_NPM_TOKEN}  > .npmrc
-echo "Command, npm publish, is executed in "${HOME}
+echo "Command, yarn publish, is executed in "${PACKAGE_ROOT}
 
 _VERSION=`git describe --tags --abbrev=0`
-npm publish mapray-js-${_VERSION}.tgz
+
+_NAME="null"
+
+if [ ${_TARGET} = "mapray" ]; then
+  _NAME="mapray-js-dummy"
+elif [ ${_TARGET} = "ui" ]; then
+  _NAME="ui-dummy"
+fi
+
+yarn publish mapray-${_NAME}-${_VERSION}.tgz
+echo "Published, yarn publish "mapray-${_NAME}-${_VERSION}.tgz
+
