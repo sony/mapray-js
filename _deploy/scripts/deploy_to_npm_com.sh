@@ -29,7 +29,6 @@ shift $((OPTIND - 1))
 [ "${_TARGET}" != "mapray" ] && [ "${_TARGET}" != "ui" ] && usage_exit
 
 echo "TARGET in deploy_to_npm_com:"${_TARGET}
-echo "NPM_TOKEN in deploy_to_npm_com:"${_NPM_TOKEN}
 
 PACKAGE_ROOT=$(cd $(dirname $0)/../../packages/${_TARGET}; pwd)
 echo "PACKAGE_ROOT in deploy_to_npm_com:"${PACKAGE_ROOT}
@@ -50,6 +49,7 @@ elif [ ${_TARGET} = "ui" ]; then
 fi
 
 cd ${PACKAGE_ROOT}
+ls -la　
 yarn publish mapray-${_NAME}-${_VERSION}.tgz --new-version ${_VERSION}
 echo "Published, yarn publish "mapray-${_NAME}-${_VERSION}.tgz" version:"${_VERSION}
 
