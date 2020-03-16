@@ -10,7 +10,7 @@ usage_exit() {
 _TARGET="null"
 _NPM_TOKEN="null"
 
-while getopts :t:a: OPT
+while getopts :t:n: OPT
 do
     case $OPT in
         t)  _TARGET=$OPTARG
