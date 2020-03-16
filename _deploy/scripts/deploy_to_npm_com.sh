@@ -54,6 +54,7 @@ _FILE_NAME=mapray-${_NAME}-v${_VERSION}.tgz
 
 if [ ${_DEV_FLAG} = 1 ]; then
   _VERSION=`git describe --tags`
+  echo "dev mode _VERSION:"${_VERSION}
   sed -i -e "s/@mapray\/${_NAME}/@mapray\/${_NAME}-dev/g" ${PACKAGE_ROOT}/package.json
 fi
 
