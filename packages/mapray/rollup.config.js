@@ -11,7 +11,12 @@ export default [
   // ES
   {
     input: 'src/index.js',
-    output: { file: outdir+'es/mapray.js', format: 'es', indent: false, sourcemap: 'inline' },
+    output: { 
+      file: outdir+'es/mapray.js', 
+      format: 'es', 
+      indent: false, 
+      sourcemap: true
+    },
     plugins: [
       commonjs(),
       resolve(),

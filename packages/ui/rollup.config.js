@@ -23,7 +23,7 @@ export default [
       file: outdir+'es/maprayui.js', 
       format: 'es', 
       indent: false,
-      sourcemap: 'inline'
+      sourcemap: true
     },
     external: makeExternalPredicate([
       ...Object.keys(pkg.dependencies || {}),
