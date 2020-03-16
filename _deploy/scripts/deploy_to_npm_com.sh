@@ -56,7 +56,7 @@ elif [ ${_TARGET} = "ui" ]; then
 fi
 
 if [ ${_DEV_FLAG} = 1 ]; then
-  sed -i '' -e "s/@mapray\/${_NAME}/@mapray\/${_NAME}-dev/g" ${PACKAGE_ROOT}/package.json
+  sed -i -e "s/@mapray\/${_NAME}/@mapray\/${_NAME}-dev/g" ${PACKAGE_ROOT}/package.json
 fi
 
 cd ${PACKAGE_ROOT}
