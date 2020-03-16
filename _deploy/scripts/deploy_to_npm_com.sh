@@ -2,7 +2,7 @@
 
 set -eu
 
-sage_exit() {
+usage_exit() {
         echo "Usage: $0 [-t {mapray | ui} ] [-n npm token] " 1>&2
         exit 1
 }
@@ -38,7 +38,8 @@ cd ${PACKAGE_ROOT}
 echo "//registry.npmjs.org/:_authToken="${_NPM_TOKEN}  > .npmrc
 echo "Command, yarn publish, is executed in "${PACKAGE_ROOT}
 
-_VERSION=`git describe --tags --abbrev=0`
+#_VERSION=`git describe --tags --abbrev=0`
+_VERSION=`node -pe "require('${PACKAGE_ROOT}/package.json').version"`
 
 _NAME="null"
 
@@ -48,6 +49,7 @@ elif [ ${_TARGET} = "ui" ]; then
   _NAME="ui-dummy"
 fi
 
-yarn publish mapray-${_NAME}-${_VERSION}.tgz
-echo "Published, yarn publish "mapray-${_NAME}-${_VERSION}.tgz
+yarn publish mapray-${_NAME}-${_VERSION}.tgz --new-version ${_VERSION}
+echo "Published, yarn publish "mapray-${_NAME}-${_VERSION}.tgz" version:"${_VERSION}
+
 
