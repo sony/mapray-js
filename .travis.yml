@@ -35,9 +35,13 @@ deploy:
   - provider: script
     skip_cleanup: true
     script: bash ./_deploy/scripts/setup_deploy.sh -t mapray -a staging
+    on:
+      all_branches: true
   - provider: script
     skip_cleanup: true
     script: bash ./_deploy/scripts/setup_deploy.sh -t ui -a staging
+    on:
+      all_branches: true
   - provider: script
     skip_cleanup: true
     script: bash ./_deploy/scripts/setup_deploy.sh -t mapray -a production
@@ -68,5 +72,4 @@ deploy:
     skip_cleanup: true
     script: bash ./_deploy/scripts/deploy_to_npm_com.sh ${NPM_TOKEN}
     on:
-      tags: true
-      condition: $TRAVIS_TAG =~ [0-9]+(\.[0-9]+)
+      all_branches: true
