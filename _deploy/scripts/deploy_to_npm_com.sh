@@ -49,7 +49,7 @@ elif [ ${_TARGET} = "ui" ]; then
 fi
 
 cd ${PACKAGE_ROOT}
-ls -la　
+ls -la
 yarn publish mapray-${_NAME}-${_VERSION}.tgz --new-version ${_VERSION}
 echo "Published, yarn publish "mapray-${_NAME}-${_VERSION}.tgz" version:"${_VERSION}
 
