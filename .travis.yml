@@ -19,6 +19,7 @@ script:
   - yarn pack
   - cd $TRAVIS_BUILD_DIR/packages/ui
   - yarn pack
+  - cd $TRAVIS_BUILD_DIR
 
 deploy:
   - provider: script
