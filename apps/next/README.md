@@ -1,4 +1,4 @@
-# maprayJS Rumber 
+# maprayJS Rumbler 
 This is a demo application with interactive mouse operation on [Mapray](https://mapray.com) website.
 
 ## Preparing your Development Environment
