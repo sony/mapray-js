@@ -49,15 +49,17 @@ elif [ ${_TARGET} = "ui" ]; then
 fi
 
 #_VERSION=`git describe --tags --abbrev=0`
-_VERSION=`node -pe "require('${PACKAGE_ROOT}/package.json').version"`
+_CURRENT_VERSION=`node -pe "require('${PACKAGE_ROOT}/package.json').version"`
+_VERSION=_CURRENT_VERSION 
 _FILE_NAME=mapray-${_NAME}-v${_VERSION}.tgz
 
 if [ ${_DEV_FLAG} = 1 ]; then
   _VERSION=`git describe --tags`
   echo "dev mode _VERSION:"${_VERSION}
     echo "dev mode tag:"`git tag`
-
+  
   sed -i -e "s/@mapray\/${_NAME}/@mapray\/${_NAME}-dev/g" ${PACKAGE_ROOT}/package.json
+  sed -i -e 's/\"version\": \"'${_CURRENT_VERSION}'\"/\"version\": \"'${_CURRENT_VERSION}'\"/g' ${PACKAGE_ROOT}/package.json
 fi
 
 cd ${PACKAGE_ROOT}
