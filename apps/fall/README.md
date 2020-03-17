@@ -13,11 +13,6 @@ Install [yarn](https://yarnpkg.com/en/)
 brew install yarn
 ```
 
-Install [rollup.js](https://rollupjs.org/guide/en/) to bundle files and serves it.
-```bash
-npm install --global rollup
-```
-
 ## Usage
 **To set access token:**
 

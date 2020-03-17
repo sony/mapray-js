@@ -2,12 +2,6 @@ Hello, and thanks in advance for contributing to maprayJS. Here's how we work. W
 This document first explains how to build maprayJS.
 
 ## Preparing your Development Environment
-
-Install [rollup.js](https://rollupjs.org/guide/en/) to bundle files and serves it.
-```bash
-npm install --global rollup
-```
-
 Yarn workspace is used in maprayJS.
 
 Note: on MacOS it is often convenient to install yarn with brew
