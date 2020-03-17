@@ -62,4 +62,4 @@ fi
 
 cd ${PACKAGE_ROOT}
 echo "Will publish, yarn publish "${_FILE_NAME}" version:"${_VERSION}" on `node -pe "require('${PACKAGE_ROOT}/package.json').name"`"
-yarn publish ${_FILE_NAME} --new-version ${_VERSION}
+yarn publish ${_FILE_NAME}
