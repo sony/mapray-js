@@ -59,7 +59,7 @@ if [ ${_DEV_FLAG} = 1 ]; then
     echo "dev mode tag:"`git tag`
   
   sed -i -e "s/@mapray\/${_NAME}/@mapray\/${_NAME}-dev/g" ${PACKAGE_ROOT}/package.json
-  sed -i -e 's/\"version\": \"'${_CURRENT_VERSION}'\"/\"version\": \"'${_CURRENT_VERSION}'\"/g' ${PACKAGE_ROOT}/package.json
+  sed -i -e 's/\"version\": \"'${_CURRENT_VERSION}'\"/\"version\": \"'${_VERSION}'\"/g' ${PACKAGE_ROOT}/package.json
 
   cat ${PACKAGE_ROOT}/package.json
 fi
