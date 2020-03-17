@@ -9,17 +9,17 @@ maprayJS is a JavaScript library for a high quality interactive 3D globes and ma
 ## Installation
 ### CDN
 ```html
-  <script src="https://resource.mapray.com/mapray-js/v0.7.3/mapray.js"></script>
+  <script src="https://resource.mapray.com/mapray-js/v0.8.0/mapray.min.js"></script>
 ```
 
 ### npm
 ```bash
-npm install --save mapray-js
+npm install --save @mapray/mapray-js
 ```
 
 ## Usage
 World Terrain data hosted by mapray cloud platform. Access Token is required to access to mapray cloud, it is under Closed Alpha Test and is released to a limited number of end-users. 
-Mapray cloud managed by [Sony Network Communications Inc.](https://www.sonynetwork.co.jp/corporation/en/) If you have any questions about the access token of mapray cloud or the services of mapray cloud, please contact us from the [contact page](https://mapray.com/contact.html).
+Mapray cloud managed by [Sony Corporation.](https://www.sony.com/) If you have any questions about the access token of mapray cloud or the services of mapray cloud, please contact us from the [contact page](https://mapray.com/contact.html).
 ```html
 <!DOCTYPE html>
 <html>
@@ -42,7 +42,7 @@ Mapray cloud managed by [Sony Network Communications Inc.](https://www.sonynetwo
     <div id="mapray-container"></div>
 </body>
 </html>
-<script src="https://resource.mapray.com/mapray-js/v0.7.3/mapray.js"></script>
+<script src="https://resource.mapray.com/mapray-js/v0.8.0/mapray.min.js"></script>
 <script>
      // Set Access Token for mapray cloud
        var accessToken = "<your access token here>";
