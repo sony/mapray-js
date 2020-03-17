@@ -82,10 +82,14 @@ Mapray cloud managed by [Sony Corporation.](https://www.sony.com/) If you have a
 </script>
 ```
 
+## Next Steps
+- [Examples](/examples)
+- [Sample App](/apps)
+
 ## Documentation
-All documents only support Japanese.
-- [Getting started with maprayJS](/doc/developer-guide/GettingStarted.md)
-- [Developer Guide](/doc/developer-guide/MaprayDeveloperGuideMod.md)
+- [Getting started with maprayJS (Japanese)](/doc/developer-guide/GettingStarted.md)
+- [Developer Guide (Japanese)](/doc/developer-guide/MaprayDeveloperGuideMod.md)
+- [Contribution Guide (English)](/CONTRIBUTING.md)
 
 Documentation on Mapray official [website](https://mapray.com/documents/overview/gettingstarted/index.html)
 
