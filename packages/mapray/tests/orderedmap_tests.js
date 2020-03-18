@@ -1,21 +1,6 @@
-import OrderedMap from "../OrderedMap";
+import OrderedMap from "../src/OrderedMap";
 
-
-function
-orderedmap_tests()
-{
-    serial_insert();
-    serial_remove();
-    random_clone();
-    random_insert();
-    random_remove();
-    random_overall();
-}
-
-
-function
-serial_insert()
-{
+test('serial_insert', () => {
     for ( let map of create_serial_maps() ) {
         // 順次確認
         for ( let it = map.findFirst(), cnt = 0; it !== null; it = it.findSuccessor(), ++cnt ) {
@@ -30,12 +15,10 @@ serial_insert()
             }
         }
     }
-}
+});
 
 
-function
-serial_remove()
-{
+test('serial_remove', () => {
     // 順次 (一括)
     for ( let map of create_serial_maps() ) {
         map.remove( map.findFirst(), null );
@@ -87,12 +70,10 @@ serial_remove()
         }
         assert_empty( map );
     }
-}
+});
 
 
-function
-random_clone()
-{
+test('random_clone', () => {
     let map = new OrderedMap( (a, b) => a < b );
 
     for ( let i = 0; i < 1000; ++i ) {
@@ -102,12 +83,10 @@ random_clone()
 
     let cloned = map.clone();
     cloned.remove( cloned.findFirst(), null );
-}
+});
 
 
-function
-random_insert()
-{
+test('random_insert', () => {
     let map = new OrderedMap( (a, b) => a < b );
 
     for ( let i = 0; i < 1000; ++i ) {
@@ -136,12 +115,10 @@ random_insert()
     let upper5 = map.findUpper( map.findLast().key );
 
     map.remove( map.findFirst(), null );
-}
+});
 
 
-function
-random_remove()
-{
+test('random_remove', () =>  {
     let map = new OrderedMap( (a, b) => a < b );
 
     let items = [];
@@ -158,12 +135,10 @@ random_remove()
     }
 
     assert_empty( map );
-}
+});
 
 
-function
-random_overall()
-{
+test('random_overall', () => {
     const count  = 1000;
     const value1 = 1;
     const value2 = 2;
@@ -241,12 +216,9 @@ random_overall()
     if ( map3.size != 0 ) {
         console.error( "map3.size != 0" );
     }
-}
+});
 
-
-function
-create_serial_maps()
-{
+const create_serial_maps = () => {
     let map1 = new OrderedMap( (a, b) => a < b );
     for ( let i = 0; i < 1000; ++i ) {
         map1.insert( i, i );
@@ -273,18 +245,14 @@ create_serial_maps()
 }
 
 
-function
-assert_empty( map )
-{
+const assert_empty = map => {
     if ( !map.isEmpty() ) {
         console.error( "!map.isEmpty()" );
     }
 }
 
 
-function
-shuffleArray( array )
-{
+const shuffleArray = array => {
     // Fisher-Yates のシャッフル
     for ( let i = array.length - 1; i > 0; --i ) {
         let j = Math.floor( Math.random() * (i + 1) );  // 0 <= j <= i
@@ -295,6 +263,3 @@ shuffleArray( array )
         array[j] = temp;
     }
 }
-
-
-export default orderedmap_tests;

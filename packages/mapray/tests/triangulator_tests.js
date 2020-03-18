@@ -1,24 +1,6 @@
-import Triangulator from "../Triangulator";
+import Triangulator from "../src/Triangulator";
 
-
-function
-triangulator_tests()
-{
-    empty();
-    triangle();
-    triangle_error();
-    square();
-    pentagon_1();
-    polygon_N();
-    polygon_8();
-    polygon_swirl();
-    triangle_hole();
-}
-
-
-function
-make_serial_indices( start, count )
-{
+const make_serial_indices = ( start, count ) => {
     let array = new Uint32Array( count );
     for ( let i = 0; i < count; ++i ) {
         array[i] = start + i;
@@ -27,18 +9,14 @@ make_serial_indices( start, count )
 }
 
 
-function
-empty()
-{
+test('empty', () => {
     let points = [];
     let tr = new Triangulator( points, 0, 2, points.length / 2 );
     tr.run();
-}
+});
 
 
-function
-triangle()
-{
+test('triangle', () => {
     let points = [
         0, 0,
         1, 0,
@@ -47,12 +25,11 @@ triangle()
     let tr = new Triangulator( points, 0, 2, points.length / 2 );
     tr.addBoundary( make_serial_indices( 0, points.length / 2 ) );
     tr.run();
-}
+});
 
 
-function
-triangle_error()
-{
+test('triangle_error', () => {
+    expect.assertions(1);
     let points = [
         // 穴のみ
         0, 0,
@@ -66,14 +43,11 @@ triangle_error()
         tr.run();
     }
     catch ( e ) {
-        console.error( e.message );
+        expect(e.message).toMatch('Probably a degenerate polygon');
     }
-}
+});
 
-
-function
-square()
-{
+test('square', () => {
     let points = [
         0, 0,
         1, 0,
@@ -83,12 +57,10 @@ square()
     let tr = new Triangulator( points, 0, 2, points.length / 2 );
     tr.addBoundary( make_serial_indices( 0, points.length / 2 ) );
     tr.run();
-}
+});
 
 
-function
-pentagon_1()
-{
+test('pentagon_1', () => {
     let points = [
         0, 0,
         -1, 1,
@@ -99,12 +71,10 @@ pentagon_1()
     let tr = new Triangulator( points, 0, 2, points.length / 2 );
     tr.addBoundary( make_serial_indices( 0, points.length / 2 ) );
     tr.run();
-}
+});
 
 
-function
-polygon_N()
-{
+test('polygon_N', () => {
     let points = [
         0.241667, 0.741667,
         0.319444, 0.133333,
@@ -116,12 +86,9 @@ polygon_N()
     let tr = new Triangulator( points, 0, 2, points.length / 2 );
     tr.addBoundary( make_serial_indices( 0, points.length / 2 ) );
     tr.run();
-}
+});
 
-
-function
-polygon_8()
-{
+test('polygon_8', () => {
     let points = [
         0, 4,
         -3, 0,
@@ -135,12 +102,9 @@ polygon_8()
     let tr = new Triangulator( points, 0, 2, points.length / 2 );
     tr.addBoundary( make_serial_indices( 0, points.length / 2 ) );
     tr.run();
-}
+});
 
-
-function
-polygon_swirl()
-{
+test('polygon_swirl', () => {
     let points = [
         0.31944444444444453, 0.8055555555555558,
         0.21111111111111117, 0.7055555555555557,
@@ -204,12 +168,9 @@ polygon_swirl()
     let tr = new Triangulator( points, 0, 2, points.length / 2 );
     tr.addBoundary( make_serial_indices( 0, points.length / 2 ) );
     tr.run();
-}
+});
 
-
-function
-triangle_hole()
-{
+test('triangle_hole', () => {
     let points = [
         // 外側
         0, 1,
@@ -224,7 +185,4 @@ triangle_hole()
     tr.addBoundary( make_serial_indices( 0, 3 ) );
     tr.addBoundary( make_serial_indices( 3, 3 ) );
     tr.run();
-}
-
-
-export default triangulator_tests;
+});

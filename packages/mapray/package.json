@@ -27,7 +27,7 @@
     "jsdoc": "jsdoc --recurse --destination ./../../doc/jsdoc --package ./package.json --readme ./../../doc/config/reference_top.md --access undefined,public,protected  --configure ./../../doc/config/jsdoc.json ./src/",
     "jsdoc-devel": "jsdoc --recurse --destination ./../../doc/jsdoc --package ./package.json --readme ./../../doc/config/reference_top.md --private  --configure ./../../doc/config/jsdoc.json ./src/",
     "tests-devel": "cross-env webpack --watch --mode=development --env.NODE_ENV=tests",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "contributors": [
     {
@@ -56,6 +56,7 @@
     "babel-loader": "^8.0.6",
     "core-js": "3",
     "cross-env": "^7.0.0",
+    "jest": "^25.1.0",
     "jsdoc": "^3.5.0",
     "rollup": "^1.31.1",
     "rollup-plugin-babel": "^4.3.3",
@@ -64,5 +65,8 @@
     "rollup-plugin-string": "^3.0.0",
     "rollup-plugin-terser": "^5.2.0"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "jest": {
+    "testRegex": "(/tests/.*\\_tests\\.js)$"
+  }
 }

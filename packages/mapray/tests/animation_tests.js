@@ -1,5 +1,5 @@
-import animation from "../animation/index";
-import GeoMath from "../GeoMath";
+import animation from "../src/animation/index";
+import GeoMath from "../src/GeoMath";
 
 const Time             = animation.Time;
 const Interval         = animation.Interval;
@@ -14,56 +14,20 @@ const KFLinearCurve    = animation.KFLinearCurve;
 const KFStepCurve      = animation.KFStepCurve;
 const ComboVectorCurve = animation.ComboVectorCurve;
 
-
-function
-animation_tests()
-{
-    compare_times();
-    interval_intersection();
-    invariance_tests();
-    invariance_single_tests();
-    invariance_merge_tests();
-    binder_tests();
-    kflinear_curve_tests();
-    kfstep_curve_tests();
-    compovec_curve_tests();
-    value_change_test();
-    find_keyframe_tests();
-}
-
-
 // lessThan, lessEqual
-function
-compare_times()
-{
+test('compare_times', () => {
     let t1 = Time.fromNumber( 123 );
     let t2 = Time.fromNumber( 567 );
-
-    if ( !t1.lessThan( t2 ) ) {
-        console.error( "time compare error" );
-    }
-
-    if ( t2.lessThan( t1 ) ) {
-        console.error( "time compare error" );
-    }
-
-    if ( !t1.lessEqual( t2 ) ) {
-        console.error( "time compare error" );
-    }
-
-    if ( t2.lessEqual( t1 ) ) {
-        console.error( "time compare error" );
-    }
-
-    if ( !t1.lessEqual( t1 ) ) {
-        console.error( "time compare error" );
-    }
-}
+    
+    expect(t1.lessThan(t2)).toBeTruthy();
+    expect(t2.lessThan(t2)).toBeFalsy();
+    expect(t1.lessEqual(t2)).toBeTruthy();
+    expect(t2.lessEqual(t1)).toBeFalsy();
+    expect(t1.lessEqual(t1)).toBeTruthy();
+});
 
 
-function
-interval_intersection()
-{
+test('interval_intersection', () => {
     let t1 = Time.fromNumber( 123 );
     let t2 = Time.fromNumber( 234 );
     let t3 = Time.fromNumber( 345 );
@@ -73,12 +37,12 @@ interval_intersection()
     let i2 = new Interval( t2, t4 );
 
     let x12 = i1.getIntersection( i2 );
-}
+
+    expect(x12.isEmpty()).toBeFalsy();
+});
 
 
-function
-invariance_tests()
-{
+test('invariance_tests', () => {
     let invr = new Invariance();
 
     invr.write( Interval.UNIVERSAL );
@@ -99,128 +63,97 @@ invariance_tests()
     }
 
     invr.remove( Interval.UNIVERSAL );
-}
+});
+
+describe('invariance single tests', () => {
+
+    test('test1', () => {
+        let invr = new Invariance();
+
+        let time = Time.fromNumber( 0 );
+        let ival = new Interval( time, time );
+
+        invr.write( ival );
+    });
 
 
-function
-invariance_single_tests()
-{
-    invariance_single_test1();
-    invariance_single_test2();
-    invariance_single_test3();
-    invariance_single_test4();
-}
+    test('test2', () => {
+        let invr = new Invariance();
+        invr.write( Interval.UNIVERSAL );
+
+        let time = Time.fromNumber( 0 );
+        let ival = new Interval( time, time );
+
+        invr.remove( ival );
+    });
 
 
-function
-invariance_single_test1()
-{
-    let invr = new Invariance();
+    test('test3', () => {
+        let invr = new Invariance();
+        invr.write( Interval.UNIVERSAL );
 
-    let time = Time.fromNumber( 0 );
-    let ival = new Interval( time, time );
+        let ival = new Interval( Time.MIN_TIME, Time.MIN_TIME );
 
-    invr.write( ival );
-}
+        invr.remove( ival );
+    });
 
 
-function
-invariance_single_test2()
-{
-    let invr = new Invariance();
-    invr.write( Interval.UNIVERSAL );
+    test('test4', () => {
+        let invr = new Invariance();
+        invr.write( Interval.UNIVERSAL );
 
-    let time = Time.fromNumber( 0 );
-    let ival = new Interval( time, time );
+        let ival = new Interval( Time.MAX_TIME, Time.MAX_TIME );
 
-    invr.remove( ival );
-}
+        invr.remove( ival );
+    });
+});
 
+describe('invariance single tests', () => {
 
-function
-invariance_single_test3()
-{
-    let invr = new Invariance();
-    invr.write( Interval.UNIVERSAL );
+    test('test1', () => {
+        for ( let c = 0; c < 10; ++c ) {
+            let invrs = [];
 
-    let ival = new Interval( Time.MIN_TIME, Time.MIN_TIME );
+            for ( let i = 0; i < c; ++i ) {
+                let invr = new Invariance();
 
-    invr.remove( ival );
-}
+                let n1 = Math.random();
+                let n2 = Math.random();
 
+                let ival = createClosedInterval( n1, n1 + n2 );
 
-function
-invariance_single_test4()
-{
-    let invr = new Invariance();
-    invr.write( Interval.UNIVERSAL );
+                invr.write( ival );
 
-    let ival = new Interval( Time.MAX_TIME, Time.MAX_TIME );
+                invrs.push( invr );
+            }
 
-    invr.remove( ival );
-}
-
-
-function
-invariance_merge_tests()
-{
-    invariance_merge_test1();
-    invariance_merge_test2();
-}
-
-
-function
-invariance_merge_test1()
-{
-    for ( let c = 0; c < 10; ++c ) {
-        let invrs = [];
-
-        for ( let i = 0; i < c; ++i ) {
-            let invr = new Invariance();
-
-            let n1 = Math.random();
-            let n2 = Math.random();
-
-            let ival = createClosedInterval( n1, n1 + n2 );
-
-            invr.write( ival );
-
-            invrs.push( invr );
+            let merged = Invariance.merge( invrs );
         }
-
-        let merged = Invariance.merge( invrs );
-    }
-}
+    });
 
 
-function
-invariance_merge_test2()
-{
-    let invr1 = new Invariance();
-    let ival1 = createClosedInterval( 1, 3 );
-    invr1.write( ival1 );
+    test('test2', () => {
+        let invr1 = new Invariance();
+        let ival1 = createClosedInterval( 1, 3 );
+        invr1.write( ival1 );
 
-    let invr2 = new Invariance();
-    let ival2 = createClosedInterval( 2, 4 );
-    invr2.write( ival2 );
+        let invr2 = new Invariance();
+        let ival2 = createClosedInterval( 2, 4 );
+        invr2.write( ival2 );
 
-    let merged = Invariance.merge( [invr1, invr2] );
-}
+        let merged = Invariance.merge( [invr1, invr2] );
+    });
 
 
-function
-createClosedInterval( nlower, nupper )
-{
-    let lower = Time.fromNumber( nlower );
-    let upper = Time.fromNumber( nupper );
+    const createClosedInterval = ( nlower, nupper ) =>　{
+        let lower = Time.fromNumber( nlower );
+        let upper = Time.fromNumber( nupper );
 
-    return new Interval( lower, upper );
-}
+        return new Interval( lower, upper );
+    };
+});
 
-
-function
-binder_tests()
-{
+test('binder_tests', () => {
     const const_value = 123;
 
     let parameter;
@@ -241,12 +174,10 @@ binder_tests()
     }
 
     binder.unbind();
-}
+});
 
 
-function
-kflinear_curve_tests()
-{
+test('kflinear_curve_tests', () => {
     let parameter;
 
     let updater = new Updater();
@@ -266,17 +197,13 @@ kflinear_curve_tests()
 
     updater.update( Time.fromNumber( 50 ) );
 
-    if ( parameter == null ) {
-        console.error( "update error" );
-    }
+    expect(parameter).not.toBeNull();
 
     binder.unbind();
-}
+});
 
 
-function
-kfstep_curve_tests()
-{
+test('kfstep_curve_tests', () => {
     let parameter;
 
     let updater = new Updater();
@@ -295,17 +222,13 @@ kfstep_curve_tests()
 
     updater.update( Time.fromNumber( 200 ) );
 
-    if ( parameter == null ) {
-        console.error( "update error" );
-    }
+    expect(parameter).not.toBeNull();
 
     binder.unbind();
-}
+});
 
 
-function
-compovec_curve_tests()
-{
+test('compovec_curve_tests', () => {
     let parameter;
 
     let updater = new Updater();
@@ -324,17 +247,13 @@ compovec_curve_tests()
 
     updater.update( Time.fromNumber( 50 ) );
 
-    if ( parameter == null ) {
-        console.error( "update error" );
-    }
+    expect(parameter).not.toBeNull();
 
     binder.unbind();
-}
+});
 
 
-function
-value_change_test()
-{
+test('value_change_test', () => {
     let parameter;
 
     let type = Type.find( "number" );
@@ -353,12 +272,10 @@ value_change_test()
                        invr );
 
     binder.unbind();
-}
+});
 
 
-function
-find_keyframe_tests()
-{
+test('find_keyframe_tests', () => {
     for ( let j = 1; j <= 50; ++j ) {
         let array = new Array( j );
         for ( let i = 0; i < j; ++i ) {
@@ -380,12 +297,10 @@ find_keyframe_tests()
             console.error( "findKeyFrameIndex error" );
         }
     }
-}
+});
 
 
-function
-findKeyFrameIndex( time, key_times, lower, upper )
-{
+const findKeyFrameIndex = ( time, key_times, lower, upper ) => {
     let l_idx = lower;
     let u_idx = upper;
 
@@ -415,7 +330,7 @@ findKeyFrameIndex( time, key_times, lower, upper )
     }
 
     return 0; // 警告回避
-}
+};
 
 
 /**
@@ -465,5 +380,3 @@ class ValueChangeCurve extends Curve
 
 }
 
-
-export default animation_tests;

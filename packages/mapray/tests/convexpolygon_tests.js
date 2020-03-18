@@ -1,23 +1,9 @@
-import ConvexPolygon from "../ConvexPolygon";
-
-
-function
-convexpolygon_tests()
-{
-    same_triangle();
-    different_triangle();
-    diamond_square_fit();
-    square_around_diamond();
-    diamond_square_vertex();
-    similar_triangles();
-}
-
+import ConvexPolygon from "../src/ConvexPolygon";
 
 /**
  * 同一三角形同士の交差
  */
-function
-same_triangle()
+test('same_triangle', () =>
 {
     for ( let i = 0; i < 100; ++i ) {
         let cp = create_random_triangle();
@@ -32,30 +18,27 @@ same_triangle()
             console.error( "intersection error" );
         }
     }
-}
+});
 
 
 /**
  * 違う三角形同士の交差
  */
-function
-different_triangle()
-{
+test('different_triangle', () => {
+
     for ( let i = 0; i < 100; ++i ) {
         let cp1 = create_random_triangle();
         let cp2 = create_random_triangle();
 
         let icp = check_validity( cp1.getIntersection( cp2 ) );
     }
-}
+});
 
 
 /**
  * ダイヤモンドと正方形の交差
  */
-function
-diamond_square_fit()
-{
+test('diamond_square_fit' , () => {
     let {diamond, square} = create_diamond_and_squre( 0, 0 );
 
     if ( !square.includes( diamond ) || diamond.includes( square ) ) {
@@ -68,14 +51,13 @@ diamond_square_fit()
     if ( icp1 === null || icp2 === null ) {
         console.error( "intersection error" );
     }
-}
+});
 
 
 /**
  * ダイヤモンドの周辺に正方形 (かすめるが交差しない)
  */
-function
-square_around_diamond()
+test('square_around_diamond', () =>
 {
     for ( let soy = -2; soy <= 2; soy += 2 ) {
         for ( let sox = -2; sox <= 2; sox += 2 ) {
@@ -103,14 +85,13 @@ square_around_diamond()
             }
         }
     }
-}
+});
 
 
 /**
  * ダイヤモンドの周辺に正方形 (頂点で交差する)
  */
-function
-diamond_square_vertex()
+test('diamond_square_vertex', () =>
 {
     for ( let soy = -1; soy <= 1; soy += 1 ) {
         for ( let sox = -1; sox <= 1; sox += 1 ) {
@@ -138,15 +119,13 @@ diamond_square_vertex()
             }
         }
     }
-}
+});
 
 
 /**
  * ほぼ同じ三角形同士
  */
-function
-similar_triangles()
-{
+test('similar_triangles', () => {
     for ( let i = 0; i < 100; ++i ) {
         let original_points = create_random_triangle_points();
         let  similar_points = [];
@@ -163,15 +142,13 @@ similar_triangles()
 
         let icp = ocp.getIntersection( scp );  // 誤差により妥当にならない可能性はある
     }
-}
+});
 
 
 /**
  * 凸多角形の妥当性を検査
  */
-function
-check_validity( cp )
-{
+const check_validity = cp => {
     if ( (cp !== null) && !cp.isValid() ) {
         console.error( "invalid convex polygon!" );
     }
@@ -183,17 +160,13 @@ check_validity( cp )
 /**
  * ランダム三角形を生成
  */
-function
-create_random_triangle()
-{
+const create_random_triangle = () => {
     // 凸多角形を生成
     return check_validity( new ConvexPolygon( create_random_triangle_points() ) );
-}
+};
 
 
-function
-create_random_triangle_points()
-{
+const create_random_triangle_points = () => {
     // 任意周り 3 点
     let points = [];
     for ( let i = 0; i < 3; ++i ) {
@@ -220,9 +193,7 @@ create_random_triangle_points()
 }
 
 
-function
-create_diamond_and_squre( sox, soy )
-{
+const create_diamond_and_squre = ( sox, soy ) => {
     let diamond = check_validity( new ConvexPolygon( [0, 1, -1, 0, 0, -1, 1, 0] ) );
     let square  = check_validity( new ConvexPolygon( [-1 + sox, -1 + soy,
                                                       1 + sox, -1 + soy,
@@ -230,6 +201,3 @@ create_diamond_and_squre( sox, soy )
                                                       -1 + sox, 1 + soy] ) );
     return { diamond, square };
 }
-
-
-export default convexpolygon_tests;
