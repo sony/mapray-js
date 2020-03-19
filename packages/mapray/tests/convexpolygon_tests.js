@@ -9,14 +9,9 @@ test('same_triangle', () =>
         let cp = create_random_triangle();
 
         // 同一なら交差するはず
-        if ( cp.getIntersection( cp ) == null ) {
-            console.error( "intersection error" );
-        }
-
+        expect(cp.getIntersection( cp )).not.toBeNull()
         // 同一なら交差するはず
-        if ( !cp.hasIntersection( cp ) ) {
-            console.error( "intersection error" );
-        }
+        expect(cp.hasIntersection( cp )).toBeTruthy()
     }
 });
 
@@ -31,6 +26,7 @@ test('different_triangle', () => {
         let cp2 = create_random_triangle();
 
         let icp = check_validity( cp1.getIntersection( cp2 ) );
+        expect(icp).toEqual(cp1.getIntersection( cp2 ));
     }
 });
 
@@ -40,17 +36,13 @@ test('different_triangle', () => {
  */
 test('diamond_square_fit' , () => {
     let {diamond, square} = create_diamond_and_squre( 0, 0 );
-
-    if ( !square.includes( diamond ) || diamond.includes( square ) ) {
-        console.error( "includes error" );
-    }
+    expect(square.includes( diamond )).toBeTruthy();
+    expect(diamond.includes( square )).toBeFalsy();
 
     let icp1 = check_validity( diamond.getIntersection( square ) );
     let icp2 = check_validity( square.getIntersection( diamond ) );
-
-    if ( icp1 === null || icp2 === null ) {
-        console.error( "intersection error" );
-    }
+    expect(icp1).not.toBeNull();
+    expect(icp2).not.toBeNull();
 });
 
 
@@ -64,25 +56,16 @@ test('square_around_diamond', () =>
             if ( sox == 0 && soy == 0 ) continue; // ど真ん中は飛ばす
 
             let {diamond, square} = create_diamond_and_squre( sox, soy );
+            expect(square.includes( diamond )).toBeFalsy();
+            expect(diamond.includes( square )).toBeFalsy();
+            expect(diamond.hasIntersection( square )).toBeFalsy();
+            expect(square.hasIntersection( diamond )).toBeFalsy();
 
-            if ( square.includes( diamond ) || diamond.includes( square ) ) {
-                console.error( "includes error" );
-            }
-
-            if ( diamond.hasIntersection( square ) ) {
-                console.error( "intersection error" );
-            }
-
-            if ( square.hasIntersection( diamond ) ) {
-                console.error( "intersection error" );
-            }
 
             let icp1 = check_validity( diamond.getIntersection( square ) );
             let icp2 = check_validity( square.getIntersection( diamond ) );
-
-            if ( icp1 !== null || icp2 !== null ) {
-                console.error( "intersection error" );
-            }
+            expect(icp1).toBeNull();
+            expect(icp2).toBeNull();
         }
     }
 });
@@ -98,25 +81,15 @@ test('diamond_square_vertex', () =>
             if ( sox == 0 && soy == 0 ) continue; // ど真ん中は飛ばす
 
             let {diamond, square} = create_diamond_and_squre( sox, soy );
-
-            if ( square.includes( diamond ) || diamond.includes( square ) ) {
-                console.error( "includes error" );
-            }
-
-            if ( !diamond.hasIntersection( square ) ) {
-                console.error( "intersection error" );
-            }
-
-            if ( !square.hasIntersection( diamond ) ) {
-                console.error( "intersection error" );
-            }
+            expect(square.includes( diamond )).toBeFalsy();
+            expect(diamond.includes( square )).toBeFalsy();
+            expect(diamond.hasIntersection( square )).toBeTruthy();
+            expect(square.hasIntersection( diamond )).toBeTruthy();
 
             let icp1 = check_validity( diamond.getIntersection( square ) );
             let icp2 = check_validity( square.getIntersection( diamond ) );
-
-            if ( icp1 === null || icp2 === null ) {
-                console.error( "intersection error" );
-            }
+            expect(icp1).not.toBeNull();
+            expect(icp2).not.toBeNull();
         }
     }
 });
@@ -126,6 +99,7 @@ test('diamond_square_vertex', () =>
  * ほぼ同じ三角形同士
  */
 test('similar_triangles', () => {
+    expect.assertions(0);
     for ( let i = 0; i < 100; ++i ) {
         let original_points = create_random_triangle_points();
         let  similar_points = [];
@@ -140,7 +114,12 @@ test('similar_triangles', () => {
         let ocp = check_validity( new ConvexPolygon( original_points ) );
         let scp = new ConvexPolygon( similar_points );  // 稀に妥当にならない可能性はある
 
-        let icp = ocp.getIntersection( scp );  // 誤差により妥当にならない可能性はある
+        try {
+            let icp = ocp.getIntersection( scp );  // 誤差により妥当にならない可能性はある
+        }
+        catch (e) {
+            expect(e).not.toBeUndefined();
+        }
     }
 });
 

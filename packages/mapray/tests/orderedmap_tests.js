@@ -4,15 +4,11 @@ test('serial_insert', () => {
     for ( let map of create_serial_maps() ) {
         // 順次確認
         for ( let it = map.findFirst(), cnt = 0; it !== null; it = it.findSuccessor(), ++cnt ) {
-            if ( it.value != cnt ) {
-                console.error( "it.value != cnt" );
-            }
+            expect(it.value).toEqual(cnt)
         }
         // 逆順確認
         for ( let it = map.findLast(), cnt = map.size - 1; it !== null; it = it.findPredecessor(), --cnt ) {
-            if ( it.value != cnt ) {
-                console.error( "it.value != cnt" );
-            }
+            expect(it.value).toEqual(cnt)
         }
     }
 });
@@ -171,9 +167,7 @@ test('random_overall', () => {
 
     let map3 = map2.clone();
 
-    if ( map3.size != count ) {
-        console.error( "map3.size != count" );
-    }
+    expect(map3.size).toEqual(count);
 
     let items = [];
 
@@ -182,26 +176,14 @@ test('random_overall', () => {
         let upper = map3.findUpper( key );
         let equal = map3.findEqual( key );
 
-        if ( lower === null || lower === upper || equal === null ) {
-            console.error( "not found" );
-        }
-
-        if ( lower.key != key ) {
-            console.error( "lower.key != key" );
-        }
-
-        if ( lower.value != value2 ) {
-            console.error( "lower.value != value2" );
-        }
-
-        if ( equal.key != key ) {
-            console.error( "equal.key != key" );
-        }
-
-        if ( equal.value != value2 ) {
-            console.error( "equal.value != value2" );
-        }
-
+        expect(lower).not.toBeNull();
+        expect(lower).not.toEqual(upper);
+        expect(equal).not.toBeNull();
+        expect(lower.key).toEqual(key);
+        expect(lower.value).toEqual(value2);
+        expect(equal.key).toEqual(key);
+        expect(equal.value).toEqual(value2);
+  
         items.push( lower );
     }
 
@@ -245,11 +227,7 @@ const create_serial_maps = () => {
 }
 
 
-const assert_empty = map => {
-    if ( !map.isEmpty() ) {
-        console.error( "!map.isEmpty()" );
-    }
-}
+const assert_empty = map => expect(map.isEmpty()).toBeTruthy();
 
 
 const shuffleArray = array => {
