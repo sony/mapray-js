@@ -1,4 +1,8 @@
 # Change Log
+## 0.8.0
+- Build the foundation of the animation engine [#101](https://github.com/sony/mapray-js/pull/101)
+- Modulized maprayJS and ui packages [#107](https://github.com/sony/mapray-js/pull/107)
+
 ## 0.7.3
 - fixed that glTF rendering is black and nolighting [#97](https://github.com/sony/mapray-js/issues/97)
 
