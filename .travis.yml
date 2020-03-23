@@ -5,26 +5,48 @@ node_js:
 git:
   depth: false
 
+cache:
+  yarn: true
+
 before_install:
   - npm install -g firebase-tools
 
 script: 
   - echo "npm test temporarily disabled"
-  - npm run release
-  - npm pack
+  - yarn build
+  - echo "TRAVIS_BUILD_DIR:"$TRAVIS_BUILD_DIR
+  - cd $TRAVIS_BUILD_DIR/packages/mapray
+  - yarn pack
+  - cd $TRAVIS_BUILD_DIR/packages/ui
+  - yarn pack
+  - cd $TRAVIS_BUILD_DIR
 
 deploy:
   - provider: script
     skip_cleanup: true
-    script: bash ./_deploy/scripts/setup_deploy.sh dev
+    script: bash ./_deploy/scripts/setup_deploy.sh -t mapray -a dev
     on:
       all_branches: true
   - provider: script
     skip_cleanup: true
-    script: bash ./_deploy/scripts/setup_deploy.sh staging
+    script: bash ./_deploy/scripts/setup_deploy.sh -t ui -a dev
+    on:
+      all_branches: true
   - provider: script
     skip_cleanup: true
-    script: bash ./_deploy/scripts/setup_deploy.sh production
+    script: bash ./_deploy/scripts/setup_deploy.sh -t mapray -a staging
+  - provider: script
+    skip_cleanup: true
+    script: bash ./_deploy/scripts/setup_deploy.sh -t ui -a staging
+  - provider: script
+    skip_cleanup: true
+    script: bash ./_deploy/scripts/setup_deploy.sh -t mapray -a production
+    on:
+      tags: true
+      condition: $TRAVIS_TAG =~ [0-9]+(\.[0-9]+)
+  - provider: script
+    skip_cleanup: true
+    script: bash ./_deploy/scripts/setup_deploy.sh -t ui -a production
     on:
       tags: true
       condition: $TRAVIS_TAG =~ [0-9]+(\.[0-9]+)
@@ -44,7 +66,23 @@ deploy:
       condition: $TRAVIS_TAG =~ [0-9]+(\.[0-9]+)
   - provider: script
     skip_cleanup: true
-    script: bash ./_deploy/scripts/deploy_to_npm_com.sh ${NPM_TOKEN}
+    script: bash ./_deploy/scripts/deploy_to_npm_com.sh -t mapray -n ${NPM_TOKEN}
     on:
       tags: true
       condition: $TRAVIS_TAG =~ [0-9]+(\.[0-9]+)
+  - provider: script
+    skip_cleanup: true
+    script: bash ./_deploy/scripts/deploy_to_npm_com.sh -t ui -n ${NPM_TOKEN}
+    on:
+      tags: true
+      condition: $TRAVIS_TAG =~ [0-9]+(\.[0-9]+)
+  - provider: script
+    skip_cleanup: true
+    script: bash ./_deploy/scripts/deploy_to_npm_com.sh -t mapray -n ${NPM_TOKEN} -d
+    on:
+      all_branches: true
+  - provider: script
+    skip_cleanup: true
+    script: bash ./_deploy/scripts/deploy_to_npm_com.sh -t ui -n ${NPM_TOKEN} -d
+    on:
+      all_branches: true

@@ -1,0 +1,72 @@
+{
+  "name": "@mapray/mapray-js",
+  "version": "0.7.3",
+  "description": "3D Rendering Engine for GIS",
+  "keywords": [
+    "3D",
+    "sdk",
+    "api",
+    "webgl",
+    "map",
+    "geospatial",
+    "globe"
+  ],
+  "main": "dist/umd/mapray.js",
+  "unpkg": "dist/umd/mapray.min.js",
+  "module": "dist/es/mapray.js",
+  "directories": {
+    "doc": "doc"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "build-watch": "rollup -c -w",
+    "jsdoc": "jsdoc --recurse --destination ./../../doc/jsdoc --package ./package.json --readme ./../../doc/config/reference_top.md --access undefined,public,protected  --configure ./../../doc/config/jsdoc.json ./src/",
+    "jsdoc-devel": "jsdoc --recurse --destination ./../../doc/jsdoc --package ./package.json --readme ./../../doc/config/reference_top.md --private  --configure ./../../doc/config/jsdoc.json ./src/",
+    "tests-devel": "cross-env webpack --watch --mode=development --env.NODE_ENV=tests",
+    "test": "jest"
+  },
+  "contributors": [
+    {
+      "name": "Yasuhisa Tanioka"
+    },
+    {
+      "name": "Daisuke Matsumoto",
+      "url": "https://github.com/daisuke201"
+    },
+    {
+      "name": "masa-sony"
+    }
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sony/mapray-js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sony/mapray-js/issues"
+  },
+  "homepage": "https://mapray.com",
+  "devDependencies": {
+    "@babel/core": "^7.8.4",
+    "@babel/preset-env": "^7.8.4",
+    "babel-loader": "^8.0.6",
+    "core-js": "3",
+    "cross-env": "^7.0.0",
+    "jest": "^25.1.0",
+    "jsdoc": "^3.5.0",
+    "rollup": "^1.31.1",
+    "rollup-plugin-babel": "^4.3.3",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "rollup-plugin-string": "^3.0.0",
+    "rollup-plugin-terser": "^5.2.0"
+  },
+  "dependencies": {},
+  "jest": {
+    "testRegex": "(/tests/.*\\_tests\\.js)$"
+  }
+}

@@ -3,6 +3,10 @@ dist/
 doc/jsdoc/
 node_modules/
 
+*/**/yarn.lock
+yarn-error.log
+package-lock.json
+
 .idea
 .vscode
 .DS_Store

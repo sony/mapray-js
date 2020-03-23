@@ -26,4 +26,3 @@ echo "PROJECT_ID in deploy_to_cdn:"${_PROJECT_ID}
 
 cd ${DEPLOYED_DIR}
 firebase deploy --project ${_PROJECT_ID} --token=${_TOKEN}
-

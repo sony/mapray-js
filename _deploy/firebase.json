@@ -37,7 +37,25 @@
         ]
       },
       {
-        "source" : "/mapray-js/**/maprayui.js",
+        "source" : "/mapray-js/**/mapray.min.js",
+        "headers" : [ 
+          {
+            "key" : "Cache-Control",
+            "value" : "max-age=86400"
+          } 
+        ]
+      },
+      {
+        "source" : "/ui/**/maprayui.js",
+        "headers" : [ 
+          {
+            "key" : "Cache-Control",
+            "value" : "max-age=86400"
+          } 
+        ]
+      },
+      {
+        "source" : "/ui/**/maprayui.min.js",
         "headers" : [ 
           {
             "key" : "Cache-Control",
