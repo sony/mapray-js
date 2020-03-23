@@ -12,14 +12,14 @@
   ],
   "scripts": {
     "build": "run-p mapray ui css jsdoc",
-    "mapray": "yarn workspace @mapray/mapray-js-dummy build",
-    "mapray-watch": "yarn workspace @mapray/mapray-js-dummy build-watch",
-    "ui": "yarn workspace @mapray/ui-dummy build",
-    "ui-watch": "yarn workspace @mapray/ui-dummy build-watch",
-    "css": "yarn workspace @mapray/ui-dummy css",
-    "jsdoc": "yarn workspace @mapray/mapray-js-dummy jsdoc",
-    "jsdoc-devel": "yarn workspace @mapray/mapray-js-dummy jsdoc-devel",
-    "test": "yarn workspace @mapray/mapray-js-dummy test",
+    "mapray": "yarn workspace @mapray/mapray-js build",
+    "mapray-watch": "yarn workspace @mapray/mapray-js build-watch",
+    "ui": "yarn workspace @mapray/ui build",
+    "ui-watch": "yarn workspace @mapray/ui build-watch",
+    "css": "yarn workspace @mapray/ui css",
+    "jsdoc": "yarn workspace @mapray/mapray-js jsdoc",
+    "jsdoc-devel": "yarn workspace @mapray/mapray-js jsdoc-devel",
+    "test": "yarn workspace @mapray/mapray-js test",
     "start-server": "st --no-cache -H 0.0.0.0 --port 7776 --index index.html ."
   },
   "contributors": [

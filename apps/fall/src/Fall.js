@@ -1,4 +1,4 @@
-import mapray from "@mapray/mapray-js-dummy";
+import mapray from "@mapray/mapray-js";
 import FallRenderCallback from "./FallRenderCallback";
 
 

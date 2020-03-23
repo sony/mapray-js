@@ -43,9 +43,9 @@ echo "Command, yarn publish, is executed in "${PACKAGE_ROOT}
 _NAME="null"
 
 if [ ${_TARGET} = "mapray" ]; then
-  _NAME="mapray-js-dummy"
+  _NAME="mapray-js"
 elif [ ${_TARGET} = "ui" ]; then
-  _NAME="ui-dummy"
+  _NAME="ui"
 fi
 
 #_VERSION=`git describe --tags --abbrev=0`

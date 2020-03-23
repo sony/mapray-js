@@ -1,7 +1,7 @@
 {
-  "name": "@mapray/ui-dummy",
+  "name": "@mapray/ui",
   "version": "0.0.12",
-  "description": "3D Rendering Engine for GIS",
+  "description": "UI Engine for mapray-js",
   "keywords": [
     "3D",
     "sdk",
@@ -9,7 +9,9 @@
     "webgl",
     "map",
     "geospatial",
-    "globe"
+    "globe",
+    "ui",
+    "operation"
   ],
   "main": "dist/umd/maprayui.js",
   "unpkg": "dist/umd/maprayui.min.js",
@@ -68,6 +70,6 @@
   "dependencies": {
   },
   "peerDependencies": {
-    "@mapray/mapray-js-dummy": "^0.0.7"
+    "@mapray/mapray-js": "^0.0.12"
   }
 }

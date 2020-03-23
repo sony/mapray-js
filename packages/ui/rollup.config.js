@@ -63,10 +63,10 @@ export default [
       indent: false,
       sourcemap: true,
       globals: {
-        '@mapray/mapray-js-dummy': 'mapray'
+        '@mapray/mapray-js': 'mapray'
       }
     },
-    external: ['@mapray/mapray-js-dummy'],
+    external: ['@mapray/mapray-js'],
     plugins: [
       commonjs(),
       resolve(),
@@ -85,10 +85,10 @@ export default [
       name: 'maprayui',
       indent: false,
       globals: {
-        '@mapray/mapray-js-dummy': 'mapray'
+        '@mapray/mapray-js': 'mapray'
       }
     },
-    external: ['@mapray/mapray-js-dummy'],
+    external: ['@mapray/mapray-js'],
     plugins: [
       commonjs(),
       resolve(),

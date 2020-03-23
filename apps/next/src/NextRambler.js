@@ -1,6 +1,6 @@
 
-import mapray from "@mapray/mapray-js-dummy";
-import maprayui from "@mapray/ui-dummy";
+import mapray from "@mapray/mapray-js";
+import maprayui from "@mapray/ui";
 import BingMapsImageProvider from "./BingMapsImageProvider"
 import StatusBar from "./StatusBar";
 import Commander from "./Commander";

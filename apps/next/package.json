@@ -26,7 +26,7 @@
     "st": "^2.0.0"
   },
   "dependencies": {
-    "@mapray/mapray-js-dummy": "^0.0.7",
-    "@mapray/ui-dummy": "^0.0.7"
+    "@mapray/mapray-js": "^0.0.7",
+    "@mapray/ui": "^0.0.7"
   }
 }

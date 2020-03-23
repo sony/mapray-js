@@ -3,12 +3,12 @@ import replace from 'rollup-plugin-replace'
 const localConfig = (appDir) => (
         [
             replace({
-                '"@mapray/mapray-js-dummy"': JSON.stringify(appDir+"../packages/mapray/dist/es/mapray.js"),
+                '"@mapray/mapray-js"': JSON.stringify(appDir+"../packages/mapray/dist/es/mapray.js"),
                 delimiters: ['', ''],
                 exclude: appDir+"../packages/"
             }),
             replace({
-                '"@mapray/ui-dummy"': JSON.stringify(appDir+"../packages/ui/dist/es/maprayui.js"),
+                '"@mapray/ui"': JSON.stringify(appDir+"../packages/ui/dist/es/maprayui.js"),
                 delimiters: ['', ''],
                 exclude: appDir+"../packages/"
             })
