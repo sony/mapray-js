@@ -27,13 +27,13 @@ setup-for-mapray-production-deploy:
 	./scripts/setup_deploy.sh -t mapray -a production
 
 .PHONY: release-ui-patch
-release-ui-patch: update-ui-patch-version build-ui-js setup-for-ui-production-deploy ;
+release-ui-patch: update-ui-patch-version build-ui build-css setup-for-ui-production-deploy ;
 
 .PHONY: release-ui-minor
-release-ui-minor: update-ui-minor-version build-ui-js setup-for-ui-production-deploy ;
+release-ui-minor: update-ui-minor-version build-ui build-css setup-for-ui-production-deploy ;
 
 .PHONY: release-ui-major
-release-ui-major: update-ui-major-version build-ui-js setup-for-ui-production-deploy ;
+release-ui-major: update-ui-major-version build-ui build-css setup-for-ui-production-deploy ;
 
 .PHONY: update-ui-patch-version
 update-ui-patch-version:
@@ -69,3 +69,7 @@ build-ui: # build ui package
 .PHONY: pack-ui
 pack-ui: # packing ui
 	cd $(UI_DIR); yarn pack;
+
+.PHONY: build-css
+build-css: # build css
+	cd $(UI_DIR); yarn css;
