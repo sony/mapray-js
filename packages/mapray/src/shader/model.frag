@@ -11,9 +11,13 @@ uniform sampler2D u_base_image;  // 基本色画像
 void
 main()
 {
+#ifndef UNLIT
     vec3 normal = normalize( v_normal );  // 法線 (視点座標系)
 
     vec3 dlit = vec3( dot( normal, u_light_dir ) );  // 拡散光の強さ
+#else
+    vec3 dlit = vec3( 1.0 );
+#endif
 
     gl_FragColor = u_base_color * texture2D( u_base_image, v_texcoord ) * vec4( dlit, 1.0 );
 }

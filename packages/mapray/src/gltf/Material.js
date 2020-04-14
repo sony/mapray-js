@@ -1,6 +1,7 @@
 import TextureInfo from "./TextureInfo";
 import NormalTextureInfo from "./NormalTextureInfo";
 import OcclusionTextureInfo from "./OcclusionTextureInfo";
+import CommonData from "./CommonData";
 
 
 /**
@@ -17,6 +18,9 @@ class Material {
      */
     constructor( ctx, index )
     {
+        const jmaterial = ctx.gjson.materials[index];
+        this._commonData = new CommonData( jmaterial, ctx );
+
         this._pbrMetallicRoughness = {
             baseColorFactor: [1.0, 1.0, 1.0, 1.0],
             baseColorTexture: null,
@@ -34,10 +38,18 @@ class Material {
         this._occlusionTexture = null;
 
         // glTF の material オブジェクト (specification/2.0/schema/material.schema.json)
-        var jmaterial = ctx.gjson.materials[index];
         this._setupPbrMetallicRoughness( jmaterial, ctx );
         this._setupGenericParameters( jmaterial, ctx );
     }
+
+
+    /**
+     * glTF オブジェクトの共通データ
+     *
+     * @type {mapray.gltf.CommonData}
+     * @readonly
+     */
+    get commonData() { return this._commonData; }
 
 
     /**

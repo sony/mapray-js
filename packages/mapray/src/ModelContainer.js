@@ -61,6 +61,22 @@ class ModelContainer {
 
 
     /**
+     * @summary 対応可能な glTF 拡張機能の配列を取得
+     *
+     * @desc
+     * <p>例えば {@link mapray.gltf.Tools.load} の supported_extensions オプションのために使用する。</p>
+     * <p>glTF のコンテンツがこれらの拡張機能だけで対応できないとき、読み込みに失敗することがある。</p>
+     *
+     * @return {string[]}
+     */
+    static
+    getSupportedExtensions_glTF()
+    {
+        return ["KHR_materials_unlit"];
+    }
+
+
+    /**
      * @summary オフセット用の変換行列を設定
      *
      * @param {mapray.Matrix} matrix  モデルの頂点座標を変換する変換行列
@@ -422,14 +438,25 @@ class Builder {
      */
     _createMaterial( iprim )
     {
-        var scene = this._mr_scene;
+        // キャッシュの場所とオプションを決定
+        let cache_suffix = "basic";
+        let options      = {};
 
-        if ( !scene._ModelEntity_model_material ) {
-            // scene にマテリアルをキャッシュ
-            scene._ModelEntity_model_material = new ModelMaterial( scene.glenv );
+        if ( iprim.material && iprim.material.commonData.getExtensions( "KHR_materials_unlit" ) ) {
+            cache_suffix     = "unlit";
+            options.is_unlit = true;
         }
 
-        return scene._ModelEntity_model_material;
+        // マテリアルのインスタンスを取得
+        const scene    = this._mr_scene;
+        const cache_id = "_ModelEntity_model_material_" + cache_suffix;
+
+        if ( !scene[cache_id] ) {
+            // scene にマテリアルをキャッシュ
+            scene[cache_id] = new ModelMaterial( scene.glenv, options );
+        }
+
+        return scene[cache_id];
     }
 
 
