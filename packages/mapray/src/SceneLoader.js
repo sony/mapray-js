@@ -160,7 +160,8 @@ class SceneLoader extends Loader {
                     return GltfTool.load( json, {
                             base_resource: gltf_resource,
                               binary_type: ResourceType.BINARY,
-                               image_type: ResourceType.IMAGE
+                               image_type: ResourceType.IMAGE,
+                     supported_extensions: ModelContainer.getSupportedExtensions_glTF()
                     } );
             } )
             .then( content => {

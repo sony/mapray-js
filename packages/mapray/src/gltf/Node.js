@@ -1,5 +1,6 @@
 import GeoMath from "../GeoMath";
 import Mesh from "./Mesh";
+import CommonData from "./CommonData";
 
 
 /**
@@ -19,6 +20,8 @@ class Node {
         // glTF の node オブジェクト (specification/2.0/schema/node.schema.json)
         var jnode = ctx.gjson.nodes[index];
 
+        this._commonData = new CommonData( jnode, ctx );
+
         this._children = [];
         this._matrix   = null;
         this._mesh     = null;
@@ -27,6 +30,15 @@ class Node {
         this._setupMatrix( jnode );
         this._setupMesh( jnode, ctx );
     }
+
+
+    /**
+     * glTF オブジェクトの共通データ
+     *
+     * @type {mapray.gltf.CommonData}
+     * @readonly
+     */
+    get commonData() { return this._commonData; }
 
 
     /**

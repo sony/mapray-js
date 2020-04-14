@@ -14,10 +14,16 @@ class ModelMaterial extends EntityMaterial {
 
     /**
      * @param {mapray.GLEnv} glenv
+     * @param {object}  [options]  オプション指定
+     * @param {boolean} [options.is_unlit=false]  無照光か？
      */
-    constructor( glenv )
+    constructor( glenv, options = {} )
     {
-        super( glenv, model_vs_code, model_fs_code );
+        const preamble = ModelMaterial._getPreamble( options );
+
+        super( glenv,
+               preamble + model_vs_code,
+               preamble + model_fs_code );
 
         // 均一色テクスチャ
         this._white_texture = new Texture( glenv, null, { usage: Texture.Usage.COLOR, color: [1, 1, 1, 1] } );
@@ -67,6 +73,31 @@ class ModelMaterial extends EntityMaterial {
         else {
             return alt_texure;
         }
+    }
+
+
+    /**
+     * @summary シェーダの前文を取得
+     *
+     * @param {object}  options  オプション指定
+     * @param {boolean} [options.is_unlit=false]  無照光か？
+     *
+     * @private
+     */
+    static
+    _getPreamble( options )
+    {
+        let is_unlit = (options.is_unlit !== undefined) ? options.is_unlit : false;
+
+        let lines = [];
+
+        // UNLIT マクロの定義
+        if ( is_unlit ) {
+            lines.push( "#define UNLIT" );
+        }
+
+        // lines を文字列にして返す
+        return lines.join( "\n" ) + "\n\n";
     }
 
 }

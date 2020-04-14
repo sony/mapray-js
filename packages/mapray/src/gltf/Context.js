@@ -27,10 +27,12 @@ class Context {
         this._base_resource = opts.base_resource;
         this._binary_type = opts.binary_type;
         this._image_type = opts.image_type;
+        this._supported_extensions = opts.supported_extensions || [];
 
         this._resolve  = null;  // Promise の resolve() 関数
         this._reject   = null;  // Promise の reject() 関数
 
+        this._used_extensions     = new Set();  // コンテンツが使用する拡張機能名の集合
         this._scenes              = [];
         this._default_scene_index = -1;
 
@@ -58,9 +60,20 @@ class Context {
             // glTF バージョンを確認
             var version = this._loadVersion();
             if ( version.major < 2 ) {
-                this._reject( new Error( "glTF version error" ) );
+                reject( new Error( "glTF version error" ) );
+                return;
             }
 
+            // コンテンツに必須の拡張機能をサポートしているかを確認
+            const supported_ext = this._getSupportedExtensionNames();
+            for ( const required_ext of this._enumRequiredExtensionNames() ) {
+                if ( !supported_ext.has( required_ext ) ) {
+                    reject( new Error( "glTF extension error: " + required_ext ) );
+                    return;
+                }
+            }
+
+            this._loadExtensionsUsed();
             this._loadScenes();
             this._loadDefaultSceneIndex();
             this._onFinishLoadBody();
@@ -87,6 +100,61 @@ class Context {
 
         return { major: major_version,
                  minor: minor_version };
+    }
+
+
+    /**
+     * @summary 必須の拡張機能の名前を列挙
+     *
+     * @desc
+     * <p>glTF アセットから必須の拡張機能を解析して、
+     *    その拡張機能の名前を列挙する。</p>
+     *
+     * @return {iterable.<string>}  拡張機能名の列挙
+     *
+     * @private
+     */
+    _enumRequiredExtensionNames()
+    {
+        return this._gjson.extensionsRequired || [];
+    }
+
+
+    /**
+     * @summary 対応可能な拡張機能の名前の集合を取得
+     *
+     * @desc
+     * <p>glTF のローダーとクライアントが対応できる拡張機能の
+     *    名前の集合を取得する。</p>
+     *
+     * @return {Set.<string>}  拡張機能名の集合
+     *
+     * @private
+     */
+    _getSupportedExtensionNames()
+    {
+        // ローダー自身が対応できる拡張機能
+        // ※ 今のところサポートできる拡張機能はない
+        const supported_extensions_by_loader = [];
+
+        // ローダーを呼び出す側が対応できる拡張機能
+        const supported_extensions_by_client = this._supported_extensions;
+
+        return new Set( supported_extensions_by_loader.concat( supported_extensions_by_client ) );
+    }
+
+
+    /**
+     * @summary コンテンツが使用する拡張機能を読み込む
+     *
+     * @desc
+     * <p>extensionsUsed プロパティを読み込み this._used_extensions を設定する。</p>
+     *
+     * @private
+     */
+    _loadExtensionsUsed()
+    {
+        this._used_extensions = new Set( this._gjson.extensionsUsed || [] );
     }
 
 
@@ -131,6 +199,31 @@ class Context {
      * @readonly
      */
     get gjson() { return this._gjson; }
+
+
+    /**
+     * @summary 拡張機能の抽出
+     *
+     * @desc
+     * <p>拡張機能固有オブジェクト extensions から extensionsUsed
+     *    に存在するものだけを抽出する。</p>
+     *
+     * @param {object} extensions
+     *
+     * @return {object}
+     */
+    extractUsedExtensions( extensions )
+    {
+        let dict = {};
+
+        for ( let key in extensions ) {
+            if ( this._used_extensions.has( key ) ) {
+                dict[key] = extensions[key];
+            }
+        }
+
+        return dict;
+    }
 
 
     /**
@@ -293,7 +386,7 @@ class Context {
             this._rewriteBuffersForByteOrder();
             this._splitBuffersAndRebuildAccessors();
             this._rebuildTextureInfo();
-            this._resolve( new Content( this._scenes, this._default_scene_index ) );
+            this._resolve( new Content( this, this._scenes, this._default_scene_index ) );
             this._settled = true;
         }
     }

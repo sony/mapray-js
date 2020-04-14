@@ -1,3 +1,6 @@
+import CommonData from "./CommonData";
+
+
 /**
  * 読み込んだ glTF データの内容
  *
@@ -7,14 +10,26 @@
 class Content {
 
     /**
-     * @param {mapray.gltf.Scene[]} scenes               シーンの配列
-     * @param {number}              default_scene_index  既定シーンの索引
+     * @param {mapray.gltf.Context}    ctx  読み込みコンテキスト
+     * @param {mapray.gltf.Scene[]} scenes  シーンの配列
+     * @param {number} default_scene_index  既定シーンの索引 (既定シーンがないときは -1)
      */
-    constructor( scenes, default_scene_index )
+    constructor( ctx, scenes, default_scene_index )
     {
-        this._scene               = scenes;
+        this._commonData = new CommonData( ctx.gjson, ctx );
+
+        this._scenes              = scenes;
         this._default_scene_index = default_scene_index;
     }
+
+
+    /**
+     * glTF オブジェクトの共通データ
+     *
+     * @type {mapray.gltf.CommonData}
+     * @readonly
+     */
+    get commonData() { return this._commonData; }
 
 
     /**
@@ -25,7 +40,7 @@ class Content {
      */
     get scenes()
     {
-        return this._scene;
+        return this._scenes;
     }
 
 
