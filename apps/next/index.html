@@ -17,6 +17,7 @@
                 padding: 0;">JavaScriptが無効になっています。MaprayのWebサイトを正しく表示するためにはJavaScriptを有効にして下さい。</p>
         </div>
     </noscript>
+    <link rel="stylesheet" href="uikit-3.2.3/css/uikit.min.css" />
     <style>
         html, body {
             height:  100%;
@@ -51,6 +52,17 @@
     </style>
 </head>
 <body onload="window.startApp('mapray-container');">
+    <div class="uk-section uk-section-muted uk-padding-remove-vertical">
+        <div class="uk-container uk-container-expand">
+            <nav class="uk-navbar-container" uk-navbar>
+                <div class="uk-navbar-left">
+                    <ul class="uk-navbar-nav">
+                        <a class="uk-navbar-item uk-logo" href="https://mapray.com">Mapray Rambler</a>
+                    </ul>
+                </div>
+            </nav>
+        </div>
+    </div>
 <div id="contents">
     <div id="mapray-container">
     </div>
