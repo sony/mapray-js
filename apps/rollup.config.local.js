@@ -3,12 +3,17 @@ import replace from 'rollup-plugin-replace'
 const localConfig = (appDir) => (
         [
             replace({
-                '"@mapray/mapray-js"': JSON.stringify(appDir+"../packages/mapray/dist/es/mapray.js"),
+                '"@mapray/mapray-js"': JSON.stringify(appDir+"../node_modules/@mapray/mapray-js/src/index.js"),
                 delimiters: ['', ''],
                 exclude: appDir+"../packages/"
             }),
             replace({
-                '"@mapray/ui"': JSON.stringify(appDir+"../packages/ui/dist/es/maprayui.js"),
+                '"@mapray/mapray-js"': JSON.stringify(appDir+"../../node_modules/@mapray/mapray-js/src/index.js"),
+                delimiters: ['', ''],
+                include: appDir+"../packages/"
+            }),
+            replace({
+                '"@mapray/ui"': JSON.stringify(appDir+"../node_modules/@mapray/ui/src/index.js"),
                 delimiters: ['', ''],
                 exclude: appDir+"../packages/"
             })
@@ -29,3 +34,12 @@ export function addLocalSettings(env, appDir, bundle) {
 
     return bundle;
 };
+
+export function makeExternalPredicate(externalArr) {
+    if (externalArr.length === 0) {
+        return () => false
+    }
+    const pattern = new RegExp(`^(${externalArr.join('|')})($|/)`)
+    return id => pattern.test(id)
+}
+
