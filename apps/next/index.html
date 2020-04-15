@@ -17,7 +17,7 @@
                 padding: 0;">JavaScriptが無効になっています。MaprayのWebサイトを正しく表示するためにはJavaScriptを有効にして下さい。</p>
         </div>
     </noscript>
-    <link rel="stylesheet" href="uikit-3.2.3/css/uikit.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.4.0/dist/css/uikit.min.css" />
     <style>
         html, body {
             height:  100%;
@@ -36,11 +36,13 @@
             position: relative;
         }
         div#statusbar {
-            display:          flex;
-            flex-direction:   row;
-            flex-wrap:        wrap;
-            justify-content:  space-between;
-            background-color: #ddd;
+            position: absolute;
+            bottom: 300px;
+            left: 0;
+            right: 0;
+            width: 100%;
+            height: 32px;
+            background-color: rgba(0, 0, 0, 0.6);
         }
 
         table {
@@ -52,62 +54,54 @@
     </style>
 </head>
 <body onload="window.startApp('mapray-container');">
-    <div class="uk-section uk-section-muted uk-padding-remove-vertical">
-        <div class="uk-container uk-container-expand">
-            <nav class="uk-navbar-container" uk-navbar>
+    <div id="offcanvas-slide" uk-offcanvas>
+        <div class="uk-offcanvas-bar">
+    
+            <ul class="uk-nav uk-nav-default">
+                <li class="uk-active"><a href="#">Active</a></li>
+                <li><a href="#">Item</a></li>
+                <li class="uk-nav-header">Header</li>
+                <li><a href="#">Item</a></li>
+                <li><a href="#">Item</a></li>
+                <li class="uk-nav-divider"></li>
+                <li><a href="#">Item</a></li>
+            </ul>
+    
+        </div>
+    </div>
+
+    <div id="contents">
+        <div id="mapray-container">
+        </div>
+
+        <div class="uk-section uk-position-top uk-padding-remove-vertical">
+            <nav class="uk-navbar-container uk-navbar-transparent" uk-navbar>
                 <div class="uk-navbar-left">
-                    <ul class="uk-navbar-nav">
-                        <a class="uk-navbar-item uk-logo" href="https://mapray.com">Mapray Rambler</a>
-                    </ul>
+                        <a class="uk-navbar-toggle" uk-navbar-toggle-icon href="#offcanvas-slide" uk-toggle></a>
                 </div>
             </nav>
         </div>
-    </div>
-<div id="contents">
-    <div id="mapray-container">
-    </div>
-    <div id="statusbar">
-        <table id="left-table" border="1">
-            <tr>
-                <th width="110">緯度</th>
-                <th width="110">経度</th>
-                <th width="110">高度 (カメラ)</th>
-                <th width="110">標高 (地表面)</th>
-                <th width="60">方位角</th>
-                <th width="60">仰俯角</th>
-                <th width="60">画角</th>
-                <th width="60">layer</th>
-            </tr>
-            <tr align="center">
-                <td id="latitude">---</td>
-                <td id="longitude">---</td>
-                <td id="cam-height">---</td>
-                <td id="elevation">---</td>
-                <td id="yaw-angle">---</td>
-                <td id="pitch-angle">---</td>
-                <td id="fov-angle">---</td>
-                <td id="layer">---</td>
-            </tr>
-        </table>
 
-        <table id="right-table" border="1">
-            <tr>
-                <th width="60">cnt.mesh</th>
-                <th width="60">cnt.vert</th>
-                <th width="60">reqs.dem</th>
-                <th width="60">reqs.img</th>
-                <th>データ提供</th>
-            </tr>
-            <tr align="center">
-                <td id="cnt-mesh">---</td>
-                <td id="cnt-vert">---</td>
-                <td id="reqs-dem">---</td>
-                <td id="reqs-img">---</td>
-                <td id="provider">---</td>
-            </tr>
-        </table>
+        <div id="statusbar">
+            <span>latitude:<span id="latitude">---</span></span>
+            <span>longitude:<span id="longitude">---</span></span>
+            <span>altitude:<span id="cam-height">---</span></span>
+            <span>elevation:<span id="elevation">---</span></span>
+            <span>yaw:<span id="yaw-angle">---</span></span>
+            <span>pitch:<span id="pitch-angle">---</span></span>
+            <span>fov:<span id="fov-angle">---</span></span>
+            <span>layer:<span id="layer">---</span></span>
+            <span>cnt.mesh:<span id="cnt-mesh">---</span></span>
+
+            <span>cnt.vert:<span id="cnt-vert">---</span></span>
+            <span>cnt.dem:<span id="reqs-dem">---</span></span>
+            <span>cnt.img:<span id="reqs-img">---</span></span>
+        </div>
     </div>
-</div>
-    </body>
-    <script type="text/javascript" src="./dist/bundle.js"></script>
+
+   
+</body>
+<script src="https://cdn.jsdelivr.net/npm/uikit@3.4.0/dist/js/uikit.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/uikit@3.4.0/dist/js/uikit-icons.min.js"></script>
+<script type="text/javascript" src="./dist/bundle.js"></script>
 </html>

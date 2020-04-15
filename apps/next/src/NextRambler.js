@@ -24,14 +24,36 @@ class NextRambler extends maprayui.StandardUIViewer {
      */
     constructor( container )
     {
+        let config = new mapray.AttributionController(container, {
+            "attributions":[
+                {
+                    display: "©Mapray",
+                    link: "https://mapray.com"
+                },
+                {
+                    display: "©JAXA",
+                    link: "http://www.jaxa.jp/"
+                },
+                {
+                    display: "測量法に基づく国土地理院長承認（複製）H30JHf626",
+                    link: "https://www.gsi.go.jp/kiban/index.html"
+                },
+                {
+                    display: "国土地理院",
+                    link: "http://maps.gsi.go.jp/development/ichiran.html"
+                }
+            ]
+        });
+
         super( container, accessToken, { 
-            debug_stats: new mapray.DebugStats()/*, 
+            debug_stats: new mapray.DebugStats(),
+            attribution_controller: config
+            /*, 
            image_provider: new BingMapsImageProvider( {
                 uriScheme: "https",
                 key: "<your Bing Maps Key here>"
             } )*/
-        } 
-        );
+        });
 
         // this.addLayer( { image_provider: this._createLayerImageProvider(), opacity: 1.0 } );
         this._commander = new Commander( this._viewer );
@@ -71,6 +93,7 @@ class NextRambler extends maprayui.StandardUIViewer {
         this._isGIS = false;
         this._isBing = false;
         this._layer_transparency = 10; //layer
+
     }
 
     /**

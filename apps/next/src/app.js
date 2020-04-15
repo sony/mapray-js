@@ -1,4 +1,5 @@
 import NextRamber from './NextRambler';
+import mapray from '@mapray/mapray-js';
 
 class App {
     constructor( container ) {

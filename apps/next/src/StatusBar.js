@@ -33,7 +33,6 @@ class StatusBar {
         this._elem_cnt_vert = document.getElementById( "cnt-vert" );
         this._elem_reqs_dem = document.getElementById( "reqs-dem" );
         this._elem_reqs_img = document.getElementById( "reqs-img" );
-        this._elem_provider = document.getElementById( "provider" );
 
         this._elem_provider.innerHTML = provider_name;
 
