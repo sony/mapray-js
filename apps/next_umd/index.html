@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Mapray Rambler</title>
+    <noscript>
+        <div style="
+            padding: 0.5em 1em;
+            margin: 2em 0;
+            color: black;
+            background: #fcefb7;
+            border: solid 2px #f8d450;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.22);
+        ">
+            <p style="
+                margin: 0;
+                padding: 0;">JavaScriptが無効になっています。MaprayのWebサイトを正しく表示するためにはJavaScriptを有効にして下さい。</p>
+        </div>
+    </noscript>
+    <style>
+        html, body {
+            height:  100%;
+            margin:  0;
+            padding: 0;
+        }
+        div#contents {
+            display:        flex;
+            flex-direction: column;
+            flex-wrap:      nowrap;
+            height:         100%;
+        }
+        div#mapray-container {
+            height:    0;
+            flex-grow: 1;
+            position: relative;
+        }
+        div#statusbar {
+            display:          flex;
+            flex-direction:   row;
+            flex-wrap:        wrap;
+            justify-content:  space-between;
+            background-color: #ddd;
+        }
+
+        table {
+            border-collapse: collapse;
+        }
+        td, th {
+            padding: 0px 15px;
+        }
+    </style>
+</head>
+<body onload="window.startApp('mapray-container');">
+<div id="contents">
+    <div id="mapray-container">
+    </div>
+    <div id="statusbar">
+        <table id="left-table" border="1">
+            <tr>
+                <th width="110">緯度</th>
+                <th width="110">経度</th>
+                <th width="110">高度 (カメラ)</th>
+                <th width="110">標高 (地表面)</th>
+                <th width="60">方位角</th>
+                <th width="60">仰俯角</th>
+                <th width="60">画角</th>
+                <th width="60">layer</th>
+            </tr>
+            <tr align="center">
+                <td id="latitude">---</td>
+                <td id="longitude">---</td>
+                <td id="cam-height">---</td>
+                <td id="elevation">---</td>
+                <td id="yaw-angle">---</td>
+                <td id="pitch-angle">---</td>
+                <td id="fov-angle">---</td>
+                <td id="layer">---</td>
+            </tr>
+        </table>
+
+        <table id="right-table" border="1">
+            <tr>
+                <th width="60">cnt.mesh</th>
+                <th width="60">cnt.vert</th>
+                <th width="60">reqs.dem</th>
+                <th width="60">reqs.img</th>
+                <th>データ提供</th>
+            </tr>
+            <tr align="center">
+                <td id="cnt-mesh">---</td>
+                <td id="cnt-vert">---</td>
+                <td id="reqs-dem">---</td>
+                <td id="reqs-img">---</td>
+                <td id="provider">---</td>
+            </tr>
+        </table>
+    </div>
+</div>
+    </body>
+    <!--@ADDITIONAL_SCRIPTS@-->
+    <script type="text/javascript" src="./dist/bundle.js"></script>
+</html>

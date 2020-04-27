@@ -1,4 +1,4 @@
-import mapray from '@mapray/mapray-js';
+import mapray from "@mapray/mapray-js";
 
 var GeoMath = mapray.GeoMath;
 var GeoPoint = mapray.GeoPoint;
