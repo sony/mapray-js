@@ -12,7 +12,8 @@ before_install:
   - npm install -g firebase-tools
 
 script: 
-  - echo "npm test temporarily disabled"
+  - yarn test
+  - echo "yarn test finished"
   - yarn build
   - echo "TRAVIS_BUILD_DIR:"$TRAVIS_BUILD_DIR
   - cd $TRAVIS_BUILD_DIR/packages/mapray
