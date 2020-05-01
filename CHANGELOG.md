@@ -1,4 +1,9 @@
 # Change Log
+## 0.8.1
+- Support glTF KHR_materials_unlit[#115](https://github.com/sony/mapray-js/issues/115), [#112](https://github.com/sony/mapray-js/pull/112)
+- Delete non-required packages and add required packages[#113](https://github.com/sony/mapray-js/issues/113), [#114](https://github.com/sony/mapray-js/issues/114)
+- Modify includiing modules when build dev mode [#116](https://github.com/sony/mapray-js/issues/116)
+
 ## 0.8.0
 - Build the foundation of the animation engine [#101](https://github.com/sony/mapray-js/pull/101)
 - Modulized maprayJS and ui packages [#107](https://github.com/sony/mapray-js/pull/107)
@@ -221,5 +226,4 @@ It can be selected by specifying.
 - Added Text Entity
 
 ### Changed
-- The scene schema of MarkerLineEntity
-
+- The scene schema of MarkerL

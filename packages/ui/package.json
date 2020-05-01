@@ -69,6 +69,6 @@
   },
   "dependencies": {},
   "peerDependencies": {
-    "@mapray/mapray-js": "^0.8.0"
+    "@mapray/mapray-js": "^0.8.1"
   }
 }
