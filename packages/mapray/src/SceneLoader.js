@@ -4,6 +4,7 @@ import Orientation from "./Orientation";
 import CredentialMode from "./CredentialMode";
 import ModelContainer from "./ModelContainer";
 import MarkerLineEntity from "./MarkerLineEntity";
+import PathEntity from "./PathEntity";
 import TextEntity from "./TextEntity";
 import ModelEntity from "./ModelEntity";
 import PolygonEntity from "./PolygonEntity";
@@ -195,6 +196,9 @@ class SceneLoader extends Loader {
             switch ( type ) {
             case "markerline":
                 entity = new MarkerLineEntity( scene, { json: item, refs: this._references } );
+                break;
+            case "path":
+                entity = new PathEntity( scene, { json: item, refs: this._references } );
                 break;
             case "text":
                 entity = new TextEntity( scene, { json: item, refs: this._references } );
