@@ -1088,6 +1088,24 @@ class GeoPoint {
 
 
     /**
+     * @summary 鉛直上方向のベクトルを計算
+     *
+     * @param  {mapray.Vector3} dst  結果を代入するオブジェクト
+     * @return {mapray.Vector3}      dst
+     */
+    getUpwardVector( dst )
+    {
+      var λ = this.longitude * GeoMath.DEGREE;
+      var φ = this.latitude  * GeoMath.DEGREE;
+      var cosφ = Math.cos( φ );
+
+      dst[0] = cosφ * Math.cos( λ );
+      dst[1] = cosφ * Math.sin( λ );
+      dst[2] = Math.sin( φ );
+      return dst;
+    }
+
+    /**
      * @summary 球面座標を地心直交座標に変換
      *
      * @param  {number[]} points      [lon_0, lat_0, alt_0, ...]
