@@ -65,6 +65,7 @@ class StandardUIViewer extends mapray.RenderCallback
         this._rotate_center = GeoMath.createVector3();                      // 回転中心
 
         this._translate_drag = GeoMath.createVector2f();                    // 平行移動の移動量（マウスの移動量）
+        this._translate_eye_drag = GeoMath.createVector2f();                // 平行移動の移動量（マウスの移動量）
         this._rotate_drag = GeoMath.createVector2f();                       // 回転の移動量（マウスの移動量）
         this._free_rotate_drag = GeoMath.createVector2f();                  // 自由回転の移動量（マウスの移動量）
         this._height_drag = GeoMath.createVector2f();                       // 高度変更の移動量（マウスの移動量）
@@ -416,7 +417,10 @@ class StandardUIViewer extends mapray.RenderCallback
         // 右ボタン
         else if ( event.button == 2 )
         {
-            this._operation_mode = StandardUIViewer.OperationMode.HEIGHT_TRANSLATE;
+            this._operation_mode = (
+              event.shiftKey ? StandardUIViewer.OperationMode.HEIGHT_TRANSLATE:
+              StandardUIViewer.OperationMode.EYE_TRANSLATE
+            );
         }
     }
 
@@ -455,6 +459,10 @@ class StandardUIViewer extends mapray.RenderCallback
             // 横方向は平行移動する
             this._translate_drag[0] += mouse_position[0] - this._pre_mouse_position[0];
             this._height_drag[1] += mouse_position[1] - this._pre_mouse_position[1];
+        }
+        else if ( this._operation_mode == StandardUIViewer.OperationMode.EYE_TRANSLATE )
+        {
+            this._translate_eye_drag[1] += mouse_position[1] - this._pre_mouse_position[1];
         }
 
         // マウス位置の更新
@@ -845,7 +853,18 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     _translationOfEyeDirection()
     {
+        let zoom = 0;
         if ( this._zoom_wheel != 0 )
+        {
+            zoom = Math.pow(0.9, this._zoom_wheel);
+            this._zoom_wheel = 0;
+        }
+        else if ( this._translate_eye_drag[1] != 0 ) {
+            zoom = Math.pow(0.995, this._translate_eye_drag[1]);
+            this._translate_eye_drag[1] = 0;
+        }
+
+        if ( zoom !== 0 )
         {
             var camera = this._viewer.camera;
 
@@ -855,62 +874,45 @@ class StandardUIViewer extends mapray.RenderCallback
 
             if (translation_center == null)
             {
-                this._zoom_wheel = 0;
                 return;
             }
 
             var center_spherical_position = new mapray.GeoPoint();
             center_spherical_position.setFromGocs( translation_center );
 
-            var factor = 1.0;
-
-            // 30,000m以上は線形にする
-            if ( this._camera_parameter.height > 30000 )
-            {
-                factor = Math.abs( this._camera_parameter.height - center_spherical_position.altitude ) / 30000;
-            }
-            else
-            {
-                // マウスカーソルの下の地表面から2次曲線の傾きを求める（地表面で係数が収束するように）
-                var gradient = 3 / Math.pow( center_spherical_position.altitude / 1000 - 30, 2 )
-
-                // 30,000mを基点にする。
-                var km_height = this._camera_parameter.height / 1000 - 30;
-                var param = gradient * Math.pow( km_height, 2 ) * km_height / Math.abs( km_height );
-                factor = GeoMath.gudermannian( param ) + ( Math.PI / 2 );
-            }
-
-            var velocity = this._zoom_wheel * this._camera_parameter.speed_factor * factor;
-
             var translation_vector = GeoMath.createVector3();
-            translation_vector[0] = translation_center[0] - camera.view_to_gocs[12];
-            translation_vector[1] = translation_center[1] - camera.view_to_gocs[13];
-            translation_vector[2] = translation_center[2] - camera.view_to_gocs[14];
-
-            var translation_direction = GeoMath.createVector3();
-            GeoMath.normalize3( translation_vector, translation_direction );
+            translation_vector[0] = (translation_center[0] - camera.view_to_gocs[12]) * zoom;
+            translation_vector[1] = (translation_center[1] - camera.view_to_gocs[13]) * zoom;
+            translation_vector[2] = (translation_center[2] - camera.view_to_gocs[14]) * zoom;
 
             var new_camera_gocs_position = GeoMath.createVector3();
-            new_camera_gocs_position[0] = camera.view_to_gocs[12] + velocity * translation_direction[0];
-            new_camera_gocs_position[1] = camera.view_to_gocs[13] + velocity * translation_direction[1];
-            new_camera_gocs_position[2] = camera.view_to_gocs[14] + velocity * translation_direction[2];
+            new_camera_gocs_position[0] = translation_center[0] - translation_vector[0];
+            new_camera_gocs_position[1] = translation_center[1] - translation_vector[1];
+            new_camera_gocs_position[2] = translation_center[2] - translation_vector[2];
 
-            // 移動中心を超える場合はこれ以上移動しない
-            var new_position_vector = GeoMath.createVector3();
-            new_position_vector[0] = new_camera_gocs_position[0] - camera.view_to_gocs[12];
-            new_position_vector[1] = new_camera_gocs_position[1] - camera.view_to_gocs[13];
-            new_position_vector[2] = new_camera_gocs_position[2] - camera.view_to_gocs[14];
+            var new_camera_spherical_position = new mapray.GeoPoint();
+            new_camera_spherical_position.setFromGocs( new_camera_gocs_position );
+            var elevation = this._viewer.getElevation( new_camera_spherical_position.latitude, new_camera_spherical_position.longitude );
+            if (elevation + StandardUIViewer.MINIMUM_HEIGHT > new_camera_spherical_position.altitude) {
+                // z_over だけ高い位置になるようにカメラ方向に移動する
+                const z_over = new_camera_spherical_position.altitude - (elevation + StandardUIViewer.MINIMUM_HEIGHT);
+                const up = center_spherical_position.getUpwardVector(GeoMath.createVector3());
+                const translation_vector_length = Math.sqrt(
+                  translation_vector[0] * translation_vector[0] +
+                  translation_vector[1] * translation_vector[1] +
+                  translation_vector[2] * translation_vector[2]
+                );
+                const up_dot_dir = GeoMath.dot3(translation_vector, up) / translation_vector_length;
+                GeoMath.scale3(1 - (z_over / up_dot_dir / translation_vector_length), translation_vector, translation_vector);
 
-            if ( this._zoom_wheel < 0 ||
-                this._getVectorLength( translation_vector ) > this._getVectorLength( new_position_vector ) )
-            {
-                var new_camera_spherical_position = new mapray.GeoPoint();
+                new_camera_gocs_position[0] = translation_center[0] - translation_vector[0];
+                new_camera_gocs_position[1] = translation_center[1] - translation_vector[1];
+                new_camera_gocs_position[2] = translation_center[2] - translation_vector[2];
                 new_camera_spherical_position.setFromGocs( new_camera_gocs_position );
-
-                this._camera_parameter.latitude = new_camera_spherical_position.latitude;
-                this._camera_parameter.longitude = new_camera_spherical_position.longitude;
-                this._camera_parameter.height = new_camera_spherical_position.altitude;
             }
+            this._camera_parameter.latitude = new_camera_spherical_position.latitude;
+            this._camera_parameter.longitude = new_camera_spherical_position.longitude;
+            this._camera_parameter.height = new_camera_spherical_position.altitude;
 
             this._zoom_wheel = 0;
         }
@@ -1263,19 +1265,19 @@ var OperationMode = {
     StandardUIViewer.DEFAULT_LOOKAT_POSITION = { latitude: 35.360626, longitude: 138.727363, height: 2000 };
 
     // カメラパラメータの初期値
-    StandardUIViewer.DEFAULT_CAMERA_PARAMETER = { fov: 60, near: 30, far: 500000, speed_factor: 5000 };
+    StandardUIViewer.DEFAULT_CAMERA_PARAMETER = { fov: 60, near: 30, far: 500000, speed_factor: 2000 };
 
     // カメラと地表面までの最低距離
-    StandardUIViewer.MINIMUM_HEIGHT = 15;
+    StandardUIViewer.MINIMUM_HEIGHT = 2.0;
 
-    // 最小近接平面距離
+    // 最小近接平面距離 (この値は MINIMUM_HEIGHT * 0.5 より小さい値を指定します)
     StandardUIViewer.MINIMUM_NEAR = 1.0;
 
     // 最小遠方平面距離
     StandardUIViewer.MINIMUM_FAR = 500000;
 
     // 高度からの近接平面距離を計算するための係数
-    StandardUIViewer.NEAR_FACTOR = 0.5;
+    StandardUIViewer.NEAR_FACTOR = 0.01;
 
     // 近接平面距離からの遠方平面距離を計算するための係数
     StandardUIViewer.FAR_FACTOR = 10000;
