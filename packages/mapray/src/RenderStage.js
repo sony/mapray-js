@@ -66,12 +66,14 @@ class RenderStage {
             viewer._render_cache = {
                 // 地表マテリアル
                 surface_material:   new SurfaceMaterial( viewer ),
+                surface_pick_material:   new SurfaceMaterial( viewer, { ridMaterial: true } ),
                 wireframe_material: new WireframeMaterial( viewer )
             };
         }
 
         // 地表マテリアルの選択
         this._flake_material = (viewer.render_mode === Viewer.RenderMode.WIREFRAME) ? viewer._render_cache.wireframe_material : viewer._render_cache.surface_material;
+        this._flake_pick_material = viewer._render_cache.surface_pick_material;
 
         // デバッグ統計
         this._debug_stats = viewer.debug_stats;
@@ -187,7 +189,7 @@ class RenderStage {
     _draw_flake_base( rflake, mesh )
     {
         let gl = this._glenv.context;
-        var material = this._flake_material;
+        var material = this.getRenderTarget() === RenderTarget.RID ? this._flake_pick_material : this._flake_material;
 
         material.bindProgram();
 
@@ -245,18 +247,19 @@ class RenderStage {
         gl.polygonOffset( -8, -8 );
 
         for ( let i = 0; i < num_entities; ++i ) {
-            let primirive = fro.getEntityPrimitive( i, this );
+            let { entity, primitive } = fro.getEntityPrimitive( i, this );
 
-            if ( primirive.isTranslucent( this ) ) {
+            if ( primitive.isTranslucent( this ) ) {
                 gl.enable( gl.BLEND );
             }
             else {
                 gl.disable( gl.BLEND );
             }
 
-            primirive.draw( this );
+            primitive.draw( this );
         }
 
+        gl.depthMask( true );
         gl.disable( gl.POLYGON_OFFSET_FILL );
     }
 

@@ -6,6 +6,7 @@ import TextMaterial from "./TextMaterial";
 import SimpleTextMaterial from "./SimpleTextMaterial";
 import GeoMath from "./GeoMath";
 import GeoPoint from "./GeoPoint";
+import { RenderTarget } from "./RenderStage";
 import AltitudeMode from "./AltitudeMode";
 import EntityRegion from "./EntityRegion";
 import Dom from "./util/Dom";
@@ -195,28 +196,46 @@ class TextEntity extends Entity {
      * @summary 専用マテリアルを取得
      * @private
      */
-    _getTextMaterial()
+    _getTextMaterial( render_target )
     {
         var scene = this.scene;
-        if ( !scene._TextEntity_text_material ) {
-            // scene にマテリアルをキャッシュ
-            scene._TextEntity_text_material = new TextMaterial( scene.glenv );
+        if ( render_target === RenderTarget.SCENE ) {
+            if ( !scene._TextEntity_text_material ) {
+                // scene にマテリアルをキャッシュ
+                scene._TextEntity_text_material = new TextMaterial( scene.glenv );
+            }
+            return scene._TextEntity_text_material;
         }
-        return scene._TextEntity_text_material;
+        else if (render_target === RenderTarget.RID) {
+            if ( !scene._TextEntity_text_material_pick ) {
+                // scene にマテリアルをキャッシュ
+                scene._TextEntity_text_material_pick = new TextMaterial( scene.glenv, { ridMaterial: true } );
+            }
+            return scene._TextEntity_text_material_pick;
+        }
     }
 
     /**
      * @summary テキストだけを描画する専用マテリアルを取得
      * @private
      */
-    _getSimpleTextMaterial()
+    _getSimpleTextMaterial( render_target )
     {
         var scene = this.scene;
-        if ( !scene._SimpleTextEntity_text_material ) {
-            // scene にマテリアルをキャッシュ
-            scene._SimpleTextEntity_text_material = new SimpleTextMaterial( scene.glenv );
+        if ( render_target === RenderTarget.SCENE ) {
+            if ( !scene._SimpleTextEntity_text_material ) {
+                // scene にマテリアルをキャッシュ
+                scene._SimpleTextEntity_text_material = new SimpleTextMaterial( scene.glenv );
+            }
+            return scene._SimpleTextEntity_text_material;
         }
-        return scene._SimpleTextEntity_text_material;
+        else if (render_target === RenderTarget.RID) {
+            if ( !scene._SimpleTextEntity_text_material_pick ) {
+                // scene にマテリアルをキャッシュ
+                scene._SimpleTextEntity_text_material_pick = new SimpleTextMaterial( scene.glenv, { ridMaterial: true } );
+            }
+            return scene._SimpleTextEntity_text_material_pick;
+        }
     }
 
     /**
@@ -324,13 +343,15 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         };
 
         // プリミティブ
-        var material = null;
+        var material = null, pickMaterial = null;
         if ( this._isSimpleText() ) {
-            material = entity._getSimpleTextMaterial();
+            material = entity._getSimpleTextMaterial( RenderTarget.SCENE );
+            pickMaterial = entity._getSimpleTextMaterial( RenderTarget.RID );
         } else {
-            material = entity._getTextMaterial();
+            material = entity._getTextMaterial( RenderTarget.SCENE );
+            pickMaterial = entity._getTextMaterial( RenderTarget.RID );
         }
-        var primitive = new Primitive( this._glenv, null, material, this._transform );
+        var primitive = new Primitive( this._glenv, null, material, this._transform, pickMaterial );
 
         primitive.properties = this._properties;
         this._primitive = primitive;

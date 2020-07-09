@@ -93,7 +93,7 @@ class FlakeRenderObject {
     getEntityPrimitive( index, stage )
     {
         let edata = this._edata_list[index];
-        let {material, properties} = edata.producer.getMaterialAndProperties( stage );
+        let {material, pickMaterial, properties} = edata.producer.getMaterialAndProperties( stage );
 
         // this._transform を設定
         if ( this._transform === null ) {
@@ -104,10 +104,13 @@ class FlakeRenderObject {
             this._transform[14] = pos[2];
         }
 
-        let primitive = new Primitive( this._glenv, edata.mesh, material, this._transform );
+        const primitive = new Primitive( this._glenv, edata.mesh, material, this._transform, pickMaterial );
         primitive.properties = properties;
 
-        return primitive;
+        return {
+            entity: edata.producer.entity,
+            primitive: primitive
+        };
     }
 
 }

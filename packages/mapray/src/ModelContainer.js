@@ -288,7 +288,8 @@ class Builder {
     {
         var     mesh = this._createMesh( iprim );
         var material = this._createMaterial( iprim );
-        var    oprim = new Primitive( this._glenv, mesh, material, GeoMath.createMatrix( ntos ) );
+        var pickMaterial = this._createMaterial( iprim, { ridMaterial: true } );
+        var    oprim = new Primitive( this._glenv, mesh, material, GeoMath.createMatrix( ntos ), pickMaterial );
 
         oprim.pivot      = this._createMeshPivot( iprim );
         oprim.bbox       = this._createBoundingBox( iprim );
@@ -436,7 +437,7 @@ class Builder {
      * @return {mapray.EntityMaterial}        マテリアル
      * @private
      */
-    _createMaterial( iprim )
+    _createMaterial( iprim, opts = {} )
     {
         // キャッシュの場所とオプションを決定
         let cache_suffix = "basic";
@@ -447,9 +448,13 @@ class Builder {
             options.is_unlit = true;
         }
 
+        if (opts.ridMaterial) {
+            options.ridMaterial = true;
+        }
+
         // マテリアルのインスタンスを取得
         const scene    = this._mr_scene;
-        const cache_id = "_ModelEntity_model_material_" + cache_suffix;
+        const cache_id = "_ModelEntity_model_material_" + cache_suffix + (opts.ridMaterial ? "_pick" : "");
 
         if ( !scene[cache_id] ) {
             // scene にマテリアルをキャッシュ

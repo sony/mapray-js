@@ -8,6 +8,7 @@ import AltitudeMode from "./AltitudeMode";
 import EntityRegion from "./EntityRegion";
 import AreaUtil from "./AreaUtil";
 import QAreaManager from "./QAreaManager";
+import { RenderTarget } from "./RenderStage";
 
 
 /**
@@ -166,14 +167,23 @@ class MarkerLineEntity extends Entity {
      * @summary 専用マテリアルを取得
      * @private
      */
-    _getMarkerLineMaterial()
+    _getMarkerLineMaterial( render_target　)
     {
         var scene = this.scene;
-        if ( !scene._MarkerLineEntity_markerline_material ) {
-            // scene にマテリアルをキャッシュ
-            scene._MarkerLineEntity_markerline_material = new MarkerLineMaterial( scene.glenv );
+        if ( render_target === RenderTarget.SCENE ) {
+            if ( !scene._MarkerLineEntity_markerline_material ) {
+                // scene にマテリアルをキャッシュ
+                scene._MarkerLineEntity_markerline_material = new MarkerLineMaterial( scene.glenv );
+            }
+            return scene._MarkerLineEntity_markerline_material;
         }
-        return scene._MarkerLineEntity_markerline_material;
+        else if (render_target === RenderTarget.RID) {
+            if ( !scene._MarkerLineEntity_markerline_material_pick ) {
+                // scene にマテリアルをキャッシュ
+                scene._MarkerLineEntity_markerline_material_pick = new MarkerLineMaterial( scene.glenv, { ridMaterial: true } );
+            }
+            return scene._MarkerLineEntity_markerline_material_pick;
+        }
     }
 
 
@@ -223,7 +233,7 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         };
 
         // プリミティブ
-        var primitive = new Primitive( entity.scene.glenv, null, entity._getMarkerLineMaterial(), this._transform );
+        var primitive = new Primitive( entity.scene.glenv, null, entity._getMarkerLineMaterial( RenderTarget.SCENE ), this._transform, entity._getMarkerLineMaterial( RenderTarget.RID ) );
         primitive.pivot      = this._pivot;
         primitive.bbox       = this._bbox;
         primitive.properties = this._properties;
@@ -644,7 +654,8 @@ class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
     {
         super( entity );
 
-        this._material     = entity._getMarkerLineMaterial();
+        this._material     = entity._getMarkerLineMaterial( RenderTarget.SCENE );
+        this._pick_material = entity._getMarkerLineMaterial( RenderTarget.RID );
         this._properties   = null;
         this._area_manager = new LineAreaManager( entity );
     }
@@ -700,6 +711,7 @@ class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
 
         return {
             material:   this._material,
+            pickMaterial: this._pick_material,
             properties: this._properties
         };
     }

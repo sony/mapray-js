@@ -1,4 +1,6 @@
 import GeoMath from "./GeoMath";
+import EntityMaterial from "./EntityMaterial";
+import { RenderTarget } from "./RenderStage";
 
 
 /**
@@ -16,7 +18,7 @@ class Primitive {
      * @param {mapray.EntityMaterial} material   マテリアル
      * @param {mapray.Matrix}         transform  変換行列
      */
-    constructor( glenv, mesh, material, transform )
+    constructor( glenv, mesh, material, transform, pickMaterial )
     {
         this._glenv = glenv;
 
@@ -37,6 +39,8 @@ class Primitive {
          * @type {mapray.EntityMaterial}
          */
         this.material = material;
+
+        this.pickMaterial = pickMaterial;
 
         /**
          * @summary モデル座標系から GOCS への変換行列
@@ -100,7 +104,7 @@ class Primitive {
      */
     fastClone()
     {
-        var clone = new Primitive( this._glenv, this.mesh, this.material, GeoMath.createMatrix( this.transform ) );
+        var clone = new Primitive( this._glenv, this.mesh, this.material, GeoMath.createMatrix( this.transform ), this.pickMaterial );
 
         if ( this.pivot ) {
             clone.pivot = GeoMath.createVector3( this.pivot );
@@ -176,10 +180,23 @@ class Primitive {
      */
     draw( stage )
     {
-        var material = this.material;
-        material.bindProgram();
-        material.setParameters( stage, this );
-        this.mesh.draw( material );
+        if (stage.getRenderTarget() === RenderTarget.SCENE) {
+            const material = this.material;
+            material.bindProgram();
+            material.setParameters( stage, this );
+            this.mesh.draw( material );
+        }
+        else if (stage.getRenderTarget() === RenderTarget.RID) {
+            if (this.pickMaterial) {
+                const material = this.pickMaterial;
+                material.bindProgram();
+                if (material instanceof EntityMaterial) {
+                    material.setParameters( stage, this );
+                    material.setRenderId( this.rid );
+                }
+                this.mesh.draw( material );
+            }
+        }
     }
 
 
