@@ -2,7 +2,8 @@ import EntityMaterial from "./EntityMaterial";
 import Texture from "./Texture";
 import model_vs_code from "./shader/model.vert";
 import model_fs_code from "./shader/model.frag";
-
+import rid_fs_code from "./shader/rid.frag";
+import { RenderTarget } from "./RenderStage";
 
 /**
  * @summary 基本マテリアル
@@ -23,7 +24,7 @@ class ModelMaterial extends EntityMaterial {
 
         super( glenv,
                preamble + model_vs_code,
-               preamble + model_fs_code );
+               preamble + ( options.ridMaterial ? rid_fs_code : model_fs_code ) );
 
         // 均一色テクスチャ
         this._white_texture = new Texture( glenv, null, { usage: Texture.Usage.COLOR, color: [1, 1, 1, 1] } );
@@ -39,6 +40,8 @@ class ModelMaterial extends EntityMaterial {
      */
     setParameters( stage, primitive )
     {
+        super.setParameters( stage, primitive );
+
         var props = primitive.properties;
         var pbrMR = props.pbrMetallicRoughness;
 
@@ -46,15 +49,17 @@ class ModelMaterial extends EntityMaterial {
         this.setObjToClip( stage, primitive );
         this.setObjToView( stage, primitive );
 
-        // 基本色係数
-        this.setVector4( "u_base_color", pbrMR["baseColorFactor"] );
+        if (stage.getRenderTarget() === RenderTarget.SCENE) {
+            // 基本色係数
+            this.setVector4( "u_base_color", pbrMR["baseColorFactor"] );
 
-        // ライト逆方向 (視点座標系) と強さ
-        this.setVector3( "u_light_dir", [0, 0, 1] );
+            // ライト逆方向 (視点座標系) と強さ
+            this.setVector3( "u_light_dir", [0, 0, 1] );
 
-        // テクスチャのバインド
-        var base_image_texture = this._selectTexture( pbrMR["baseColorTexture"], this._white_texture );
-        this.bindTexture2D( ModelMaterial.TEXUNIT_BASE_IMAGE, base_image_texture.handle );
+            // テクスチャのバインド
+            var base_image_texture = this._selectTexture( pbrMR["baseColorTexture"], this._white_texture );
+            this.bindTexture2D( ModelMaterial.TEXUNIT_BASE_IMAGE, base_image_texture.handle );
+        }
     }
 
 

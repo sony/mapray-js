@@ -2,6 +2,8 @@ import EntityMaterial from "./EntityMaterial";
 import GeoMath from "./GeoMath";
 import pin_vs_code from "./shader/pin.vert";
 import pin_fs_code from "./shader/pin.frag";
+import rid_fs_code from "./shader/rid.frag";
+import { RenderTarget } from "./RenderStage";
 
 
 /**
@@ -16,9 +18,9 @@ class PinMaterial extends EntityMaterial {
     /**
      * @param {mapray.GLEnv} glenv
      */
-    constructor( glenv )
+    constructor( glenv, options = {} )
     {
-        super( glenv, pin_vs_code, pin_fs_code );
+        super( glenv, pin_vs_code, options.ridMaterial ? rid_fs_code : pin_fs_code );
 
         // 不変パラメータを事前設定
         this.bindProgram();
@@ -41,6 +43,8 @@ class PinMaterial extends EntityMaterial {
      */
     setParameters( stage, primitive )
     {
+        super.setParameters( stage, primitive );
+
         var props = primitive.properties;
 
         // mat4 u_obj_to_clip
@@ -53,15 +57,17 @@ class PinMaterial extends EntityMaterial {
         sparam[1] = 2 / stage._height;
         this.setVector2( "u_sparam", sparam );
 
-        // テクスチャのバインド
-        // sampler2D u_image
-        var image = props["image"];
-        this.bindTexture2D( PinMaterial.TEXUNIT_IMAGE, image.handle );
+        if (stage.getRenderTarget() === RenderTarget.SCENE) {
+            // テクスチャのバインド
+            // sampler2D u_image
+            var image = props["image"];
+            this.bindTexture2D( PinMaterial.TEXUNIT_IMAGE, image.handle );
 
-        // テクスチャマスクのバインド
-        // sampler2D u_image_mask
-        var image_mask = props["image_mask"];
-        this.bindTexture2D( PinMaterial.TEXUNIT_IMAGE_MASK, image_mask.handle );
+            // テクスチャマスクのバインド
+            // sampler2D u_image_mask
+            var image_mask = props["image_mask"];
+            this.bindTexture2D( PinMaterial.TEXUNIT_IMAGE_MASK, image_mask.handle );
+        }
     }
 
 }

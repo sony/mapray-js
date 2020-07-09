@@ -2,6 +2,8 @@ import EntityMaterial from "./EntityMaterial";
 import GeoMath from "./GeoMath";
 import text_vs_code from "./shader/simple_text.vert";
 import text_fs_code from "./shader/simple_text.frag";
+import rid_fs_code from "./shader/rid.frag";
+import { RenderTarget } from "./RenderStage";
 
 
 /**
@@ -16,9 +18,9 @@ class SimpleTextMaterial extends EntityMaterial {
     /**
      * @param {mapray.GLEnv} glenv
      */
-    constructor( glenv )
+    constructor( glenv, options = {} )
     {
-        super( glenv, text_vs_code, text_fs_code );
+        super( glenv, text_vs_code, options.ridMaterial ? rid_fs_code : text_fs_code );
 
         // 不変パラメータを事前設定
         this.bindProgram();
@@ -41,6 +43,8 @@ class SimpleTextMaterial extends EntityMaterial {
      */
     setParameters( stage, primitive )
     {
+        super.setParameters( stage, primitive );
+
         var props = primitive.properties;
 
         // mat4 u_obj_to_clip
@@ -53,10 +57,12 @@ class SimpleTextMaterial extends EntityMaterial {
         sparam[1] = 2 / stage._height;
         this.setVector2( "u_sparam", sparam );
 
-        // テクスチャのバインド
-        // sampler2D u_image
-        var image_tex = props["image"];
-        this.bindTexture2D( SimpleTextMaterial.TEXUNIT_IMAGE, image_tex.handle );
+        if (stage.getRenderTarget() === RenderTarget.SCENE) {
+            // テクスチャのバインド
+            // sampler2D u_image
+            var image_tex = props["image"];
+            this.bindTexture2D( SimpleTextMaterial.TEXUNIT_IMAGE, image_tex.handle );
+        }
     }
 
 }
