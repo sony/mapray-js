@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Ui Event</title>
+    <noscript>
+        <div style="
+            padding: 0.5em 1em;
+            margin: 2em 0;
+            color: black;
+            background: #fcefb7;
+            border: solid 2px #f8d450;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.22);
+        ">
+            <p style="
+                margin: 0;
+                padding: 0;">JavaScriptが無効になっています。MaprayのWebサイトを正しく表示するためにはJavaScriptを有効にして下さい。</p>
+        </div>
+    </noscript>
+    <style>
+        html, body {
+            margin:  0;
+            padding: 0;
+            overflow: scroll;
+        }
+        div#contents {
+            overflow: scroll;
+        }
+        div#mapray-container {
+            height: 400px;
+            width: 400px;
+        :        }
+        #scroll {
+            margin-left: 100px;
+            margin-top: 200px;
+            height: 600px;
+            overflow: scroll;
+        }
+        #toolbar {
+            position: absolute;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.85);
+            top: 10px;
+            left: 10px;
+            padding: 10px;
+        }
+        #toolbar label {
+            padding-left: 5px;
+            font: 14px sans-serif;
+        }
+
+    </style>
+</head>
+<body onload="window.startApp('mapray-container');">
+<div id="contents">
+    <div id="scroll">
+        <div id="mapray-container">
+        </div>
+    </div>
+    <div id="toolbar">
+        <input id='longitude' name='input-longitude' type='text'><label for='input-longitude'>Longitude</label><br/>
+        <input id='latitude' name='input-latitude' type='text'><label for='input-latitude'>Latitude</label><br/>
+        <button type="button" name="move-position" value="moveposition">
+            Move
+        </button>
+    </div>
+    <div>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque urna ligula, aliquet vel nisl sit amet, hendrerit malesuada mauris. Sed id magna ex. Integer ultricies, justo vel consectetur lobortis, est libero scelerisque tellus, vitae placerat risus massa ut urna. Nulla facilisi. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Proin maximus dui at ligula lacinia tristique. Morbi tristique diam tortor, eget aliquet orci pretium in. Fusce finibus enim non tempor finibus. Fusce maximus ipsum vitae sapien ultrices, nec varius ligula dapibus. Phasellus fringilla, leo sed pretium faucibus, quam risus sollicitudin odio, ac dictum nunc sem a mi. Nullam commodo leo eu lectus tempus, nec posuere magna semper.
+
+        Nullam dapibus, ante non laoreet tincidunt, elit ipsum tempor nunc, quis vehicula enim tortor sed felis. Aenean porta sapien purus, porttitor posuere massa efficitur non. Sed in turpis gravida, facilisis turpis a, laoreet enim. In id odio maximus, cursus sem a, iaculis eros. Pellentesque eget eleifend diam. Phasellus lobortis dui at nunc vulputate, non maximus purus euismod. Mauris semper volutpat ultrices. Ut ipsum dui, dignissim sed sodales eget, lobortis sit amet mi.
+
+        Maecenas bibendum purus id ante tempor sodales. Nunc a elit venenatis, imperdiet massa id, pulvinar urna. Donec cursus ornare lacus, quis varius metus. Curabitur lorem nisl, rutrum at sollicitudin vitae, tempor at erat. Sed ullamcorper augue in ligula semper, ac consequat quam accumsan. Pellentesque at laoreet lorem. Etiam tempus elit ac dapibus efficitur. Sed condimentum, enim sed placerat elementum, urna enim consequat mi, vel facilisis ipsum ex nec metus. Sed eu nisi et mauris efficitur posuere efficitur sit amet nibh. Vivamus condimentum, sem sit amet congue fringilla, sapien sapien maximus mauris, quis venenatis lacus nunc at nibh.
+
+        Aenean varius id quam quis condimentum. In in dolor accumsan, ultrices mi vel, mollis felis. Donec tempor blandit ullamcorper. Phasellus eu est sodales, laoreet nunc a, mattis ipsum. Etiam ut efficitur neque, dignissim sodales ante. Vivamus mattis lobortis orci, non rhoncus lacus. Praesent interdum nisl et sem imperdiet, in volutpat massa suscipit. Fusce vel orci feugiat, feugiat odio pulvinar, aliquet felis. Morbi nec rutrum diam. Quisque eros ex, hendrerit at libero sit amet, faucibus vestibulum nisl. Praesent finibus pretium efficitur. Proin a velit lobortis orci suscipit molestie. Vivamus suscipit ornare velit venenatis porta.
+
+        Fusce tristique et dolor ut consectetur. Morbi quam mauris, auctor quis rhoncus ut, sagittis vel metus. Nunc dolor nibh, pharetra quis justo in, pharetra lobortis nisi. Nunc dui libero, porttitor ac ipsum vel, sollicitudin lacinia elit. Phasellus volutpat libero nunc, condimentum dictum mi posuere ut. Sed placerat augue tellus, a tincidunt elit accumsan vel. Vestibulum porttitor mollis eleifend. Phasellus ultrices felis pulvinar urna aliquet facilisis.
+    </div>
+</div>
+</body>
+<script type="text/javascript" src="./dist/bundle.js"></script>
+</html>
