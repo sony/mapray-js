@@ -2,6 +2,8 @@ import EntityMaterial from "./EntityMaterial";
 import GeoMath from "./GeoMath";
 import markerline_vs_code from "./shader/markerline.vert";
 import markerline_fs_code from "./shader/markerline.frag";
+import rid_fs_code from "./shader/rid.frag";
+import { RenderTarget } from "./RenderStage";
 
 
 /**
@@ -15,9 +17,9 @@ class MarkerLineMaterial extends EntityMaterial {
     /**
      * @param {mapray.GLEnv} glenv
      */
-    constructor( glenv )
+    constructor( glenv, options = {} )
     {
-        super( glenv, markerline_vs_code, markerline_fs_code );
+        super( glenv, markerline_vs_code, options.ridMaterial ? rid_fs_code : markerline_fs_code );
     }
 
 
@@ -37,6 +39,8 @@ class MarkerLineMaterial extends EntityMaterial {
      */
     setParameters( stage, primitive )
     {
+        super.setParameters( stage, primitive );
+
         var props = primitive.properties;
 
         // u_obj_to_clip
@@ -59,15 +63,17 @@ class MarkerLineMaterial extends EntityMaterial {
         thickness[1] = param_width / 2;
         this.setVector2( "u_thickness", thickness );
 
-        // 線の基本色
-        // vec4 u_color
-        var param_color   = (props.color   !== undefined) ? props.color   : MarkerLineMaterial.DEFAULT_COLOR;
-        var param_opacity = (props.opacity !== undefined) ? props.opacity : MarkerLineMaterial.DEFAULT_OPACITY;
+        if (stage.getRenderTarget() === RenderTarget.SCENE) {
+            // 線の基本色
+            // vec4 u_color
+            var param_color   = (props.color   !== undefined) ? props.color   : MarkerLineMaterial.DEFAULT_COLOR;
+            var param_opacity = (props.opacity !== undefined) ? props.opacity : MarkerLineMaterial.DEFAULT_OPACITY;
 
-        var color = MarkerLineMaterial._color;
-        GeoMath.copyVector3( param_color, color );
-        color[3] = param_opacity;
-        this.setVector4( "u_color", color );
+            var color = MarkerLineMaterial._color;
+            GeoMath.copyVector3( param_color, color );
+            color[3] = param_opacity;
+            this.setVector4( "u_color", color );
+        }
     }
 
 }

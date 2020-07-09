@@ -3,6 +3,8 @@ import GeoMath from "./GeoMath";
 import TileTextureCache from "./TileTextureCache";
 import surface_vs_code from "./shader/surface.vert";
 import surface_fs_code from "./shader/surface.frag";
+import rid_fs_code from "./shader/rid.frag";
+import { RenderTarget } from "./RenderStage";
 
 
 /**
@@ -16,9 +18,9 @@ class SurfaceMaterial extends FlakeMaterial {
     /**
      * @param {mapray.Viewer} viewer  所有者である Viewer
      */
-    constructor( viewer )
+    constructor( viewer, options = {} )
     {
-        super( viewer, surface_vs_code, surface_fs_code );
+        super( viewer, surface_vs_code, options.ridMaterial ? rid_fs_code : surface_fs_code );
 
         this.bindProgram();
         this.setInteger( "u_image_hi", SurfaceMaterial.TEXUNIT_IMAGE_HI );

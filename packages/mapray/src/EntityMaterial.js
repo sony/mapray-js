@@ -1,5 +1,6 @@
 import Material from "./Material";
 import GeoMath from "./GeoMath";
+import { RenderTarget } from "./RenderStage";
 
 
 /**
@@ -45,6 +46,9 @@ class EntityMaterial extends Material {
      */
     setParameters( stage, primitive )
     {
+        if (stage.getRenderTarget() === RenderTarget.RID) {
+            this.setRenderId( primitive.rid );
+        }
     }
 
 
@@ -83,6 +87,9 @@ class EntityMaterial extends Material {
         this.setMatrix( "u_obj_to_view", obj_to_view );
     }
 
+    setRenderId( id ) {
+        this.setVector3( "u_rid", [(id & 0xFF) / 0xFF, 0, 0] )
+    }
 }
 
 
