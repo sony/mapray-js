@@ -2,6 +2,8 @@ import EntityMaterial from "./EntityMaterial";
 import GeoMath from "./GeoMath";
 import polygon_vs_code from "./shader/polygon.vert";
 import polygon_fs_code from "./shader/polygon.frag";
+import rid_fs_code from "./shader/rid.frag";
+import { RenderTarget } from "./RenderStage";
 
 
 /**
@@ -15,9 +17,9 @@ class PolygonMaterial extends EntityMaterial {
     /**
      * @param {mapray.GLEnv} glenv
      */
-    constructor( glenv )
+    constructor( glenv, options = {} )
     {
-        super( glenv, polygon_vs_code, polygon_fs_code );
+        super( glenv, polygon_vs_code, options.ridMaterial ? rid_fs_code : polygon_fs_code );
     }
 
 
@@ -37,6 +39,8 @@ class PolygonMaterial extends EntityMaterial {
      */
     setParameters( stage, primitive )
     {
+        super.setParameters( stage, primitive );
+
         var props = primitive.properties;
 
         // 変換行列
@@ -44,23 +48,25 @@ class PolygonMaterial extends EntityMaterial {
         this.setObjToClip( stage, primitive );
         this.setObjToView( stage, primitive );
 
-        // 基本色
-        // vec4 u_color
-        var param_color   = (props.color   !== undefined) ? props.color   : PolygonMaterial.DEFAULT_COLOR;
-        var param_opacity = (props.opacity !== undefined) ? props.opacity : PolygonMaterial.DEFAULT_OPACITY;
+        if (stage.getRenderTarget() === RenderTarget.SCENE) {
+            // 基本色
+            // vec4 u_color
+            var param_color   = (props.color   !== undefined) ? props.color   : PolygonMaterial.DEFAULT_COLOR;
+            var param_opacity = (props.opacity !== undefined) ? props.opacity : PolygonMaterial.DEFAULT_OPACITY;
 
-        var color = PolygonMaterial._color;
-        GeoMath.copyVector3( param_color, color );
-        color[3] = param_opacity;
-        this.setVector4( "u_color", color );
+            var color = PolygonMaterial._color;
+            GeoMath.copyVector3( param_color, color );
+            color[3] = param_opacity;
+            this.setVector4( "u_color", color );
 
-        // 照光の有無
-        // bool u_lighting
-        this.setBoolean( "u_lighting", props.lighting );
+            // 照光の有無
+            // bool u_lighting
+            this.setBoolean( "u_lighting", props.lighting );
 
-        // ライト逆方向 (視点座標系) と強さ
-        // vec3 u_light_dir
-        this.setVector3( "u_light_dir", [0, 0, 1] );
+            // ライト逆方向 (視点座標系) と強さ
+            // vec3 u_light_dir
+            this.setVector3( "u_light_dir", [0, 0, 1] );
+        }
     }
 
 }

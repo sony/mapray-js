@@ -3,6 +3,7 @@ import GeoMath from "./GeoMath";
 import line_vs_code from "./shader/line.vert";
 import line_fs_code from "./shader/line.frag";
 import AbstractLineEntity from "./AbstractLineEntity";
+import { RenderTarget } from "./RenderStage";
 
 
 /**
@@ -15,10 +16,9 @@ class LineMaterial extends EntityMaterial {
     /**
      * @param {mapray.GLEnv} glenv
      */
-    constructor( glenv, line_type )
+    constructor( glenv, line_type, options = {} )
     {
-        const preamble = LineMaterial._getPreamble( line_type );
-
+        const preamble = LineMaterial._getPreamble( line_type, options );
         super( glenv, preamble + line_vs_code, preamble + line_fs_code );
 
         this._line_type = line_type;
@@ -41,6 +41,8 @@ class LineMaterial extends EntityMaterial {
      */
     setParameters( stage, primitive )
     {
+        super.setParameters( stage, primitive );
+
         var props = primitive.properties;
 
         // u_obj_to_clip
@@ -63,16 +65,19 @@ class LineMaterial extends EntityMaterial {
         thickness[1] = param_width / 2;
         this.setVector2( "u_thickness", thickness );
 
-        // 線の基本色
-        // vec4 u_color
-        var param_color   = (props.color   !== undefined) ? props.color   : LineMaterial.DEFAULT_COLOR;
-        var param_opacity = (props.opacity !== undefined) ? props.opacity : LineMaterial.DEFAULT_OPACITY;
+        if (stage.getRenderTarget() === RenderTarget.SCENE) {
+            // 線の基本色
+            // vec4 u_color
+            var param_color   = (props.color   !== undefined) ? props.color   : LineMaterial.DEFAULT_COLOR;
+            var param_opacity = (props.opacity !== undefined) ? props.opacity : LineMaterial.DEFAULT_OPACITY;
 
-        var color = LineMaterial._color;
-        GeoMath.copyVector3( param_color, color );
-        color[3] = param_opacity;
-        this.setVector4( "u_color", color );
+            var color = LineMaterial._color;
+            GeoMath.copyVector3( param_color, color );
+            color[3] = param_opacity;
+            this.setVector4( "u_color", color );
+        }
 
+        // RID rendering also requires u_lower_length and u_upper_length.
         if ( this._line_type == AbstractLineEntity.LineType.PATH ) {
             var lower_length = props["lower_length"];
             this.setFloat( "u_lower_length", lower_length );
@@ -87,16 +92,21 @@ class LineMaterial extends EntityMaterial {
      * @summary シェーダの前文を取得
      *
      * @param {AbstractLineEntity.LineType} line_type
+     * @param {object} options
      *
      * @private
      */
     static
-    _getPreamble( line_type )
+    _getPreamble( line_type, options )
     {
         const lines = [];
 
         if ( line_type == AbstractLineEntity.LineType.PATH ) {
             lines.push( "#define PATH" );
+        }
+
+        if ( options.ridMaterial ) {
+            lines.push( "#define RID" );
         }
 
         // lines を文字列にして返す

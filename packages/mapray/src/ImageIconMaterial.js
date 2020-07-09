@@ -2,6 +2,8 @@ import EntityMaterial from "./EntityMaterial";
 import GeoMath from "./GeoMath";
 import image_icon_vs_code from "./shader/image_icon.vert";
 import image_icon_fs_code from "./shader/image_icon.frag";
+import rid_fs_code from "./shader/rid.frag";
+import { RenderTarget } from "./RenderStage";
 
 
 /**
@@ -16,9 +18,9 @@ class ImageIconMaterial extends EntityMaterial {
     /**
      * @param {mapray.GLEnv} glenv
      */
-    constructor( glenv )
+    constructor( glenv, options = {} )
     {
-        super( glenv, image_icon_vs_code, image_icon_fs_code );
+        super( glenv, image_icon_vs_code, options.ridMaterial ? rid_fs_code : image_icon_fs_code );
 
         // 不変パラメータを事前設定
         this.bindProgram();
@@ -42,6 +44,8 @@ class ImageIconMaterial extends EntityMaterial {
      */
     setParameters( stage, primitive )
     {
+        super.setParameters( stage, primitive );
+
         var props = primitive.properties;
 
         // mat4 u_obj_to_clip
@@ -54,15 +58,17 @@ class ImageIconMaterial extends EntityMaterial {
         sparam[1] = 2 / stage._height;
         this.setVector2( "u_sparam", sparam );
 
-        // テクスチャのバインド
-        // sampler2D u_image
-        var image = props["image"];
-        this.bindTexture2D( ImageIconMaterial.TEXUNIT_IMAGE, image.handle );
+        if (stage.getRenderTarget() === RenderTarget.SCENE) {
+            // テクスチャのバインド
+            // sampler2D u_image
+            var image = props["image"];
+            this.bindTexture2D( ImageIconMaterial.TEXUNIT_IMAGE, image.handle );
 
-        // テクスチャマスクのバインド
-        // sampler2D u_image_mask
-        // var image_mask = props["image_mask"];
-        // this.bindTexture2D( ImageIconMaterial.TEXUNIT_IMAGE_MASK, image_mask.handle );
+            // テクスチャマスクのバインド
+            // sampler2D u_image_mask
+            // var image_mask = props["image_mask"];
+            // this.bindTexture2D( ImageIconMaterial.TEXUNIT_IMAGE_MASK, image_mask.handle );
+        }
     }
 
 }
