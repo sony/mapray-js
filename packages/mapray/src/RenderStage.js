@@ -9,6 +9,33 @@ import Viewer from "./Viewer";
 
 
 /**
+ * @summary 描画対象
+ * @enum {object}
+ * @memberof mapray.AbstractRenderStage
+ * @constant
+ * @private
+ */
+const RenderTarget = {
+
+    /**
+     * 通常のシーン描画
+     */
+    SCENE: {
+        id: "SCENE"
+    },
+
+    /**
+     * マウスピックなど、RID取得を目的とした描画
+     */
+    RID: {
+        id: "RID"
+    }
+};
+
+
+
+
+/**
  * @summary 1フレーム分のレンダリングを実行
  * @desc
  * {@link mapray.Viewer} インスタンスはフレーム毎にこのクラスのインスタンスを生成してレンダリングを実行する。
@@ -68,6 +95,9 @@ class RenderStage {
         this._debug_stats = viewer.debug_stats;
     }
 
+    getRenderTarget() {
+        return RenderTarget.SCENE;
+    }
 
     /**
      * @private
@@ -306,3 +336,4 @@ class RenderStage {
 }
 
 export default RenderStage;
+export { RenderTarget };
