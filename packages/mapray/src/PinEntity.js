@@ -284,6 +284,7 @@ class PinEntity extends Entity {
         var dst = this._parent_props[name];
         if ( !dst ) {
             dst = this._parent_props[name] = GeoMath.createVector3f( value );
+            this._primitive_producer.onChangeParentProperty();
         }
         else if ( dst[0] !== value[0] || dst[1] !== value[1] || dst[2] !== value[2] ) {
             GeoMath.copyVector3( value, dst );
