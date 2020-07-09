@@ -6,6 +6,16 @@ import WireframeMaterial from "./WireframeMaterial";
 import Viewer from "./Viewer";
 
 
+const RenderTarget = {
+    SCENE: {
+        id: "SCENE"
+    },
+    RID: {
+        id: "RID"
+    }
+}
+
+
 /**
  * @summary 1フレーム分のレンダリングを実行
  * @desc
@@ -67,6 +77,9 @@ class RenderStage {
         this._debug_stats = viewer.debug_stats;
     }
 
+    getRenderTarget() {
+        return RenderTarget.SCENE;
+    }
 
     /**
      * @private
@@ -250,3 +263,4 @@ class RenderStage {
 }
 
 export default RenderStage;
+export { RenderTarget };
