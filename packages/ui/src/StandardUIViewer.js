@@ -383,8 +383,6 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     _onMouseDown( event )
     {
-       // event.preventDefault()
-
         var mouse_position = [event.clientX, event.clientY];
 
         this._mouse_down_position = mouse_position;
@@ -437,8 +435,6 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     _onMouseMove( event )
     {
-       //event.preventDefault()
-
         var mouse_position = [event.clientX, event.clientY];
 
         //　平行移動
@@ -482,8 +478,6 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     _onMouseUp( event )
     {
-        // event.preventDefault()
-
         this._resetEventParameter();
     }
 
@@ -495,6 +489,8 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     _onMouseWheel( event )
     {
+        event.preventDefault();
+
         var mouse_position = [event.clientX, event.clientY];
 
         this._mouse_down_position = mouse_position;
@@ -504,8 +500,6 @@ class StandardUIViewer extends mapray.RenderCallback
         zoom = -1 * Math.sign( event.deltaY ) * Math.ceil( Math.abs( event.deltaY ) / 100 );
 
         this._zoom_wheel += zoom;
-
-        event.preventDefault();
     }
 
     /**
