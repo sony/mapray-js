@@ -112,15 +112,18 @@ class StandardUIViewer extends mapray.RenderCallback
         var element = this._viewer._canvas_element;
         element.setAttribute( "oncontextmenu", "return false;" );
 
+        // For getting KeybordEvent
+        element.setAttribute('tabindex', '0');
+
         // イベントリスナーの追加
         this._addEventListener();
-        
+
         return this._viewer;
     }
 
     /**
      * @summary 破棄関数
-     * 
+     *
      * @memberof StandardUIViewer
      */
     destroy()
@@ -134,7 +137,7 @@ class StandardUIViewer extends mapray.RenderCallback
 
         this._viewer.destroy();
         this._viewer = null;
-    }    
+    }
 
     /**
      * @summary ビューワ
@@ -142,7 +145,7 @@ class StandardUIViewer extends mapray.RenderCallback
      * @readonly
      * @memberof StandardUIViewer
      */
-    get viewer() 
+    get viewer()
     {
         return this._viewer;
     }
@@ -166,7 +169,7 @@ class StandardUIViewer extends mapray.RenderCallback
      *
      * @param {object}                      options                 生成オプション
      * @param {mapray.ImageProvider}        options.image_provider  画像プロバイダ
-     * @returns {mapray.ImageProvider}                              画像プロバイダ 
+     * @returns {mapray.ImageProvider}                              画像プロバイダ
      * @memberof StandardUIViewer
      */
     _createImageProvider( options )
@@ -222,12 +225,14 @@ class StandardUIViewer extends mapray.RenderCallback
         var self = this;
 
         window.addEventListener( "blur", function ( event ) { self._onBlur( event ); }, { passive: false } );
-        canvas.addEventListener( "mousedown", function ( event ) { self._onMouseDown( event ); }, { passive: false } );
-        document.addEventListener( "mousemove", function ( event ) { self._onMouseMove( event ); }, { passive: false } );
-        document.addEventListener( "mouseup", function ( event ) { self._onMouseUp( event ); }, { passive: false } );
-        document.addEventListener( "wheel", function ( event ) { self._onMouseWheel( event ); }, { passive : false } );
-        document.addEventListener( "keydown", function ( event ) { self._onKeyDown( event ); }, { passive: false } );
-        document.addEventListener( "keyup", function ( event ) { self._onKeyUp( event ); }, { passive: false } );
+        canvas.addEventListener( "mousedown", function ( event ) { self._onMouseDown( event ); }, { passive: true } );
+        canvas.addEventListener( "mousemove", function ( event ) { self._onMouseMove( event ); }, { passive: true } );
+        document.addEventListener( "mousemove", function ( event ) { self._onMouseMove( event ); }, { capture: true } );
+        canvas.addEventListener( "mouseup", function ( event ) { self._onMouseUp( event ); }, { passive: true } );
+        document.addEventListener( "mouseup", function ( event ) { self._onMouseUp( event ); }, { capture: false } );
+        canvas.addEventListener( "wheel", function ( event ) { self._onMouseWheel( event ); }, { passive : false } );
+        canvas.addEventListener( "keydown", function ( event ) { self._onKeyDown( event ); }, { capture: false, passive: false } );
+        canvas.addEventListener( "keyup", function ( event ) { self._onKeyUp( event ); }, { passive: true } );
     }
 
     /**
@@ -241,12 +246,14 @@ class StandardUIViewer extends mapray.RenderCallback
         var self = this;
 
         window.removeEventListener( "blur", function ( event ) { self._onBlur( event ); }, { passive: false } );
-        canvas.removeEventListener( "mousedown", function ( event ) { self._onMouseDown( event ); }, { passive: false } );
-        document.removeEventListener( "mousemove", function ( event ) { self._onMouseMove( event ); }, { passive: false } );
-        document.removeEventListener( "mouseup", function ( event ) { self._onMouseUp( event ); }, { passive: false } );
-        document.removeEventListener( "wheel", function ( event ) { self._onMouseWheel( event ); }, { passive: false } );
-        document.removeEventListener( "keydown", function ( event ) { self._onKeyDown( event ); }, { passive: false } );
-        document.removeEventListener( "keyup", function ( event ) { self._onKeyUp( event ); }, { passive: false } );
+        canvas.removeEventListener( "mousedown", function ( event ) { self._onMouseDown( event ); }, { passive: true } );
+        canvas.removeEventListener( "mousemove", function ( event ) { self._onMouseMove( event ); }, { passive: true } );
+        document.removeEventListener( "mousemove", function ( event ) { self._onMouseMove( event ); }, { capture: true } );
+        canvas.removeEventListener( "mouseup", function ( event ) { self._onMouseUp( event ); }, { passive: true } );
+        document.removeEventListener( "mouseup", function ( event ) { self._onMouseUp( event ); }, { capture: false } );
+        canvas.removeEventListener( "wheel", function ( event ) { self._onMouseWheel( event ); }, { passive : false } );
+        canvas.removeEventListener( "keydown", function ( event ) { self._onKeyDown( event ); }, { capture: false, passive: false } );
+        canvas.removeEventListener( "keyup", function ( event ) { self._onKeyUp( event ); }, { passive: true } );
     }
 
 
@@ -332,7 +339,7 @@ class StandardUIViewer extends mapray.RenderCallback
 
     /**
      * @summary クリップ範囲の更新
-     * 
+     *
      * @memberof StandardUIViewer
      */
     _updateClipPlane()
@@ -365,8 +372,6 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     _onBlur( event )
     {
-        event.preventDefault()
-
         this._resetEventParameter();
     }
 
@@ -378,7 +383,7 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     _onMouseDown( event )
     {
-        event.preventDefault()
+       // event.preventDefault()
 
         var mouse_position = [event.clientX, event.clientY];
 
@@ -432,7 +437,7 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     _onMouseMove( event )
     {
-        event.preventDefault()
+       //event.preventDefault()
 
         var mouse_position = [event.clientX, event.clientY];
 
@@ -477,7 +482,7 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     _onMouseUp( event )
     {
-        event.preventDefault()
+        // event.preventDefault()
 
         this._resetEventParameter();
     }
@@ -490,8 +495,6 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     _onMouseWheel( event )
     {
-        event.preventDefault()
-
         var mouse_position = [event.clientX, event.clientY];
 
         this._mouse_down_position = mouse_position;
@@ -501,6 +504,8 @@ class StandardUIViewer extends mapray.RenderCallback
         zoom = -1 * Math.sign( event.deltaY ) * Math.ceil( Math.abs( event.deltaY ) / 100 );
 
         this._zoom_wheel += zoom;
+
+        event.preventDefault();
     }
 
     /**
@@ -511,8 +516,6 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     _onKeyDown( event )
     {
-        event.preventDefault()
-
         switch( event.key )
         {
             // [c] 画角の拡大
@@ -537,6 +540,7 @@ class StandardUIViewer extends mapray.RenderCallback
 
             // ↑ 前進
             case "ArrowUp":
+                event.preventDefault();
                 // 画面中央を移動基準にする
                 var canvas = this._viewer.canvas_element;
                 var mouse_position = [canvas.width / 2, canvas.height / 2];
@@ -548,6 +552,7 @@ class StandardUIViewer extends mapray.RenderCallback
 
             // ↓ 後退
             case "ArrowDown":
+                event.preventDefault();
                 // 画面中央を移動基準にする
                 var canvas = this._viewer.canvas_element;
                 var mouse_position = [canvas.width / 2, canvas.height / 2];
@@ -559,6 +564,7 @@ class StandardUIViewer extends mapray.RenderCallback
 
             // ← 左回転
             case "ArrowLeft":
+                event.preventDefault();
                 // 画面中央を移動基準にする
                 this._free_rotate_drag[0] = 100;
                 this._key_mode = true;
@@ -566,6 +572,7 @@ class StandardUIViewer extends mapray.RenderCallback
 
             case "ArrowRight":
                 // 画面中央を移動基準にする
+                event.preventDefault();
                 this._free_rotate_drag[0] = -100;
                 this._key_mode = true;
                 break;
@@ -580,8 +587,6 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     _onKeyUp( event )
     {
-        event.preventDefault()
-
         switch ( event.key )
         {
             // [c] 画角の拡大
@@ -660,7 +665,7 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     _translation( delta_time )
     {
-        if ( this._translate_drag[0] != 0 || this._translate_drag[1] != 0 ) 
+        if ( this._translate_drag[0] != 0 || this._translate_drag[1] != 0 )
         {
             if ( this._key_mode )
             {
@@ -732,7 +737,7 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     _rotation()
     {
-        if ( this._rotate_drag[0] != 0 || this._rotate_drag[1] != 0 ) 
+        if ( this._rotate_drag[0] != 0 || this._rotate_drag[1] != 0 )
         {
             if (this._rotate_center == null)
             {
@@ -803,7 +808,7 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     _freeRotation( delta_time )
     {
-        if ( this._free_rotate_drag[0] != 0 || this._free_rotate_drag[1] != 0 ) 
+        if ( this._free_rotate_drag[0] != 0 || this._free_rotate_drag[1] != 0 )
         {
             if ( this._key_mode )
             {
@@ -832,13 +837,13 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     _translationOfHeight()
     {
-        if ( this._height_drag[0] != 0 || this._height_drag[1] != 0 ) 
+        if ( this._height_drag[0] != 0 || this._height_drag[1] != 0 )
         {
             var height_drag = this._height_drag[1];
 
             var factor = GeoMath.gudermannian( ( this._camera_parameter.height - 50000 ) / 10000 ) + Math.PI / 2;
             var delta_height = height_drag * 100 * factor;
-            
+
             this._camera_parameter.height += delta_height;
 
             this._height_drag[0] = 0;
@@ -1022,8 +1027,8 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     setCameraParameter( parameter )
     {
-        if ( parameter.fov ) { 
-            this._camera_parameter.fov = parameter.fov; 
+        if ( parameter.fov ) {
+            this._camera_parameter.fov = parameter.fov;
             this._default_fov = parameter.fov;
         }
 
@@ -1235,7 +1240,7 @@ class StandardUIViewer extends mapray.RenderCallback
             var cross_vector = GeoMath.cross3( a_vector, b_vector, GeoMath.createVector3() );
             cross_vector = GeoMath.normalize3( cross_vector, GeoMath.createVector3() );
 
-            if ( GeoMath.dot3( axis, cross_vector ) < 0 ) 
+            if ( GeoMath.dot3( axis, cross_vector ) < 0 )
             {
                 angle *= -1;
             }
