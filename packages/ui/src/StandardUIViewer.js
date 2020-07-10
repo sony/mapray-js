@@ -233,6 +233,11 @@ class StandardUIViewer extends mapray.RenderCallback
         canvas.addEventListener( "wheel", function ( event ) { self._onMouseWheel( event ); }, { passive : false } );
         canvas.addEventListener( "keydown", function ( event ) { self._onKeyDown( event ); }, { capture: false, passive: false } );
         canvas.addEventListener( "keyup", function ( event ) { self._onKeyUp( event ); }, { passive: true } );
+
+        canvas.addEventListener( "touchstart", function ( event ) { self._onTouchStart( event ); }, { passive: true } );
+        canvas.addEventListener( "touchmove", function ( event ) { self._onTouchMove( event ); }, { passive: false } );
+        canvas.addEventListener( "touchend", function ( event ) { self._onTouchEnd( event ); } );
+        canvas.addEventListener( "touchcancel", function ( event ) { self._onTouchCancel( event ); } );
     }
 
     /**
@@ -254,6 +259,11 @@ class StandardUIViewer extends mapray.RenderCallback
         canvas.removeEventListener( "wheel", function ( event ) { self._onMouseWheel( event ); }, { passive : false } );
         canvas.removeEventListener( "keydown", function ( event ) { self._onKeyDown( event ); }, { capture: false, passive: false } );
         canvas.removeEventListener( "keyup", function ( event ) { self._onKeyUp( event ); }, { passive: true } );
+
+        canvas.removeEventListener( "touchstart", function ( event ) { self._onTouchStart( event ); }, { passive: true } );
+        canvas.removeEventListener( "touchmove", function ( event ) { self._onTouchMove( event ); }, { passive: false } );
+        canvas.removeEventListener( "touchend", function ( event ) { self._onTouchEnd( event ); } );
+        canvas.removeEventListener( "touchcancel", function ( event ) { self._onTouchCancel( event ); } );
     }
 
 
@@ -500,6 +510,28 @@ class StandardUIViewer extends mapray.RenderCallback
         zoom = -1 * Math.sign( event.deltaY ) * Math.ceil( Math.abs( event.deltaY ) / 100 );
 
         this._zoom_wheel += zoom;
+    }
+
+    _onTouchStart( event )
+    {
+        var touches = event.changedTouches;
+        console.log('')
+
+    }
+
+    _onTouchMove( event )
+    {
+
+    }
+
+    _onTouchEnd( event )
+    {
+
+    }
+
+    _onTouchCancel( event )
+    {
+
     }
 
     /**
