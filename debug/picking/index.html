@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+
+
+<html>
+
+<head>
+<meta charset="UTF-8"/>
+<link rel="stylesheet" type="text/css" href="app.css"/>
+<script type="text/javascript" src="dist/bundle.js"></script>
+<script type="text/javascript">
+window.addEventListener("load", () => {
+  const node = document.getElementById("ui");
+  const tools = document.getElementById("tools");
+  new App(node, {
+    tools: tools
+  });
+});
+</script>
+</head>
+
+<body>
+<div id="ui"></div>
+<div id="tools">
+    <pre></pre>
+    <div class="options">
+        <input id="log-mouse-position" name="log-mouse-position" type="checkbox" checked="true"></input>
+        <label for="log-mouse-position" class="checkbox">Log Mouse Position</label>
+    </div>
+</div>
+</body>
+</html>
