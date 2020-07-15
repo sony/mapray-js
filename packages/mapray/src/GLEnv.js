@@ -37,7 +37,7 @@ class GLEnv {
      */
     _getContextWebGL( canvas, ctx_attribs )
     {
-        var contextTypes = ["webgl", "experimental-webgl"];
+        var contextTypes = ["webgl2"];
         for ( var i = 0; i < contextTypes.length; ++i ) {
             var context = canvas.getContext( contextTypes[i], ctx_attribs );
             if ( context ) {
