@@ -88,7 +88,12 @@ class EntityMaterial extends Material {
     }
 
     setRenderId( id ) {
-        this.setVector3( "u_rid", [(id & 0xFF) / 0xFF, 0, 0] )
+        this.setVector4( "u_rid", [
+                (id >> 24 & 0xFF) / 0xFF,
+                (id >> 16 & 0xFF) / 0xFF,
+                (id >>  8 & 0xFF) / 0xFF,
+                (id       & 0xFF) / 0xFF,
+        ]);
     }
 }
 

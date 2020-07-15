@@ -1,9 +1,12 @@
 import GeoMath from "./GeoMath";
 import Globe from "./Globe";
+import Entity from "./Entity";
 import FlakeCollector from "./FlakeCollector";
 import SurfaceMaterial from "./SurfaceMaterial";
 import WireframeMaterial from "./WireframeMaterial";
 import Viewer from "./Viewer";
+import PickTool from "./PickTool";
+
 
 
 const RenderTarget = {
@@ -13,7 +16,9 @@ const RenderTarget = {
     RID: {
         id: "RID"
     }
-}
+};
+
+
 
 
 /**
@@ -24,28 +29,30 @@ const RenderTarget = {
  * @memberof mapray
  * @private
  */
-class RenderStage {
+class AbstractRenderStage {
 
     /**
-     * @param viewer {mapray.Viewer}  所有者である Viewer
+     * @param {mapray.Viewer} viewer  所有者である Viewer
+     * @param {number} width          ビューポートの幅
+     * @param {number} height         ビューポートの高さ
+     * @param {number} [sx]           レンダリング領域のx位置(ビューポート中央を0, 右方向を正とする)
+     * @param {number} [sy]           レンダリング領域のy位置(ビューポート中央を0, 上方向を正とする)
+     * @param {number} [swidth]       レンダリング領域の幅
+     * @param {number} [sheight]      レンダリング領域の高さ
      */
-    constructor( viewer )
+    constructor( viewer, camera, renderInfo )
     {
         this._viewer = viewer;
         this._glenv  = viewer.glenv;
 
-        var canvas = viewer.canvas_element;
-        this._width  = canvas.width;
-        this._height = canvas.height;
+        this._width = camera.canvas_size.width;
+        this._height = camera.canvas_size.height;
 
         if ( this._width === 0 || this._height === 0 ) {
             // 画素がないのでレンダリングを省略
             this._rendering_cancel = true;
             return;
         }
-
-        var     camera = viewer.camera;
-        var renderInfo = camera.createRenderInfo();
 
         // _view_to_gocs, _gocs_to_view, _view_to_clip, _gocs_to_clip
         this._setupBasicMatrices( renderInfo, camera );
@@ -65,22 +72,14 @@ class RenderStage {
         if ( !viewer._render_cache ) {
             viewer._render_cache = {
                 // 地表マテリアル
-                surface_material:   new SurfaceMaterial( viewer ),
-                surface_pick_material:   new SurfaceMaterial( viewer, { ridMaterial: true } ),
-                wireframe_material: new WireframeMaterial( viewer )
+                surface_material:      new SurfaceMaterial( viewer ),
+                surface_pick_material: new SurfaceMaterial( viewer, { ridMaterial: true } ),
+                wireframe_material:    new WireframeMaterial( viewer )
             };
         }
 
-        // 地表マテリアルの選択
-        this._flake_material = (viewer.render_mode === Viewer.RenderMode.WIREFRAME) ? viewer._render_cache.wireframe_material : viewer._render_cache.surface_material;
-        this._flake_pick_material = viewer._render_cache.surface_pick_material;
-
         // デバッグ統計
         this._debug_stats = viewer.debug_stats;
-    }
-
-    getRenderTarget() {
-        return RenderTarget.SCENE;
     }
 
     /**
@@ -99,21 +98,46 @@ class RenderStage {
         GeoMath.mul_PzA( this._view_to_clip, this._gocs_to_view, this._gocs_to_clip );
     }
 
+    /**
+     * @type {RenderTarget}
+     */
+    getRenderTarget() {
+        throw new Error("not implemented");
+    }
+
+    /**
+     * @summary Sceneがレンダリングを確定したことを通知
+     * pick_objectは、primitiveがpickされたときに返却すべきオブジェクトを指定する。
+     * @param {Primitive} primitive
+     * @param {mapray.Entity} [pick_object]
+     */
+    onPushPrimitive( primitive, pick_object ) {
+    }
 
     /**
      * @summary 1フレームのレンダリングを実行
      */
-    render()
-    {
+    render() {
+        throw new Error("not implemented");
+    }
+
+    _render() {
         if ( this._rendering_cancel )
             return;
 
-        var gl = this._glenv.context;
+        // 地表断片データの収集
+        if ( this._globe.status !== Globe.Status.READY ) {
+            // まだ基底タイルデータが読み込まれていないので地表をレンダリングできない
+            this._rendering_cancel = true;
+            return;
+        }
 
-        // Canvas 全体にビューポートを設定
+        const gl = this._glenv.context;
+
+        // 描画領域全体にビューポートを設定
         gl.viewport( 0, 0, this._width, this._height );
-
         gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
+        gl.depthMask( true );
         gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
 
         gl.enable( gl.CULL_FACE );
@@ -121,14 +145,8 @@ class RenderStage {
         gl.blendFuncSeparate( gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE );  // FB のα値は変えない
         gl.depthFunc( gl.LEQUAL );
 
-        // 地表断片データの収集
-        if ( this._globe.status !== Globe.Status.READY ) {
-            // まだ基底タイルデータが読み込まれていないので地表をレンダリングできない
-            return;
-        }
-
-        let  collector = new FlakeCollector( this );
-        let flake_list = collector.traverse();
+        const collector = new FlakeCollector( this );
+        this._flake_list = collector.traverse();
 
         let vis_ground = this._viewer.getVisibility( Viewer.Category.GROUND );
         let vis_entity = this._viewer.getVisibility( Viewer.Category.ENTITY );
@@ -136,9 +154,8 @@ class RenderStage {
         // すべての地表断片を描画
         this._prepare_draw_flake();
 
-        for ( let rflake of flake_list ) {
+        for ( let rflake of this._flake_list ) {
             let fro = rflake.getRenderObject();
-
             if ( vis_ground ) {
                 this._draw_flake_base( rflake, fro.getBaseMesh() );
             }
@@ -151,19 +168,7 @@ class RenderStage {
         if ( vis_entity ) {
             this._scene.draw( this );
         }
-
-        // 描画地表断片数を記録
-        var stats = this._debug_stats;
-        if ( stats !== null ) {
-            stats.num_drawing_flakes = flake_list.length;
-        }
-
-        // フレーム終了処理
-        this._globe.endFrame();
-        this._tile_texture_cache.endFrame();
-        this._viewer.layers.endFrame();
     }
-
 
     /**
      * @summary 地表断片を描画する前の準備
@@ -188,8 +193,8 @@ class RenderStage {
      */
     _draw_flake_base( rflake, mesh )
     {
-        let gl = this._glenv.context;
-        var material = this.getRenderTarget() === RenderTarget.RID ? this._flake_pick_material : this._flake_material;
+        const gl = this._glenv.context;
+        const material = this._flake_material;
 
         material.bindProgram();
 
@@ -246,24 +251,187 @@ class RenderStage {
         //   Chrome+EGL: -40, -40
         gl.polygonOffset( -8, -8 );
 
+        // 透明色のマテリアルであっても、RID描画時は gl.BLEND を無効にする。
+        let setBlend;
+        if ( this.getRenderTarget() === RenderTarget.SCENE ) {
+            setBlend = (enable) => {
+                if (enable) gl.enable( gl.BLEND )
+                else        gl.disable( gl.BLEND )
+            };
+        }
+        else {
+            gl.disable( gl.BLEND );
+            setBlend = () => {};
+        }
+
         for ( let i = 0; i < num_entities; ++i ) {
-            let { entity, primitive } = fro.getEntityPrimitive( i, this );
+            let { primitive, entity } = fro.getEntityPrimitive( i, this );
 
-            if ( primitive.isTranslucent( this ) ) {
-                gl.enable( gl.BLEND );
-            }
-            else {
-                gl.disable( gl.BLEND );
-            }
+            setBlend( primitive.isTranslucent( this ) );
 
+            this.onPushPrimitive( primitive, entity );
             primitive.draw( this );
         }
 
         gl.depthMask( true );
         gl.disable( gl.POLYGON_OFFSET_FILL );
     }
-
 }
 
+
+
+/**
+ * @summary 1フレーム分のレンダリングを実行
+ * @desc
+ * {@link mapray.Viewer} インスタンスはフレーム毎にこのクラスのインスタンスを生成してレンダリングを実行する。
+ *
+ * @memberof mapray
+ * @private
+ */
+class RenderStage extends AbstractRenderStage {
+    /**
+     * @param viewer {mapray.Viewer}  所有者である Viewer
+     */
+    constructor( viewer )
+    {
+        super( viewer, viewer.camera, viewer.camera.createRenderInfo() );
+
+        // 地表マテリアルの選択
+        this._flake_material = (
+            viewer.render_mode === Viewer.RenderMode.WIREFRAME ?
+            viewer._render_cache.wireframe_material :
+            viewer._render_cache.surface_material
+        );
+    }
+
+
+    /**
+     * @type {RenderTarget}
+     * @override
+     */
+    getRenderTarget() {
+        return RenderTarget.SCENE;
+    }
+
+
+    /**
+     * @summary 1フレームのレンダリングを実行
+     * @override
+     */
+    render()
+    {
+        this._render();
+        if ( this._rendering_cancel ) return;
+
+        // 描画地表断片数を記録
+        var stats = this._debug_stats;
+        if ( stats !== null ) {
+            stats.num_drawing_flakes = this._flake_list.length;
+        }
+
+        // フレーム終了処理
+        this._globe.endFrame();
+        this._tile_texture_cache.endFrame();
+        this._viewer.layers.endFrame();
+    }
+}
+
+
+
+/**
+ * @summary マウスピック用に1フレーム分のレンダリングを実行
+ * @desc
+ * {@link mapray.Viewer} のpick関数内でインスタンスが生成されレンダリングが実行される。
+ *
+ * @memberof mapray
+ * @private
+ */
+class PickStage extends AbstractRenderStage {
+
+    /**
+     * @param {mapray.Viewer} viewer  所有者である Viewer
+     * @param {number} size オフスクリーン幅 = オフスクリーン高さ
+     * @param {mapray.Vector2} screen_pos スクリーン上のピクセル位置
+     */
+    constructor( viewer, screen_pos )
+    {
+        const pick_tool = viewer.pick_tool_cache || (viewer.pick_tool_cache = new PickTool( viewer.glenv ));
+        const camera = pick_tool.pickCamera( viewer.camera, screen_pos );
+        const renderInfo = camera.createRenderInfo(
+            +screen_pos[0] - viewer.camera.canvas_size.width  / 2,
+            -screen_pos[1] + viewer.camera.canvas_size.height / 2
+        );
+
+        super( viewer, camera, renderInfo );
+
+        // 地表マテリアルの選択
+        this._flake_material = viewer._render_cache.surface_pick_material;
+
+        this._pick_tool = pick_tool;
+        this._rid_map = [null];
+
+        this._pick_result = {};
+    }
+
+
+    /**
+     * @override
+     */
+    onPushPrimitive( primitive, pick_object ) {
+        primitive.rid = this._rid_map.length;
+        this._rid_map.push(pick_object);
+    }
+
+
+    /**
+     * @type {RenderTarget}
+     * @override
+     */
+    getRenderTarget() {
+        return RenderTarget.RID;
+    }
+
+
+    /*
+     * スクリーンの任意の点における三次元位置や描画対象に関する情報を取得します。
+     * @return 位置情報や描画対象に関する情報
+     * @override
+     */
+    render() {
+        const pick_tool = this._pick_tool;
+        pick_tool.beforeRender();
+
+        const r = this._render();
+        if ( this._rendering_cancel ) {
+            pick_tool.renderCanceled();
+            return;
+        }
+
+        pick_tool.afterRender();
+
+        const rid = pick_tool.readRid();
+        if ( rid > 0 ) {
+            const pick_object = this._rid_map[ rid ];
+            if ( pick_object instanceof Entity ) {
+                this._pick_result.entity = pick_object;
+            }
+        }
+
+        this._pick_result.point = pick_tool.readDepth( this._view_to_clip, this._view_to_gocs );
+
+        // フレーム終了処理
+        this._globe.endFrame();
+        this._tile_texture_cache.endFrame();
+        this._viewer.layers.endFrame();
+    }
+
+
+    get pick_result() {
+        return this._pick_result;
+    }
+}
+
+
+
 export default RenderStage;
-export { RenderTarget };
+export { PickStage, RenderTarget };

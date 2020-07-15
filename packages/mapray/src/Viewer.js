@@ -1,6 +1,6 @@
 import Camera from "./Camera";
 import GLEnv from "./GLEnv";
-import RenderStage from "./RenderStage";
+import RenderStage, { PickStage } from "./RenderStage";
 import StandardImageProvider from "./StandardImageProvider";
 import StandardDemProvider from "./StandardDemProvider";
 import LayerCollection from "./LayerCollection";
@@ -644,6 +644,18 @@ class Viewer {
         stage.render();
 
         this._finishDebugStats();
+    }
+
+
+    /**
+     * 現在のビューにおいて指定されたスクリーン位置の情報を取得します
+     * @param {Vector2} screen_position
+     * @return {object}
+     */
+    pick(screen_position) {
+        const stage = new PickStage( this, screen_position );
+        stage.render();
+        return stage.pick_result;
     }
 
 
