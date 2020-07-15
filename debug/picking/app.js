@@ -94,17 +94,49 @@ class App extends StandardUIViewer {
     onMouseDown( point, event )
     {
         if (event.shiftKey) {
-            /*
             this._pick(pickResult => {
-                    // ...
-            */
+                    if (pickResult.entity instanceof PinEntity) {
+                        // pickResult.entity.setSize(200, 200);
+                        pickResult.entity.setFGColor( [1, 0, 0] );
+                    }
+                    else if (pickResult.entity instanceof TextEntity) {
+                        // pickResult.entity.setFGColor( [1, 0, 0] );
+                        pickResult.entity.setBackgroundColor([0, 0, 1]);
+                        pickResult.entity.setEnableBackground(true);
+                    }
+                    else if (pickResult.entity instanceof ImageIconEntity) {
+                        pickResult.entity.setSize( [50, 30] );
+                    }
+                    else if (pickResult.entity instanceof ModelEntity) {
+                        this._cache_scale = this._cache_scale === 2 ? 1 : 2;
+                        pickResult.entity.setScale( [this._cache_scale, this._cache_scale, this._cache_scale] );
+                    }
+                    else if (pickResult.entity instanceof MarkerLineEntity) {
+                        pickResult.entity.setColor( [0, 0, 1] );
+                    }
+                    else if (pickResult.entity instanceof PolygonEntity) {
+                        pickResult.entity.setColor( [1, 0, 0] );
+                        pickResult.entity.setOpacity( 1 );
+                    }
+                    else {
+                        console.log(pickResult.entity);
+                    }
+            }, true);
         }
         else if (event.ctrlKey) {
-            /*
             this._pick(pickResult => {
-                    // ...
+                    if (pickResult.point) {
+                        var pin = new PinEntity( this.viewer.scene );
+                        const p = new GeoPoint();
+                        p.setFromGocs( pickResult.point );
+                        if (!pickResult.entity) {
+                            pin.altitude_mode = AltitudeMode.RELATIVE;
+                            p.altitude = 0;
+                        }
+                        pin.addMakiIconPin( "car-15", p);
+                        this.addEntity( pin );
+                    }
             }, true);
-            */
         }
         super.onMouseDown( point, event );
     }
@@ -116,11 +148,17 @@ class App extends StandardUIViewer {
         GeoMath.copyVector2(point, this._pre_mouse_position);
 
         if (this._enable_ui.checked) {
-            /*
             this._pick(pickResult => {
-                    // ...
+                    if (pickResult.point) {
+                        const p = new GeoPoint();
+                        p.setFromGocs( pickResult.point );
+                        this._mouse_log.innerHTML = (
+                            p.longitude.toFixed(13) + ", " + p.latitude.toFixed(13) + ", " + p.altitude.toFixed(13) +
+                            "\n" +
+                            (pickResult.entity ? pickResult.entity.constructor.name : "&nbsp;")
+                        );
+                    }
             });
-            */
         }
     }
 
