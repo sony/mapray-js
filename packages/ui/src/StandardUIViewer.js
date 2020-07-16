@@ -1417,7 +1417,7 @@ var OperationMode = {
     StandardUIViewer.MINIMUM_FAR = 500000;
 
     // 高度からの近接平面距離を計算するための係数
-    StandardUIViewer.NEAR_FACTOR = 0.01;
+    StandardUIViewer.NEAR_FACTOR = 0.5;
 
     // 近接平面距離からの遠方平面距離を計算するための係数
     StandardUIViewer.FAR_FACTOR = 10000;
