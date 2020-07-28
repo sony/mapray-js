@@ -9,6 +9,9 @@ import AltitudeMode from "./AltitudeMode";
 import EntityRegion from "./EntityRegion";
 import IconLoader, { ImageIconLoader } from "./IconLoader";
 import Dom from "./util/Dom";
+import EasyBindingBlock from "./animation/EasyBindingBlock";
+import Type from "./animation/Type";
+import AnimUtil from "./animation/AnimUtil";
 
 /**
  * @summary 画像アイコンエンティティ
@@ -39,6 +42,9 @@ class ImageIconEntity extends Entity {
         // Entity.PrimitiveProducer インスタンス
         this._primitive_producer = new PrimitiveProducer( this );
 
+        this._animation.addDescendantUnbinder( () => { this._unbindDescendantAnimations(); } );
+        this._setupAnimationBindingBlock();
+
         // 生成情報から設定
         if ( opts && opts.json ) {
             this._setupByJson( opts.json );
@@ -52,6 +58,57 @@ class ImageIconEntity extends Entity {
     getPrimitiveProducer()
     {
         return this._primitive_producer;
+    }
+
+
+    /**
+     * EasyBindingBlock.DescendantUnbinder 処理
+     *
+     * @private
+     */
+    _unbindDescendantAnimations()
+    {
+        // すべてのエントリーを解除
+        for ( let entry of this._entries ) {
+            entry.animation.unbindAllRecursively();
+        }
+    }
+
+
+    /**
+     * アニメーションの BindingBlock を初期化
+     *
+     * @private
+     */
+    _setupAnimationBindingBlock()
+    {
+        const block = this.animation;  // 実体は EasyBindingBlock
+
+        const number = Type.find( "number" );
+        const vector2 = Type.find( "vector2" );
+
+        // パラメータ名: size
+        // パラメータ型: vector2 | number
+        //   型が vector2 のとき アイコンのピクセルサイズX, Y 順であると解釈
+        //   型が number のとき アイコンのピクセルサイズX, Y の値
+        const size_temp = GeoMath.createVector2();
+        let   size_type;
+
+        let size_tsolver = curve => {
+            size_type = AnimUtil.findFirstTypeSupported( curve, [vector2, number] );
+            return size_type;
+        };
+
+        block.addEntry( "size", [vector2, number], size_tsolver, value => {
+            if ( size_type === vector2 ) {
+                this.setSize( value );
+            }
+            else { // size_type === number
+                size_temp[0] = value;
+                size_temp[1] = value;
+                this.setSize( size_temp );
+            }
+        } );
     }
 
 
@@ -75,15 +132,19 @@ class ImageIconEntity extends Entity {
 
     /**
      * @summary Add Image Icon
-     * @param {URL|HTMLImageElement|HTMLCanvasElement} image_src      画像
-     * @param {mapray.GeoPoint} position  位置
-     * @param {object}          [props]   プロパティ
-     * @param {mapray.Vector2} [props.size]              アイコンサイズ
+     * @param {URL|HTMLImageElement|HTMLCanvasElement} image_src    画像
+     * @param {mapray.GeoPoint} position            位置
+     * @param {object}          [props]             プロパティ
+     * @param {mapray.Vector2}  [props.size]        アイコンサイズ
+     * @param {string}          [props.id]          Entryを識別するID
+     * @return {mapray.ImageIconEntity.ImageEntry}  追加したEntry
      */
     addImageIcon( image_src, position, props ) 
     {
-        this._entries.push( new ImageEntry( this, image_src, position, props ) );
+        var entry = new ImageEntry( this, image_src, position, props )
+        this._entries.push( entry );
         this._primitive_producer.onAddEntry();
+        return entry;
     }
 
 
@@ -107,7 +168,7 @@ class ImageIconEntity extends Entity {
      */
     _setValueProperty( name, value )
     {
-        var props = this._text_parent_props;
+        var props = this._parent_props;
         if ( props[name] != value ) {
             props[name] = value;
             this._primitive_producer.onChangeParentProperty();
@@ -144,6 +205,17 @@ class ImageIconEntity extends Entity {
         
         if ( json.size )     this.setSize( json.size );
         if ( json.origin )   this.setOrigin( json.origin );
+    }
+
+    
+    /**
+     * @summary IDでEntryを取得
+     * @param {string}  id  ID
+     * @return {mapray.ImageIconEntity.ImageEntry}  IDが一致するEntry（無ければundefined）
+     */
+    getEntry( id )
+    {
+        return this._entries.find((entry) => entry.id === id);
     }
 }
 
@@ -236,6 +308,15 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
      * @summary 親プロパティが変更されたことを通知
      */
     onChangeParentProperty()
+    {
+        this._dirty = true;
+    }
+
+
+    /**
+     * @summary 子プロパティが変更されたことを通知
+     */
+    onChangeChildProperty()
     {
         this._dirty = true;
     }
@@ -447,8 +528,9 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
 /**
  * @summary 要素
+ * @hideconstructor
  * @memberof mapray.ImageIconEntity
- * @private
+ * @public
  */
 class ImageEntry {
 
@@ -458,27 +540,30 @@ class ImageEntry {
      * @param {mapray.GeoPoint}        position     位置
      * @param {object}                 [props]      プロパティ
      * @param {mapray.Vector2}         [props.size] アイコンサイズ
+     * @param {string}                 [props.id]   Entryを識別するID
      */
     constructor( owner, image_src, position, props )
     {
         this._owner = owner;
-        this._image_src = image_src;
         this._position = position.clone();
+
+        // animation.BindingBlock
+        this._animation = new EasyBindingBlock();
+        
+        this._setupAnimationBindingBlock();
 
         this._props = Object.assign( {}, props );  // props の複製
         this._copyPropertyVector2f( "size" );      // deep copy
         this._copyPropertyVector2f( "origin" );    // deep copy
 
-        this._icon = ImageEntry.iconLoader.load( image_src );
-        this._icon.onEnd(item => {
-                this._owner.getPrimitiveProducer()._dirty = true;
-        });
+        this.setImage( image_src );
     }
 
     /**
      * @summary 位置
      * @type {mapray.GeoPoint}
      * @readonly
+     * @package
      */
     get position()
     {
@@ -486,9 +571,20 @@ class ImageEntry {
     }
 
     /**
+     * @summary ID
+     * @type {string}
+     * @readonly
+     */
+    get id()
+    {
+        return this._props.hasOwnProperty( "id" ) ? this._props.id : "";
+    }
+
+    /**
      * @summary アイコンサイズ (Pixels)
      * @type {mapray.Vector2}
      * @readonly
+     * @package
      */
     get size()
     {
@@ -504,12 +600,117 @@ class ImageEntry {
      * @summary アイコンオリジン位置 (左上を(0, 0)、右下を(1, 1)としする数字を指定する。)
      * @type {mapray.Vector2}
      * @readonly
+     * @package
      */
     get origin()
     {
         const props = this._props;
         const parent = this._owner._parent_props;
         return props.origin || parent.origin || ImageIconEntity.DEFAULT_ORIGIN;
+    }
+
+    /**
+     * @summary アニメーションパラメータ設定
+     *
+     * @type {mapray.animation.BindingBlock}
+     * @readonly
+     */
+    get animation() { return this._animation; }
+        
+    /**
+     * アニメーションの BindingBlock を初期化
+     *
+     * @private
+     */
+    _setupAnimationBindingBlock()
+    {
+        const block = this.animation;  // 実体は EasyBindingBlock
+
+        const number  = Type.find( "number"  );
+        const string  = Type.find( "string"  );
+        const vector2 = Type.find( "vector2" );
+        const vector3 = Type.find( "vector3" );
+        
+        // パラメータ名: image_src
+        // パラメータ型: string
+        //   画像のパス
+        block.addEntry( "image_src", [string], null, value => {
+            this.setImage( value );
+        } );
+
+        // パラメータ名: position
+        // パラメータ型: vector3
+        //   ベクトルの要素が longitude, latitude, altitude 順であると解釈
+        const position_temp = new GeoPoint();
+
+        block.addEntry( "position", [vector3], null, value => {
+            position_temp.setFromArray( value );  // Vector3 -> GeoPoint
+            this.setPosition( position_temp );
+        } );
+
+        // パラメータ名: size
+        // パラメータ型: vector2 | number
+        //   型が vector2 のとき アイコンのピクセルサイズX, Y 順であると解釈
+        //   型が number のとき アイコンのピクセルサイズX, Y は同値
+        const size_temp = GeoMath.createVector2();
+        let   size_type;
+
+        let size_tsolver = curve => {
+            size_type = AnimUtil.findFirstTypeSupported( curve, [vector2, number] );
+            return size_type;
+        };
+
+        block.addEntry( "size", [vector2, number], size_tsolver, value => {
+            if ( size_type === vector2 ) {
+                this.setSize( value );
+            }
+            else { // size_type === number
+                size_temp[0] = value;
+                size_temp[1] = value;
+                this.setSize( size_temp );
+            }
+        } );             
+    }
+
+    
+    /**
+     * @summary 画像のパスを設定
+     * @param {string} image_src  画像のパス
+     */
+    setImage( image_src )
+    {
+        if ( this._image_src !== image_src ) {
+            // 画像のパスが変更された
+            this._image_src = image_src;
+            this._icon = ImageEntry.iconLoader.load( image_src );
+            this._icon.onEnd(item => {
+                    this._owner.getPrimitiveProducer()._dirty = true;
+            });
+        }
+    }
+
+    /**
+     * @summary テキスト原点位置を設定
+     *
+     * @param {mapray.GeoPoint} position  テキスト原点の位置
+     */
+    setPosition( position )
+    {
+        if ( this._position.longitude !== position.longitude ||
+             this._position.latitude  !== position.latitude  ||
+             this._position.altitude  !== position.altitude ) {
+            // 位置が変更された
+            this._position.assign( position );
+            this._owner.getPrimitiveProducer().onChangeChildProperty();
+        }
+    }
+
+    /**
+     * @summary アイコンのサイズを指定
+     * @param {mapray.Vector2} size  アイコンのピクセルサイズ
+     */
+    setSize( size ) {
+        this._setVector2Property( "size", size );
     }
 
     /**
@@ -539,6 +740,22 @@ class ImageEntry {
         }
     }
 
+    /**
+     * @private
+     */
+    _setVector2Property( name, value )
+    {
+        var dst = this._props[name];
+        if ( !dst ) {
+            this._props[name] = GeoMath.createVector2f( value );
+            this._owner.getPrimitiveProducer().onChangeChildProperty();
+        }
+        else if ( dst[0] !== value[0] || dst[1] !== value[1] ) {
+            GeoMath.copyVector2( value, dst );
+            this._owner.getPrimitiveProducer().onChangeChildProperty();
+        }
+    }
+
     isLoaded() {
         return this._icon.isLoaded();
     }
@@ -551,6 +768,8 @@ class ImageEntry {
         this._icon.draw( context, x, y, width, height );
     }
 }
+
+ImageIconEntity.ImageEntry = ImageEntry;
 
 
 {

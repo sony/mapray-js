@@ -18,7 +18,7 @@ start => <SCENE>
 <ENTITY> => {
   id?: <ID>
   altitude_mode?: <ALTITUDE-MODE> = "absolute"
-  <MODEL-CONTENT> | <MARKERLINE-CONTENT> | <TEXT-CONTENT> | <POLYGON-CONTENT>
+  <MODEL-CONTENT> | <MARKERLINE-CONTENT> | <PATH-CONTENT> | <TEXT-CONTENT> | <POLYGON-CONTENT>
 }
 
 <MODEL-CONTENT> =>
@@ -33,6 +33,15 @@ start => <SCENE>
   line_width?: <PARAM-FLOAT> = 1
   color?: <PARAM-VEC3> = [1, 1, 1]
   opacity?: <PARAM-FLOAT> = 1
+
+<PATH-CONTENT> =>
+  type: "path"
+  points: <PATH-POINTS>
+  line_width?: <PARAM-FLOAT> = 1
+  color?: <PARAM-VEC3> = [1, 1, 1]
+  opacity?: <PARAM-FLOAT> = 1
+  lower_length? <PARAM-FLOAT> = 0
+  upper_length? <PARAM-FLOAT> = 0
 
 <TEXT-CONTENT> =>
   type: "text"
@@ -83,11 +92,18 @@ start => <SCENE>
   stroke_width?: Number
   enable_stroke?: Boolean
   bg_color?:  <PARAM-VEC3>
+  id?: <ID>
 }
 
 <BOUNDARY> => {
   type?: <BOUNDARY-TYPE> = "outer"
   points: <GEO-POINTS>
+}
+
+
+<PATH-POINTS> => {
+  positions: <GEO-POINTS>
+  lengths: [Number*]
 }
 
 

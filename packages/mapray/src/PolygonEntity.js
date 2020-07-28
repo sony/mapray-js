@@ -10,6 +10,7 @@ import Triangulator from "./Triangulator";
 import QAreaManager from "./QAreaManager";
 import ConvexPolygon from "./ConvexPolygon";
 import AreaUtil from "./AreaUtil";
+import Type from "./animation/Type";
 
 
 /**
@@ -47,6 +48,8 @@ class PolygonEntity extends Entity {
             this._producer = new PrimitiveProducer( this );
             this._is_flake_mode = false;
         }
+
+        this._setupAnimationBindingBlock();
 
         // 生成情報から設定
         if ( opts && opts.json ) {
@@ -112,13 +115,52 @@ class PolygonEntity extends Entity {
 
 
     /**
+     * アニメーションの BindingBlock を初期化
+     *
+     * @private
+     */
+    _setupAnimationBindingBlock()
+    {
+        const block = this.animation;  // 実体は EasyBindingBlock
+
+        const number  = Type.find( "number"  );
+        const vector3 = Type.find( "vector3" );
+
+        // パラメータ名: color
+        // パラメータ型: vector3
+        //   色
+        block.addEntry( "color", [vector3], null, value => {
+            this.setColor( value );
+        } );
+        
+        // パラメータ名: opacity
+        // パラメータ型: number
+        //   不透明度
+        block.addEntry( "opacity", [number], null, value => {
+            this.setOpacity( value );
+        } );
+        
+        // パラメータ名: height
+        // パラメータ型: number
+        //   線の太さ
+        block.addEntry( "height", [number], null, value => {
+            this.setExtrudedHeight( value );
+        } );
+    }
+
+
+    /**
      * @summary 基本色を設定
      * @param {mapray.Vector3} color  基本色
      */
     setColor( color )
     {
-        GeoMath.copyVector3( color, this._color );
-        this._producer.onChangeProperty();
+        if ( this._color[0] !== color[0] ||
+             this._color[1] !== color[1] ||
+             this._color[2] !== color[2] ) {
+            GeoMath.copyVector3( color, this._color );
+            this._producer.onChangeProperty();
+        }
     }
 
 
@@ -128,8 +170,20 @@ class PolygonEntity extends Entity {
      */
     setOpacity( opacity )
     {
-        this._opacity = opacity;
-        this._producer.onChangeProperty();
+        if ( this._opacity !== opacity ) {
+            this._opacity = opacity;
+            this._producer.onChangeProperty();
+        }
+    }
+
+
+    /**
+     * @summary 押し出し量を設定
+     * @param {number} opacity  押し出し量
+     */
+    setExtrudedHeight( height )
+    {
+        this.extruded_height = height;
     }
 
 
