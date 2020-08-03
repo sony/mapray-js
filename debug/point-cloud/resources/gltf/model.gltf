@@ -1,0 +1,137 @@
+{
+  "asset": {
+    "version": "2.0"
+  },
+  "scene": 0,
+  "scenes": [
+    {
+      "nodes": [ 0 ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "nodes_matrix",
+      "children": [ 1 ],
+      "matrix": [
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+      ]
+    },
+    {
+      "mesh": 0
+    }
+  ],
+  "meshes": [
+    {
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0,
+            "NORMAL": 1,
+            "TEXCOORD_0": 2
+          },
+          "indices": 3,
+          "material": 0
+        }
+      ]
+    }
+  ],
+  "accessors": [
+    {
+      "name": "accessors_positions",
+      "bufferView": 0,
+      "componentType": 5126,
+      "count": 173057,
+      "max" : [54593.2099587, -16643.44028008636, -226.9915815135464],
+      "min" : [54263.36581583833, -17154.61784083629, -254.4098130837083],
+      "type": "VEC3"
+    },
+    {
+      "name": "accessors_normals",
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 173057,
+      "type": "VEC3"
+    },
+
+    {
+      "name": "accessors_texcoords",
+      "bufferView": 2,
+      "componentType": 5126,
+      "count": 173057,
+      "type": "VEC2"
+    },
+
+    {
+      "name": "accessors_indices",
+      "bufferView": 3,
+      "componentType": 5125,
+      "count": 756273,
+      "type": "SCALAR"
+    }
+  ],
+  "bufferViews": [
+    {
+      "name": "bufferViews_positions",
+      "buffer": 0,
+      "byteLength": 2076684,
+      "byteStride": 12,
+      "target": 34962
+    },
+    {
+      "name": "bufferViews_normals",
+      "buffer": 0,
+      "byteOffset": 2076684,
+      "byteLength": 2076684,
+      "byteStride": 12,
+      "target": 34962
+    },
+
+    {
+      "name": "bufferViews_texcoords",
+      "buffer": 0,
+      "byteOffset": 4153368,
+      "byteLength": 1384456,
+      "byteStride": 8,
+      "target": 34962
+    },
+
+    {
+      "name": "bufferViews_indices",
+      "buffer": 0,
+      "byteOffset": 5537824,
+      "byteLength": 3025092,
+      "target": 34963
+    }
+  ],
+  "buffers": [
+    {
+      "byteLength": 8562916,
+      "uri": "model.bin"
+    }
+  ],
+  "materials": [
+    {
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [1.0, 1.0, 1.0, 1.0],
+        "baseColorTexture": {
+          "index": 0
+        },
+
+        "metallicFactor": 0.0
+      }
+    }
+  ],
+  "textures": [
+    {
+      "source": 0
+    }
+  ],
+  "images": [
+    {
+      "uri": "model.jpg"
+    }
+  ]
+}
