@@ -151,9 +151,6 @@ class FlakeMesh {
                 array[index++] = gx - center[0];  // x
                 array[index++] = gy - center[1];  // y
                 array[index++] = gz - center[2];  // z
-                array[index++] = N[0];            // nx
-                array[index++] = N[1];            // ny
-                array[index++] = N[2];            // nz
                 array[index++] = iu * u_step;     // mu
                 array[index++] = iv * v_step;     // mv
             }
@@ -191,15 +188,6 @@ class FlakeMesh {
                 normalized:     false,
                 byte_stride:    stride,
                 byte_offset:    FlakeMesh.OFFSET_P
-            },
-
-            "a_normal": {
-                buffer:         this._vertices,
-                num_components: 3,
-                component_type: type,
-                normalized:     false,
-                byte_stride:    stride,
-                byte_offset:    FlakeMesh.OFFSET_N
             },
 
             "a_uv": {
@@ -463,7 +451,7 @@ class FlakeMesh {
 
 // クラス定数の定義
 {
-    FlakeMesh.VERTEX_SIZE  = 8;  // 1頂点の float 数
+    FlakeMesh.VERTEX_SIZE  = 5;  // 1頂点の float 数
 
 
     /**
@@ -487,23 +475,13 @@ class FlakeMesh {
 
 
     /**
-     * @summary 法線座標のオフセット
-     * @member mapray.FlakeMesh.OFFSET_N
-     * @type {number}
-     * @static
-     * @constant
-     */
-    FlakeMesh.OFFSET_N = 12;
-
-
-    /**
      * @summary UV 座標のオフセット
      * @member mapray.FlakeMesh.OFFSET_UV
      * @type {number}
      * @static
      * @constant
      */
-    FlakeMesh.OFFSET_UV = 24;
+    FlakeMesh.OFFSET_UV = 12;
 
     /**
      * @summary ウェブメルカトル座標系での最大緯度（ラジアン）の cos値
