@@ -28,6 +28,8 @@ import SceneLoader from "./SceneLoader";
 import GeoJSONLoader from "./GeoJSONLoader";
 import DebugStats from "./DebugStats";
 import MaprayApi from "./MaprayApi";
+import PointCloud from "./PointCloud";
+import RawPointCloudProvider from "./RawPointCloudProvider";
 import Resource, { URLResource } from "./Resource";
 
 // マウス・Attribution開発
@@ -70,6 +72,8 @@ var mapray = {
     URLResource,
     MaprayApi,
     DebugStats,
+    PointCloud,
+    RawPointCloudProvider,
     LogoController,          // マウス・Attribution開発
     AttributionController    // マウス・Attribution開発
 };
