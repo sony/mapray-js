@@ -6,7 +6,6 @@ import Buffer from "./Buffer";
 import Image from "./Image";
 
 
-
 /**
  * glTF 読込みコンテキスト
  *
@@ -234,13 +233,13 @@ class Context {
      */
     loadBinary( path )
     {
-        return this._base_resource.loadSubResource( path, this._binary_type );
+        return this._base_resource.loadSubResource( path, { type: this._binary_type } );
     }
 
 
     loadImage( path )
     {
-        return this._base_resource.loadSubResource( path, this._image_type );
+        return this._base_resource.loadSubResource( path, { type: this._image_type } );
     }
 
 

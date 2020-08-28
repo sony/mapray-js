@@ -5,7 +5,7 @@ import CredentialMode from "./CredentialMode";
 import MarkerLineEntity from "./MarkerLineEntity";
 import PolygonEntity from "./PolygonEntity";
 import PinEntity from "./PinEntity";
-import Resource, { URLResource } from "./Resource";
+import Resource, { URLResource, ResourceType } from "./Resource";
 import AltitudeMode from "./AltitudeMode";
 
 /**
@@ -72,7 +72,7 @@ class GeoJSONLoader extends Loader {
     _load()
     {
         return (
-            this._resource.load()
+            this._resource.load( { type: ResourceType.JSON } )
             .then( geoJson => {
                     // JSON データの取得に成功
                     this._check_cancel();
