@@ -3,6 +3,8 @@ import Globe from "./Globe";
 import FlakeCollector from "./FlakeCollector";
 import SurfaceMaterial from "./SurfaceMaterial";
 import WireframeMaterial from "./WireframeMaterial";
+import PointCloudBoxCollector from "./PointCloudBoxCollector";
+import PointCloud from "./PointCloud";
 import Viewer from "./Viewer";
 
 
@@ -48,8 +50,9 @@ class RenderStage {
         this._scene = viewer.scene;
 
         // リソースキャッシュ
-        this._globe              = viewer.globe;
-        this._tile_texture_cache = viewer.tile_texture_cache;
+        this._globe                  = viewer.globe;
+        this._tile_texture_cache     = viewer.tile_texture_cache;
+        this._point_cloud_collection = viewer.point_cloud_collection;
 
         // フレーム間のオブジェクトキャッシュ
         if ( !viewer._render_cache ) {
@@ -131,6 +134,8 @@ class RenderStage {
                 this._draw_entities_on_flake( fro );
             }
         }
+
+        this._draw_point_cloud();
 
         // モデルシーン描画
         if ( vis_entity ) {
@@ -247,6 +252,59 @@ class RenderStage {
         gl.disable( gl.POLYGON_OFFSET_FILL );
     }
 
+
+    /**
+     * @summary 点群を描画
+     *
+     * @private
+     */
+    _draw_point_cloud() {
+        // const debug_handlers = PointCloud.getDebugHandlers() || {};
+        const traverseDataRequestQueue = PointCloud.getTraverseDataRequestQueue();
+        const traverseData = traverseDataRequestQueue.length === 0 ? null : [];
+        const s = PointCloud.getStatistics() || {};
+        // const statistics = ;
+        if ( s.statistics_obj ) s.statistics_obj.clear();
+
+        for ( let i=0; i<this._point_cloud_collection.length; ++i ) {
+            if ( s.statistics_obj ) s.statistics_obj.start();
+
+            const point_cloud = this._point_cloud_collection.get( i );
+            const load_limit = Math.max(0, 10 - point_cloud.provider.getNumberOfRequests());
+
+            const pcb_collector = new PointCloudBoxCollector( this, load_limit );
+            const traverse_result = pcb_collector.traverse( point_cloud, s.statistics_obj );
+            if ( s.statistics_obj ) s.statistics_obj.doneTraverse();
+
+            if (point_cloud.provider.isReady()) {
+                for ( const ro of traverse_result.load_boxes ) {
+                    ro.box.load();
+                }
+            }
+
+            for ( const ro of traverse_result.visible_boxes ) {
+                ro.draw( this, s.statistics_obj );
+            }
+
+            point_cloud.provider.flushQueue();
+
+            if ( traverseData ) {
+                traverseData.push({point_cloud, pcb_collection: traverse_result.visible_boxes});
+            }
+
+            if ( s.statistics_obj ) s.statistics_obj.done();
+        }
+
+        if ( traverseData ) {
+            for (let i=0; i<traverseDataRequestQueue.length; i++) {
+                traverseDataRequestQueue[i](traverseData);
+            }
+        }
+
+        if ( s.statistics_handler ) {
+            s.statistics_handler( s.statistics_obj );
+        }
+    }
 }
 
 export default RenderStage;

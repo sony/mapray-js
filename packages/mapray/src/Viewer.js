@@ -5,6 +5,7 @@ import StandardImageProvider from "./StandardImageProvider";
 import StandardDemProvider from "./StandardDemProvider";
 import LayerCollection from "./LayerCollection";
 import Globe from "./Globe";
+import PointCloudCollection from "./PointCloudCollection";
 import TileTextureCache from "./TileTextureCache";
 import NullRenderCallback from "./NullRenderCallback";
 import GeoMath from "./GeoMath";
@@ -69,6 +70,7 @@ class Viewer {
         this._entity_visibility  = Viewer._getBoolOption( options, "entity_visibility", true );
         this._render_mode        = (options && options.render_mode) || RenderMode.SURFACE;
         this._debug_stats        = (options && options.debug_stats) || null;
+        this._point_cloud_collection = this._createPointCloudCollection( options );
         this._render_callback    = this._createRenderCallback( options );
         this._frame_req_id       = 0;
         this._previous_time      = undefined;
@@ -220,6 +222,16 @@ class Viewer {
 
 
     /**
+     * PointCloudCollection を生成
+     * @private
+     */
+    _createPointCloudCollection( options )
+    {
+        const point_cloud_providers = (options && options.point_cloud_providers) ? options.point_cloud_providers : {};
+        return new PointCloudCollection( this._scene, point_cloud_providers );
+    }
+
+    /**
      * RenderCallback を生成
      * @private
      */
@@ -323,6 +335,14 @@ class Viewer {
      * @readonly
      */
     get layers() { return this._layers; }
+
+
+    /**
+     * @summary 点群管理
+     * @type {mapray.PointCloudCollection}
+     * @readonly
+     */
+    get point_cloud_collection() { return this._point_cloud_collection; }
 
 
     /**
