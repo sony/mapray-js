@@ -1080,7 +1080,8 @@ class Box {
                 const skip_error = (
                     error.message === "cancel" ||
                     error.message === "not loading" ||
-                    error.message === "The user aborted a request."
+                    error.message === "The user aborted a request." ||
+                    error.is_aborted
                 );
                 if ( !skip_error ) {
                     console.log(error);

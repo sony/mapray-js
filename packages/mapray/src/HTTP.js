@@ -95,9 +95,12 @@ class FetchError extends Error {
         this.url = url;
         this.response = response;
         this.cause = cause;
+        let is_aborted = false;
         if ( cause ) {
-            this.stack += "\nCaused-By: " + cause.stack;
+            is_aborted = cause.message === "The user aborted a request.";
+            this.stack += "\nCaused-By: " + ( cause.stack || cause );
         }
+        this.is_aborted = is_aborted;
     }
 }
 
