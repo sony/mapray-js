@@ -1,7 +1,6 @@
 import HTTP from "./HTTP";
 import Dom from "./util/Dom";
 import CredentialMode from "./CredentialMode";
-import SceneLoader from "./SceneLoader";
 
 
 
@@ -18,35 +17,94 @@ import SceneLoader from "./SceneLoader";
  */
 class Resource {
 
-    load( resourceType ) {
+    /**
+     * @protected
+     */
+    load( options={} ) {
         return Promise.reject( new Error( "Not Implemented" ) );
     }
 
+    /**
+     * @protected
+     */
     cancel() {
     }
 
-    loadSubResourceSupported( resourceType ) {
+    /**
+     * @protected
+     */
+    loadSubResourceSupported() {
         return false;
     }
 
-    loadSubResource( url, resourceType ) {
+    /**
+     * @param {string}  url       URL
+     * @param {options} [options] 
+     * @param {mapray.Resource.ResourceType} [options.type] 
+     * @protected
+     */
+    loadSubResource( url, options={} ) {
         return Promise.reject( new Error( "Not Supported" ) );
     }
 
-    resolveResourceSupported( resourceType ) {
+    /**
+     * @protected
+     */
+    resolveResourceSupported() {
       return false;
     }
 
-    resolveResource( url, resourceType ) {
+    /**
+     * @protected
+     */
+    resolveResource( url ) {
         return Promise.reject( new Error( "Not Supported" ) );
     }
 
+    /**
+     * 
+     */
+    static get ResourceType() { return ResourceType; }
 }
 
 
 
+/**
+ * @summary リソースの種類
+ * @enum {object}
+ * @memberof mapray.ResourceType
+ * @constant
+ */
+const ResourceType = {
+
+    /**
+     * JSON
+     */
+    JSON: { id: "JSON" },
+
+    /**
+     * バイナリ
+     */
+    BINARY: { id: "BINARY" },
+
+    /**
+     * テクスチャ画像ファイル
+     */
+    IMAGE: { id: "IMAGE" }
+
+};
+
+
+
+/**
+ * 
+ */
 class URLResource extends Resource {
 
+    /**
+     * @param {string} url
+     * @param {object} [options]
+     */
     constructor( url, options={} ) {
         super();
         this._url = url;
@@ -58,62 +116,99 @@ class URLResource extends Resource {
         this._abort_ctrl = new AbortController();
     }
 
-    load( resourceType ) {
-        const tr = this._transform( this._url, resourceType );
+    /**
+     * @param {object} [options]
+     */
+    load( options={} ) {
+        const tr = this._transform( this._url, options.type );
+        const http_option = this._make_fetch_params( tr ) || {};
+        if ( options.signal ) http_option.signal = options.signal;
         return (
-            HTTP.get( tr.url, null, this._make_fetch_params( tr ) )
+            HTTP.get( tr.url, null, http_option )
             .then( response => {
                     if ( !response.ok ) throw new Error( response.statusText );
-                    if ( this._type !== "json" ) {
-                        throw new Error( "unsupported type: " + this._type );
+                    if ( options.type === ResourceType.JSON ) {
+                        return response.json();
                     }
-                    return response.json();
+                    else if ( options.type === ResourceType.IMAGE ) {
+                        return Dom.loadImage( tr.url, http_option );
+                    }
+                    else if ( options.type === ResourceType.BINARY ) {
+                        return response.arrayBuffer();
+                    }
+                    else return response;
             })
         );
     }
 
+    /**
+     * 
+     */
     cancel() {
         this._abort_ctrl.abort();
     }
 
+    /**
+     * 
+     */
     loadSubResourceSupported() {
         return true;
     }
 
-    loadSubResource( subUrl, resourceType ) {
+    /**
+     * 
+     */
+    loadSubResource( subUrl, options={} ) {
         const url = Dom.resolveUrl( this._base_url, subUrl );
-        const tr = this._transform( url, resourceType );
+        const tr = this._transform( url, options.type );
+        const http_option = tr.init || {};
+        if ( options.signal ) http_option.signal = options.signal;
 
-        if ( resourceType === SceneLoader.ResourceType.BINARY ) {
+        if ( options.type === URLResource.ResourceType.BINARY ) {
             return (
-                HTTP.get( tr.url, null, tr.init )
+                HTTP.get( tr.url, null, http_option )
                 .then( response => {
                         if ( !response.ok ) throw new Error( response.statusText );
-                        return response;
+                        return response.arrayBuffer();
                 })
-                .then( response => response.arrayBuffer() )
             );
         }
-        else if ( resourceType === SceneLoader.ResourceType.IMAGE ) {
-            return Dom.loadImage( tr.url, { crossOrigin: tr.crossOrigin } );
+        else if ( options.type === URLResource.ResourceType.IMAGE ) {
+            return Dom.loadImage( tr.url, http_option );
         }
-        else {
+        else if ( options.type === URLResource.ResourceType.JSON ) {
             return (
-                HTTP.get( tr.url, null, this._make_fetch_params( tr ) )
+                HTTP.get( tr.url, null, http_option )
                 .then( response => {
                         if ( !response.ok ) throw new Error( response.statusText );
                         return response.json();
                 })
             );
         }
+        else {
+            return (
+                HTTP.get( tr.url, null, this._make_fetch_params( tr ) )
+                .then( response => {
+                        if ( !response.ok ) throw new Error( response.statusText );
+                        return response;
+                })
+            );
+        }
     }
 
+    /**
+     * @protected
+     */
     resolveResourceSupported() {
       return true;
     }
 
-    resolveResource( subUrl ) {
-        const url = Dom.resolveUrl( this._base_url, subUrl );
+    /**
+     * @param {string} sub_url
+     * @return {Resource}
+     */
+    resolveResource( sub_url ) {
+        const url = Dom.resolveUrl( this._base_url, sub_url );
         return new URLResource( url, {
                 transform: this._transform
         });
@@ -186,17 +281,15 @@ class URLResource extends Resource {
         return params;
     }
 
-
 }
 
 
 
-
-
-function defaultTransformCallback( url, type )
-{
+function defaultTransformCallback( url, type ) {
     return { url: url };
 }
 
-export { URLResource };
+
+
+export { URLResource, ResourceType };
 export default Resource;

@@ -1,5 +1,7 @@
 import PointCloudProvider from "./PointCloudProvider";
 import GeoMath from "./GeoMath";
+import Resource, { URLResource, ResourceType } from "./Resource";
+
 
 let idMax = 1;
 const createUniqueId = () => {
@@ -7,13 +9,20 @@ const createUniqueId = () => {
 }
 
 class RawPointCloudProvider extends PointCloudProvider {
-    constructor(option={}) {
-        super(option);
-        const resource = option.resource;
-        if (resource.prefix) {
-            const prefix = resource.prefix.endsWith("/") ? resource.prefix.slice(0, -1) : resource.prefix;
-            const suffix = resource.suffix || ".xyz";
-            this._urlGenerator = ( level, x, y, z ) => prefix + "/" + level + "/" + x + "/" + y + "/" + z + suffix;
+
+    /**
+     * resource 点群定義(json)リソース。
+     * @param {mapray.Resource} resource
+     * @param {object} option
+     */
+    constructor( resource, option={} ) {
+        super( option );
+        this._suffix = ".xyz";
+        if ( resource instanceof Resource ) {
+            this._info_resource = resource;
+        }
+        else if ( resource.url ) {
+            this._info_resource = new URLResource( resource.url, resource.option );
         }
         else {
             throw new Error("unsupported resource");
@@ -23,19 +32,29 @@ class RawPointCloudProvider extends PointCloudProvider {
     }
 
     /**
+     * @private
+     */
+    _createPath( level, x, y, z ) {
+        return level + "/" + x + "/" + y + "/" + z + this._suffix;
+    }
+
+    /**
      * @override
      */
     async doInit() {
+        const info = await this._info_resource.load( { type: ResourceType.JSON } );
+        if ( info.url ) {
+            this._resource = this._info_resource.resolveResource( info.url );
+        }
+        else {
+            this._resource = this._info_resource;
+        }
     }
 
     /**
      * @override
      */
     async doDestroy() {
-    }
-
-    toString() {
-        return this._urlGenerator( 0, 0, 0, 0 );
     }
 
     getNumberOfRequests() {
@@ -50,12 +69,11 @@ class RawPointCloudProvider extends PointCloudProvider {
         try {
             const abortController = new AbortController();
             this._taskMap.set(id, { id, abortController });
-            const url = this._urlGenerator( level, x, y, z );
-            const response = await fetch(url, { signal: abortController.signal });
-            if (!response.ok) {
-                throw new Error("couldn't fetch: " + url);
-            }
-            const buffer = await response.arrayBuffer();
+            const path = this._createPath( level, x, y, z );
+            const buffer = await this._resource.loadSubResource( path, {
+                    type: ResourceType.BINARY,
+                    signal: abortController.signal
+            } );
 
             const header = {};
             let p = 0;

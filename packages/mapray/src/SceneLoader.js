@@ -9,7 +9,7 @@ import TextEntity from "./TextEntity";
 import ModelEntity from "./ModelEntity";
 import PolygonEntity from "./PolygonEntity";
 import GltfTool from "./gltf/Tool";
-import Resource, { URLResource } from "./Resource";
+import Resource, { URLResource, ResourceType } from "./Resource";
 
 /**
  * @summary シーンの読み込み
@@ -46,7 +46,6 @@ class SceneLoader extends Loader {
                 onLoad: options.callback
         } );
 
-        this._transform  = options.transform || defaultTransformCallback;
         this._glenv      = scene.glenv;
         this._references = {};
         this._finished   = false;
@@ -86,7 +85,7 @@ class SceneLoader extends Loader {
     _load()
     {
         return (
-            this._resource.load( ResourceType.SCENE )
+            this._resource.load( { type: ResourceType.JSON } )
             .then( oscene => {
                     // JSON データの取得に成功
                     this._check_cancel();
@@ -151,9 +150,9 @@ class SceneLoader extends Loader {
     {
         var url = model.link;
         if ( !this._resource.resolveResourceSupported() ) return Promise.reject(new Error("Sub Resource is not supported"));
-        const gltf_resource = this._resource.resolveResource( url, ResourceType.MODEL );
+        const gltf_resource = this._resource.resolveResource( url );
         return (
-            gltf_resource.load( url, ResourceType.MODEL )
+            gltf_resource.load( { type: ResourceType.JSON } )
             .then( json => {
                     // モデルデータの取得に成功
                     this._check_cancel();
@@ -279,7 +278,7 @@ class SceneLoader extends Loader {
  * <p>リソースのリクエスト時に URL などを変換する関数の型である。</p>
  *
  * @param  {string}                          url   変換前のリソース URL
- * @param  {mapray.SceneLoader.ResourceType} type  リソースの種類
+ * @param  {ResourceType} type  リソースの種類
  * @return {mapray.SceneLoader.TransformResult}    変換結果を表すオブジェクト
  *
  * @example
@@ -310,48 +309,9 @@ class SceneLoader extends Loader {
  */
 
 
-/**
- * @summary リソースの種類
- * @enum {object}
- * @memberof mapray.SceneLoader
- * @constant
- * @see mapray.SceneLoader.TransformCallback
- */
-var ResourceType = {
 
-    /**
-     * シーン JSON ファイル
-     */
-    SCENE: { id: "SCENE" },
-
-    /**
-     * モデルファイル
-     */
-    MODEL: { id: "MODEL" },
-
-    /**
-     * バイナリファイル
-     */
-    BINARY: { id: "BINARY" },
-
-    /**
-     * テクスチャ画像ファイル
-     */
-    IMAGE: { id: "IMAGE" }
-
-};
-
-
-SceneLoader.ResourceType = ResourceType;
 SceneLoader._defaultHeaders = {};
 
-
-
-
-function defaultTransformCallback( url, type )
-{
-    return { url: url };
-}
 
 
 export default SceneLoader;
