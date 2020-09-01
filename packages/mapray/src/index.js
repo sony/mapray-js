@@ -6,6 +6,7 @@ import GeoPoint from "./GeoPoint";
 import GeoRegion from "./GeoRegion";
 import Orientation from "./Orientation";
 import Ray from "./Ray";
+import Area3D from "./Area3D";
 import AltitudeMode from "./AltitudeMode";
 import CredentialMode from "./CredentialMode";
 import Layer from "./Layer";
@@ -50,6 +51,7 @@ var mapray = {
     GeoRegion,
     Orientation,
     Ray,
+    Area3D,
     AltitudeMode,
     CredentialMode,
     Layer,
