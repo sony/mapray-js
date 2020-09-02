@@ -132,6 +132,9 @@ class RenderStage {
             }
         }
 
+        // すべての B3D タイルの描画
+        this._viewer.b3d_collection.draw( this );
+
         // モデルシーン描画
         if ( vis_entity ) {
             this._scene.draw( this );
@@ -145,6 +148,7 @@ class RenderStage {
 
         // フレーム終了処理
         this._globe.endFrame();
+        this._viewer.b3d_collection.endFrame();
         this._tile_texture_cache.endFrame();
         this._viewer.layers.endFrame();
     }

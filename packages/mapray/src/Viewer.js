@@ -10,6 +10,7 @@ import NullRenderCallback from "./NullRenderCallback";
 import GeoMath from "./GeoMath";
 import Scene from "./Scene";
 import SceneLoader from "./SceneLoader";
+import B3dCollection from "./B3dCollection";
 import EasyBindingBlock from "./animation/EasyBindingBlock";
 
 // マウス・Attribution開発
@@ -64,6 +65,7 @@ class Viewer {
         this._layers             = this._createLayerCollection( options );
         this._globe              = new Globe( this._glenv, this._dem_provider );
         this._tile_texture_cache = new TileTextureCache( this._glenv, this._image_provider );
+        this._b3d_collection     = new B3dCollection();
         this._scene              = new Scene( this, this._glenv );
         this._ground_visibility  = Viewer._getBoolOption( options, "ground_visibility", true );
         this._entity_visibility  = Viewer._getBoolOption( options, "entity_visibility", true );
@@ -136,6 +138,9 @@ class Viewer {
 
         // 各レイヤーの のリクエストを取り消す
         this._layers.cancel();
+
+        // すべての B3dTree インスタンスを削除
+        this._b3d_collection.clear();
 
         // 各 SceneLoader の読み込みを取り消す
         this._scene.cancelLoaders();
@@ -397,6 +402,16 @@ class Viewer {
      */
     get tile_texture_cache() { return this._tile_texture_cache; }
 
+
+    /**
+     * 内部的に実装で使用される B3dCollection インスタンス
+     * @type {mapray.B3dCollection}
+     * @readonly
+     * @package
+     */
+    get b3d_collection() { return this._b3d_collection; }
+
+
     /**
      *
      * @type {mapray.LogoController}
@@ -609,6 +624,36 @@ class Viewer {
         p[2] = q[2] + distance * v[2];
 
         return p;
+    }
+
+
+    /**
+     * @summary B3dProvider インスタンスを追加
+     *
+     * 仕様未確定
+     *
+     * @param {mapray.B3dProvider} provider
+     *
+     * @private
+     */
+    addB3dProvider( provider )
+    {
+        this._b3d_collection.add( provider );
+    }
+
+
+    /**
+     * @summary B3dProvider インスタンスを削除
+     *
+     * 仕様未確定
+     *
+     * @param {mapray.B3dProvider} provider
+     *
+     * @private
+     */
+    removeB3dProvider( provider )
+    {
+        this._b3d_collection.remove( provider );
     }
 
 
