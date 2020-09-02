@@ -19,6 +19,8 @@ import GeoMath, { Vector2, Vector3 } from "./GeoMath";
 import GeoPoint from "./GeoPoint";
 import Scene from "./Scene";
 import SceneLoader from "./SceneLoader";
+import B3dProvider from "./B3dProvider";
+import B3dCollection from "./B3dCollection";
 import EasyBindingBlock from "./animation/EasyBindingBlock";
 import BindingBlock from "./animation/BindingBlock";
 import Util from "./util/Util";
@@ -66,6 +68,8 @@ class Viewer {
     private _globe: Globe;
 
     private _tile_texture_cache: TileTextureCache;
+
+    private _b3d_collection: B3dCollection;
 
     private _scene: Scene;
 
@@ -149,6 +153,7 @@ class Viewer {
         this._layers             = this._createLayerCollection( options );
         this._globe              = new Globe( this._glenv, this._dem_provider, options.north_pole, options.south_pole );
         this._tile_texture_cache = new TileTextureCache( this._glenv, this._image_provider );
+        this._b3d_collection     = new B3dCollection();
         this._scene              = new Scene( this, this._glenv );
         this._ground_visibility  = Viewer._getBoolOption( options, "ground_visibility", true );
         this._entity_visibility  = Viewer._getBoolOption( options, "entity_visibility", true );
@@ -241,6 +246,9 @@ class Viewer {
 
         // 各レイヤーの のリクエストを取り消す
         this._layers.cancel();
+
+        // すべての B3dTree インスタンスを削除
+        this._b3d_collection.clear();
 
         // 各 SceneLoader の読み込みを取り消す
         this._scene.cancelLoaders();
@@ -496,6 +504,13 @@ class Viewer {
      */
     get tile_texture_cache(): TileTextureCache { return this._tile_texture_cache; }
 
+
+    /**
+     * 内部的に実装で使用される B3dCollection インスタンス
+     */
+    get b3d_collection(): B3dCollection { return this._b3d_collection; }
+
+
     /**
      *
      */
@@ -731,6 +746,28 @@ class Viewer {
         p[2] = q[2] + distance * v[2];
 
         return p;
+    }
+
+
+    /*
+     * B3dProvider インスタンスを追加
+     *
+     * 仕様未確定
+     */
+    private addB3dProvider( provider: B3dProvider )
+    {
+        this._b3d_collection.add( provider );
+    }
+
+
+    /**
+     * B3dProvider インスタンスを削除
+     *
+     * 仕様未確定
+     */
+    private removeB3dProvider( provider: B3dProvider )
+    {
+        this._b3d_collection.remove( provider );
     }
 
 

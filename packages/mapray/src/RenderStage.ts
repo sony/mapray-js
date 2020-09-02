@@ -278,8 +278,13 @@ abstract class RenderStage {
             }
         }
 
+        // 上空レイヤを描画
         this._draw_sky_layer();
 
+        // すべての B3D タイルの描画
+        this._viewer.b3d_collection.draw( this );
+
+        // ポイントクラウドを描画
         this._draw_point_cloud();
 
         // モデルシーン描画
@@ -556,6 +561,7 @@ export class SceneRenderStage extends RenderStage {
         // フレーム終了処理
 
         this._globe.endFrame();
+        this._viewer.b3d_collection.endFrame();
         // @ts-ignore
         this._tile_texture_cache.endFrame();
         // @ts-ignore
