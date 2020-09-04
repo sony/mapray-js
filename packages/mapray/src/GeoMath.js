@@ -478,6 +478,31 @@ class GeoMath {
 
 
     /**
+     * @summary 平面ベクトルの正規化を計算
+     *
+     * 法線部 (最初の 3 要素) の長さが 1 になるように平面ベクトル plane を正規化し、dst に代入する。
+     *
+     * @param {mapray.Vector4} plane  平面ベクトル
+     * @param {mapray.Vector4} dst    正規化された値を代入するベクトル
+     *
+     * @return {mapray.Vector4}  dst
+     */
+    static normalizePlane( plane, dst )
+    {
+        let x = plane[0];
+        let y = plane[1];
+        let z = plane[2];
+        let ilen = 1 / Math.sqrt( x*x + y*y + z*z );  // 長さの逆数
+
+        for ( let i = 0; i < 4; ++i ) {
+            dst[i] = plane[i] * ilen;
+        }
+
+        return dst;
+    }
+
+
+    /**
      * @summary 座標変換行列を計算 (Inou 球面座標系 → 地心直交座標系)
      * @desc
      * <p>原点が position の直交座標系 (LOCS) から地心直交座標系 (GOCS) に変換する行列を計算する。</p>
