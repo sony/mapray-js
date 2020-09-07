@@ -1,6 +1,6 @@
 import Camera from "./Camera";
 import GLEnv from "./GLEnv";
-import RenderStage from "./RenderStage";
+import RenderStage, { PickStage } from "./RenderStage";
 import StandardImageProvider from "./StandardImageProvider";
 import StandardDemProvider from "./StandardDemProvider";
 import LayerCollection from "./LayerCollection";
@@ -668,6 +668,18 @@ class Viewer {
 
 
     /**
+     * 現在のビューにおいて指定されたスクリーン位置の情報を取得します
+     * @param {Vector2} screen_position スクリーン位置（キャンバス左上を原点としたピクセル座標）
+     * @return {mapray.Viewer.PickResult} ピック結果
+     */
+    pick(screen_position) {
+        const stage = new PickStage( this, screen_position );
+        stage.render();
+        return stage.pick_result;
+    }
+
+
+    /**
      * @summary 時間の更新
      * @return {number}  前フレームからの経過時間 (秒)
      * @private
@@ -732,6 +744,17 @@ class Viewer {
     }
 
 }
+
+
+/**
+ * @summary ピック結果
+ * @typedef {object} PickResult
+ * @desc
+ * <p>関数型 {@link mapray.Viewer.pick} の戻り値のオブジェクト構造である。</p>
+ * @property {mapray.Vector3} [point] ピックした3次元位置
+ * @property {mapray.Entity} [entity|undefined] ピックしたエンティティ（ピック位置にエンティティがない場合はundefined）
+ * @memberof mapray.Viewer
+ */
 
 
 /**

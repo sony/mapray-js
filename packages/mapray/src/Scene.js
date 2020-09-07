@@ -1,4 +1,5 @@
 import EasyBindingBlock from "./animation/EasyBindingBlock";
+import { RenderTarget } from "./RenderStage";
 
 
 /**
@@ -200,6 +201,7 @@ class Scene {
         for ( let primitive of producer.getPrimitives( stage ) ) {
             if ( primitive.isVisible( stage ) ) {
                 let dst_prims = primitive.isTranslucent( stage ) ? tp_prims : op_prims;
+                stage.onPushPrimitive( primitive, entity );
                 dst_prims.push( primitive );
             }
         }
@@ -235,12 +237,20 @@ class Scene {
         primitives.sort( function( a, b ) { return a.sort_z - b.sort_z; } );
 
         var gl = this._glenv.context;
-        gl.enable( gl.BLEND );
+        if (stage.getRenderTarget() === RenderTarget.SCENE) {
+            gl.enable( gl.BLEND );
+        }
+        else {
+            gl.disable( gl.BLEND );
+        }
+
         gl.depthMask( false );
 
         for ( var i = 0; i < primitives.length; ++i ) {
             primitives[i].draw( stage );
         }
+
+        gl.disable( gl.BLEND );
     }
 
 
