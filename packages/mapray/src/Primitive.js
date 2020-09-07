@@ -1,4 +1,6 @@
 import GeoMath from "./GeoMath";
+import EntityMaterial from "./EntityMaterial";
+import { RenderTarget } from "./RenderStage";
 
 
 /**
@@ -176,7 +178,7 @@ class Primitive {
      */
     draw( stage )
     {
-        var material = this.material;
+        const material = this.material;
         material.bindProgram();
         material.setParameters( stage, this );
         this.mesh.draw( material );
