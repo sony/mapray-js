@@ -16,12 +16,23 @@ import Ray from "./Ray";
 class Camera {
 
     /**
-     * @param {Element} canvas  レンダリング先 Canvas
+     * @summary Cameraオブジェクトを生成
+     * canvas_sizeには、width, heightプロパティを持つオブジェクトを指定する。
+     * createRenderInfo()が呼ばれる度にwidth, height値が参照される。
+     * canvas要素が指定される他、オフスクリーンレンダリング時にはwidth, height値を持ったオブジェクトが指定されます。
+     *
+     * @param {object}  canvas_size  レンダリング先サイズ
+     * @param {number}  canvas_size.width 幅
+     * @param {number}  canvas_size.height 高さ
      * @package
      */
-    constructor( canvas )
+    constructor( canvas_size )
     {
-        this._canvas = canvas;
+        /**
+         *  @summary レンダリング先のサイズ
+         *  @type {object}
+         */
+         this._canvas_size = canvas_size;
 
         /**
          *  @summary カメラの画角 (Degrees)
@@ -57,6 +68,18 @@ class Camera {
         GeoMath.setIdentity( this.view_to_gocs );
     }
 
+    /**
+     * @summary カメラの姿勢や視体積に関するパラメータをコピーします。
+     * キャンバスサイズはコピーされません。
+     * @private
+     */
+    copyViewParameters( camera ) {
+        this.fov = camera.fov;
+        this.near = camera.near;
+        this.far  = camera.far;
+        GeoMath.copyMatrix( camera.view_to_gocs, this.view_to_gocs );
+    }
+
 
     /**
      * @summary 変換行列 canvas_to_view を取得
@@ -72,8 +95,8 @@ class Camera {
         var dst = omat || GeoMath.createMatrix();
 
         // キャンバス画素数 -> sx, sy
-        var sx = this._canvas.width;
-        var sy = this._canvas.height;
+        var sx = this._canvas_size.width;
+        var sy = this._canvas_size.height;
 
         // 近接遠方平面距離 -> n, f
         var n = this.near;
@@ -208,8 +231,8 @@ class Camera {
         var dst = omat || GeoMath.createMatrix();
 
         // キャンバス画素数 -> sx, sy
-        var sx = this._canvas.width;
-        var sy = this._canvas.height;
+        var sx = this._canvas_size.width;
+        var sy = this._canvas_size.height;
 
         // 近接遠方平面距離 -> n, f
         var n = this.near;
@@ -288,14 +311,29 @@ class Camera {
 
 
     /**
-     * @summary レンダリング情報を生成
+     * @summary レンダリング先のサイズ
+     * @type {object}
+     * @private
+     */
+    get canvas_size() {
+        return this._canvas_size;
+    }
+
+
+    /**
+     * @summary レンダリング情報を生成します。
+     * ビューポート内で実際にレンダリングを行う領域を指定します。（レンダリング領域が指定されなかった場合はビューポート全体にレンダリングを行います）
+     * @param  {number} [sx] レンダリング領域のx位置
+     * @param  {number} [sy] レンダリング領域のy位置
+     * @param  {number} [swidth] レンダリング領域の幅
+     * @param  {number} [sheight] レンダリング領域の高さ
      * @return {mapray.Camera.RenderInfo}
      * @package
      */
-    createRenderInfo()
+    createRenderInfo( sx, sy, swidth, sheight )
     {
-        var canvas = this._canvas;
-        return new RenderInfo( this, canvas.width, canvas.height );
+        const canvas_size = this._canvas_size;
+        return new RenderInfo( this, canvas_size.width, canvas_size.height, sx, sy, swidth, sheight );
     }
 
 }
@@ -312,12 +350,35 @@ Camera._temp_mat = GeoMath.createMatrix();
 class RenderInfo {
 
     /**
-     * @param camera {mapray.Camera}  対象カメラ
-     * @param width  {number}         ビューポートの幅
-     * @param height {number}         ビューポートの高さ
+     * @param {mapray.Camera} camera  対象カメラ
+     * @param {number} width          ビューポートの幅
+     * @param {number} height         ビューポートの高さ
+     * @param {number} [sx]           レンダリング領域のx位置(ビューポート中央を0, 右方向を正とする)
+     * @param {number} [sy]           レンダリング領域のy位置(ビューポート中央を0, 上方向を正とする)
+     * @param {number} [swidth]       レンダリング領域の幅
+     * @param {number} [sheight]      レンダリング領域の高さ
      */
-    constructor( camera, width, height )
+    constructor( camera, width, height, sx, sy, swidth, sheight )
     {
+        /*
+        *                  y    swidth                  
+        *  Viewport        |   |<--->|                  
+        *   +--------------+--------------+  -----------
+        *   |              |              |           ^ 
+        *   |              |   +-----+    |  --       | 
+        *   |            sy+---|  +  |    |  sheight  | 
+        *   |              |   +-----+    |  --       | 
+        *   |              |      |       |           | 
+        * --+--------------+------+-------+--x        | 
+        *   |              |      sx      |           | 
+        *   |              |              |       height
+        *   |              |              |           | 
+        *   |              |              |           | 
+        *   |              |              |           V 
+        *   +--------------+--------------+  -----------
+        *                                               
+        *   |<---------- width ---------->|             
+        */
         // オブジェクトを生成
         this._view_to_clip = GeoMath.createMatrix();
         this._volume_planes = [];
@@ -327,7 +388,7 @@ class RenderInfo {
         this._pixel_step = 0;
 
         // オブジェクトを設定
-        this._setup_view_to_clip( camera, width, height );
+        this._setup_view_to_clip( camera, width, height, sx, sy, swidth, sheight );
         this._setup_volume_planes();
         this._setup_pixel_step( width, height );
     }
@@ -372,16 +433,30 @@ class RenderInfo {
     /**
      * @private
      */
-    _setup_view_to_clip( camera, width, height )
+    _setup_view_to_clip( camera, width, height, sx=0, sy=0, swidth=width, sheight=height )
     {
-        var   hfov = camera.fov * GeoMath.DEGREE / 2;
-        var aspect = height / width;
-        var  horiz = camera.near * Math.tan( hfov ) / Math.sqrt( 1 + aspect * aspect );  // 対角線画角を想定して水平位置を計算
+        // 矩形の中心位置 (単位空間)
+        const cx = 2 * sx / width;
+        const cy = 2 * sy / height;
 
-        var   left = -horiz;
-        var  right =  horiz;
-        var bottom = -horiz * aspect;
-        var    top =  horiz * aspect;
+        // 矩形の半サイズ (単位空間)
+        const dx = swidth  / width;
+        const dy = sheight / height;
+
+        // キャンバスの横幅に対する高さの比
+        const aspect = height / width;
+
+        // fov を対角線画角と解釈して単位サイズを求める
+        // (単位空間の水平方向 1 に対する近接平面上での寸法)
+        const hfov = camera.fov * GeoMath.DEGREE / 2;  // 半画角 (radians)
+        const unit = camera.near * Math.tan( hfov ) / Math.sqrt( 1 + aspect * aspect );
+
+        // 近接平面上での平面位置
+        const   left = (cx - dx) * unit;
+        const  right = (cx + dx) * unit;
+        const bottom = (cy - dy) * unit * aspect;
+        const    top = (cy + dy) * unit * aspect;
+
         GeoMath.frustum_matrix( left, right, bottom, top, camera.near, camera.far,
                                 this._view_to_clip );
     }
