@@ -6,6 +6,7 @@ import AltitudeMode from "./AltitudeMode";
 import EntityRegion from "./EntityRegion";
 import Type from "./animation/Type";
 import AnimUtil from "./animation/AnimUtil";
+import { RenderTarget } from "./RenderStage";
 
 
 /**
@@ -267,6 +268,7 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         super( entity );
 
         this._primitives = [];  // プリミティブ配列
+        this._pickPrimitives = [];  // プリミティブ配列
         this._ptoe_array = [];  // 各プリミティブ座標系からエンティティ座標系への変換行列
 
         this._abs_position = null;  // 絶対高度に変換した位置のキャッシュ (null なら無効)
@@ -283,10 +285,12 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
      */
     setModelObject( container, index )
     {
-        let primitives = container.createPrimitives( index );
+        let primitives = container.createPrimitives( index, { ridMaterial: false } );
+        let pickPrimitives = container.createPrimitives( index, { ridMaterial: true } );
 
         if ( primitives ) {
             this._primitives = primitives;
+            this._pickPrimitives = pickPrimitives;
             this._ptoe_array = primitives.map( prim => GeoMath.createMatrix( prim.transform ) );
         }
         else {
@@ -333,7 +337,7 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         var entity_to_gocs  = GeoMath.mul_AA( mlocs_to_gocs, entity_to_mlocs, GeoMath.createMatrix() );
 
         // Primitive#transform を設定
-        var primitives = this._primitives;
+        var primitives = stage.getRenderTarget() === RenderTarget.SCENE ? this._primitives : this._pickPrimitives;
         var ptoe_array = this._ptoe_array;
         for ( var i = 0; i < primitives.length; ++i ) {
             var prim = primitives[i];
@@ -341,8 +345,7 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
             // prim.transform = entity_to_gocs * ptoe
             GeoMath.mul_AA( entity_to_gocs, ptoe, prim.transform );
         }
-
-        return this._primitives;
+        return primitives;
     }
 
 

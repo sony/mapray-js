@@ -9,6 +9,8 @@ import EntityRegion from "./EntityRegion";
 import AreaUtil from "./AreaUtil";
 import QAreaManager from "./QAreaManager";
 import Type from "./animation/Type";
+import { RenderTarget } from "./RenderStage";
+
 
 /**
  * @summary 線エンティティ
@@ -131,17 +133,19 @@ class AbstractLineEntity extends Entity {
      * @summary 専用マテリアルを取得
      * @private
      */
-    _getLineMaterial()
+    _getLineMaterial( render_target )
     {
-        // キャッシュの場所を決定
-        const cache_suffix = (this._line_type === LineType.PATH) ? "path" : "markerline";
-
         const scene    = this.scene;
-        const cache_id = "_AbstractLineEntity_material_" + cache_suffix;
+        const cache_id = (
+            "_AbstractLineEntity_material" +
+            (this._line_type === LineType.PATH ? "_path" : "_markerline") +
+            (render_target === RenderTarget.RID ? "_pick" : "")
+        );
 
         if ( !scene[cache_id] ) {
             // scene にマテリアルをキャッシュ
-            scene[cache_id] = new LineMaterial( scene.glenv, this._line_type );
+            const opt = { ridMaterial: render_target === RenderTarget.RID };
+            scene[cache_id] = new LineMaterial( scene.glenv, this._line_type, opt );
         }
 
         return scene[cache_id];
@@ -181,14 +185,23 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         }
 
         // プリミティブ
-        var primitive = new Primitive( entity.scene.glenv, null, entity._getLineMaterial(), this._transform );
+        const      material = entity._getLineMaterial( RenderTarget.SCENE );
+        const primitive = new Primitive( entity.scene.glenv, null, material, this._transform );
         primitive.pivot      = this._pivot;
         primitive.bbox       = this._bbox;
         primitive.properties = this._properties;
         this._primitive = primitive;
 
+        const pick_material = entity._getLineMaterial( RenderTarget.RID );
+        const pickPrimitive = new Primitive( entity.scene.glenv, null, pick_material, this._transform );
+        pickPrimitive.pivot      = this._pivot;
+        pickPrimitive.bbox       = this._bbox;
+        pickPrimitive.properties = this._properties;
+        this._pickPrimitive = pickPrimitive;
+
         // プリミティブ配列
         this._primitives = [primitive];
+        this._pickPrimitives = [pickPrimitive];
 
         this._geom_dirty = true;
     }
@@ -227,7 +240,7 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         }
         else {
             this._updatePrimitive();
-            return this._primitives;
+            return stage.getRenderTarget() === RenderTarget.SCENE ? this._primitives : this._pickPrimitives;
         }
     }
 
@@ -324,6 +337,12 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
             primitive.mesh.dispose();
         }
         primitive.mesh = mesh;
+
+        var pickPrimitive = this._pickPrimitive;
+        if ( pickPrimitive.mesh ) {
+            pickPrimitive.mesh.dispose();
+        }
+        pickPrimitive.mesh = mesh;
 
         // 更新終了
         this._geom_dirty = false;
@@ -617,7 +636,11 @@ class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
     {
         super( entity );
 
-        this._material     = entity._getLineMaterial();
+        this._material_map = Object.keys(RenderTarget).reduce((map, key) => {
+                const render_target = RenderTarget[key];
+                map.set( render_target, entity._getLineMaterial( render_target ) );
+                return map;
+        }, new Map());
         this._properties   = null;
         this._area_manager = new LineAreaManager( entity );
     }
@@ -683,8 +706,8 @@ class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
         }
 
         return {
-            material:   this._material,
-            properties: this._properties
+            material:     this._material_map.get( stage.getRenderTarget() ),
+            properties:   this._properties
         };
     }
 
