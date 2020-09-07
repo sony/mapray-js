@@ -5,6 +5,7 @@ import Texture from "./Texture";
 import PinMaterial from "./PinMaterial";
 import GeoMath from "./GeoMath";
 import GeoPoint from "./GeoPoint";
+import { RenderTarget } from "./RenderStage";
 import AltitudeMode from "./AltitudeMode";
 import EntityRegion from "./EntityRegion";
 import IconLoader, { URLTemplateIconLoader, TextIconLoader } from "./IconLoader";
@@ -252,14 +253,23 @@ class PinEntity extends Entity {
      * @summary 専用マテリアルを取得
      * @private
      */
-    _getMaterial()
+    _getMaterial( render_target )
     {
         var scene = this.scene;
-        if ( !scene._PinEntity_pin_material ) {
-            // scene にマテリアルをキャッシュ
-            scene._PinEntity_pin_material = new PinMaterial( scene.glenv );
+        if ( render_target === RenderTarget.SCENE ) {
+            if ( !scene._PinEntity_pin_material ) {
+                // scene にマテリアルをキャッシュ
+                scene._PinEntity_pin_material = new PinMaterial( scene.glenv );
+            }
+            return scene._PinEntity_pin_material;
         }
-        return scene._PinEntity_pin_material;
+        else if (render_target === RenderTarget.RID) {
+            if ( !scene._PinEntity_pin_material_pick ) {
+                // scene にマテリアルをキャッシュ
+                scene._PinEntity_pin_material_pick = new PinMaterial( scene.glenv, { ridMaterial: true } );
+            }
+            return scene._PinEntity_pin_material_pick;
+        }
     }
 
 
@@ -385,12 +395,17 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         };
 
         // プリミティブ
-        var primitive = new Primitive( this._glenv, null, entity._getMaterial(), this._transform );
+        var primitive = new Primitive( this._glenv, null, entity._getMaterial( RenderTarget.SCENE ), this._transform );
         primitive.properties = this._properties;
         this._primitive = primitive;
 
+        var pickPrimitive = new Primitive( this._glenv, null, entity._getMaterial( RenderTarget.RID ), this._transform );
+        pickPrimitive.properties = this._properties;
+        this._pickPrimitive = pickPrimitive;
+
         // プリミティブ配列
         this._primitives = [];
+        this._pickPrimitives = [];
     }
 
 
@@ -423,7 +438,8 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
      */
     getPrimitives( stage )
     {
-        return this._updatePrimitive();
+        this._updatePrimitive( stage );
+        return stage.getRenderTarget() === RenderTarget.SCENE ? this._primitives : this._pickPrimitives;
     }
 
 
@@ -487,13 +503,14 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
     {
         if ( !this._dirty ) {
             // 更新する必要はない
-            return this._primitives;
+            return;
         }
 
         if ( this.entity._entries.length == 0 ) {
             this._primitives = [];
+            this._pickPrimitives = [];
             this._dirty = false;
-            return this._primitives;
+            return;
         }
 
         // 各エントリーの GOCS 位置を生成 (平坦化配列)
@@ -507,8 +524,9 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         if ( !layout.isValid() ) {
             // 更新に失敗
             this._primitives = [];
+            this._pickPrimitives = [];
             this._dirty = false;
-            return this._primitives;
+            return;
         }
 
         // テクスチャ設定
@@ -544,12 +562,17 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         if ( primitive.mesh ) {
             primitive.mesh.dispose();
         }
+        var pickPrimitive = this._pickPrimitive;
+        if ( pickPrimitive.mesh ) {
+            pickPrimitive.mesh.dispose();
+        }
         primitive.mesh = mesh;
+        pickPrimitive.mesh = mesh;
 
         // 更新に成功
         this._primitives = [primitive];
+        this._pickPrimitives = [pickPrimitive];
         this._dirty = false;
-        return this._primitives;
     }
 
 

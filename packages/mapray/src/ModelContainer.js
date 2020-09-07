@@ -97,14 +97,14 @@ class ModelContainer {
      * @param  {number|string} [id]   モデル ID
      * @return {?mapray.Primitive[]}  モデルのプリミティブ配列
      */
-    createPrimitives( id )
+    createPrimitives( id, options )
     {
         const entry = this._getEntry( id );
         if ( entry === null ) return null;
 
         const primitives = [];
 
-        for ( const prim of entry.primitives ) {
+        for ( const prim of entry.getPrimitives(options) ) {
             const cloned_prim = prim.fastClone();
             GeoMath.mul_AA( this._offset_transform, cloned_prim.transform, cloned_prim.transform );  // オフセット変換行列を適用
             cloned_prim.properties = Builder.fastCloneProperties( cloned_prim.properties );
@@ -164,9 +164,7 @@ class Entry {
      */
     constructor( mr_scene, gltf_scene, share )
     {
-        var builer = new Builder( mr_scene, gltf_scene, share );
-
-        this._primitives = builer.primitives;
+        this._builder = new Builder( mr_scene, gltf_scene, share );
     }
 
 
@@ -177,7 +175,9 @@ class Entry {
      * @type {mapray.Primitive[]}
      * @readonly
      */
-    get primitives() { return this._primitives; }
+    getPrimitives( options ) {
+        return this._builder.getPrimitives( options );
+    }
 
 }
 
@@ -206,6 +206,7 @@ class Builder {
         this._mr_scene   = mr_scene;
         this._glenv      = mr_scene.glenv;
         this._primitives = [];
+        this._pickPrimitives = [];
 
         this._buffer_map  = share.buffer_map;
         this._texture_map = share.texture_map;
@@ -225,7 +226,9 @@ class Builder {
      * @type {mapray.Primitive[]}
      * @readonly
      */
-    get primitives() { return this._primitives; }
+    getPrimitives( options={} ) {
+        return options.ridMaterial ? this._pickPrimitives : this._primitives;
+    }
 
 
     /**
@@ -242,7 +245,8 @@ class Builder {
         if ( node.mesh !== null ) {
             for ( var primitive of node.mesh.primitives ) {
                 // プリミティブを追加
-                this._primitives.push( this._createPrimitive( primitive, ntos ) );
+                this._primitives.push( this._createPrimitive( primitive, ntos, { ridMaterial: false } ) );
+                this._pickPrimitives.push( this._createPrimitive( primitive, ntos, { ridMaterial: true } ) );
             }
         }
 
@@ -284,10 +288,10 @@ class Builder {
      * @return {mapray.Primitive}             出力プリミティブ
      * @private
      */
-    _createPrimitive( iprim, ntos )
+    _createPrimitive( iprim, ntos, opts={} )
     {
         var     mesh = this._createMesh( iprim );
-        var material = this._createMaterial( iprim );
+        var material = this._createMaterial( iprim, { ridMaterial: opts.ridMaterial } )
         var    oprim = new Primitive( this._glenv, mesh, material, GeoMath.createMatrix( ntos ) );
 
         oprim.pivot      = this._createMeshPivot( iprim );
@@ -436,7 +440,7 @@ class Builder {
      * @return {mapray.EntityMaterial}        マテリアル
      * @private
      */
-    _createMaterial( iprim )
+    _createMaterial( iprim, opts = {} )
     {
         // キャッシュの場所とオプションを決定
         let cache_suffix = "basic";
@@ -447,9 +451,13 @@ class Builder {
             options.is_unlit = true;
         }
 
+        if ( opts.ridMaterial ) {
+            options.ridMaterial = true;
+        }
+
         // マテリアルのインスタンスを取得
         const scene    = this._mr_scene;
-        const cache_id = "_ModelEntity_model_material_" + cache_suffix;
+        const cache_id = "_ModelEntity_model_material_" + cache_suffix + (opts.ridMaterial ? "_pick" : "");
 
         if ( !scene[cache_id] ) {
             // scene にマテリアルをキャッシュ

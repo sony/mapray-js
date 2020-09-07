@@ -11,6 +11,7 @@ import QAreaManager from "./QAreaManager";
 import ConvexPolygon from "./ConvexPolygon";
 import AreaUtil from "./AreaUtil";
 import Type from "./animation/Type";
+import { RenderTarget } from "./RenderStage";
 
 
 /**
@@ -239,14 +240,23 @@ class PolygonEntity extends Entity {
      * @summary 専用マテリアルを取得
      * @private
      */
-    _getPolygonMaterial()
+    _getMaterial( render_target )
     {
         var scene = this.scene;
-        if ( !scene._PolygonEntity_material ) {
-            // scene にマテリアルをキャッシュ
-            scene._PolygonEntity_material = new PolygonMaterial( scene.glenv );
+        if ( render_target === RenderTarget.SCENE ) {
+            if ( !scene._PolygonEntity_material ) {
+                // scene にマテリアルをキャッシュ
+                scene._PolygonEntity_material = new PolygonMaterial( scene.glenv );
+            }
+            return scene._PolygonEntity_material;
         }
-        return scene._PolygonEntity_material;
+        else if (render_target === RenderTarget.RID) {
+            if ( !scene._PolygonEntity_material_pick ) {
+                // scene にマテリアルをキャッシュ
+                scene._PolygonEntity_material_pick = new PolygonMaterial( scene.glenv, { ridMaterial: true } );
+            }
+            return scene._PolygonEntity_material_pick;
+        }
     }
 
 
@@ -463,12 +473,19 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         };
 
         // プリミティブ
-        var primitive = new Primitive( entity.glenv, null, entity._getPolygonMaterial(), this._transform );
+        var primitive = new Primitive( entity.glenv, null, entity._getMaterial( RenderTarget.SCENE ), this._transform );
         primitive.pivot      = this._pivot;
         primitive.bbox       = this._bbox;
         primitive.properties = this._properties;
 
         this._primitive = primitive;
+
+        var pickPrimitive = new Primitive( entity.glenv, null, entity._getMaterial( RenderTarget.RID ), this._transform );
+        pickPrimitive.pivot      = this._pivot;
+        pickPrimitive.bbox       = this._bbox;
+        pickPrimitive.properties = this._properties;
+
+        this._pickPrimitive = pickPrimitive;
     }
 
 
@@ -533,6 +550,7 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
             if ( this._triangles === null ) {
                 // 多角形の三角形化に失敗
                 this._primitive.mesh = null;
+                this._pickPrimitive.mesh = null;
                 this._status = Status.INVALID;
                 return [];
             }
@@ -545,7 +563,7 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         this._updatePrimitiveProperties();
 
         this._status = Status.NORMAL;
-        return [this._primitive];
+        return stage.getRenderTarget() === RenderTarget.SCENE ? [this._primitive] : [this._pickPrimitive];
     }
 
 
@@ -617,6 +635,7 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
         // メッシュ設定
         this._primitive.mesh = mesh;
+        this._pickPrimitive.mesh = mesh;
     }
 
 
@@ -904,7 +923,11 @@ class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
     {
         super( entity );
 
-        this._material     = entity._getPolygonMaterial();
+        this._material_map = Object.keys(RenderTarget).reduce((map, key) => {
+                const render_target = RenderTarget[key];
+                map.set( render_target, entity._getMaterial( render_target ) );
+                return map;
+        }, new Map());
         this._properties   = null;
         this._area_manager = new PolygonAreaManager( entity );
     }
@@ -970,8 +993,8 @@ class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
         }
 
         return {
-            material:   this._material,
-            properties: this._properties
+            material:     this._material_map.get( stage.getRenderTarget() ),
+            properties:   this._properties
         };
     }
 
