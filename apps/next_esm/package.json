@@ -4,17 +4,18 @@
   "license": "MIT",
   "scripts": {
     "start": "run-p start-server build-watch",
-    "start-local": "run-p start-local-server local-watch",
+    "start-local": "run-p start-server local-watch",
     "build": "rollup -c --environment BUILD:production",
     "build-watch": "rollup -c -w",
-    "local": "rollup -c --environment local",
+    "local": "rollup -c --environment local,BUILD:production",
     "local-watch": "rollup -c -w --environment local",
-    "start-server": "st --no-cache -H 0.0.0.0 --port 7776 --index index.html .",
-    "start-local-server": "st --no-cache -H 0.0.0.0 --port 7776 --index index.html -d ../../"
+    "start-server": "st --no-cache -H 0.0.0.0 --port 7776 --index index.html ."
   },
   "devDependencies": {
     "@babel/core": "^7.8.6",
+    "@babel/polyfill": "^7.10.1",
     "@babel/preset-env": "^7.8.6",
+    "@rollup/plugin-strip": "^2.0.0",
     "babel-loader": "^8.0.6",
     "npm-run-all": "^4.1.5",
     "rollup": "^1.32.0",

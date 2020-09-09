@@ -8,11 +8,6 @@ const localConfig = (appDir) => (
                 exclude: appDir+"../packages/"
             }),
             replace({
-                '"@mapray/mapray-js"': JSON.stringify(appDir+"../../node_modules/@mapray/mapray-js/src/index.js"),
-                delimiters: ['', ''],
-                include: appDir+"../packages/"
-            }),
-            replace({
                 '"@mapray/ui"': JSON.stringify(appDir+"../node_modules/@mapray/ui/src/index.js"),
                 delimiters: ['', ''],
                 exclude: appDir+"../packages/"

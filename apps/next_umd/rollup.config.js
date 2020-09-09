@@ -6,6 +6,7 @@ import replace from 'rollup-plugin-replace'
 import postcss from 'rollup-plugin-postcss'
 import resolve from 'rollup-plugin-node-resolve'
 import commonjs from 'rollup-plugin-commonjs'
+import strip from '@rollup/plugin-strip';
 import fs from 'fs';
 import { makeExternalPredicate } from '../rollup.config.local.js'
 import pkg from './package.json'
@@ -36,12 +37,17 @@ const getPluginsConfig = (prod) => {
         }),
         commonjs(),
         resolve(),
-        string({
-                include: [
-                    '../../**/*.vert',
-                    '../../**/*.frag',
-                ]
-        }),
+        (process.env.local && prod ?
+            strip({
+                    include: [
+                        'src/**/*.js',
+                    ],
+                    debugger: false,
+                    functions: [ 'console.assert' ],
+                    labels: [ 'ASSERT' ],
+                    sourceMap: true,
+            })
+        : null),
         babel({
             exclude: 'node_modules/**'
         })
@@ -74,7 +80,7 @@ const config = (build) => {
             sourcemap: true
         }
     }
-    bundle.plugins = getPluginsConfig(build)
+    bundle.plugins = getPluginsConfig(build === 'production')
     return bundle;
 }
 

@@ -1,10 +1,12 @@
 import path from 'path'
 import { terser } from 'rollup-plugin-terser'
 import babel from 'rollup-plugin-babel'
+import { string } from 'rollup-plugin-string'
 import replace from 'rollup-plugin-replace'
 import postcss from 'rollup-plugin-postcss'
 import resolve from 'rollup-plugin-node-resolve'
 import commonjs from 'rollup-plugin-commonjs'
+import strip from '@rollup/plugin-strip';
 import { addLocalSettings } from '../rollup.config.local.js'
 
 var outdir = "dist/"
@@ -23,6 +25,26 @@ const getPluginsConfig = (prod) => {
         }),
         commonjs(),
         resolve(),
+        (process.env.local && prod ?
+            strip({
+                    include: [
+                        'src/**/*.js',
+                        '../../**/*.js'
+                    ],
+                    debugger: false,
+                    functions: [ 'console.assert' ],
+                    labels: [ 'ASSERT' ],
+                    sourceMap: true,
+            })
+        : null),
+        (process.env.local ?
+            string({
+                    include: [
+                        '../../**/*.vert',
+                        '../../**/*.frag',
+                    ]
+            })
+        : null),
         babel({
             exclude: 'node_modules/**'
         })
@@ -55,7 +77,7 @@ const config = (build) => {
             sourcemap: true
         }
     }
-    bundle.plugins = getPluginsConfig(build)
+    bundle.plugins = getPluginsConfig(build === 'production')
 
     return bundle
 }
