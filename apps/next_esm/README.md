@@ -63,4 +63,4 @@ Local mode will be used if you want to debug core library such as mapray or mapr
 ** Local mode **
 * `npm run start-local` is the development target, to serves the app and hot reload.
 * `npm run local` is the target for developing mapray and ui packages, to include mapray packages from local modules to write to disk.
-(http://0.0.0.0:7776/apps/next_esm/)
+(http://0.0.0.0:7776/)
