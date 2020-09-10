@@ -1,0 +1,30 @@
+#ui {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+#ui>canvas:focus {
+    outline-width: 0;
+}
+
+#tools {
+  position: fixed;
+  font-family: monospace;
+  bottom: 10px;
+  left: 10px;
+  background: black;
+  color: white;
+  padding: 10px;
+}
+
+#tools>pre {
+    margin: 0;
+}
+
+#tools>div.options>label.checkbox {
+    cursor: pointer;
+    user-select: none;
+}
