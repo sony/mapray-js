@@ -133,9 +133,10 @@ class Mesh {
      * @summary メッシュを描画
      *
      * @desc
-     * <p>事前に material.bindProgram(), material.setParameters() すること。</p>
+     * <p>事前に material.bindProgram(), material.setFloat() 等のパラメータ設定、
+     *    material.bindTexture2D() によるテクスチャのバインドを実行すること。</p>
      *
-     * @param {mapray.EntityMaterial} material  マテリアル
+     * @param {mapray.Material} material  マテリアル
      */
     draw( material )
     {
