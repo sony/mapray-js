@@ -7,6 +7,13 @@ import Resource, { URLResource } from "./Resource";
  */
 class Loader {
 
+    /**
+     * @param {mapray.Scene} scene 読み込み先のシーン
+     * @param {mapray.Resource} resource 
+     * @param {object} [options={}]
+     * @param {object} [options.onLoad] 全ての読み込み完了時に呼ばれる
+     * @param {mapray.Loader.EntityCallback} [options.onEntity] エンティティが読み込まれるたびに呼ばれる
+     */
     constructor( scene, resource, options={} ) {
         this._scene = scene;
         if (!(resource instanceof Resource)) {
@@ -15,6 +22,7 @@ class Loader {
         this._resource = resource;
         this._status = Loader.Status.NOT_LOADED;
         this._onLoad = options.onLoad || defaultOnLoadCallback;
+        this._onEntity = options.onEntity || defaultOnEntityCallback;
     }
 
 
@@ -41,12 +49,18 @@ class Loader {
     get status() { return this._status; }
 
 
-
+    /**
+     * @private
+     */
     _setStatus( status ) {
         this._status = status;
     }
 
 
+    /**
+     * @summary 読み込みを実行します。
+     * @returns {Promise}
+     */
     load()
     {
         if ( this.status !== Loader.Status.NOT_LOADED ) {
@@ -86,6 +100,10 @@ class Loader {
     }
 
 
+    /**
+     * @summary 読み込み処理の実態。継承クラスによって実装される。
+     * @private
+     */
     _load() {
         throw new Error( "_load() is not implemented in " + this.constructor.name );
     }
@@ -108,6 +126,10 @@ class Loader {
     }
 
 
+    /**
+     * @summary キャンセル時に行う処理。継承クラスによって実装される。
+     * @private
+     */
     _cancel()
     {
     }
@@ -125,6 +147,35 @@ class Loader {
     }
 }
 
+
+/**
+ * @summary Entity読み込みコールバック
+ * @callback EntityCallback
+ * @desc
+ * <p>読み込み処理の中でEntityが生成される際に呼ばれる。
+ * 一度の読み込み(load()呼び出し)において複数のエンティティが生成される場合は、エンティティが生成されるたびに呼ばれる。
+ * この関数をLoaderに指定する場合は、callback処理の中でEntityをsceneへ追加する必要がある。
+ * geojsonのように、要素ごとにプロパティを含められるような場合は、propにより値にアクセスする。
+ * </p>
+ *
+ * @param  {mapray.Loader} loader Loader
+ * @param  {mapray.Entity} entity 読み込まれたEntity
+ * @param  {object} prop エンティティ生成の元となるオブジェクト
+ *
+ * @example
+ * const loader = new mapray.SceneLoader( viewer.scene, resource, {
+ *         onEntity: ( loader, entity, prop ) => {
+ *             entity.setScale( [ 2, 2, 2 ] );
+ *             loader.scene.addEntity( entity );
+ *         }
+ * } );
+ * loader.load();
+ * 
+ * @memberof mapray.Loader
+ */
+
+
+
 Loader.Status = {
     NOT_LOADED : "Not Loaded",
     LOADING    : "Loading",
@@ -135,6 +186,11 @@ Loader.Status = {
 
 function defaultOnLoadCallback( loader, isSuccess )
 {
+}
+
+function defaultOnEntityCallback( loader, entity )
+{
+    loader.scene.addEntity( entity );
 }
 
 
