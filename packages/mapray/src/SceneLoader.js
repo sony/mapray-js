@@ -25,6 +25,7 @@ class SceneLoader extends Loader {
      * @param {string}       resource        シーンリソース
      * @param {object}       [options]  オプション集合
      * @param {mapray.SceneLoader.TransformCallback} [options.transform]  リソース要求変換関数
+     * @param {mapray.Loader.EntityCallback}         [options.onEntity]   エンティティコールバック
      * @param {mapray.SceneLoader.FinishCallback}    [options.callback]   終了コールバック関数
      */
     constructor( scene, resource, options={} )
@@ -43,6 +44,7 @@ class SceneLoader extends Loader {
         }
 
         super( scene, resource, {
+                onEntity: options.onEntity,
                 onLoad: options.callback
         } );
 
@@ -82,6 +84,10 @@ class SceneLoader extends Loader {
     }
 
 
+    /**
+     * @summary 読み込み処理の実態。継承クラスによって実装される。
+     * @private
+     */
     _load()
     {
         return (
@@ -214,7 +220,7 @@ class SceneLoader extends Loader {
             }
 
             if ( entity ) {
-                scene.addEntity( entity );
+                this._onEntity( this, entity, item );
                 var id = item.id;
                 if ( id ) {
                     this._setReference( id, entity );
