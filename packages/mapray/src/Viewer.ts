@@ -110,6 +110,13 @@ class Viewer {
     private _cloudVisualizer?: CloudVisualizer;
 
     /** @internal */
+    public b3d_degug: {
+        render_mode: number,
+        lod_factor:  number,
+    };
+
+
+    /** @internal */
     _render_cache?: any;
 
 
@@ -163,6 +170,11 @@ class Viewer {
         this._render_callback    = this._createRenderCallback( options );
         this._sun                = new Sun();
         this._moon               = new Moon();
+
+        this.b3d_degug = {
+            render_mode: 0,
+            lod_factor:  2
+        };
 
         const atmosphere = options.atmosphere;
         if ( atmosphere ) {
