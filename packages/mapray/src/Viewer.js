@@ -78,6 +78,11 @@ class Viewer {
         this._previous_time      = undefined;
         this._is_destroyed       = false;
 
+        this.b3d_degug = {
+            render_mode: 0,
+            lod_factor:  2
+        };
+
         // マウス・Attribution開発
         this._logo_controller = ( options && options.logo_controller ) || new LogoController( this._container_element );
         this._attribution_controller = ( options && options.attribution_controller ) || new AttributionController( this._container_element );

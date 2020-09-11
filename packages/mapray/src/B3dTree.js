@@ -3,6 +3,7 @@ import GeoMath from "./GeoMath";
 import B3dBinary from "./B3dBinary";
 import Mesh from "./Mesh";
 import B3dMaterial from "./B3dMaterial";
+import B3dCubeMaterial from "./B3dCubeMaterial";
 
 
 /**
@@ -161,6 +162,10 @@ class B3dStage {
         this._glenv    = pstage._glenv;
         this._shader_cache = tree._owner.shader_cache;
 
+        let viewer = pstage._viewer;
+        let lod_factor = viewer.b3d_degug.lod_factor;
+        this._render_mode = viewer.b3d_degug.render_mode;
+
         // 変換行列
         this._a0cs_to_view = GeoMath.mul_AA( pstage._gocs_to_view, tree._a0cs_to_gocs, GeoMath.createMatrix() );
         this._a0cs_to_clip = GeoMath.mul_PzA( pstage._view_to_clip, this._a0cs_to_view, GeoMath.createMatrix() );
@@ -182,7 +187,7 @@ class B3dStage {
         // level = -log2(lod_factor * pixel_step * depth) - rho
         //       = lod_offset - log2(depth)
         //
-        this._lod_offset = -Math.log2( tree._lod_factor * pstage._pixel_step ) - tree._rho;
+        this._lod_offset = -Math.log2( lod_factor * pstage._pixel_step ) - tree._rho;
 
         // トラバース用の情報
         this._root_cube  = tree._root_cube;
@@ -487,6 +492,18 @@ class B3dStage {
             let mesh = mesh_node.getMesh();
             mesh.draw( material );
         }
+
+        if ( this._render_mode == 1 ) {
+            let cube_mtl = this._getCubeMaterial();
+            cube_mtl.bindProgram();
+
+            let area_color = [1, 0, 0];
+            for ( let mesh_node of this._mesh_node_list ) {
+                cube_mtl.setParameters( this, mesh_node.getTransform(), area_color );
+                let mesh = mesh_node.getAreaMesh( this._glenv );
+                mesh.draw( cube_mtl );
+            }
+        }
     }
 
 
@@ -504,6 +521,22 @@ class B3dStage {
         }
 
         return cache._B3dMaterial;
+    }
+
+    /**
+     * @summary マテリアルを取得
+     *
+     * @private
+     */
+    _getCubeMaterial()
+    {
+        let cache = this._shader_cache;
+
+        if ( cache._B3dCubeMaterial === undefined ) {
+            cache._B3dCubeMaterial = new B3dCubeMaterial( this._glenv );
+        }
+
+        return cache._B3dCubeMaterial;
     }
 
 }
@@ -716,6 +749,9 @@ class MeshNode {
         // クリップ立方体の寸法 (tile_area 座標系)
         // ※ tile_area と clip_area のレベルが同じとき、厳密に 1 になる
         this._clip_size = pot;
+
+        // 立方体ワイヤーフレームメッシュ
+        this._cube_mesh = null;
     }
 
 
@@ -751,6 +787,86 @@ class MeshNode {
     getTransform()
     {
         return this._tile_to_a0cs;
+    }
+
+
+    /**
+     * @summary 領域メッシュを取得
+     *
+     * @return {mapray.Mesh}
+     */
+    getAreaMesh( glenv )
+    {
+        if ( this._cube_mesh === null ) {
+            // メッシュ生成
+            let mesh_data = {
+                vtype: [
+                    { name: "a_position", size: 3 }
+                ],
+                ptype:    "lines",
+                vertices: this._createCubeVertices( this._clip_origin, this._clip_size ),
+                indices:  this._createCubeIndices()
+            };
+
+            this._cube_mesh = new Mesh( glenv, mesh_data );
+        }
+
+        return this._cube_mesh;
+    }
+
+
+    /**
+     * @private
+     */
+    _createCubeVertices( origin, size )
+    {
+        let vertices = new Float32Array( 3 * 8 );
+
+        for ( let i = 0; i < 8; ++i ) {
+            vertices[3*i    ] = origin[0] + size * (i        & 1);
+            vertices[3*i + 1] = origin[1] + size * ((i >> 1) & 1);
+            vertices[3*i + 2] = origin[2] + size * ((i >> 2) & 1);
+        }
+
+        return vertices;
+    }
+
+
+    /**
+     * @private
+     */
+    _createCubeIndices()
+    {
+        let indices = new Uint16Array( 12 * 2 );
+
+        indices[ 0] = 0;
+        indices[ 1] = 1;
+        indices[ 2] = 2;
+        indices[ 3] = 3;
+        indices[ 4] = 4;
+        indices[ 5] = 5;
+        indices[ 6] = 6;
+        indices[ 7] = 7;
+
+        indices[ 8] = 0;
+        indices[ 9] = 2;
+        indices[10] = 1;
+        indices[11] = 3;
+        indices[12] = 4;
+        indices[13] = 6;
+        indices[14] = 5;
+        indices[15] = 7;
+
+        indices[16] = 0;
+        indices[17] = 4;
+        indices[18] = 1;
+        indices[19] = 5;
+        indices[20] = 2;
+        indices[21] = 6;
+        indices[22] = 3;
+        indices[23] = 7;
+
+        return indices;
     }
 
 
