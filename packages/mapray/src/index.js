@@ -27,6 +27,7 @@ import PinEntity from "./PinEntity";
 import ImageIconEntity from "./ImageIconEntity"
 import SceneLoader from "./SceneLoader";
 import GeoJSONLoader from "./GeoJSONLoader";
+import B3dProvider from "./B3dProvider";
 import DebugStats from "./DebugStats";
 import MaprayApi from "./MaprayApi";
 import Resource, { URLResource } from "./Resource";
@@ -71,6 +72,7 @@ var mapray = {
     GeoJSONLoader,
     URLResource,
     MaprayApi,
+    B3dProvider,
     DebugStats,
     LogoController,          // マウス・Attribution開発
     AttributionController    // マウス・Attribution開発
