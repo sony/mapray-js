@@ -28,6 +28,7 @@ import ImageIconEntity from "./ImageIconEntity"
 import SceneLoader from "./SceneLoader";
 import GeoJSONLoader from "./GeoJSONLoader";
 import B3dProvider from "./B3dProvider";
+import StandardB3dProvider from "./StandardB3dProvider";
 import DebugStats from "./DebugStats";
 import MaprayApi from "./MaprayApi";
 import Resource, { URLResource } from "./Resource";
@@ -73,6 +74,7 @@ var mapray = {
     URLResource,
     MaprayApi,
     B3dProvider,
+    StandardB3dProvider,
     DebugStats,
     LogoController,          // マウス・Attribution開発
     AttributionController    // マウス・Attribution開発
