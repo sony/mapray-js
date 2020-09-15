@@ -135,6 +135,7 @@ class Scene {
         }, {});
 
         for ( let {entity} of this._enode_list ) {
+            if ( !entity.visibility ) continue;
             this._add_primitives( stage, entity, primitives );
         }
 
