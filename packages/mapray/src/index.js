@@ -14,6 +14,7 @@ import StandardDemProvider from "./StandardDemProvider";
 import CloudDemProvider from "./CloudDemProvider";
 import ImageProvider from "./ImageProvider";
 import RenderCallback from "./RenderCallback";
+import RenderPhase from "./RenderPhase";
 import StandardImageProvider from "./StandardImageProvider";
 import Scene from "./Scene";
 import Entity from "./Entity";
@@ -57,6 +58,7 @@ var mapray = {
     CloudDemProvider,
     ImageProvider,
     RenderCallback,
+    RenderPhase,
     StandardImageProvider,
     Scene,
     Entity,

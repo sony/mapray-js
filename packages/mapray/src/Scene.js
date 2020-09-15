@@ -1,5 +1,6 @@
 import EasyBindingBlock from "./animation/EasyBindingBlock";
 import { RenderTarget } from "./RenderStage";
+import RenderPhase from "./RenderPhase";
 
 
 /**
@@ -125,17 +126,29 @@ class Scene {
     {
         this._prepare_entities();
 
-        // プリミティブの配列を生成
-        var op_prims = [];  // 不透明プリミティブ
-        var tp_prims = [];  // 半透明プリミティブ
+        const primitives = RenderPhase.values.reduce((map, phase) => {
+                map[phase.id] = {
+                    op_prims: [], // 不透明プリミティブ
+                    tp_prims: [], // 半透明プリミティブ
+                };
+                return map;
+        }, {});
 
         for ( let {entity} of this._enode_list ) {
-            this._add_primitives( stage, entity, op_prims, tp_prims );
+            this._add_primitives( stage, entity, primitives );
         }
 
-        // プリミティブ配列を整列してから描画
-        this._draw_opaque_primitives( stage, op_prims );
-        this._draw_translucent_primitives( stage, tp_prims );
+        for ( let phase of RenderPhase.values ) {
+            stage.setPhase( phase );
+            const prims = primitives[ phase.id ];
+            // プリミティブ配列を整列してから描画
+            if ( prims.op_prims.length > 0 ) {
+                this._draw_opaque_primitives( stage, prims.op_prims );
+            }
+            if ( prims.tp_prims.length > 0 ) {
+                this._draw_translucent_primitives( stage, prims.tp_prims );
+            }
+        };
     }
 
 
@@ -193,16 +206,28 @@ class Scene {
      * 視体積に含まれるプリミティブを追加
      * @private
      */
-    _add_primitives( stage, entity, op_prims, tp_prims )
+    _add_primitives( stage, entity, primitives )
     {
         let producer = entity.getPrimitiveProducer();
         if ( producer === null ) return;
 
         for ( let primitive of producer.getPrimitives( stage ) ) {
             if ( primitive.isVisible( stage ) ) {
-                let dst_prims = primitive.isTranslucent( stage ) ? tp_prims : op_prims;
                 stage.onPushPrimitive( primitive, entity );
-                dst_prims.push( primitive );
+
+                if ( entity.render_phase.flag & RenderPhase.NORMAL.flag ) {
+                    const trans_id = primitive.isTranslucent( stage ) ? "tp_prims" : "op_prims";
+                    primitives[ RenderPhase.NORMAL.id ][ trans_id ].push( primitive );
+                }
+
+                if ( entity.render_phase.flag & RenderPhase.OVERLAY.flag ) {
+                    primitives[ RenderPhase.OVERLAY.id ][ "tp_prims" ].push( primitive );
+                }
+
+                if ( entity.render_phase.flag & RenderPhase.ADDITIONAL.flag ) {
+                    const trans_id = primitive.isTranslucent( stage ) ? "tp_prims" : "op_prims";
+                    primitives[ RenderPhase.ADDITIONAL.id ][ trans_id ].push( primitive );
+                }
             }
         }
     }
@@ -237,6 +262,10 @@ class Scene {
         primitives.sort( function( a, b ) { return a.sort_z - b.sort_z; } );
 
         var gl = this._glenv.context;
+        if ( stage.getPhase() === RenderPhase.OVERLAY ) {
+            gl.disable( gl.DEPTH_TEST );
+        }
+
         if (stage.getRenderTarget() === RenderTarget.SCENE) {
             gl.enable( gl.BLEND );
         }
@@ -250,7 +279,9 @@ class Scene {
             primitives[i].draw( stage );
         }
 
+        gl.enable( gl.DEPTH_TEST );
         gl.disable( gl.BLEND );
+        gl.depthMask( true );
     }
 
 

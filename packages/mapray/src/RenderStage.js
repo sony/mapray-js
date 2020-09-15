@@ -91,6 +91,9 @@ class AbstractRenderStage {
         this._flake_material = null;
         this._flake_list = null;
 
+        // フェーズ。Sceneがエンティティへphaseを伝達するのに用いる。
+        this._phase = null;
+
         // フレーム間のオブジェクトキャッシュ
         const render_cache = viewer._render_cache || (viewer._render_cache = {});
         if ( !render_cache.surface_material ) {
@@ -101,6 +104,24 @@ class AbstractRenderStage {
 
         // デバッグ統計
         this._debug_stats = viewer.debug_stats;
+    }
+
+    /**
+     * 現在のフェーズを取得。
+     * @return {mapray.Entity.RenderPhase}
+     * @private
+     */
+    getPhase() {
+        return this._phase;
+    }
+
+    /**
+     * @summary フェーズを設定。
+     * @parm {mapray.Entity.RenderPhase} phase
+     * @private
+     */
+    setPhase(phase) {
+        this._phase = phase;
     }
 
     /**

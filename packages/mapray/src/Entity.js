@@ -1,5 +1,6 @@
 import AltitudeMode from "./AltitudeMode";
 import EasyBindingBlock from "./animation/EasyBindingBlock";
+import RenderPhase from "./RenderPhase";
 
 
 /**
@@ -42,6 +43,8 @@ class Entity {
         //   子孫は存在しないので animation には何も追加しない
         this._animation = new EasyBindingBlock();
 
+        this._render_phase = RenderPhase.NORMAL;
+
         // 生成情報から設定
         if ( opts && opts.json ) {
             this._setupEntityByJson( opts.json );
@@ -75,6 +78,26 @@ class Entity {
     get altitude_mode()
     {
         return this._altitude_mode;
+    }
+
+
+    /**
+     * @summary 描画フェーズを取得
+     * @type {mapray.RenderPhase}
+     */
+    get render_phase() {
+        return this._render_phase;
+    }
+
+
+    /**
+     * @summary 描画フェーズを設定
+     * @type {mapray.RenderPhase}
+     */
+    set render_phase( render_phase ) {
+        if ( this._render_phase !== render_phase ) {
+            this._render_phase = render_phase;
+        }
     }
 
 
