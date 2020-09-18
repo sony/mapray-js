@@ -488,6 +488,10 @@ class B3dStage {
         material.bindProgram();
 
         for ( let mesh_node of this._mesh_node_list ) {
+
+            // TEST
+            this._clip_flag = (mesh_node._clip_size != 1);
+
             material.setParameters( this, mesh_node.getTransform() );
             let mesh = mesh_node.getMesh();
             mesh.draw( material );

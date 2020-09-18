@@ -49,6 +49,9 @@ class B3dMaterial extends Material {
         // 環境光
         // float u_ambient
         this.setFloat( "u_ambient", 0.5 );
+
+        // TEST
+        this.setVector3( "u_clip_color", stage._clip_flag ? [0, 0, 0.2] : [0, 0, 0] );
     }
 
 }
