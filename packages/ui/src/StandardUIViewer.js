@@ -228,15 +228,23 @@ class StandardUIViewer extends mapray.RenderCallback
         var canvas = this._viewer._canvas_element;
         var self = this;
 
-        window.addEventListener( "blur", function ( event ) { self._onBlur( event ); }, { passive: false } );
-        canvas.addEventListener( "mousedown", function ( event ) { self._onMouseDown( event ); }, { passive: true } );
-        canvas.addEventListener( "mousemove", function ( event ) { self._onMouseMove( event ); }, { passive: true } );
-        document.addEventListener( "mousemove", function ( event ) { self._onMouseMove( event ); }, { capture: true } );
-        canvas.addEventListener( "mouseup", function ( event ) { self._onMouseUp( event ); }, { passive: true } );
-        document.addEventListener( "mouseup", function ( event ) { self._onMouseUp( event ); }, { capture: false } );
-        canvas.addEventListener( "wheel", function ( event ) { self._onMouseWheel( event ); }, { passive : false } );
-        canvas.addEventListener( "keydown", function ( event ) { self._onKeyDown( event ); }, { capture: false, passive: false } );
-        canvas.addEventListener( "keyup", function ( event ) { self._onKeyUp( event ); }, { passive: true } );
+        this._onBlur = this._onBlur.bind(this);
+        this._onMouseDown = this._onMouseDown.bind(this);
+        this._onMouseMove = this._onMouseMove.bind(this);
+        this._onMouseUp = this._onMouseUp.bind(this);
+        this._onMouseWheel = this._onMouseWheel.bind(this);
+        this._onKeyDown = this._onKeyDown.bind(this);
+        this._onKeyUp = this._onKeyUp.bind(this);
+
+        window.addEventListener( "blur", self._onBlur, { passive: false } );
+        canvas.addEventListener( "mousedown", self._onMouseDown, { passive: true } );
+        canvas.addEventListener( "mousemove", self._onMouseMove, { passive: true } );
+        document.addEventListener( "mousemove", self._onMouseMove, { capture: true } );
+        canvas.addEventListener( "mouseup", self._onMouseUp, { passive: true } );
+        document.addEventListener( "mouseup", self._onMouseUp, { capture: false } );
+        canvas.addEventListener( "wheel", self._onMouseWheel, { passive : false } );
+        canvas.addEventListener( "keydown", self._onKeyDown, { capture: false, passive: false } );
+        canvas.addEventListener( "keyup", self._onKeyUp, { passive: true } );
     }
 
     /**
@@ -250,15 +258,15 @@ class StandardUIViewer extends mapray.RenderCallback
         var canvas = this._viewer._canvas_element;
         var self = this;
 
-        window.removeEventListener( "blur", function ( event ) { self._onBlur( event ); }, { passive: false } );
-        canvas.removeEventListener( "mousedown", function ( event ) { self._onMouseDown( event ); }, { passive: true } );
-        canvas.removeEventListener( "mousemove", function ( event ) { self._onMouseMove( event ); }, { passive: true } );
-        document.removeEventListener( "mousemove", function ( event ) { self._onMouseMove( event ); }, { capture: true } );
-        canvas.removeEventListener( "mouseup", function ( event ) { self._onMouseUp( event ); }, { passive: true } );
-        document.removeEventListener( "mouseup", function ( event ) { self._onMouseUp( event ); }, { capture: false } );
-        canvas.removeEventListener( "wheel", function ( event ) { self._onMouseWheel( event ); }, { passive : false } );
-        canvas.removeEventListener( "keydown", function ( event ) { self._onKeyDown( event ); }, { capture: false, passive: false } );
-        canvas.removeEventListener( "keyup", function ( event ) { self._onKeyUp( event ); }, { passive: true } );
+        window.removeEventListener( "blur", self._onBlur, { passive: false } );
+        canvas.removeEventListener( "mousedown", self._onMouseDown, { passive: true } );
+        canvas.removeEventListener( "mousemove", self._onMouseMove, { passive: true } );
+        document.removeEventListener( "mousemove", self._onMouseMove, { capture: true } );
+        canvas.removeEventListener( "mouseup", self._onMouseUp, { passive: true } );
+        document.removeEventListener( "mouseup", self._onMouseUp, { capture: false } );
+        canvas.removeEventListener( "wheel", self._onMouseWheel, { passive : false } );
+        canvas.removeEventListener( "keydown", self._onKeyDown, { capture: false, passive: false } );
+        canvas.removeEventListener( "keyup", self._onKeyUp, { passive: true } );
     }
 
 
