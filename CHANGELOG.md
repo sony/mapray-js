@@ -1,4 +1,15 @@
 # Change Log
+## 0.8.2
+### Added
+- Support Animation in each entity and added path entity[#106](https://github.com/sony/mapray-js/issues/106), [#126](https://github.com/sony/mapray-js/pull/126)
+- Support Point Cloud [#127](https://github.com/sony/mapray-js/issues/127),  [#130](https://github.com/sony/mapray-js/pull/130)
+
+### Improved
+- Improved operation of mouse zoom  [#119](https://github.com/sony/mapray-js/issues/119), [#118](https://github.com/sony/mapray-js/pull/118)
+
+### Bug fix
+- Fixed the bug in event handlers [#120](https://github.com/sony/mapray-js/issues/120), [#133](https://github.com/sony/mapray-js/issues/133), [#121](https://github.com/sony/mapray-js/pull/121), [#123](https://github.com/sony/mapray-js/pull/123), [#134](https://github.com/sony/mapray-js/pull/134)
+
 ## 0.8.1
 - Support glTF KHR_materials_unlit[#115](https://github.com/sony/mapray-js/issues/115), [#112](https://github.com/sony/mapray-js/pull/112)
 - Delete non-required packages and add required packages[#113](https://github.com/sony/mapray-js/issues/113), [#114](https://github.com/sony/mapray-js/issues/114)
