@@ -1,3 +1,14 @@
+<!---
+title: "　6.1 文字の表示(SceneLoaderを使った表示)"
+date: 2019-12-02T18:30:00+09:00
+draft: false
+description: "文字の表示(SceneLoaderを使った表示)"
+keywords: ["チュートリアル", "文字", "表示", "SceneLoader", "Mt.Fuji"]
+type: tutorials
+menu: main
+weight: 2061
+--->
+
 ## 文字の表示（SceneLoaderを使った表示）
 
 mapray.SceneLoaderを使って文字を表示する方法を説明します。
@@ -8,6 +19,7 @@ mapray.SceneLoaderを使って文字を表示する**WriteStringWithSceneLoder.h
 
 #### WriteStringWithSceneLoder.html
 
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -83,6 +95,7 @@ mapray.SceneLoaderを使って文字を表示する**WriteStringWithSceneLoder.h
 ```
 
 #### シーンファイル（font.json）
+<!--@ 1 -->
 ```json
 {
   "entity_list": [
@@ -107,6 +120,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 1～25行目でhtmlを記述します。ヘルプページ『**緯度経度によるカメラ位置の指定**』で示したhtmlファイルからタイトルのみを変更します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -139,6 +153,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 29～63行目でMapray.Viewerクラスを作成し、カメラ位置・向きを設定します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 28 -->
 ```JavaScript
 // Access Tokenを設定
 var accessToken = "<your access token here>";
@@ -183,6 +198,7 @@ viewer.camera.far = 500000;
 SceneLoaderの引数は、シーンファイルのエンティティを追加するシーン、読み込むシーンファイルのURLの順に指定します。このサンプルコードでは、viewerのシーン、65行目で設定したURLの順に指定します。
 読み込むシーンのURLはhttpもしくはhttpsでアクセスできるURLを指定します。
 
+<!--@ 68 -->
 ```JavaScript
 var scene_File_URL = "./data/font.json";
 
@@ -199,6 +215,7 @@ loader.load();
 
 2行目でentity_listという名称でエンティティを定義し、その中にエンティティの詳細を定義します。4行目のtypeという名称は、エンティティの種類を表し、それにtextを指定することで、文字のエンティティを表現します。
 
+<!--@ none -->
 ```json
 {
   "entity_list": [
@@ -216,6 +233,7 @@ loader.load();
 5～11行目で文字の情報を記述します。文字の情報は、個々の文字情報（entries）、全体のフォントサイズ（font_size）があり、個々の文字情報の中には、表示する文字（text）、位置（position）、フォントサイズ（font_size）、色（color）があります。
 このシーンファイルでは、個々の文字情報として、表示する文字にはMt.Fuji、位置には富士山頂上付近の緯度・経度・高度、フォントサイズには25、色に赤を、それぞれ指定します。また、全体のフォントサイズには20を指定します。
 
+<!--@ 5 -->
 ```json
 "entries": [
   { "text": "Mt.Fuji",

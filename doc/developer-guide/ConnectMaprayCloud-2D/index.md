@@ -19,17 +19,17 @@ weight: 1030
 mapray cloudへ地理情報をアップロードするには、[mapray cloud管理者ページ](https://cloud.mapray.com)から行います。
 
 `Datasets`ページを表示している状態で、`2D`タブへ切り替え、`New Dataset`をクリックします。
-![Datasets > 2Dタブ](images/screenshot-open-2d-dataset-dialog-before.png-annotated.svg)
+![Datasets > 2Dタブ](images/screenshot-24-open-2d-dataset-dialog-before.png-annotated.svg)
 
 
 `New Dataset`ダイアログが表示されたら、必要事項を入力します。
-![New Dataset ダイアログ](images/screenshot-open-2d-dataset-dialog-after.png)
+![New Dataset ダイアログ](images/screenshot-25-open-2d-dataset-dialog-after.png)
 
 入力が完了したらOKをクリックします。
-![New Dataset ダイアログ（入力済み）](images/screenshot-upload-2d-dataset-before.png-annotated.svg)
+![New Dataset ダイアログ（入力済み）](images/screenshot-27-27-click-before.png-annotated.svg)
 
-アップロードに成功したら、下記のようにメッセージが表示され、リストに新しい項目が追加されます。この例では、アップロードしたデータセットのIDは` 6449975726702592 `で、後述するmaprayJSのViewerで表示する際に指定するIDとなります。
-![アップロード完了](images/screenshot-upload-2d-dataset-after.png)
+アップロードに成功したら、下記のようにメッセージが表示され、リストに新しい項目が追加されます。この例では、アップロードしたデータセットのIDは` 5146023655636992 `で、後述するmaprayJSのViewerで表示する際に指定するIDとなります。
+![アップロード完了](images/screenshot-29-press-edit-to-edit-page-before.png)
 
 
 

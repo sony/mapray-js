@@ -1,3 +1,14 @@
+<!---
+title: "　9.3 GeoJSONプロパティの参照(点データ)"
+date: 2019-12-02T18:35:00+09:00
+draft: false
+description: "GeoJSONプロパティの参照(点データ)"
+keywords: ["チュートリアル", "モデル", "GeoJSON", "プロパティ", "点データ", "東京駅", "避難所", "洪水", "G空間情報センター", "クランプ機能", "国土交通省", "京都", "大学"]
+type: tutorials
+menu: main
+weight: 2093
+--->
+
 ## GeoJSONプロパティの参照（点データ）
 
 点のGeoJSONデータを読み込み、そのデータが持つプロパティを参照して対象データ表示する方法を説明します。
@@ -8,6 +19,7 @@
 このサンプルコードでは、東京都の避難所のうち、洪水時に対応している避難所を青色、対応していない避難所を赤色で表示します。
 
 #### ReadGeoJsonPointProperties.html
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -38,6 +50,7 @@
 ```
 
 #### ReadGeoJsonPointProperties.js
+<!--@ 1 -->
 ```JavaScript
 class ReadGeoJsonPointProperties extends mapray.RenderCallback {
     constructor(container) {
@@ -151,6 +164,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### htmlの文字コード設定
 4行目でhtmlの文字コードを設定します。このサンプルコードでは、utf-8を設定します。
 
+<!--@ 4 -->
 ```HTML
 <meta charset="UTF-8">
 ```
@@ -158,6 +172,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### タイトルの設定
 5行目でタイトルを設定します。このサンプルコードでは、ReadGeoJsonPointPropertiesSampleを設定します。
 
+<!--@ 5 -->
 ```HTML
 <title>ReadGeoJsonPointPropertiesSample</title>
 ```
@@ -165,6 +180,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### JavaScriptファイルのパス設定
 6～8行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、点のプロパティを参照して対象データ表示するJavaScriptファイル（**ReadGeoJsonPointProperties.js**）を設定します。
 
+<!--@ 6 -->
 ```HTML
 <script src="https://resource.mapray.com/mapray-js/v0.8.2/mapray.min.js"></script>
 <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
@@ -174,6 +190,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### スタイルの設定
 9～20行目で表示する要素のスタイルを設定します。スタイルの詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 9 -->
 ```HTML
 <style>
     html, body {
@@ -193,6 +210,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 画面を表示するときに、点のプロパティを参照して対象データ表示するクラスを生成します。そのため、23行目で、ページの読み込み時に、地図表示部分のブロックのidから点のプロパティを参照して対象データ表示するクラスのインスタンスを生成します。
 点のプロパティを参照して対象データ表示するクラスはJavaScriptのサンプルコードの詳細で説明します。
 
+<!--@ 23 -->
 ```HTML
 <body onload="new ReadGeoJsonPointProperties('mapray-container');">
 ```
@@ -201,6 +219,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 24行目で地図表示部分のブロックを記述します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 24 -->
 ```HTML
 <div id="mapray-container"></div>
 ```
@@ -212,6 +231,7 @@ JavaScriptのサンプルコードの詳細を以下で解説します。
 1～104行目で、点のGeoJSONデータを読み込み、そのデータが持つプロパティを参照して対象データ表示するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
 点のプロパティを参照して対象データ表示するクラスは、mapray.RenderCallbackクラスを継承します。
 
+<!--@ none -->
 ```JavaScript
 class ReadGeoJsonPointProperties extends mapray.RenderCallback {
 
@@ -224,6 +244,7 @@ class ReadGeoJsonPointProperties extends mapray.RenderCallback {
 2～26行目が点のGeoJSONデータを読み込み、そのデータが持つプロパティを参照して対象データ表示するクラスのコンストラクタです。引数として渡されるブロックのidに対して、mapray.Viewerを作成し、geoJSONファイルの出典情報を追加します。そして、カメラの位置・向きの設定メソッドを呼び出します。その後、文字の表示メソッドとGeoJSONデータのロードメソッドを呼び出します。viewerを作成する際の画像プロバイダは画像プロバイダの生成メソッドから取得します。
 mapray.Viewerの作成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 2 -->
 ```JavaScript
 constructor(container) {
     super();
@@ -256,6 +277,7 @@ constructor(container) {
 29～31行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
 画像プロバイダの生成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 28 -->
 ```JavaScript
 // 画像プロバイダを生成
 createImageProvider() {
@@ -267,6 +289,7 @@ createImageProvider() {
 34～58行目がカメラの位置・向きの設定メソッドです。
 カメラの位置・向きの設定は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 33 -->
 ```JavaScript
 // カメラ位置の設定
 SetCamera() {
@@ -300,6 +323,7 @@ SetCamera() {
 61～72行目で、地名を表現する文字をmapray.Viewerのシーンに追加します。
 文字の表示方法の詳細は、ヘルプページ『**文字の表示（addTextを使った表示）**』を参照してください。
 
+<!--@ 60 -->
 ```JavaScript
 // テキストの表示
 AddText() {
@@ -323,6 +347,7 @@ GeoJSONLoaderクラス生成時の引数には、GeoJSONファイルのエンテ
 最後に、85行目のload関数を呼び出すことでシーンの読み込みができます。
 なお、GeoJSONLoaderクラスは、GeoJSONデータのfeatureごとのロード時にコールバック関数が呼ばれ、GeoJSONデータの任意のproperty属性にアクセスすることができます。また、propertyに書かれているkeyの値をコールバック関数内で取得することも可能です。
 
+<!--@ 74 -->
 ```JavaScript
 // GeoJSONの読み込み
 LoadGeoJson() {
@@ -340,9 +365,10 @@ LoadGeoJson() {
 ```
 
 #### プロパティの値に応じた背景色の変更
-89～105行目がプロパティの値に応じた色が取得できるメソッドです。読み込んだGeoJSONデータのプロパティを参照して、適切な色を返します。
+89～102行目がプロパティの値に応じた色が取得できるメソッドです。読み込んだGeoJSONデータのプロパティを参照して、適切な色を返します。
 このサンプルコードでは、洪水時に対応できるかどうかで背景色を変更するため、対象のGeoJSONデータが持つ洪水プロパティを参照して、対応できる場合は青、対応できない場合は赤を返します。
 
+<!--@ 88 -->
 ```JavaScript
 // プロパティから線の色を決定し返す
 GetBGColor( properties={} ) {
@@ -374,6 +400,7 @@ GetBGColor( properties={} ) {
 クランプ機能を用いるには、シーンのロードメソッド内で、getAltitudeModeにmapray.AltitudeMode.CLAMPを設定します。下記に示すコードの9行目にあたる部分になります。
 この設定を行うことで、読みこんだGeoJSONファイルを表示する際に、全ての点が地表面上に沿った形で表示されます。
 
+<!--@ 8 -->
 ```JavaScript
 // GeoJSONの読み込み
 LoadGeoJson() {

@@ -1,3 +1,14 @@
+<!---
+title: "　9.1 GeoJSONデータの表示(GeoJSONLoaderを使った表示)"
+date: 2019-12-02T18:35:00+09:00
+draft: false
+description: "GeoJSONデータの表示(GeoJSONLoaderを使った表示)"
+keywords: ["チュートリアル", "モデル", "GeoJSON", "GeoJSONLoader", "新大阪駅", "京都駅", "新幹線"]
+type: tutorials
+menu: main
+weight: 2091
+--->
+
 ## GeoJSONデータの表示（GeoJSONLoaderを使った表示）
 
 mapray.GeoJSONLoaderを使ってGeoJSONデータを表示する方法を説明します。
@@ -7,6 +18,7 @@ mapray.GeoJSONLoaderを使ってGeoJSONデータを表示する**LoadGeoJSON.htm
 このサンプルコードでは、新大阪駅と京都駅間の新幹線の経路を表示します。
 
 #### LoadGeoJSON.html
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -37,6 +49,7 @@ mapray.GeoJSONLoaderを使ってGeoJSONデータを表示する**LoadGeoJSON.htm
 ```
 
 #### LoadGeoJSON.js
+<!--@ 1 -->
 ```JavaScript
 class LoadGeoJSON extends mapray.RenderCallback {
     constructor(container) {
@@ -126,6 +139,7 @@ class LoadGeoJSON extends mapray.RenderCallback {
 ```
 
 #### シーンファイル（RouteLine.json）
+<!--@ 1 -->
 ```json
 {
   "type": "FeatureCollection",
@@ -179,6 +193,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### htmlの文字コード設定
 4行目でhtmlの文字コードを設定します。このサンプルコードでは、utf-8を設定します。
 
+<!--@ 4 -->
 ```HTML
 <meta charset="UTF-8">
 ```
@@ -186,6 +201,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### タイトルの設定
 5行目でタイトルを設定します。このサンプルコードでは、LoadGeoJSONSampleを設定します。
 
+<!--@ 5 -->
 ```HTML
 <title>LoadGeoJSONSample</title>
 ```
@@ -193,6 +209,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### JavaScriptファイルのパス設定
 6～8行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、モデルのシーンを読み込むJavaScriptファイル（**LoadGeoJSON.js**）を設定します。
 
+<!--@ 6 -->
 ```HTML
 <script src="https://resource.mapray.com/mapray-js/v0.8.2/mapray.min.js"></script>
 <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
@@ -203,6 +220,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 9～20行目で表示する要素のスタイルを設定します。
 スタイルの詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 9 -->
 ```HTML
 <style>
     html, body {
@@ -222,6 +240,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 画面を表示するときに、GeoJSONデータ読み込みクラスを生成します。そのため、23行目でページの読み込み時に、地図表示部分のブロックのidからGeoJSONデータ読み込みクラスのインスタンスを生成します。
 GeoJSONデータ読み込みクラスはJavaScriptのサンプルコードの詳細で説明します。
 
+<!--@ 23 -->
 ```HTML
 <body onload="new LoadGeoJSON('mapray-container');">
 ```
@@ -230,6 +249,7 @@ GeoJSONデータ読み込みクラスはJavaScriptのサンプルコードの詳
 24行目で地図表示部分のブロックを記述します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 24 -->
 ```HTML
 <div id="mapray-container"></div>
 ```
@@ -241,6 +261,7 @@ JavaScriptのサンプルコードの詳細を以下で解説します。
 1～85行目で、GeoJSONデータを読み込み、表示するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
 GeoJSONデータを読み込み、表示するクラスは、mapray.RenderCallbackクラスを継承します。
 
+<!--@ none -->
 ```JavaScript
 class LoadGeoJSON extends mapray.RenderCallback {
 
@@ -253,6 +274,7 @@ class LoadGeoJSON extends mapray.RenderCallback {
 2～20行目がGeoJSONデータを読み込み、表示するクラスのコンストラクタです。引数として渡されるブロックのidに対して、mapray.Viewerを作成し、カメラの位置・向きの設定メソッドを呼び出します。その後、文字の表示メソッドとシーンのロードメソッドを呼び出します。viewerを作成する際の画像プロバイダは画像プロバイダの生成メソッドから取得します。
 mapray.Viewerの作成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 2 -->
 ```JavaScript
 constructor(container) {
     super();
@@ -279,6 +301,7 @@ constructor(container) {
 23～25行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
 画像プロバイダの生成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 22 -->
 ```JavaScript
 // 画像プロバイダを生成
 createImageProvider() {
@@ -290,6 +313,7 @@ createImageProvider() {
 28～52行目がカメラの位置・向きの設定メソッドです。
 カメラの位置・向きの設定は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 27 -->
 ```JavaScript
 // カメラ位置の設定
 SetCamera() {
@@ -323,6 +347,7 @@ SetCamera() {
 55～71行目で、それぞれの駅名を表示するための文字をmapray.Viewerのシーンに追加します。
 文字の表示方法の詳細は、ヘルプページ『**文字の表示（addTextを使った表示）**』を参照してください。
 
+<!--@ 54 -->
 ```JavaScript
 // テキストの表示
 AddText() {
@@ -349,6 +374,7 @@ AddText() {
 GeoJSONLoaderクラス生成時の引数には、GeoJSONファイルのエンティティを追加するシーン、読み込むGeoJSONファイルのURL、オプション集合の順に指定します。このサンプルコードでは、viewerクラスのシーン、GeoJSONファイルのURL、オプション集合の順に指定します。オプション集合には、シーンのロードが終了した時のコールバック関数、線の色、線の幅、指定高度優先可否、指定高度をの順に指定します。読み込むGeoJSONファイルのURLは、httpもしくはhttpsでアクセスできるURLを指定します。最後に、82行目のload関数を呼び出すことでシーンの読み込みができます。
 なお、GeoJSONLoaderクラスは、GeoJSONデータのfeatureごとのロード時にコールバック関数が呼ばれ、GeoJSONデータの任意のproperty属性にアクセスすることができます。また、propertyに書かれているkeyの値をコールバック関数内で取得することも可能です。
 
+<!--@ 73 -->
 ```JavaScript
 // シーンの読み込み
 LoadScene() {
@@ -370,6 +396,7 @@ GeoJsonファイルの詳細なフォーマットは、[GeoJSONの公式サイ�
 #### FeatureCollectionの設定
 2行目でFeatureCollectionという名称でフィーチャーコレクションオブジェクトを定義し、その中の5行目でFeatureという名称でフィーチャーオブジェクトを定義します。
 
+<!--@ none -->
 ```json
 {
     "type": "FeatureCollection",
@@ -390,6 +417,7 @@ GeoJsonファイルの詳細なフォーマットは、[GeoJSONの公式サイ�
 #### ラインのデータ
 8行目でMultiLineStringという名称でジオメトリオブジェクトを定義します。9行目のcoordinatesから座標配列を定義します。
 
+<!--@ 8 -->
 ```json
 "type": "MultiLineString",
 "coordinates": [

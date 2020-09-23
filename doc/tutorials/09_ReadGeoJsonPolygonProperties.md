@@ -1,3 +1,14 @@
+<!---
+title: "　9.5 GeoJSONプロパティの参照(ポリゴンデータ)"
+date: 2019-12-02T18:35:00+09:00
+draft: false
+description: "GeoJSONプロパティの参照(点データ)"
+keywords: ["チュートリアル", "モデル", "GeoJSON", "プロパティ", "ポリゴンデータ", "人口密度", "透過率", "クランプ機能", "国土交通省", "富士山", "気温"]
+type: tutorials
+menu: main
+weight: 2095
+--->
+
 ## GeoJSONプロパティの参照（ポリゴンデータ）
 ポリゴンのGeoJSONデータを読み込み、そのデータが持つプロパティを参照して対象データ表示する方法を説明します。
 
@@ -8,6 +19,7 @@
 
 
 #### ReadGeoJsonPolygonProperties.html
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -70,6 +82,7 @@
 ```
 
 #### ReadGeoJsonPolygonProperties.js
+<!--@ 1 -->
 ```JavaScript
 var read_GeoJson_polygon_properties;
 
@@ -210,6 +223,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### htmlの文字コード設定
 4行目でhtmlの文字コードを設定します。このサンプルコードでは、utf-8を設定します。
 
+<!--@ 4 -->
 ```HTML
 <meta charset="UTF-8">
 ```
@@ -217,6 +231,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### タイトルの設定
 5行目でタイトルを設定します。このサンプルコードでは、ReadGeoJsonPolygonPropertiesSampleを設定します。
 
+<!--@ 5 -->
 ```HTML
 <title>ReadGeoJsonPolygonPropertiesSample</title>
 ```
@@ -224,6 +239,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### JavaScriptファイルのパス設定
 6～8行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、ポリゴンのプロパティを参照して対象データ表示するJavaScriptファイル（**ReadGeoJsonPolygonProperties.js**）を設定します。
 
+<!--@ 6 -->
 ```HTML
 <script src="https://resource.mapray.com/mapray-js/v0.8.2/mapray.min.js"></script>
 <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
@@ -239,6 +255,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 - div#mapray-container（地図表示部分）
 - div#OpacityBox（透過率変更コンボボックス表示部分）
 
+<!--@ 9 -->
 ```HTML
 <style>
     html, body {
@@ -281,6 +298,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 画面を表示するときに、ポリゴンのプロパティを参照して対象データ表示するクラスを生成します。そのため、46行目で、ページの読み込み時に、ポリゴンのプロパティを参照して対象データ表示するクラスのインスタンスを生成するメソッド（**CreateReadGeoJsonPolygonPropertiesInstance**）を呼ぶように設定します。
 ポリゴンのプロパティを参照して対象データ表示するクラスのインスタンスを生成するメソッドは、JavaScriptのサンプルコードの詳細で説明します。
 
+<!--@ 46 -->
 ```HTML
 <body onload="CreateReadGeoJsonPolygonPropertiesInstance('mapray-container');">
 ```
@@ -289,6 +307,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 47行目で地図表示部分のブロックを記述します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 47 -->
 ```HTML
 <div id="mapray-container"></div>
 ```
@@ -298,6 +317,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 透過率を変更するコンボボックスが変更された時のイベント（onchange）に、透過率のコンボボックス変更時に呼び出す関数（**OpacityValueChanged**）を設定します。
 透過率のコンボボックス変更時に呼び出す関数はJavaScriptのサンプルコードの詳細で説明します。
 
+<!--@ 49 -->
 ```HTML
 <div id="OpacityBox">
     <p>Opacity</p>
@@ -317,6 +337,7 @@ JavaScriptのサンプルコードの詳細を以下で解説します。
 ポリゴンのプロパティを参照して対象データ表示するクラスは、mapray.RenderCallbackクラスを継承します。
 また、1行目でプロパティを参照して対象データを表示するクラスのグローバル変数を定義します。
 
+<!--@ none -->
 ```JavaScript
 var read_GeoJson_polygon_properties;
 
@@ -328,9 +349,10 @@ class ReadGeoJsonPolygonProperties extends mapray.RenderCallback {
 ```
 
 #### コンストラクタ
-4～22行目が線のGeoJSONデータを読み込み、そのデータが持つプロパティを参照して対象データ表示するクラスのコンストラクタです。引数として渡されるブロックのidに対して、mapray.Viewerを作成し、geoJSONファイルの出典情報を追加します。そして、カメラの位置・向きの設定メソッドを呼び出します。その後、文字の表示メソッドとGeoJSONデータのロードメソッドを呼び出します。viewerを作成する際の画像プロバイダは画像プロバイダの生成メソッドから取得します。
+4～28行目が線のGeoJSONデータを読み込み、そのデータが持つプロパティを参照して対象データ表示するクラスのコンストラクタです。引数として渡されるブロックのidに対して、mapray.Viewerを作成し、geoJSONファイルの出典情報を追加します。そして、カメラの位置・向きの設定メソッドを呼び出します。その後、文字の表示メソッドとGeoJSONデータのロードメソッドを呼び出します。viewerを作成する際の画像プロバイダは画像プロバイダの生成メソッドから取得します。
 mapray.Viewerの作成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 4 -->
 ```JavaScript
 constructor(container) {
     super();
@@ -363,6 +385,7 @@ constructor(container) {
 31～33行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
 画像プロバイダの生成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 30 -->
 ```JavaScript
 // 画像プロバイダを生成
 createImageProvider() {
@@ -374,6 +397,7 @@ createImageProvider() {
 36～60行目がカメラの位置・向きの設定メソッドです。
 カメラの位置・向きの設定は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 35 -->
 ```JavaScript
 // カメラ位置の設定
 SetCamera() {
@@ -407,6 +431,7 @@ SetCamera() {
 63～74行目で、地名を表現する文字をmapray.Viewerのシーンに追加します。
 文字の表示方法の詳細は、ヘルプページ『**文字の表示（addTextを使った表示）**』を参照してください。
 
+<!--@ 62 -->
 ```JavaScript
 // テキストの表示
 AddText() {
@@ -430,6 +455,7 @@ GeoJSONLoaderクラス生成時の引数には、GeoJSONファイルのエンテ
 最後に、84行目のload関数を呼び出すことでシーンの読み込みができます。
 なお、GeoJSONLoaderクラスは、GeoJSONデータのfeatureごとのロード時にコールバック関数が呼ばれ、GeoJSONデータの任意のproperty属性にアクセスすることができます。また、propertyに書かれているkeyの値をコールバック関数内で取得することも可能です。
 
+<!--@ 76 -->
 ```JavaScript
 // GeoJSONの読み込み
 LoadGeoJson() {
@@ -447,6 +473,7 @@ LoadGeoJson() {
 88～110行目がプロパティの値に応じた色が取得できるメソッドです。読み込んだGeoJSONデータのプロパティを参照して、適切な色を返します。
 このサンプルコードでは、人口密度が高くなるにつれて、赤色から黄色になるように設定しています。
 
+<!--@ 87 -->
 ```JavaScript
 // プロパティから線の色を決定し返す
 GetFillColor( properties={} ) {
@@ -477,6 +504,7 @@ GetFillColor( properties={} ) {
 #### 透過率の変更
 112～121行目が透過率変更メソッドです。114行目で透過率を変更するコンボボックスから値を取得します。そして、118行目のviewer.sceneのgetEntity関数でポリゴンのエンティティを順に取得し、119行目で取得した値を指定することで、ポリゴンの透過率を変更します。このサンプルコードでは、GeoJSONデータはポリゴンのエンティティとなり、インデックスは1番目以降となるため、getEntity関数には1以降のすべてのエンティティを指定します。
 
+<!--@ 112 -->
 ```JavaScript
 ChangeOpacity() {
     // プルダウンの値取得
@@ -493,6 +521,7 @@ ChangeOpacity() {
 #### ポリゴンのプロパティを参照して対象データ表示するクラスのインスタンス生成
 125～127行目の関数は、引数として渡されるブロックのidを利用して、ポリゴンのプロパティを参照して対象データ表示するクラスのインスタンスを生成します。
 
+<!--@ 125 -->
 ```JavaScript
 function CreateReadGeoJsonPolygonPropertiesInstance(container) {
     read_GeoJson_polygon_properties = new ReadGeoJsonPolygonProperties(container);
@@ -502,6 +531,7 @@ function CreateReadGeoJsonPolygonPropertiesInstance(container) {
 #### 透過率変更時のイベント
 129～131行目の関数は、透過率変更時に呼ばれ、ポリゴンのプロパティを参照して対象データ表示するクラスの透過率変更メソッドを呼び出します。
 
+<!--@ 129 -->
 ```JavaScript
 function OpacityValueChanged() {
     read_GeoJson_polygon_properties.ChangeOpacity()
@@ -526,6 +556,7 @@ function OpacityValueChanged() {
 クランプ機能を用いるには、シーンのロードメソッド内で、getAltitudeModeにmapray.AltitudeMode.CLAMPを設定します。下記に示すコードの6行目にあたる部分になります。
 この設定を行うことで、読みこんだGeoJSONファイルを表示する際に、全てのポリゴンが地表面上に沿った形で表示されます。
 
+<!--@ 5 -->
 ```JavaScript
 // GeoJSONの読み込み
 LoadGeoJson() {

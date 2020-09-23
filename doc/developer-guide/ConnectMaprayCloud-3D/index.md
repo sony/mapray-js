@@ -21,12 +21,12 @@ GeoJSONと同様に[mapray cloud管理者ページ](https://cloud.mapray.com)か
 
 
 `Datasets`ページを表示している状態で、`3D`タブへ切り替え、`New 3D Dataset`をクリックします。
-![Datasets > 3Dタブ](images/screenshot-open-3d-dataset-dialog-before.png-annotated.svg)
+![Datasets > 3Dタブ](images/screenshot-58-open-3d-dataset-dialog-before.png-annotated.svg)
 
 
 
 `New 3D Dataset`ダイアログが表示されたら、必要事項を入力します。
-![New 3D Dataset ダイアログ](images/screenshot-open-3d-dataset-dialog-after.png)
+![New 3D Dataset ダイアログ](images/screenshot-59-open-3d-dataset-dialog-after.png)
 
 
 | プロパティ    | 説明                                           |
@@ -40,13 +40,13 @@ GeoJSONと同様に[mapray cloud管理者ページ](https://cloud.mapray.com)か
 
 
 入力が完了したら`OK`をクリックします。
-![New 3D Dataset ダイアログ （入力済み）](images/screenshot-upload-3d-dataset-before.png-annotated.svg)
+![New 3D Dataset ダイアログ （入力済み）](images/screenshot-61-61-click-before.png-annotated.svg)
 
 
 
-アップロードに成功したら、下記のようにメッセージが表示され、リストに新しい項目が追加されます。この例では、アップロードしたデータセットのIDは` 5919598805254144 `で、後述するmaprayJSのViewerで表示する際に指定するIDとなります。
+アップロードに成功したら、下記のようにメッセージが表示され、リストに新しい項目が追加されます。この例では、アップロードしたデータセットのIDは` 5427498632347648 `で、後述するmaprayJSのViewerで表示する際に指定するIDとなります。
 
-![アップロード完了](images/screenshot-upload-3d-dataset-after.png)
+![アップロード完了](images/screenshot-63-goto-detail-page-before.png)
 
 
 
