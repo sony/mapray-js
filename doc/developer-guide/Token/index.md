@@ -45,12 +45,12 @@ mapray cloudでは、ユーザ様がお持ちの地理情報を自由にアッ�
 
 2. ログインが完了している状態で、 `Create a token`ボタン をクリックします。
 
-    ![「Create token」ボタンをクリック](images/screenshot-open-create-token-dialog-before.png-annotated.svg)
+    ![「Create token」ボタンをクリック](images/screenshot-8-open-create-token-dialog-before.png-annotated.svg)
 
 3. 作成するTokenの名前を入力します。任意の名前を入力します。
 
-    ![Token(Key)名の入力](images/screenshot-open-create-token-dialog-after.png)
+    ![Token(Key)名の入力](images/screenshot-9-open-create-token-dialog-after.png)
 
 4. Tokenを確認します
 
-    ![Tokenの確認](images/screenshot-upload-token-after.png)
+    ![Tokenの確認](images/screenshot-15-update-token-after.png)

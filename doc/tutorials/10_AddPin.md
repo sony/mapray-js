@@ -1,3 +1,14 @@
+<!---
+title: "　10.1 ピンの表示"
+date: 2019-12-02T18:35:00+09:00
+draft: false
+description: "ピンの表示"
+keywords: ["チュートリアル", "皇居", "東京駅", "東京タワー", "ピン", "PinEntity"]
+type: tutorials
+menu: main
+weight: 2101
+--->
+
 ## ピンの表示
 
 mapray.PinEntityを使ってピンを表示する方法を説明します。
@@ -6,6 +17,7 @@ mapray.PinEntityを使ってピンを表示する方法を説明します。
 mapray.PinEntityを使ってピンを表示する**AddPin.html**のサンプルコードです。
 このサンプルコードでは、皇居と東京駅と東京タワーにピンを表示します。
 
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -101,6 +113,7 @@ mapray.PinEntityを使ってピンを表示する**AddPin.html**のサンプル�
 1～25行目がでhtmlの定義です。ヘルプページ『**緯度経度によるカメラ位置の指定**』で示したhtmlファイルからタイトルのみを変更します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -133,6 +146,7 @@ mapray.PinEntityを使ってピンを表示する**AddPin.html**のサンプル�
 29～61行目でMapray.Viewerクラスを作成し、カメラ位置・向きを設定します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 28 -->
 ```JavaScript
 // Access Tokenを設定
 var accessToken = "<your access token here>";
@@ -173,6 +187,7 @@ viewer.camera.far = 500000;
 #### PinEntityの生成
 ピンを表示するためには、ピンの情報を管理するクラス（PinEntity）が必要です。そのため、64行目でPinEntityのインスタンスを生成します。コンストラクタの引数には、作成したMapray.Viewerのシーン（Mapray.Viewer.scene）を指定します。
 
+<!--@ 63 -->
 ```JavaScript
 // ピンのエンティティを作成
 var pin_Entity = new mapray.PinEntity(viewer.scene);
@@ -181,6 +196,7 @@ var pin_Entity = new mapray.PinEntity(viewer.scene);
 #### 表示ピンの生成
 67～70行目で、標準のピンを生成します。67行目で皇居の経度・緯度・高度からGeoPointクラスを定義し、70行目のaddPin関数でピンを作成します。addPin関数には、ピンを表示する位置、生成オプションとしてピンの大きさと色を、それぞれ設定します。
 
+<!--@ 66 -->
 ```JavaScript
 // 皇居の座標を設定
 var fast_Pin_Point = new mapray.GeoPoint(139.7528, 35.685175, 13);
@@ -193,6 +209,7 @@ pin_Entity.addPin(fast_Pin_Point, { size: 40, bg_color: [1, 0, 0] });
 73～76行目で、Makiアイコンのピンを生成します。73行目で東京駅の経度・緯度・高度からGeoPointクラスを定義し、76行目のaddMakiIconPin関数でピンを生成します。addMakiIconPin関数には、Makiアイコンの名称、ピンを表示する位置、生成オプションとしてピンの大きさと色を、それぞれ設定します。
 Makiアイコンとは、[Makiアイコン](https://labs.mapbox.com/maki-icons/)に掲載されているアイコンを指します。各アイコンの名称を指定することで、自由にアイコンを使用することができます。
 
+<!--@ 72 -->
 ```JavaScript
 // 東京駅の座標を設定
 var second_Pin_Point = new mapray.GeoPoint(139.767141, 35.681247, 3);
@@ -204,6 +221,7 @@ pin_Entity.addMakiIconPin("rail-15", second_Pin_Point, { size: 40, bg_color: [0,
 #### テキストピンの生成
 79～82行目で、テキストのピンを生成します。79行目で東京タワーの経度・緯度・高度からGeoPointクラスを定義し、82行目のaddTextPin関数でピンを生成します。addTextPin関数には、表示する文字、ピンを表示する位置、生成オプションとしてピンの大きさと色を、それぞれ設定します。
 
+<!--@ 78 -->
 ```JavaScript
 // 東京タワーの座標を設定
 var third_Pin_Point = new mapray.GeoPoint(139.745440, 35.658594, 3);
@@ -215,6 +233,7 @@ pin_Entity.addTextPin("T", third_Pin_Point, { size: 40, bg_color: [0, 0, 1] });
 #### PinEntityの追加
 85行目でPinEntityを作成したmapray.Viewerのシーンに追加します。mapray.Viewerのシーンに追加することでピンが表示されます。
 
+<!--@ 84 -->
 ```JavaScript
 // エンティティをシーンに追加
 viewer.scene.addEntity(pin_Entity);

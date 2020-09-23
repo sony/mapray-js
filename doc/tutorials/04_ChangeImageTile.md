@@ -1,3 +1,14 @@
+<!---
+title: "　4.1 ベース地図の変更"
+date: 2019-12-02T17:57:11+09:00
+draft: false
+description: "ベース地図の変更"
+keywords: ["チュートリアル", "ベース地図", "国土地理院", "標準地図", "写真"]
+type: tutorials
+menu: main
+weight: 2041
+--->
+
 ## ベース地図の変更
 
 ベース地図を変更する方法を説明します。
@@ -8,6 +19,7 @@
 
 #### ChangeImageTile.html
 
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -70,6 +82,7 @@
 
 #### ChangeImageTile.js
 
+<!--@ 1 -->
 ```JavaScript
 var viewer_Image_Control;
 
@@ -166,6 +179,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### htmlの文字コード設定
 4行目でhtmlの文字コードを設定します。このサンプルコードでは、utf-8を設定します。
 
+<!--@ 4 -->
 ```HTML
 <meta charset="utf-8">
 ```
@@ -173,6 +187,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### タイトルの設定
 5行目でタイトルを設定します。このサンプルコードでは、ChangeImageTileSampleを設定します。
 
+<!--@ 5 -->
 ```HTML
 <title>ChangeImageTileSample</title>
 ```
@@ -180,6 +195,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### JavaScriptファイルのパス設定
 6～8行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、ベース地図を変更するJavaScriptファイル（**ChangeImageTile.js**）を設定します。
 
+<!--@ 6 -->
 ```HTML
 <script src="https://resource.mapray.com/mapray-js/v0.8.2/mapray.min.js"></script>
 <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
@@ -195,6 +211,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 - div#mapray-container（地図表示部分）
 - div#MapTileBox（ベース地図変更コンボボックス表示部分）
 
+<!--@ 9 -->
 ```HTML
 <style>
     html, body {
@@ -237,6 +254,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 画面を表示する時に、ベース地図変更クラスを生成します。そのため、46行目でページの読み込み時に、ベース地図変更クラスのインスタンスを生成する関数（**CreateViewerImageControlInstance**）を呼ぶように設定します。
 ベース地図変更クラスのインスタンスを生成する関数は、JavaScriptのサンプルコードの詳細で説明します。
 
+<!--@ 46 -->
 ```HTML
 <body onload="CreateViewerImageControlInstance('mapray-container');">
 ```
@@ -246,6 +264,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 ベース地図変更コンボボックス表示部分のブロックには、ベース地図を変更するコンボボックスを定義します。このサンプルコードでは、photo（写真表示）、Standard（標準地図表示）を設定します。また、コンボボックスが変更された時のイベント（onchange）に、コンボボックス表示時に呼び出す関数（MapTileValueChanged）を設定します。ベース地図の変更メソッドを呼び出す関数はJavaScriptのサンプルコードの詳細で説明します。
 また、地図表示部分の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 47 -->
 ```HTML
 <div id="mapray-container"></div>
 
@@ -265,6 +284,7 @@ JavaScriptのサンプルコードの詳細を以下で解説します。
 3～79行目でベース地図を変更するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
 また、1行目でベース地図を変更するクラスのグローバル変数を定義します。
 
+<!--@ none -->
 ```JavaScript
 var viewer_Image_Control;
 
@@ -280,6 +300,7 @@ class ViewerImageControl {
 引数として渡されるブロックのidに対して、mapray.Viewerを作成し、カメラの位置・向きの設定メソッドを呼び出します。mapray.Viewerのベース地図の画像プロバイダは、画像プロバイダの作成メソッドで取得した画像プロバイダを設定します。
 mapray.Viewerの作成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 5 -->
 ```JavaScript
 constructor(container) {
     // Access Tokenを設定
@@ -303,6 +324,7 @@ constructor(container) {
 23～34行目が画像プロバイダの作成メソッドです。ベース地図を変更するコンボボックスの値に応じて、標準地図か写真の画像プロバイダを返します。
 画像プロバイダの作成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 22 -->
 ```JavaScript
 // 画像プロバイダを生成
 createImageProvider() {
@@ -323,6 +345,7 @@ createImageProvider() {
 36～62行目がカメラの位置・向きの設定メソッドです。
 カメラの位置・向きの設定は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 36 -->
 ```JavaScript
 SetCamera() {
     // カメラ位置の設定
@@ -359,6 +382,7 @@ SetCamera() {
 mapray.Viewerに設定されているベース地図の画像プロバイダを変更するには、mapray.Viewerを破棄する必要があります。
 そのため、65行目でメンバのviewerをdestroy関数で破棄をしてから、mapray.Viewerの作成、カメラの位置・向きの設定をします。
 
+<!--@ 64 -->
 ```JavaScript
 ChangeMapTile() {
     // Viewerのインスタンスを破棄
@@ -379,6 +403,7 @@ ChangeMapTile() {
 #### ベース地図変更クラスのインスタンス生成
 81～83行目の関数は、引数として渡されるブロックのidを利用して、ベース地図変更クラスのインスタンスを生成します。
 
+<!--@ 81 -->
 ```JavaScript
 function CreateViewerImageControlInstance(container) {
     viewer_Image_Control = new ViewerImageControl(container);
@@ -388,6 +413,7 @@ function CreateViewerImageControlInstance(container) {
 #### ベース地図変更時のイベント
 85～87行目の関数は、ベース地図変更時に呼ばれ、ベース地図変更クラスのベース地図変更メソッドを呼び出します。
 
+<!--@ 85 -->
 ```JavaScript
 function MapTileValueChanged() {
     viewer_Image_Control.ChangeMapTile();

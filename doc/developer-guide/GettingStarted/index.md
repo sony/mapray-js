@@ -20,7 +20,7 @@ maprayJSは、JavaScriptファイルを`<script>`で直接読み込む方式(以
 ### CDN方式
 HTMLファイルでJavaScriptを読み込みます。`<head>`タグ内で以下のようにインクルードして下さい。
 ```html
-  <script src="https://api.mapray.com/mapray-js/v0.8.2/mapray.js"></script>
+  <script src="https://resource.mapray.com/mapray-js/v0.8.2/mapray.js"></script>
 ```
 上記はバージョン0.8.2の場合です。`v0.8.2`には任意のバージョンを指定して下さい。
 リリースされている該当のバージョンがあれば、アクセスすることができます。
@@ -45,15 +45,15 @@ yarn add @mapray/mapray-js
 ## 2. Access Tokenの取得
 mapray cloud のリソースへアクセスするのに必要なAccess Tokenの取得手順について説明します。[mapray cloud](https://cloud.mapray.com)にログインし、右上の`メニュー`から`Account`を選択します。すると、以下のような画面が表示されます。
 
-![Account画面](images/cloud-account.png)
+![Account画面](images/screenshot-8-open-create-token-dialog-before.png-annotated.svg)
 
 このAccess Token画面で`Create a token`ボタンを押すと'新しいKeyを作成'ダイアログが表示されます。
 
-![新しいKeyを作成ダイアログ](images/cloud-newkey.png)
+![新しいKeyを作成ダイアログ](images/screenshot-9-open-create-token-dialog-after.png)
 
 お好みのKey名を入力して`作成`ボタンを押すと新しいKeyが作成されます。ここではdefaultという名前のAccess Tokenを作成しました。
 
-![Access Tokenを作成](images/cloud-keycreated.png)
+![Access Tokenを作成](images/screenshot-15-update-token-after.png)
 
 以上でAccess Tokenが作成されました。ここで作成したAccess Tokenを後述の手順で利用します。
 
@@ -68,7 +68,7 @@ mapray cloud のリソースへアクセスするのに必要なAccess Tokenの�
 <head>
     <meta charset="UTF-8">
     <title>Hello Globe</title>
-    <script src="https://api.mapray.com/mapray-js/v0.8.2/mapray.min.js"></script>
+    <script src="https://resource.mapray.com/mapray-js/v0.8.2/mapray.min.js"></script>
 </head>
 <style>
     html, body {
@@ -152,6 +152,7 @@ Access Tokenを書き換えたファイルを任意の名前で保存し、ブ�
 ## What's next?
 - [mapray cloudへ接続する例(2D)](/documents/overview/connectmapraycloud-2D/)
 - [mapray cloudへ接続する例(3D)](/documents/overview/connectmapraycloud-3D/)
+- [mapray cloudへ接続する例(点群)](/documents/overview/connectmapraycloud-PC/)
 - [maprayJSの機能開発例](/documents/tutorials/)
 
 

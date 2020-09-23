@@ -1,3 +1,14 @@
+<!---
+title: "　8.2 モデルの高度の設定方法の変更"
+date: 2019-12-02T18:35:00+09:00
+draft: false
+description: "モデルの高度設定"
+keywords: ["チュートリアル", "モデル", "高度", "設定", "glTF"]
+type: tutorials
+menu: main
+weight: 2082
+--->
+
 ## モデルの高度の設定方法の変更
 
 モデルの高度の設定方法を変更する方法を説明します。
@@ -10,6 +21,7 @@
 #### glTFデータの入手
 [Sketchfab](https://sketchfab.com/3d-models/plane-cedc8a07370747f7b0d14400cdf2faf9)へアクセスし、glTFファイルフォーマットのデータをダウンロードする、もしくは[ダウンロードリンク](https://storage.cloud.google.com/mapray-examples/model/download/plane.zip)をクリックしてダウンロードしてください。ダウンロードリンクからダウンロードした場合はzipファイルを展開してご利用ください。展開したデータは解凍した結果できたディレクトリを含めて、mapray-jsのルートディレクトリからの相対パスで以下のディレクトリに保存されているという想定で以下の説明を行います。
 
+<!--@ none -->
 ```
 ./examples/entity/gltf/data/
 ```
@@ -19,6 +31,7 @@
 
 #### ChangeAltitudeMode.html
 
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -105,6 +118,7 @@
 
 #### ChangeAltitudeMode.js
 
+<!--@ 1 -->
 ```JavaScript
 var change_altitude_mode;
 
@@ -262,6 +276,7 @@ function HeightValueChanged() {
 ```
 
 #### シーンファイル（glTFChangeAltitudeMode.json）
+<!--@ 1 -->
 ```json
 {
   "model_register": { "model-0": { "link": "./plane/scene.gltf" } },
@@ -282,6 +297,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### htmlの文字コード設定
 4行目でhtmlの文字コードを設定します。このサンプルコードでは、utf-8を設定します。
 
+<!--@ 4 -->
 ```HTML
 <meta charset="utf-8">
 ```
@@ -289,6 +305,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### タイトルの設定
 5行目でタイトルの設定をします。このサンプルコードでは、ChangeAltitudeModeSampleを設定します。
 
+<!--@ 5 -->
 ```HTML
 <title>ChangeAltitudeModeSample</title>
 ```
@@ -296,6 +313,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### JavaScriptファイルのパス設定
 6～8行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、高度モードを変えるJavaScriptファイル（**ChangeAltitudeMode.js**）を設定します。高度モードを変えるJavaScriptファイルの文字コードはutf-8に設定します。
 
+<!--@ 6 -->
 ```HTML
 <script src="https://resource.mapray.com/mapray-js/v0.8.2/mapray.min.js"></script>
 <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
@@ -313,6 +331,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 - div#AltitudeModeBox（高度の設定方法変更コンボボックス表示部分）
 - div#HeightBox（高さ変更コンボボックス表示部分）
 
+<!--@ 9 -->
 ```HTML
 <style>
     html, body {
@@ -369,6 +388,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 画面を表示するときに、高度モード変更クラスを生成します。そのため、60行目でページ読み込み時に、高度モードを変更するクラスのインスタンスを生成する関数（**CreateChangeAltitudeModeInstance**）を呼ぶように設定します。
 高度モードを変更するクラスのインスタンスを生成する関数は、JavaScriptのサンプルコードの詳細で説明します。
 
+<!--@ 60 -->
 ```HTML
 <body onload="CreateChangeAltitudeModeInstance('mapray-container');">
 ```
@@ -377,6 +397,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 61行目で地図表示部分のブロックを記述します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 61 -->
 ```HTML
 <div id="mapray-container"></div>
 ```
@@ -386,6 +407,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 高度の設定方法を変更するコンボボックスが変更された時のイベント（onchange）に、高度の設定方法変更のコンボボックス変更時に呼び出す関数（**AltitudeModeValueChanged**）を設定します。
 高度の設定方法変更のコンボボックス変更時に呼び出す関数はJavaScriptのサンプルコードの詳細で説明します。
 
+<!--@ 63 -->
 ```HTML
 <div id="AltitudeModeBox">
         <p>Altitude Mode</p>
@@ -402,6 +424,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 高さを変更するコンボボックスが変更された時のイベント（onchange）に、高さのコンボボックス変更時に呼び出す関数（**HeightValueChanged**）を設定します。
 高さのコンボボックス変更時に呼び出す関数はJavaScriptのサンプルコードの詳細で説明します。
 
+<!--@ 72 -->
 ```HTML
 <div id="HeightBox">
         <p>Height</p>
@@ -420,6 +443,7 @@ JavaScriptのサンプルコードの詳細を以下で解説します。
 3～141行目でモデルの高度の設定方法を変更するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
 また、1行目でモデルの高度の設定方法を変更するクラスのグローバル変数を定義します。
 
+<!--@ none -->
 ```JavaScript
 var change_altitude_mode;
 
@@ -435,6 +459,7 @@ class ChangeAltitudeMode {
 引数として渡されるブロックのidに対して、mapray.Viewerを作成し、glTFモデルの出典情報を追加します。そして、カメラの位置・向きの設定、シーンの読み込みの順にメソッド呼び出します。mapray.Viewerのベース地図の画像プロバイダは、画像プロバイダの生成メソッドで取得した画像プロバイダを設定します。
 mapray.Viewerの作成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 4 -->
 ```JavaScript
 constructor(container) {
     // Access Tokenを設定
@@ -467,6 +492,7 @@ constructor(container) {
 31～34行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
 画像プロバイダの生成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 30 -->
 ```JavaScript
 // 画像プロバイダを生成
 createImageProvider() {
@@ -479,6 +505,7 @@ createImageProvider() {
 37～61行目がカメラの位置・向きの設定メソッドです。
 カメラの位置・向きの設定は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 36 -->
 ```JavaScript
 // カメラ位置の設定
 SetCamera() {
@@ -512,6 +539,7 @@ SetCamera() {
 64～77行目がシーンのロードメソッドです。
 シーンのロードは、ヘルプページ『**glTFモデルの表示（SceneLoaderを使った表示）**』を参照してください。
 
+<!--@ 63 -->
 ```JavaScript
 // シーンの読み込み
 LoadScene() {
@@ -533,6 +561,7 @@ LoadScene() {
 78～84行目がリソース要求変換メソッドです。
 リソース要求変換は、ヘルプページ『**glTFモデルの表示（SceneLoaderを使った表示）**』を参照してください。
 
+<!--@ 78 -->
 ```JavaScript
 onTransform(url, type) {
     return {
@@ -547,6 +576,7 @@ onTransform(url, type) {
 86～90行目がシーンのロード終了イベントメソッドです。引数のisSuccessには、読み込み結果が格納されており、trueの場合のみ読み込んだglTFモデルを表示し、glTFモデルを操作できるようにします。
 glTFモデルのロード成功可否をtrueにし、glTFモデルの表示位置を設定するメソッドを呼び出します。glTFモデルの表示位置を設定するメソッドの詳細は後述します。
 
+<!--@ 86 -->
 ```JavaScript
 onLoadScene(loader, isSuccess) {
     if (isSuccess) {
@@ -560,6 +590,7 @@ onLoadScene(loader, isSuccess) {
 97行目で高度の設定方法を、101行目でモデルの表示位置を、103行目でモデルの向きを、106行目でモデルのスケールをそれぞれ設定します。
 なお、読み込んだモデルは1つ目のエンティティとなるため、エンティティ取得時の引数には0を指定します。
 
+<!--@ 92 -->
 ```JavaScript
 UpdateModelPosition() {
     // sceneのEntityを取得
@@ -582,6 +613,7 @@ UpdateModelPosition() {
 #### 高度の設定方法の変更
 109～129行目が高度の設定方法の変更メソッドです。111行目で高度の設定方法を変更するコンボボックスから文字列を取得します。そして、114～126行目で取得した文字列を高度の設定方法として設定し、128行目でglTFモデルの表示位置の設定を呼び出します。
 
+<!--@ 109 -->
 ```JavaScript
 ChangeAltitudeMode() {
     // プルダウンの値取得
@@ -607,8 +639,9 @@ ChangeAltitudeMode() {
 ```
 
 #### 高さの変更
-131～140行目が高さの変更メソッドです。133行目で高さを変更するコンボボックスから値を取得し、136行目で高さの値として設定します。その後、138行目でglTFモデルの表示位置の設定を呼び出します。
+131～139行目が高さの変更メソッドです。133行目で高さを変更するコンボボックスから値を取得し、136行目で高さの値として設定します。その後、138行目でglTFモデルの表示位置の設定を呼び出します。
 
+<!--@ 131 -->
 ```JavaScript
 ChangeHeight() {
     // プルダウンの値取得
@@ -624,6 +657,7 @@ ChangeHeight() {
 #### 高度の設定方法変更クラスのインスタンス生成
 143～145行目の関数は、引数として渡されるブロックのidを利用して、高度の設定方法変更クラスのインスタンスを生成します。
 
+<!--@ 143 -->
 ```JavaScript
 function CreateChangeAltitudeModeInstance(container) {
     change_altitude_mode = new ChangeAltitudeMode(container);
@@ -633,6 +667,7 @@ function CreateChangeAltitudeModeInstance(container) {
 #### 高度の設定方法変更時のイベント
 147～149行目の関数は、高度の設定方法変更時に呼ばれ、高度の設定方法変更クラスの高度の設定方法変更メソッドを呼び出します。
 
+<!--@ 147 -->
 ```JavaScript
 function AltitudeModeValueChanged() {
     change_altitude_mode.ChangeAltitudeMode()
@@ -642,6 +677,7 @@ function AltitudeModeValueChanged() {
 #### 高さ変更時のイベント
 151～153行目の関数は、高さ変更時に呼ばれ、高度モード変更クラスの高さ変更メソッドを呼び出します。
 
+<!--@ 151 -->
 ```JavaScript
 function HeightValueChanged() {
     change_altitude_mode.ChangeHeight()
@@ -654,6 +690,7 @@ function HeightValueChanged() {
 #### エンティティの設定
 3行目でentity_listという名称でエンティティを定義し、その中にエンティティの詳細を定義します。4行目のtypeという名称は、エンティティの種類を表し、glTFモデルの場合はmodelを指定します。
 
+<!--@ none -->
 ```json
 {
 
@@ -672,6 +709,7 @@ function HeightValueChanged() {
 #### メッシュのデータ
 2行目でmodel_registerという名称でモデルデータを定義します。このシーンファイルでは、モデルデータのIDをmodel-0とし、モデルファイルをファイルから読み込むために、linkという名称にglTFファイルのURLを指定します。
 
+<!--@ 2 -->
 ```json
 "model_register": { "model-0": { "link": "./plane/scene.gltf" } },
 ```
@@ -683,6 +721,7 @@ function HeightValueChanged() {
 - モデルデータ（ref_model）　⇒　モデルデータのID（model-0）
 - 高度モード（altitude_mode）　⇒　絶対値（absolute）
 
+<!--@ 4 -->
 ```json
 "type": "model",
 "mode": "basic",

@@ -1,3 +1,14 @@
+<!---
+title: "　1.1 緯度経度によるカメラ位置の指定"
+date: 2019-12-02T15:00:00+09:00
+draft: false
+description: "緯度経度によるカメラ位置の指定"
+keywords: ["チュートリアル", "カメラ", "緯度", "経度", "富士山", "北岳"]
+type: tutorials
+menu: main
+weight: 2011
+--->
+
 ## 緯度経度によるカメラ位置の指定
 
 緯度経度を指定してカメラ位置を指定する方法を説明します。
@@ -7,6 +18,7 @@ Mapray.Viewerクラスのカメラ位置を緯度・経度で指定する**Longi
 
 #### LongitudeAndLatitudeCameraPos.html
 
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -78,6 +90,7 @@ Mapray.Viewerクラスのカメラ位置を緯度・経度で指定する**Longi
 #### htmlの文字コード設定
 4行目でhtmlの文字コードを設定します。このサンプルコードでは、utf-8を設定します。
 
+<!--@ 4 -->
 ```HTML
 <meta charset="UTF-8">
 ```
@@ -85,6 +98,7 @@ Mapray.Viewerクラスのカメラ位置を緯度・経度で指定する**Longi
 #### タイトルの設定
 5行目でタイトルを設定します。このサンプルコードでは、LongitudeAndLatitudeCameraPosSampleを設定します。
 
+<!--@ 5 -->
 ```HTML
 <title>LongitudeAndLatitudeCameraPosSample</title>
 ```
@@ -92,6 +106,7 @@ Mapray.Viewerクラスのカメラ位置を緯度・経度で指定する**Longi
 #### JavaScriptファイルのパス設定
 6～7行目でhtmlで参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシートを設定します。
 
+<!--@ 6 -->
 ```HTML
 <script src="https://resource.mapray.com/mapray-js/v0.8.2/mapray.min.js"></script>
 <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
@@ -103,6 +118,7 @@ Mapray.Viewerクラスのカメラ位置を緯度・経度で指定する**Longi
 - body
 - div#mapray-container（地図表示部分）
 
+<!--@ 8 -->
 ```HTML
 <style>
     html, body {
@@ -121,6 +137,7 @@ Mapray.Viewerクラスのカメラ位置を緯度・経度で指定する**Longi
 #### 地図表示部分の要素
 23行目で地図表示部分のブロックを記述します。このブロックのidに紐づけて地図を表示します。
 
+<!--@ 23 -->
 ```HTML
 <div id="mapray-container"></div>
 ```
@@ -128,6 +145,7 @@ Mapray.Viewerクラスのカメラ位置を緯度・経度で指定する**Longi
 #### アクセストークンの設定
 29行目でアクセストークンを設定します。＜your access token here＞部分に取得したアクセストークンを設定します。
 
+<!--@ 28 -->
 ```JavaScript
 // Access Tokenを設定
 var accessToken = "<your access token here>";
@@ -138,6 +156,7 @@ var accessToken = "<your access token here>";
 汎用的な地図画像プロバイダクラスのコンストラクタの引数は、地図タイルのURLの先頭文字列、地図タイルのURLの末尾文字列、地図タイル画像の寸法、最小ズームレベル、最大ズームレベルの順に設定します。このサンプルコードでは、"https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/" 、".jpg"、256、2、18を設定します。
 クラウドDEMプロバイダクラスのコンストラクタの引数は、APIキーの文字列を設定します。このサンプルコードでは、アクセストークンを設定します。
 
+<!--@ 31 -->
 ```JavaScript
 // Viewerを作成する
 viewer = new mapray.Viewer(
@@ -171,6 +190,7 @@ Maprayを利用する場合の被写体（対象の3Dモデル）は、表示し
 まず、北岳の場所を緯度・経度・高度による球面座標系で用意します。サンプルコードでは、42行目の処理がその内容にあたります。
 しかし、前述のとおり、コンピュータグラフィックスで表現するためには、カメラと被写体は同一空間、つまり3次元の直交座標系上に存在する必要があります。42行目で用意した北岳の場所は、球面座標系で表現された位置なので、3次元の直交座標系に変換しなければ、2次元の画像として表現できないことになります。Maprayでは、この3次元の直交座標系に地心直交座標系を用いているため、球面座標系から地心直交座標系に変換する処理を行い、地心直交座標系での北岳の位置を求めます。サンプルコードでは、45～46行目の処理がその内容にあたります。maprayで用意されているgetMlocsToGocsMatrix関数は、球面座標系で表現された位置を地心直交座標系に変換することができます。
 
+<!--@ 41 -->
 ```JavaScript
 // 球面座標系（経度、緯度、高度）で視点を設定。座標は日本で2番目に高い山
 var home_pos = { longitude: 138.247739, latitude: 35.677604, height: 3000 };
@@ -189,6 +209,7 @@ lookat_matrix関数には、カメラの向きを定めるために、下記の3
 
 このサンプルコードでは、49行目で視点の位置を設定し、50行目で注視点の位置を設定しています。この視点と注視点の位置から撮影する向きは決まりますが、カメラ自体の向き（縦持ち・横持ちなどのカメラ自身の向き）はこれらの情報だけでは決定することができません。そこで、51行目でカメラの上方向を示すベクトルを設定することで、カメラ自体の向きを確定することができ、これらの情報をもとに変換行列を計算することができます。
 
+<!--@ 48 -->
 ```JavaScript
 // 視線方向を定義
 var cam_pos = mapray.GeoMath.createVector3([-3000, 2600, 1000]);
@@ -203,6 +224,7 @@ mapray.GeoMath.lookat_matrix(cam_pos, cam_end_pos, cam_up, view_to_home);
 ##### カメラ姿勢の適用
 これまでに求めたカメラ位置を表す変換行列と、カメラ方向を表す変換行列から、最終的なカメラ姿勢を計算し、Mapray.Viewerクラスのカメラに反映します。58～59行目では、mul_AA関数を用いて、2つの行列を乗算し、最終的なカメラ姿勢を計算しています。
 
+<!--@ 57 -->
 ```JavaScript
 // カメラの位置と視線方向からカメラの姿勢を変更
 var view_to_gocs = this.viewer.camera.view_to_gocs;
@@ -213,6 +235,7 @@ mapray.GeoMath.mul_AA(home_view_to_gocs, view_to_home, view_to_gocs);
 これまでに説明した内容で、3次元データを2次元画像として表現することができるようになりましたが、撮影するカメラには、画角や焦点距離など、カメラの詳細パラメータを設定することで、2次元画像に表現する内容を変更させることができます。
 このサンプルコードでは、カメラの見える範囲（投影範囲）を設定します。これは実際のカメラの焦点距離と同じ考え方で、撮影するカメラで見える範囲を設定することができます。コンピュータグラフィックスでは、カメラからの近い側を近接平面距離、遠い側を遠方平面距離と呼び、その2つの距離の中に含まれている3次元データを2次元画像で表現する対象としています。具体的には、62行目で指定した近接平面距離と63行目で指定した遠方平面距離の間になるため、このサンプルコードでは、カメラの位置から30～500,000mmの範囲が表示対象となっています。
 
+<!--@ 61 -->
 ```JavaScript
 // カメラのnear、farの設定
 this.viewer.camera.near = 30;

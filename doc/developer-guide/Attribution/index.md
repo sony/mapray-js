@@ -13,12 +13,7 @@ weight: 1090
 # Attribution
 Maprayのデータまたは、maprayJSを利用する場合には、Maprayの図形・文字商標（以下、ワードマーク）であるロゴとテキストによる著作権表示を両方行う必要があります。
 
-<div align="center">
-  <div>
-    <img src="images/attribution.png" />
-    <p><i>Attribution and wordmark</i></p>
-  </div>
-</div>
+![Attribution and wordmark](images/attribution.png)
 
 ## 著作権表示の方法
 Maprayを利用するためには、ワードマークとテキストを両方表示する必要がありますので、以下、個別に説明します。
@@ -26,7 +21,7 @@ Maprayを利用するためには、ワードマークとテキストを両方�
 ### ワードマーク
 MaprayのワードマークはMaprayの図形と文字商標になります。これは通常画面の左下に表示します。maprayJSの機能により、ワードマークを画面の別の端に移動することもできます。Maprayを利用しているソフトウェア・コンテンツであることが他の方によくわかるようにワードマークを表示して下さい。ワードマークは画面サイズの横幅が文字商標を表示するのに十分ではない場合に限り、図形商標のみの表示にすることができます。通常、maprayJSが自動的にワードマークを切り替えて表示します。ワードマークを削除したい場合は、ソニー株式会社のセールス宛てにWebサイトの[contact us](https://webform.secure.force.com/form/mapray1)からお問い合わせ下さい。
 ワードマークは以下のCSSをロードすると自動的に画面に表示されます。また、npmでも提供されますので環境に合わせてご選択下さい。
-```
+```html
     <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
 ```
 

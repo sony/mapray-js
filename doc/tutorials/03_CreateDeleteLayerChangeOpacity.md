@@ -1,3 +1,14 @@
+<!---
+title: "　3.2. レイヤの動的追加、削除と不透明度の変更"
+date: 2019-12-02T17:29:11+09:00
+draft: false
+description: "レイヤの動的追加、削除と不透明度の変更"
+keywords: ["チュートリアル", "レイヤ", "動的", "追加", "削除", "不透明度"]
+type: tutorials
+menu: main
+weight: 2032
+--->
+
 ## レイヤの動的追加、削除と不透明度の変更
 
 動的にレイヤを追加、削除する方法とレイヤの不透明度を変更する方法を説明します。
@@ -8,6 +19,7 @@
 
 #### CreateDeleteLayerChangeOpacity.html
 
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -107,6 +119,7 @@
 
 #### CreateDeleteLayerChangeOpacity.js
 
+<!--@ 1 -->
 ```JavaScript
 var layer_Control;
 
@@ -220,6 +233,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### htmlの文字コード設定
 4行目でhtmlの文字コードを設定します。このサンプルコードでは、utf-8を設定します。
 
+<!--@ 4 -->
 ```HTML
 <meta charset="utf-8">
 ```
@@ -227,6 +241,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### タイトルの設定
 5行目でタイトルの設定をします。このサンプルコードでは、CreateDeleteLayerChangeOpacitySampleを設定します。
 
+<!--@ 5 -->
 ```HTML
 <title>CreateDeleteLayerChangeOpacitySample</title>
 ```
@@ -234,6 +249,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### JavaScriptファイルのパス設定
 6～8行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、レイヤの動的追加、削除と不透明度を変更するJavaScriptファイル（**CreateDeleteLayerChangeOpacity.js**）を設定します。
 
+<!--@ 6 -->
 ```HTML
 <script src="https://resource.mapray.com/mapray-js/v0.8.2/mapray.min.js"></script>
 <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
@@ -252,6 +268,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 - div#DeleteLayerBox（レイヤ削除ボタン表示部分）
 - div#LayerOpacityBox（レイヤの不透明度変更コンボボックス表示部分）
 
+<!--@ 8 -->
 ```HTML
 <style>
     html, body {
@@ -320,6 +337,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 画面を表示する時に、レイヤ操作クラスを生成します。そのため、72行目でページ読み込み時に、レイヤを操作するクラスのインスタンスを生成する関数（**CreateLayerControlInstance**）を呼ぶように設定します。
 レイヤを操作するクラスのインスタンスを生成する関数は、JavaScriptのサンプルコードの詳細で説明します。
 
+<!--@ 72 -->
 ```HTML
 <body onload="CreateLayerControlInstance('mapray-container');">
 ```
@@ -328,6 +346,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 73行目で地図表示部分のブロックを記述します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 73 -->
 ```HTML
 <div id="mapray-container"></div>
 ```
@@ -336,6 +355,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 75～77行目でレイヤ追加ボタン表示部分のブロックを記述します。このブロックの中には、レイヤ追加ボタンを用意します。レイヤ追加ボタンには、ボタンがクリックされた時のイベント（onclick）に、レイヤ追加ボタンクリック時に呼び出す関数（**CreateLayerButtonClicked**）を設定します。
 レイヤ追加ボタンクリック時に呼び出す関数はJavaScriptのサンプルコードの詳細で説明します。
 
+<!--@ 75 -->
 ```HTML
 <div id="CreateLayerBox">
     <input type="button" value="Create Layer" onclick="CreateLayerButtonClicked()">
@@ -346,6 +366,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 79～81行目でレイヤ削除ボタン表示部分のブロックを記述します。このブロックの中には、レイヤ削除ボタンを用意します。レイヤ削除ボタンには、ボタンがクリックされた時のイベント（onclick）に、レイヤ削除ボタンクリック時に呼び出す関数（**DeleteLayerButtonClicked**）を設定します。
 レイヤ削除ボタンクリック時に呼び出す関数はJavaScriptのサンプルコードの詳細で説明します。
 
+<!--@ 79 -->
 ```HTML
 <div id="DeleteLayerBox">
     <input type="button" value="Delete Layer" onclick="DeleteLayerButtonClicked()">
@@ -357,6 +378,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 レイヤの不透明度を変更するコンボボックスが変更された時のイベント（onchange）に、コンボボックス変更時に呼び出す関数（**LayerOpacityValueChanged**）を設定します。
 コンボボックス変更時に呼び出す関数はJavaScriptのサンプルコードの詳細で説明します。
 
+<!--@ 83 -->
 ```HTML
 <div id="LayerOpacityBox">
     <p>Layer Opacity</p>
@@ -377,6 +399,7 @@ JavaScriptのサンプルコードの詳細を以下で解説します。
 3～88行目でレイヤを操作するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
 また、1行目でレイヤを操作するクラスのグローバル変数を定義します。
 
+<!--@ none -->
 ```JavaScript
 var layer_Control;
 
@@ -391,6 +414,7 @@ class LayerControl {
 5～18行目がレイヤを操作するクラスのコンストラクタです。引数として渡されるブロックのidに対して、mapray.Viewerを作成し、カメラの位置・向きの設定メソッドを呼び出します。mapray.Viewerのベース地図の画像プロバイダは、画像プロバイダの生成メソッドで取得した画像プロバイダを設定します。
 mapray.Viewerの作成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 5 -->
 ```JavaScript
 constructor(container) {
     // Access Tokenを設定
@@ -412,6 +436,7 @@ constructor(container) {
 21～24行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
 画像プロバイダの生成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 20 -->
 ```JavaScript
 // 画像プロバイダを生成
 createImageProvider() {
@@ -424,6 +449,7 @@ createImageProvider() {
 26～52行目がカメラの位置・向きの設定メソッドです。
 カメラの位置・向きの設定は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 26 -->
 ```JavaScript
 SetCamera() {
     // カメラ位置の設定
@@ -457,6 +483,7 @@ SetCamera() {
 #### レイヤの画像プロバイダの生成
 54～57行目がレイヤの画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。このサンプルコードでは、国土地理院の標準地図の画像プロバイダを生成します。
 画像プロバイダの生成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
+<!--@ 54 -->
 ```JavaScript
 createLayerImageProvider() {
     // レイヤー用の地図タイルを設定
@@ -468,6 +495,7 @@ createLayerImageProvider() {
 59～65行目がレイヤの追加メソッドです。新しいレイヤをシーンに追加します。追加するレイヤの不透明度は、レイヤの不透明度を変更するコンボボックスの値を設定します。
 viewerの地図レイヤを管理するオブジェクト（layers）にレイヤの情報を追加すると、シーンにレイヤが追加されます。地図レイヤを管理するオブジェクトの末尾にレイヤの情報を追加する関数が、64行目のadd関数です。add関数の引数はレイヤの情報を設定します。このサンプルコードでは、レイヤの情報である画像プロバイダ（image_provider）にレイヤの画像プロバイダの生成メソッドで生成した画像プロバイダを設定し、不透明度（opacity）に61行目で取得したレイヤの不透明度を変更するコンボボックスの値を設定します。
 
+<!--@ 59 -->
 ```JavaScript
 AddLayer() {
     // UI不透明度取得
@@ -482,6 +510,7 @@ AddLayer() {
 67～74行目がレイヤの削除メソッドです。地図レイヤを管理するオブジェクトの末尾のレイヤを削除します。
 73行目の地図レイヤを管理するオブジェクトのremove関数が、レイヤを削除する関数です。remove関数の引数は、削除したいレイヤのインデックスを設定します。このサンプルコードでは、remove関数の引数に末尾のレイヤのインデックスを設定します。
 
+<!--@ 67 -->
 ```JavaScript
 DeleteLayer() {
     // 末尾のレイヤーを削除
@@ -497,6 +526,7 @@ DeleteLayer() {
 76～86行目がレイヤの不透明度変更メソッドです。地図レイヤを管理するオブジェクトから末尾のレイヤを取得し、不透明度を変更します。
 85行目の地図レイヤを管理するオブジェクトのgetLayer関数が、地図レイヤを管理するオブジェクトからレイヤの情報を取得する関数です。getLayer関数の引数は、取得したいレイヤのインデックスを設定します。このサンプルコードでは、getLayer関数の引数に末尾のレイヤのインデックスを設定します。取得したレイヤに対して、85行目のレイヤの情報のsetOpacity関数を用いて、82行目で取得したレイヤの不透明度を変更するコンボボックスの値を設定しすることで、レイヤの不透明度を変更します。
 
+<!--@ 76 -->
 ```JavaScript
 ChangeOpacity() {
     if (this.viewer.layers.num_layers == 0) {
@@ -514,6 +544,7 @@ ChangeOpacity() {
 #### レイヤ操作のクラスのインスタンス生成
 90～92行目の関数は、引数として渡されるブロックのidを利用して、レイヤ操作クラスのインスタンスを生成します。
 
+<!--@ 90 -->
 ```JavaScript
 function CreateLayerControlInstance(container) {
     layer_Control = new LayerControl(container);
@@ -523,6 +554,7 @@ function CreateLayerControlInstance(container) {
 #### レイヤ追加ボタンクリック時のイベント
 94～96行目の関数は、レイヤ追加ボタンクリック時に呼ばれ、レイヤ操作クラスのレイヤ追加メソッドを呼び出します。
 
+<!--@ 94 -->
 ```JavaScript
 function CreateLayerButtonClicked() {
     layer_Control.AddLayer();
@@ -532,6 +564,7 @@ function CreateLayerButtonClicked() {
 #### レイヤ削除ボタンクリック時のイベント
 98～100行目の関数は、レイヤ削除ボタンクリック時に呼ばれ、レイヤ操作クラスのレイヤ削除メソッドを呼び出します。
 
+<!--@ 98 -->
 ```JavaScript
 function DeleteLayerButtonClicked() {
     layer_Control.DeleteLayer();
@@ -541,6 +574,7 @@ function DeleteLayerButtonClicked() {
 #### レイヤ不透明度変更時のイベント
 102～104行目の関数は、レイヤ不透明度変更時に呼ばれ、レイヤ操作クラスのレイヤ不透明度変更メソッドを呼び出します。
 
+<!--@ 102 -->
 ```JavaScript
 function LayerOpacityValueChanged() {
     layer_Control.ChangeOpacity();

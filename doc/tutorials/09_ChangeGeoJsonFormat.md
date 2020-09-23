@@ -1,3 +1,14 @@
+<!---
+title: "　9.2 GeoJSONのフォーマットの変更"
+date: 2019-12-02T18:35:00+09:00
+draft: false
+description: "GeoJSONのフォーマットの変更"
+keywords: ["チュートリアル", "モデル", "GeoJSON", "フォーマット", "新大阪駅", "京都駅", "線", "幅", "色", "カラーピッカー"]
+type: tutorials
+menu: main
+weight: 2092
+--->
+
 ## GeoJSONのフォーマットの変更
 
 GeoJSONデータのフォーマットを変更する方法を説明します。
@@ -8,6 +19,7 @@ GeoJSONデータのフォーマットを変更する**ChangeGeoJsonFormat.html**
 
 #### ChangeGeoJsonFormat.html
 
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -93,6 +105,7 @@ GeoJSONデータのフォーマットを変更する**ChangeGeoJsonFormat.html**
 
 #### ChangeGeoJsonFormat.js
 
+<!--@ 1 -->
 ```JavaScript
 var change_GeoJSON_Format;
 
@@ -233,6 +246,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### htmlの文字コード設定
 4行目でhtmlの文字コードを設定します。このサンプルコードでは、utf-8を設定します。
 
+<!--@ 4 -->
 ```HTML
 <meta charset="utf-8">
 ```
@@ -240,6 +254,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### タイトルの設定
 5行目でタイトルの設定をします。このサンプルコードでは、ChangeGeoJSONFormatSampleを設定します。
 
+<!--@ 5 -->
 ```HTML
 <title>ChangeGeoJSONFormatSample</title>
 ```
@@ -247,6 +262,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### JavaScriptファイルのパス設定
 6～8行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、GeoJSONデータのフォーマットを変えるJavaScriptファイル（**ChangeGeoJsonFormat.js**）を設定します。GeoJSONデータのフォーマットを変えるJavaScriptファイルの文字コードはutf-8に設定します。
 
+<!--@ 6 -->
 ```HTML
 <script src="https://resource.mapray.com/mapray-js/v0.8.2/mapray.min.js"></script>
 <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
@@ -264,6 +280,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 - div#LineWidthBox（線幅変更コンボボックス表示部分）
 - div#LineColorBox（線色変更ボタン表示部分）
 
+<!--@ 9 -->
 ```HTML
 <style>
     html, body {
@@ -320,6 +337,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 画面を表示するときに、GeoJSONデータフォーマット変更クラスを生成します。そのため、60行目でページ読み込み時に、GeoJSONデータのフォーマットを変更するクラスのインスタンスを生成する関数（**CreateChangeGeoJSONFormatInstance**）を呼ぶように設定します。
 GeoJSONデータのフォーマットを変更するクラスのインスタンスを生成する関数は、JavaScriptのサンプルコードの詳細で説明します。
 
+<!--@ 60 -->
 ```HTML
 <body onload="CreateChangeGeoJSONFormatInstance('mapray-container');">
 ```
@@ -328,6 +346,7 @@ GeoJSONデータのフォーマットを変更するクラスのインスタン�
 61行目で地図表示部分のブロックを記述します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 61 -->
 ```HTML
 <div id="mapray-container"></div>
 ```
@@ -337,6 +356,7 @@ GeoJSONデータのフォーマットを変更するクラスのインスタン�
 線幅を変更するコンボボックスが変更された時のイベント（onchange）に、線幅のコンボボックス変更時に呼び出す関数（**LineWidthValueChanged**）を設定します。
 線幅のコンボボックス変更時に呼び出す関数はJavaScriptのサンプルコードの詳細で説明します。
 
+<!--@ 63 -->
 ```HTML
 <div id="LineWidthBox">
     <p>Line Width</p>
@@ -356,6 +376,7 @@ GeoJSONデータのフォーマットを変更するクラスのインスタン�
 線色変更ボタンには、カラーピッカーの色が変更された時のイベント（onchange）に、線色変更時に呼び出す関数（**LineColorValueChanged**）を設定します。
 線色変更時に呼び出す関数はJavaScriptのサンプルコードの詳細で説明します。
 
+<!--@ 75 -->
 ```HTML
 <div id="LineColorBox">
     <p>Line Color</p>
@@ -371,6 +392,7 @@ JavaScriptのサンプルコードの詳細を以下で解説します。
 GeoJSONデータのフォーマットを変更するクラスは、mapray.RenderCallbackクラスを継承します。
 また、1行目でGeoJSONデータのフォーマットを変更するクラスのグローバル変数を定義します。
 
+<!--@ none -->
 ```JavaScript
 var change_GeoJSON_Format;
 
@@ -382,10 +404,11 @@ class ChangeGeoJSONFormat extends mapray.RenderCallback {
 ```
 
 #### コンストラクタ
-3～22行目がGeoJSONデータのフォーマットを変更するクラスのコンストラクタです。
+4～22行目がGeoJSONデータのフォーマットを変更するクラスのコンストラクタです。
 引数として渡されるブロックのidに対して、mapray.Viewerを作成し、カメラの位置・向きの設定メソッドを呼び出します。その後、文字の表示メソッドとシーンのロードメソッドを呼び出します。mapray.Viewerのベース地図の画像プロバイダは、画像プロバイダの生成メソッドで取得した画像プロバイダを設定します。
 mapray.Viewerの作成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 4 -->
 ```JavaScript
 constructor(container) {
     super();
@@ -412,6 +435,7 @@ constructor(container) {
 25～28行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
 画像プロバイダの生成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 24 -->
 ```JavaScript
 // 画像プロバイダを生成
 createImageProvider() {
@@ -424,6 +448,7 @@ createImageProvider() {
 31～55行目がカメラの位置・向きの設定メソッドです。
 カメラの位置・向きの設定は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 30 -->
 ```JavaScript
 // カメラ位置の設定
 SetCamera() {
@@ -456,6 +481,7 @@ SetCamera() {
 #### 文字の表示
 58～74行目で、それぞれの駅名を表示するための文字をmapray.Viewerのシーンに追加します。文字の表示方法の詳細は、ヘルプページ『**文字の表示（addTextを使った表示）**』を参照してください。
 
+<!--@ 57 -->
 ```JavaScript
 // テキストの表示
 AddText() {
@@ -482,6 +508,7 @@ AddText() {
 GeoJSONLoaderクラス生成時の引数には、GeoJSONファイルのエンティティを追加するシーン、読み込むGeoJSONファイルのURL、オプション集合の順に指定します。このサンプルコードでは、viewerクラスのシーン、GeoJSONファイルのURL、オプション集合の順に指定します。オプション集合には、シーンのロードが終了した時のコールバック関数、線の色、線の幅、指定高度優先可否、指定高度をの順に指定します。読み込むGeoJSONファイルのURLは、httpもしくはhttpsでアクセスできるURLを指定します。最後に、86行目のload関数を呼び出すことでシーンの読み込みができます。
 なお、GeoJSONLoaderクラスは、GeoJSONデータのfeatureごとのロード時にコールバック関数が呼ばれ、GeoJSONデータの任意のproperty属性にアクセスすることができます。また、propertyに書かれているkeyの値をコールバック関数内で取得することも可能です。
 
+<!--@ 76 -->
 ```JavaScript
 // シーンの読み込み
 LoadScene() {
@@ -497,8 +524,9 @@ LoadScene() {
 ```
 
 #### 線の幅変更
-89～96行目が線幅変更メソッドです。91行目で線幅を変更するコンボボックスから値を取得します。そして、94行目のviewer.sceneのgetEntity関数で表示している線のエンティティを取得し、95行目で取得した値を指定することで、線の幅を変更します。このサンプルコードでは、GeoJSONデータは線のエンティティとなり、インデックスは1番目となるため、getEntity関数には1を指定します。
+88～95行目が線幅変更メソッドです。99行目で線幅を変更するコンボボックスから値を取得します。そして、93行目のviewer.sceneのgetEntity関数で表示している線のエンティティを取得し、94行目で取得した値を指定することで、線の幅を変更します。このサンプルコードでは、GeoJSONデータは線のエンティティとなり、インデックスは1番目となるため、getEntity関数には1を指定します。
 
+<!--@ 88 -->
 ```JavaScript
 ChangeLineWidth() {
     // プルダウンの値取得
@@ -511,8 +539,9 @@ ChangeLineWidth() {
 ```
 
 #### 線の色変更
-98～108行目が線色変更メソッドです。100行目でカラーピッカーから値を取得し、103行目でカラーピッカーの値をRGBの配列に変換します。そして、106行目のviewer.sceneのgetEntity関数で表示している線のエンティティを取得し、107行目でその値を指定することで、線の色を変更します。このサンプルコードでは、GeoJSONデータは線のエンティティとなり、インデックスは1番目となるため、getEntity関数には1を指定します。
+97～107行目が線色変更メソッドです。99行目でカラーピッカーから値を取得し、102行目でカラーピッカーの値をRGBの配列に変換します。そして、105行目のviewer.sceneのgetEntity関数で表示している線のエンティティを取得し、106行目でその値を指定することで、線の色を変更します。このサンプルコードでは、GeoJSONデータは線のエンティティとなり、インデックスは1番目となるため、getEntity関数には1を指定します。
 
+<!--@ 97 -->
 ```JavaScript
 ChangeLineColor() {
     // プルダウンの値取得
@@ -528,9 +557,10 @@ ChangeLineColor() {
 ```
 
 #### 色情報の変換
-110～118行目が色情報の変換メソッドです。
+109～117行目が色情報の変換メソッドです。
 色情報の変換方法の詳細は、ヘルプページ『**文字のフォーマットの変更**』を参照してください。
 
+<!--@ 109 -->
 ```JavaScript
 convertColorChordToRGB(colorChord) {
     var colorChordChars = colorChord.split('')
@@ -544,8 +574,9 @@ convertColorChordToRGB(colorChord) {
 ```
 
 #### GeoJSONデータのフォーマット変更クラスのインスタンス生成
-122～124行目の関数は、引数として渡されるブロックのidを利用して、GeoJSONデータのフォーマット変更クラスのインスタンスを生成します。
+121～123行目の関数は、引数として渡されるブロックのidを利用して、GeoJSONデータのフォーマット変更クラスのインスタンスを生成します。
 
+<!--@ 121 -->
 ```JavaScript
 function CreateChangeGeoJSONFormatInstance(container) {
     change_GeoJSON_Format = new ChangeGeoJSONFormat(container);
@@ -553,8 +584,9 @@ function CreateChangeGeoJSONFormatInstance(container) {
 ```
 
 #### 線幅変更時のイベント
-126～128行目の関数は、線幅変更時に呼ばれ、GeoJSONデータのフォーマット変更クラスの線幅変更メソッドを呼び出します。
+125～127行目の関数は、線幅変更時に呼ばれ、GeoJSONデータのフォーマット変更クラスの線幅変更メソッドを呼び出します。
 
+<!--@ 125 -->
 ```JavaScript
 function LineWidthValueChanged() {
     change_GeoJSON_Format.ChangeLineWidth()
@@ -562,8 +594,9 @@ function LineWidthValueChanged() {
 ```
 
 #### 線色変更時のイベント
-130～132行目の関数は、線色変更時に呼ばれ、GeoJSONデータのフォーマット変更クラスの線色変更メソッドを呼び出します。
+129～131行目の関数は、線色変更時に呼ばれ、GeoJSONデータのフォーマット変更クラスの線色変更メソッドを呼び出します。
 
+<!--@ 129 -->
 ```JavaScript
 function LineColorValueChanged() {
     change_GeoJSON_Format.ChangeLineColor()

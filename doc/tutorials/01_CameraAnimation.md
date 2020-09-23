@@ -1,3 +1,14 @@
+<!---
+title: "　1.2 カメラのアニメーション"
+date: 2019-12-02T15:00:00+09:00
+draft: false
+description: "動的にカメラの姿勢を変更するアニメーションを作成する"
+keywords: ["チュートリアル", "カメラ", "姿勢", "アニメーション", "富士山", "回転"]
+type: tutorials
+menu: main
+weight: 2012
+--->
+
 ## カメラのアニメーション
 動的にカメラの姿勢を変更するアニメーションを作成する方法を説明します。
 
@@ -7,6 +18,7 @@
 
 #### CameraAnimation.html
 
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -123,6 +135,7 @@
 1～25行目でhtmlを記述しています。ヘルプページ『**緯度経度によるカメラ位置の指定**』で示したhtmlファイルからタイトルのみを変更します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -161,6 +174,7 @@
 - 1秒当たりの回転角度　⇒　5度
 - 現在の回転角度　⇒　0度
 
+<!--@ 28 -->
 ```JavaScript
 // サブクラスのコンストラクタ定義
 function CameraAnimation() {
@@ -189,6 +203,7 @@ function CameraAnimation() {
 #### RenderCallbackの継承
 52行目で、カメラのアニメーションクラスのプロトタイプに、Object.create関数で作成したRenderCallbackクラスのプロトタイプ設定することで、RenderCallbackクラスを継承します。
 
+<!--@ 51 -->
 ```JavaScript
 // CameraAnimationにmapray.RenderCallbackを継承させる
 CameraAnimation.prototype = Object.create(mapray.RenderCallback.prototype);
@@ -201,6 +216,7 @@ CameraAnimation.prototype = Object.create(mapray.RenderCallback.prototype);
 そして、95行目で、これまでに求めたカメラ位置を表す変換行列と、ビュー変換行列を掛け合わせることで、最終的なカメラ姿勢を計算します。
 最後に、98～102行目でカメラの投影範囲を設定し、現在の回転角度を最新の状態に更新します。
 
+<!--@ 54 -->
 ```JavaScript
 // 毎フレームの処理を定義
 CameraAnimation.prototype.onUpdateFrame = function(delta_time) {
@@ -257,6 +273,7 @@ CameraAnimation.prototype.onUpdateFrame = function(delta_time) {
 #### クラスのインスタンス生成
 106行目で、カメラアニメーションクラスのインスタンスを生成し、カメラのアニメーションが動作するようにします。
 
+<!--@ 105 -->
 ```JavaScript
 // CameraAnimationのインスタンス作成
 var cam_Animation = new CameraAnimation();
@@ -284,6 +301,7 @@ var cam_Animation = new CameraAnimation();
 - 動的に変更する画角の最大値　⇒　70度
 - 現在の画角　⇒　0度
 
+<!--@ none -->
 ```JavaScript
 // サブクラスのコンストラクタ定義
 function CameraAnimation() {
@@ -309,6 +327,7 @@ function CameraAnimation() {
 
 現在の画角は、現在の回転角度が、0～180度の間は最小画角から最大画角に遷移するように、180～360度の間は最大画角から最小画角に遷移するように設定します。
 
+<!--@ none -->
 ```JavaScript
 // 毎フレームの処理を定義
 CameraAnimation.prototype.onUpdateFrame = function(delta_time) {
