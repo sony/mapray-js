@@ -1,3 +1,14 @@
+<!---
+title: "　5.2 線の表示(addPointsを使った表示)"
+date: 2019-12-02T18:20:00+09:00
+draft: false
+description: "線の表示(addPointsを使った表示)"
+keywords: ["チュートリアル", "直線", "表示", "addPoints", "皇居", "東京タワー"]
+type: tutorials
+menu: main
+weight: 2051
+--->
+
 ## 線の表示（addPointsを使った表示）
 
 mapray.MarkerLineEntityのaddPointsを使って線を表示する方法を説明します。
@@ -6,6 +17,7 @@ mapray.MarkerLineEntityのaddPointsを使って線を表示する方法を説明
 mapray.MarkerLineEntityのaddPointsを使って線を表示する**AddLine.html**のサンプルコードです。
 このサンプルコードでは、皇居と東京タワーを結ぶ直線を表示します。
 
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -116,6 +128,7 @@ mapray.MarkerLineEntityのaddPointsを使って線を表示する**AddLine.html*
 1～25行目がでhtmlの定義です。ヘルプページ『**緯度経度によるカメラ位置の指定**』で示したhtmlファイルからタイトルのみを変更します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -148,6 +161,7 @@ mapray.MarkerLineEntityのaddPointsを使って線を表示する**AddLine.html*
 29～63行目でMapray.Viewerクラスを作成し、カメラ位置・向きを設定します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 28 -->
 ```JavaScript
 // Access Tokenを設定
 var accessToken = "<your access token here>";
@@ -190,6 +204,7 @@ viewer.camera.far = 500000;
 #### MarkerLineEntityの生成
 線を表示するためには、線の情報を管理するクラス（MarkerLineEntity）が必要です。そのため、66行目でMarkerLineEntityのインスタンスを生成します。コンストラクタの引数には、作成したMapray.Viewerのシーン（Mapray.Viewer.scene）を指定します。
 
+<!--@ 65 -->
 ```JavaScript
 //直線のエンティティを作成
 var line_entity = new mapray.MarkerLineEntity(viewer.scene);
@@ -198,6 +213,7 @@ var line_entity = new mapray.MarkerLineEntity(viewer.scene);
 #### 線の表示座標の定義
 69～72行目で、線の端点となる皇居と東京タワーの経度・緯度・高度を定義します。
 
+<!--@ 68 -->
 ```JavaScript
 // 皇居の座標を設定
 var line_fast_position = { longitude: 139.7528, latitude: 35.685175, height: 350 };
@@ -209,6 +225,7 @@ var line_second_position = { longitude: 139.745433, latitude: 35.658581, height:
 #### 線の座標の設定
 線の座標を設定するaddPoints関数は、線の座標の配列を引数で指定します。そのため、75～76行目で先ほど定義した皇居と東京タワーの座標を配列に格納します。ただし、線の座標の配列は、対象の座標を緯度、経度、高度の順で格納することとします。その配列を80行目のaddPoints関数に渡すことで、線の座標を設定します。
 
+<!--@ 74 -->
 ```JavaScript
 // 各座標を配列に保存して、直線を追加
 var position_array = [line_fast_position.longitude, line_fast_position.latitude, line_fast_position.height,
@@ -219,6 +236,7 @@ line_entity.addPoints(position_array);
 #### MarkerLineEntityの追加
 80行目でMarkerLineEntityを作成したmapray.Viewerのシーンに追加します。mapray.Viewerのシーンに追加することで線が表示されます。
 
+<!--@ 79 -->
 ```JavaScript
 // エンティティをシーンに追加
 viewer.scene.addEntity(line_entity);
@@ -227,6 +245,7 @@ viewer.scene.addEntity(line_entity);
 #### 文字の表示
 83～100行目で、それぞれの地名を表示するための文字をmapray.Viewerのシーンに追加します。文字の表示方法の詳細は、ヘルプページ『**文字の表示（addTextを使った表示）**』を参照してください。
 
+<!--@ 82 -->
 ```JavaScript
 // 文字のエンティティを作成
 var font_entity = new mapray.TextEntity(viewer.scene);

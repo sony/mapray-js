@@ -1,3 +1,14 @@
+<!---
+title: "　2.1 マウス操作によるカメラ操作及び指定位置の緯度・経度の取得"
+date: 2019-12-02T13:24:57+09:00
+draft: false
+description: "マウス操作によるカメラ操作および指定位置の緯度・経度の取得"
+keywords: ["チュートリアル", "マウス", "ホイール", "ドラッグ", "カメラ", "緯度", "経度"]
+type: tutorials
+menu: main
+weight: 2021
+--->
+
 ## マウス操作によるカメラ操作及び指定位置の緯度・経度の取得
 マウス操作でカメラの操作や指定した位置の緯度・経度を取得する方法を説明します。
 
@@ -7,6 +18,7 @@
 
 #### CameraControlWithMouse.html
 
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -89,6 +101,7 @@
 
 #### CheckInputKeyAndMouse.js
 
+<!--@ 1 -->
 ```JavaScript
 class CheckInput {
 
@@ -273,6 +286,7 @@ class CheckInput {
 
 #### CameraControlWithMouse.js
 
+<!--@ 1 -->
 ```JavaScript
 var GeoMath = mapray.GeoMath;
 
@@ -498,6 +512,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### htmlの文字コード設定
 4行目でhtmlの文字コードを設定します。このサンプルコードでは、utf-8を設定します。
 
+<!--@ 4 -->
 ```HTML
 <meta charset="utf-8">
 ```
@@ -505,6 +520,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### タイトルの設定
 5行目でタイトルを設定します。このサンプルコードでは、CameraControlWithMouseSampleを設定します。
 
+<!--@ 5 -->
 ```HTML
 <title>CameraControlWithMouseSample</title>
 ```
@@ -512,6 +528,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### JavaScriptファイルのパス設定
 6～9行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、カメラを操作するJavaScriptファイル（**CameraControlWithMouse.js**）、マウスの入力を検知するJavaScriptファイル（**CheckInputKeyAndMouse.js**）を設定します。
 
+<!--@ 6 -->
 ```HTML
 <script src="https://resource.mapray.com/mapray-js/v0.8.2/mapray.min.js"></script>
 <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
@@ -529,6 +546,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 - div#LatitudeStringBox（緯度表示部分）
 - div#HeightStringBox（高度表示部分）
 
+<!--@ 10 -->
 ```HTML
 <style>
     html, body {
@@ -583,6 +601,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 画面を表示する時に、カメラを操作するクラスを生成します。そのため、59行目でページの読み込み時に、地図表示部分のブロックのidからカメラを操作するクラスのインスタンスを生成します。
 カメラを操作するはJavaScriptのサンプルコードの詳細で説明します。
 
+<!--@ 59 -->
 ```HTML
 <body onload="new CameraControl('mapray-container');">
 ```
@@ -591,6 +610,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 60行目で地図表示部分のブロックを記述します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 60 -->
 ```HTML
 <div id="mapray-container"></div>
 ```
@@ -598,6 +618,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### クリック位置の緯度・経度・高度表示のUI
 62～75行目で緯度・経度・高度を表示するブロックを記述します。それぞれのブロックの中には、該当する数値を表示する領域を用意します。
 
+<!--@ 62 -->
 ```HTML
 <div id="LongitudeStringBox">
     <p style="margin-left:5px;">Longitude:</p>
@@ -621,6 +642,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### クラス
 1～179行目で、マウスの入力を検知するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
 
+<!--@ none -->
 ```JavaScript
 class CheckInput {
 
@@ -652,6 +674,7 @@ class CheckInput {
 - マウスホイールが動いた時のイベント（24行目）
 - FireFox用のマウスホイールが動いた時のイベント（27行目）
 
+<!--@ 3 -->
 ```JavaScript
 constructor(viewer) {
     // マウス、キーのイベントを設定
@@ -684,6 +707,7 @@ constructor(viewer) {
 #### クリック状態の取得
 30～38行目がクリック状態の取得メソッドです。このメソッドはクリックしたかどうかを返し、クリックされている場合は、引数のmousePosにクリックされた位置を格納します。
 
+<!--@ 30 -->
 ```JavaScript
 IsMouseClick(mousePos) {
     if(this.is_Mouse_Click){
@@ -699,6 +723,7 @@ IsMouseClick(mousePos) {
 #### カメラの前進状態の取得
 40～42行目がカメラの前進状態の取得メソッドです。このメソッドは、カメラが前進中かどうかを返します。
 
+<!--@ 40 -->
 ```JavaScript
 IsForward() {
     return this.is_Forward;
@@ -708,6 +733,7 @@ IsForward() {
 #### カメラの後進状態の取得
 44～46行目がカメラの後進状態の取得メソッドです。このメソッドは、カメラが後進中かどうかを返します。
 
+<!--@ 44 -->
 ```JavaScript
 IsBackward() {
     return this.is_Backward;
@@ -717,6 +743,7 @@ IsBackward() {
 #### カメラの回転状態の取得
 48～57行目がカメラの回転状態の取得メソッドです。このメソッドは、カメラが回転中かどうかを返し、回転中の場合は、現在のマウス位置と1フレーム前のマウス位置からマウスの移動方向を求め、引数のdragVecに格納します。
 
+<!--@ 48 -->
 ```JavaScript
 IsCameraTurn(dragVec) {
     if (this.is_Camera_Turn == true) {
@@ -733,6 +760,7 @@ IsCameraTurn(dragVec) {
 #### カメラの高度変更フラグの取得
 59～68行目がカメラの高度変更状態の取得メソッドです。このメソッドは、カメラが高度変更中かどうかを返し、高度変更中の場合は、現在のマウス位置と1フレーム前のマウス位置から移動方向を求め、引数のdragVecに格納します。
 
+<!--@ 59 -->
 ```JavaScript
 IsCameraHeightMove(dragVec) {
     if (this.is_Camera_Height_Move == true) {
@@ -765,6 +793,7 @@ IsCameraHeightMove(dragVec) {
 - クリックしたかどうか　⇒　true
 - クリックした画面の位置　⇒　現在のマウス位置
 
+<!--@ 70 -->
 ```JavaScript
 _onMouseDown(event) {
     event.preventDefault();
@@ -810,6 +839,7 @@ _onMouseDown(event) {
 - 高度変更時の1フレーム前のマウス位置　⇒　高度変更時のマウス位置
 - 高度変更時のマウス位置　⇒　現在のマウス位置
 
+<!--@ 101 -->
 ```JavaScript
 _onMouseMove(event) {
     event.preventDefault();
@@ -842,6 +872,7 @@ _onMouseMove(event) {
 - 回転時のマウス位置　⇒　全て0
 - 高度変更時のマウス位置　⇒　全て0
 
+<!--@ 121 -->
 ```JavaScript
 _onMouseUp(event) {
     event.preventDefault();
@@ -872,6 +903,7 @@ _onMouseUp(event) {
 - 回転中かどうか　⇒　false
 - 高度変更中かどうか　⇒　false
 
+<!--@ 140 -->
 ```JavaScript
 _onBlur(event) {
     event.preventDefault();
@@ -888,6 +920,7 @@ _onBlur(event) {
 #### マウスホイールが動いた時のイベント
 151～160行目がマウスホイールが動いた時のイベントメソッドです。このサンプルコードでは、マウスホイールを前に動かすと前進中とし、後ろに動かすと後進中とします。
 
+<!--@ 151 -->
 ```JavaScript
 _onMouseScroll(event) {
     event.preventDefault();
@@ -904,6 +937,7 @@ _onMouseScroll(event) {
 #### マウスホイールが動いた時のスクロールイベント（FireFox用）
 162～171行目がFireFox用のマウスホイールが動いた時のイベントメソッドです。このメソッドは、このサンプルコードでは、マウスホイールのスクロールイベントメソッドと同様の動きとしますが、マウスホイールの移動量を表す変数が異なります。
 
+<!--@ 162 -->
 ```JavaScript
 _onMouseScroll_FireFox(event) {
     event.preventDefault();
@@ -920,6 +954,7 @@ _onMouseScroll_FireFox(event) {
 #### フレーム終了時のリセット
 173～177行目がフレーム終了時のリセットメソッドです。このメソッドは、前進中の状態、後進中の状態を初期化します。
 
+<!--@ 173 -->
 ```JavaScript
 endFrame() {
     // フレーム終了時
@@ -935,6 +970,7 @@ endFrame() {
 3～216行目で、カメラを操作するクラスを定義します。カメラをマウスで操作するために、カメラを操作するクラスはmapray.RenderCallbackクラスを継承します。
 1行目のグローバル変数は、数学関連の関数または定数を定義するユーティリティークラスです。
 
+<!--@ none -->
 ```JavaScript
 var GeoMath = mapray.GeoMath;
 
@@ -960,6 +996,7 @@ class CameraControl extends mapray.RenderCallback{
 
 最後に、カメラの位置・向きの設定メソッドを呼び出します。
 
+<!--@ 5 -->
 ```JavaScript
 constructor(container) {
     super();
@@ -998,6 +1035,7 @@ constructor(container) {
 また、63～65行目では、マウスをクリックした時に、その地点の緯度・経度・高度を画面に表示させるメソッドを呼び出し、画面に表示される緯度・経度・高度を変更します。
 最後に、フレーム終了時のリセットメソッドを呼びだし、カメラ姿勢の更新処理を終了します。
 
+<!--@ 34 -->
 ```JavaScript
 onUpdateFrame(delta_time)  // override
 {
@@ -1040,6 +1078,7 @@ onUpdateFrame(delta_time)  // override
 71～73行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
 画像プロバイダの生成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 71 -->
 ```JavaScript
 createImageProvider() {
     return new mapray.StandardImageProvider("https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", ".jpg", 256, 2, 18);
@@ -1053,6 +1092,7 @@ createImageProvider() {
 そして、116～117行目で、これまでに求めたカメラ位置を表す変換行列と、ビュー変換行列を掛け合わせることで、最終的なカメラ姿勢を計算します。
 最後に、120行目で、視線方向ベクトルを更新し、122～123行目でカメラの投影範囲を設定し、現在のカメラ視線を最新の状態に更新します。
 
+<!--@ 75 -->
 ```JavaScript
 SetCamera() {
     // カメラ位置の設定
@@ -1111,6 +1151,7 @@ SetCamera() {
 127～143行目がクリックした位置の緯度・経度・高度表示メソッドです。このサンプルコードでは、クリックした位置から視線方向に伸ばした直線と地表面の交点を求め、その位置の緯度・経度・高度を画面に表示します。
 まず、129行目のgetCanvasRay関数で、クリックした位置から視線方向に伸ばした直線（レイ）を取得します。次に、132行目で行目のgetRayIntersection関数で、先ほど取得したレイと地表の交点を取得します。最後に、136～137行目のsetFromGocs関数で、先ほど取得した交点の緯度・経度・高度を計算し、140～142行目で、その緯度・経度・高度を対応したテキストに設定します。
 
+<!--@ 127 -->
 ```JavaScript
 SetClickPosLongitudeAndLatitudeAndHeight(clickPos) {
     // キャンバス座標のレイを取得
@@ -1134,8 +1175,9 @@ SetClickPosLongitudeAndLatitudeAndHeight(clickPos) {
 
 #### カメラ位置の前進
 146～163行目がカメラ位置の前進メソッドです。このサンプルコードでは、カメラの位置が視線方向に移動します。
-まず、148～140行目のgetMlocsToGocsMatrix関数で、カメラ位置の地心直交座標への変換行列を作成します。次に、152～154行目で、視線方向ベクトルと前進、後退時の移動量の補正値を使って、前進させたカメラ位置を求めます。最後に、157～158行目のsetFromGocs関数で前進させたカメラ位置の球面座標を計算し、160～162行目でその座標をカメラ位置へ反映します。
+まず、148～149行目のgetMlocsToGocsMatrix関数で、カメラ位置の地心直交座標への変換行列を作成します。次に、152～154行目で、視線方向ベクトルと前進、後退時の移動量の補正値を使って、前進させたカメラ位置を求めます。最後に、157～158行目のsetFromGocs関数で前進させたカメラ位置の球面座標を計算し、160～162行目でその座標をカメラ位置へ反映します。
 
+<!--@ 146 -->
 ```JavaScript
 ForwardCameraPos() {
     // 球面座標から地心直交座標へ変換
@@ -1161,6 +1203,7 @@ ForwardCameraPos() {
 165～182行目がカメラ位置の後進メソッドです。このサンプルコードでは、カメラの位置が視線の逆方向に移動します。
 このメソッドは、前述したカメラ位置の前進メソッドを逆方向に動くようにしたメソッドです。
 
+<!--@ 165 -->
 ```JavaScript
 BackwardCameraPos() {
     // 球面座標から地心直交座標へ変換
@@ -1186,6 +1229,7 @@ BackwardCameraPos() {
 184～201行目がカメラの回転角度の更新メソッドです。このサンプルコードでは、ドラッグした方向によってカメラの回転角度と仰俯角を更新します。
 まず、186～187行目でドラッグした方向とカメラの回転角度、仰俯角更新時の補正値を使って、カメラの回転角度と仰俯角の更新量を求めます。次に。先ほど求めた更新量の絶対値が0.3よりも小さい場合は、190～196行目で更新量を0にします。最後に、199～200行目でカメラの回転角度と仰俯角の更新量を使って、カメラの角度を更新します。
 
+<!--@ 184 -->
 ```JavaScript
 TurnCamera(drag_Vec) {
     // ターン、仰俯角の角度の更新量決定
@@ -1211,6 +1255,7 @@ TurnCamera(drag_Vec) {
 203～214行目がカメラの高度の更新メソッドです。このサンプルコードでは、ドラッグした方向によってカメラの高度を更新します。
 まず、205行目でドラッグした方向とカメラの高度更新時の補正値を使って、カメラの高度の更新量を求めます。次に、先ほど求めた更新量の絶対値が1よりも小さい場合は、208～210行目で更新量を0にします。最後に、213行目でカメラの高度の更新量を使って、高度を更新します。
 
+<!--@ 203 -->
 ```JavaScript
 UpdateCameraHeight(drag_Vec) {
     // 高度の変更量決定

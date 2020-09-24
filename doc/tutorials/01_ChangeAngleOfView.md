@@ -1,3 +1,14 @@
+<!---
+title: "　1.3 画角の変更"
+date: 2019-12-02T15:00:00+09:00
+draft: false
+description: "カメラの画角を変更する方法"
+keywords: ["チュートリアル", "画角", "カメラ", "画角", "富士山", "北岳"]
+type: tutorials
+menu: main
+weight: 2013
+--->
+
 ## 画角の変更
 
 カメラの画角を変更する方法を説明します。
@@ -7,9 +18,9 @@ mapray.Viewerクラスの画角を指定する**ChangeAngleOfView30.html**のサ
 
 #### ChangeAngleOfView30.html
 
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
-<html>
 <html>
     <head>
         <meta charset="UTF-8">
@@ -84,6 +95,7 @@ mapray.Viewerクラスの画角を指定する**ChangeAngleOfView30.html**のサ
 1～25行目がhtmlの定義です。ヘルプページ『**緯度経度によるカメラ位置の指定**』で示したhtmlファイルからタイトルのみを変更します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -116,6 +128,7 @@ mapray.Viewerクラスの画角を指定する**ChangeAngleOfView30.html**のサ
 29～63行目でmapray.Viewerクラスを作成し、カメラ位置・向きを設定します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 28 -->
 ```JavaScript
 // Access Tokenを設定
 var accessToken = "<your access token here>";
@@ -158,6 +171,7 @@ viewer.camera.far = 500000;
 #### カメラの画角の指定
 66行目で画角を指定します。設定する値は正の角度（度）です。
 
+<!--@ 65 -->
 ```JavaScript
 // カメラの画角を30°に設定
 viewer.camera.fov = 30;

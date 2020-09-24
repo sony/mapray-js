@@ -1,3 +1,13 @@
+<!---
+title: "　5.3 線のフォーマットの変更"
+date: 2019-12-021T18:22:00+09:00
+draft: false
+description: "線のフォーマットの変更"
+keywords: ["チュートリアル", "直線", "幅", "色", "フォーマット", "変更"]
+type: tutorials
+menu: main
+weight: 2053
+--->
 ## 線のフォーマットの変更
 
 線のフォーマットを変更する方法を説明します。
@@ -8,6 +18,7 @@
 
 #### ChangeLineFormat.html
 
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -93,6 +104,7 @@
 
 #### ChangeLineFormat.js
 
+<!--@ 1 -->
 ```JavaScript
 var change_Line_Format;
 
@@ -255,6 +267,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### htmlの文字コード設定
 4行目でhtmlの文字コードを設定します。このサンプルコードでは、utf-8を設定します。
 
+<!--@ 4 -->
 ```HTML
 <meta charset="utf-8">
 ```
@@ -262,6 +275,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### タイトルの設定
 5行目でタイトルの設定をします。このサンプルコードでは、ChangeLineFormatSampleを設定します。
 
+<!--@ 5 -->
 ```HTML
 <title>ChangeLineFormatSample</title>
 ```
@@ -269,6 +283,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### JavaScriptファイルのパス設定
 6～8行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、線のフォーマットを変えるJavaScriptファイル（**ChangeLineFormat.js**）を設定します。線のフォーマットを変えるJavaScriptファイルの文字コードはutf-8に設定します。
 
+<!--@ 6 -->
 ```HTML
 <script src="https://resource.mapray.com/mapray-js/v0.8.2/mapray.min.js"></script>
 <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
@@ -286,6 +301,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 - div#LineWidthBox（線幅変更コンボボックス表示部分）
 - div#LineColorBox（線色変更ボタン表示部分）
 
+<!--@ 8 -->
 ```HTML
 <style>
     html, body {
@@ -342,6 +358,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 画面を表示するときに、線フォーマット変更クラスを生成します。そのため、60行目でページ読み込み時に、線のフォーマットを変更するクラスのインスタンスを生成する関数（**CreateChangeLineFormatInstance**）を呼ぶように設定します。
 線のフォーマットを変更するクラスのインスタンスを生成する関数は、JavaScriptのサンプルコードの詳細で説明します。
 
+<!--@ 60 -->
 ```HTML
 <body onload="CreateChangeLineFormatInstance('mapray-container');">
 ```
@@ -350,6 +367,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 61行目で地図表示部分のブロックを記述します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 61 -->
 ```HTML
 <div id="mapray-container"></div>
 ```
@@ -359,6 +377,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 線幅を変更するコンボボックスが変更された時のイベント（onchange）に、線幅のコンボボックス変更時に呼び出す関数（**LineWidthValueChanged**）を設定します。
 線幅のコンボボックス変更時に呼び出す関数はJavaScriptのサンプルコードの詳細で説明します。
 
+<!--@ 63 -->
 ```HTML
 <div id="LineWidthBox">
     <p>Line Width</p>
@@ -378,6 +397,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 線色変更ボタンには、カラーピッカーの色が変更された時のイベント（onchange）に、線色変更時に呼び出す関数（**LineColorValueChanged**）を設定します。
 線色変更時に呼び出す関数はJavaScriptのサンプルコードの詳細で説明します。
 
+<!--@ 75 -->
 ```HTML
 <div id="LineColorBox">
     <p>Line Color</p>
@@ -392,6 +412,7 @@ JavaScriptのサンプルコードの詳細を以下で解説します。
 3～141行目で線のフォーマットを変更するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
 また、1行目で線のフォーマットを変更するクラスのグローバル変数を定義します。
 
+<!--@ none -->
 ```JavaScript
 var change_Line_Format;
 
@@ -407,6 +428,7 @@ class ChangeLineFormat {
 引数として渡されるブロックのidに対して、mapray.Viewerを作成し、カメラの位置・向きの設定、線の作成、文字の表示の順にメソッド呼び出します。mapray.Viewerのベース地図の画像プロバイダは、画像プロバイダの生成メソッドで取得した画像プロバイダを設定します。
 mapray.Viewerの作成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 5 -->
 ```JavaScript
 constructor(container) {
     // Access Tokenを設定
@@ -432,6 +454,7 @@ constructor(container) {
 25～28行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
 画像プロバイダの生成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 24 -->
 ```JavaScript
 // 画像プロバイダを生成
 createImageProvider() {
@@ -444,6 +467,7 @@ createImageProvider() {
 31～56行目がカメラの位置・向きの設定メソッドです。
 カメラの位置・向きの設定は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 31 -->
 ```JavaScript
 SetCamera() {
     // カメラ位置の設定
@@ -480,6 +504,7 @@ SetCamera() {
 線の色は、75行目でカラーピッカーから値を取得し、78行目でRGB配列を作成した後に、それを82行目の線色を設定する関数（MarkerLineEntityのsetColor）を利用して設定します。カラーピッカーの値からRGB配列を作成するメソッドの詳細は後述します。
 線の表示方法の詳細は、ヘルプページ『**線の表示（addPointsを使った表示）**』を参照してください。
 
+<!--@ 58 -->
 ```JavaScript
 MakeUIFormatLine() {
     // 直線のエンティティを作成
@@ -516,6 +541,7 @@ MakeUIFormatLine() {
 88～108行目が文字の表示メソッドです。皇居と東京タワーの文字を表示します。
 文字の表示方法の詳細は、ヘルプページ『**文字の表示（addTextを使った表示）**』のヘルプページを参照してください。
 
+<!--@ 88 -->
 ```JavaScript
 SetLinePointStr() {
     // 文字のエンティティを作成
@@ -543,6 +569,7 @@ SetLinePointStr() {
 #### 線の幅変更
 110～117行目が線幅変更メソッドです。112行目で線幅を変更するコンボボックスから値を取得します。そして、115行目のviewer.sceneのgetEntity関数で表示している線のエンティティを取得し、116行目で取得した値を指定することで、線の幅を変更します。このサンプルコードでは、線のエンティティのインデックスは0となるため、getEntity関数には0を指定します。
 
+<!--@ 110 -->
 ```JavaScript
 ChangeLineWidth() {
     // プルダウンの値取得
@@ -557,6 +584,7 @@ ChangeLineWidth() {
 #### 線の色変更
 119～129行目が線色変更メソッドです。121行目でカラーピッカーから値を取得し、124行目でカラーピッカーの値をRGBの配列に変換します。そして、127行目のviewer.sceneのgetEntity関数で表示している線のエンティティを取得し、128行目でその値を指定することで、線の色を変更します。このサンプルコードでは、線のエンティティのインデックスは0となるため、getEntity関数には0を指定します。
 
+<!--@ 119 -->
 ```JavaScript
 ChangeLineColor() {
     // プルダウンの値取得
@@ -575,6 +603,7 @@ ChangeLineColor() {
 131～139行目が色情報の変換メソッドです。
 色情報の変換方法の詳細は、ヘルプページ『**文字のフォーマットの変更**』を参照してください。
 
+<!--@ 131 -->
 ```JavaScript
 convertColorChordToRGB(colorChord) {
     var colorChordChars = colorChord.split('');
@@ -590,6 +619,7 @@ convertColorChordToRGB(colorChord) {
 #### 線のフォーマット変更クラスのインスタンス生成
 143～145行目の関数は、引数として渡されるブロックのidを利用して、線フォーマット変更クラスのインスタンスを生成します。
 
+<!--@ 143 -->
 ```JavaScript
 function CreateChangeLineFormatInstance(container) {
     change_Line_Format = new ChangeLineFormat(container);
@@ -599,6 +629,7 @@ function CreateChangeLineFormatInstance(container) {
 #### 線幅変更時のイベント
 147～149行目の関数は、線幅変更時に呼ばれ、線フォーマット変更クラスの線幅変更メソッドを呼び出します。
 
+<!--@ 147 -->
 ```JavaScript
 function LineWidthValueChanged() {
     change_Line_Format.ChangeLineWidth();
@@ -608,6 +639,7 @@ function LineWidthValueChanged() {
 #### 線色変更時のイベント
 151～153行目の関数は、線色変更時に呼ばれ、線フォーマット変更クラスの線色変更メソッドを呼び出します。
 
+<!--@ 151 -->
 ```JavaScript
 function LineColorValueChanged() {
     change_Line_Format.ChangeLineColor();

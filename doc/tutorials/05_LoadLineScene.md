@@ -1,3 +1,14 @@
+<!---
+title: "　5.1 線の表示(SceneLoaderを使った表示)"
+date: 2019-12-02T18:25:00+09:00
+draft: false
+description: "線の表示(SceneLoaderを使った表示)"
+keywords: ["チュートリアル", "直線", "表示", "SceneLoader", "皇居", "東京タワー", "スカイツリー"]
+type: tutorials
+menu: main
+weight: 2051
+--->
+
 ## 線の表示（SceneLoaderを使った表示）
 
 mapray.SceneLoaderを使って線を表示する方法を説明します。
@@ -9,6 +20,7 @@ mapray.SceneLoaderを使って線を表示する**LoadLineScene.html**及び**Lo
 
 #### LoadLineScene.html
 
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -39,6 +51,7 @@ mapray.SceneLoaderを使って線を表示する**LoadLineScene.html**及び**Lo
 ```
 #### LoadLineScene.js
 
+<!--@ 1 -->
 ```JavaScript
 class LoadLine {
 
@@ -152,6 +165,7 @@ class LoadLine {
 }
 ```
 #### シーンファイル（line.json）
+<!--@ 1 -->
 ```json
 {
   "entity_list": [
@@ -171,18 +185,21 @@ htmlのサンプルコードの詳細を以下で解説します。
 
 #### htmlの文字コード設定
 4行目でhtmlの文字コードを設定します。このサンプルコードでは、utf-8を設定します。
+<!--@ 4 -->
 ```HTML
 <meta charset="UTF-8">
 ```
 
 #### タイトルの設定
 5行目でタイトルを設定します。このサンプルコードでは、LoadLineSceneSampleを設定します。
+<!--@ 5 -->
 ```HTML
 <title>LoadLineSceneSample</title>
 ```
 
 #### JavaScriptファイルのパス設定
 6～8行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、線のシーンを読み込むJavaScriptファイル（**LoadLineScene.js**）を設定します。線のシーンを読み込むJavaScriptファイルは文字コードをutf-8に設定します。
+<!--@ 6 -->
 ```HTML
 <script src="https://resource.mapray.com/mapray-js/v0.8.2/mapray.min.js"></script>
 <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
@@ -193,6 +210,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 9～20行目で表示する要素のスタイルを設定します。
 スタイルの詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 9 -->
 ```HTML
 <style>
     html, body {
@@ -212,6 +230,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 画面を表示する時に、線シーン読み込みクラスを生成します。そのため、23行目でページの読み込み時に、地図表示部分のブロックのidから線シーン読み込みクラスのインスタンスを生成します。
 線シーン読み込みクラスは、JavaScriptのサンプルコードの詳細で説明します。
 
+<!--@ 23 -->
 ```HTML
 <body onload="new LoadLine('mapray-container');">
 ```
@@ -220,6 +239,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 24行目で地図表示部分のブロックを記述します。
 要素の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 24 -->
 ```HTML
 <div id="mapray-container"></div>
 ```
@@ -230,6 +250,7 @@ JavaScriptのサンプルコードの詳細を以下で解説します。
 #### クラス
 1～110行目で線シーンを読み込み、表示するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
 
+<!--@ none -->
 ```JavaScript
 class LoadLine {
 
@@ -242,6 +263,7 @@ class LoadLine {
 3～18行目が線のシーンを読み込み表示するクラスのコンストラクタです。引数として渡されるブロックのidに対して、mapray.Viewerを作成し、カメラの位置・向きの設定メソッドを呼び出します。その後、シーンのロードメソッドを呼び出します。viewerを作成する際の画像プロバイダは画像プロバイダの生成メソッドから取得します。
 mapray.Viewerの作成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 3 -->
 ```JavaScript
 constructor(container) {
     // Access Tokenを設定
@@ -265,6 +287,7 @@ constructor(container) {
 21～24行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
 画像プロバイダの生成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 20 -->
 ```JavaScript
 // 画像プロバイダを生成
 createImageProvider() {
@@ -277,6 +300,7 @@ createImageProvider() {
 26～52行目がカメラの位置・向きの設定メソッドです。
 カメラの位置・向きの設定は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 26 -->
 ```JavaScript
 SetCamera() {
     // カメラ位置の設定
@@ -311,6 +335,7 @@ SetCamera() {
 54～63行目がシーンのロードメソッドです。mapray.SceneLoaderでシーンを読み込みます。
 SceneLoaderの引数は、シーンファイルのエンティティを追加するシーン、読み込むシーンファイルのURL、オプション集合の順に指定します。このサンプルコードでは、viewerのシーン、55行目で設定したURL、シーンのロードが終了した時のコールバック関数の順に指定します。読み込むシーンのURLはhttpもしくはhttpsでアクセスできるURLを指定します。最後に、62行目のload関数を呼び出すことでシーンの読み込みができます。
 
+<!--@ 54 -->
 ```JavaScript
 LoadScene() {
     var scene_File_URL = "./data/line.json";
@@ -329,6 +354,7 @@ LoadScene() {
 なお、ラインエンティティは、addPoints関数で追加した頂点を順に線で結ばれます。そのため、このサンプルコードでは、73行目で取得したラインエンティティに対して頂点を追加することで、シーンファイルで読み込んだ頂点及び後から追加した頂点が結ばれた線が表示されます。
 線の座標の追加は、ヘルプページ『**線の表示（addPointsを使った表示）**』を参照してください。
 
+<!--@ 65 -->
 ```JavaScript
 onLoadScene(loader, isSuccess) {
     // 読み込みに成功
@@ -351,6 +377,7 @@ onLoadScene(loader, isSuccess) {
 81～108行目が文字の表示メソッドです。皇居、東京タワー、東京スカイツリーの文字を表示します。
 文字の表示は、ヘルプページ『**文字の表示（addTextを使った表示）**』のヘルプページを参照してください。
 
+<!--@ 81 -->
 ```JavaScript
 SetLinePointStr() {
     // 文字のエンティティを作成
@@ -388,6 +415,7 @@ SetLinePointStr() {
 #### エンティティの設定
 1～4行目でシーンの情報を定義します。このシーンファイルは線のエンティティを指定するため、4行目のtypeという名称にmarkerlineを指定します。シーンの情報の定義は、ヘルプページ『**文字の表示（SceneLoaderを使った表示）**』を参照してください。
 
+<!--@ none -->
 ```json
 {
   "entity_list": [
@@ -405,6 +433,7 @@ SetLinePointStr() {
 5～8行目で線の情報を記述します。線の情報は、線の座標（points）、線の幅（line_width）、線の色（color）があります。
 このシーンファイルでは、線の座標に始点と終点にあたる皇居と東京タワーの経度・緯度・高度を指定します。また、線の幅（line_width）には1を、線の色（color）には白を、それぞれ指定します。
 
+<!--@ 5 -->
 ```json
 "points": [139.7528, 35.685175, 350,
            139.745433, 35.658581, 350],

@@ -1,3 +1,14 @@
+<!---
+title: "　8.4 glTFモデルの移動・回転"
+date: 2019-12-02T18:35:00+09:00
+draft: false
+description: "glTFモデルの移動・回転"
+keywords: ["チュートリアル", "モデル", "glTF", "移動", "回転", "前進", "後進", "左90度回転", "右90度回転"]
+type: tutorials
+menu: main
+weight: 2084
+--->
+
 ## glTFモデルの移動・回転
 
 ユーザインタフェースを介して、glTFモデルを移動・回転させる方法を説明します。
@@ -9,6 +20,7 @@
 #### glTFデータの入手
 [Sketchfab](https://sketchfab.com/3d-models/truck-wip-33e925207e134652bd8c2465e5c16957)へアクセスし、glTFファイルフォーマットのデータをダウンロードする、もしくは[ダウンロードリンク](https://storage.cloud.google.com/mapray-examples/model/download/truck_wip.zip)をクリックしてダウンロードしてください。ダウンロードリンクからダウンロードした場合はzipファイルを展開してご利用ください。展開したデータは解凍した結果できたディレクトリを含めて、mapray-jsのルートディレクトリからの相対パスで以下のディレクトリに保存されているという想定で以下の説明を行います。
 
+<!--@ none -->
 ```
 ./examples/entity/gltf/data/
 ```
@@ -18,6 +30,7 @@
 
 #### glTFModelController.html
 
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -101,6 +114,7 @@
 ```
 
 #### glTFModelController.js
+<!--@ 1 -->
 ```JavaScript
 var model_Controller;
 
@@ -299,6 +313,7 @@ function RightTurnButtonClicked() {
 ```
 
 #### シーンファイル（glTFController.json）
+<!--@ 1 -->
 ```json
 {
   "model_register": {
@@ -323,18 +338,21 @@ htmlのサンプルコードの詳細を以下で解説します。
 
 #### htmlの文字コード設定
 4行目でhtmlの文字コードを設定します。このサンプルコードでは、utf-8を設定します。
+<!--@ 4 -->
 ```HTML
 <meta charset="utf-8">
 ```
 
 #### タイトルの設定
 5行目でタイトルの設定をします。このサンプルコードでは、glTFModelControllerSampleを設定します。
+<!--@ 5 -->
 ```HTML
 <title>glTFModelControllerSample</title>
 ```
 
 #### JavaScriptファイルのパス設定
 6～8行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、glTFモデルを操作するJavaScriptファイル（**glTFModelController.js**）を設定します。
+<!--@ 6 -->
 ```HTML
 <script src="https://resource.mapray.com/mapray-js/v0.8.2/mapray.min.js"></script>
 <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
@@ -353,6 +371,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 - div#RotateRight90Button（右回転ボタン表示部分）
 - div#BackwardButton（後進ボタン表示部分）
 
+<!--@ 9 -->
 ```HTML
 <style>
     html, body {
@@ -417,6 +436,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### loadイベントの設定
 画面を表示するときに、glTFモデルを操作するクラスを生成します。そのため、69行目でページ読み込み時に、glTFモデルを操作するクラスのインスタンスを生成する関数（**CreateglTFModelControllerInstance**）を呼ぶように設定します。
 glTFモデルを操作するクラスのインスタンスを生成する関数は、JavaScriptのサンプルコードの詳細で説明します。
+<!--@ 69 -->
 ```HTML
 <body onload="CreateModelControllerInstance('mapray-container');">
 ```
@@ -424,6 +444,7 @@ glTFモデルを操作するクラスのインスタンスを生成する関数�
 #### 地図表示部分の指定
 70行目で地図表示部分のブロックを記述します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
+<!--@ 70 -->
 ```HTML
 <div id="mapray-container"></div>
 ```
@@ -432,6 +453,7 @@ glTFモデルを操作するクラスのインスタンスを生成する関数�
 72～77行目でモデル操作ボタン表示部分のブロックを記述します。このブロックの中には、前進ボタン、左回転ボタン、右回転ボタン、後退ボタンを用意します。
 前進ボタンをクリックした時のイベント（onclick）に、前進ボタンクリック時に呼び出す関数（ForwardButtonClicked）を設定します。同様に、各ボタンのクリック時に呼び出す関数（LeftTurnButtonClicked、RightTurnButtonClicked、BackwardButtonClicked）をそれぞれ設定します。
 各ボタンのクリック時に呼び出す関数は、JavaScriptのサンプルコードの詳細で説明します。
+<!--@ 72 -->
 ```HTML
 <div id="ButtonBox">
     <div id="ForwardButton"><input type="button" value="Forward" onclick="ForwardButtonClicked()"></div>
@@ -448,6 +470,7 @@ JavaScriptのサンプルコードの詳細を以下で解説します。
 3～174行目でglTFモデルを操作するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
 また、1行目でglTFモデルを操作するクラスのグローバル変数を定義します。
 
+<!--@ none -->
 ```JavaScript
 var model_Controller;
 
@@ -459,7 +482,7 @@ class ModelController {
 ```
 
 #### コンストラクタ
-3～31行目がglTFモデルを操作するクラスのコンストラクタです。
+4～31行目がglTFモデルを操作するクラスのコンストラクタです。
 まず、引数として渡されるブロックのidに対して、mapray.Viewerを作成し、glTFモデルの出典情報を追加します。mapray.Viewerのベース地図の画像プロバイダは、画像プロバイダの生成メソッドで取得した画像プロバイダを設定します。mapray.Viewerの作成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 次に、glTFモデルの操作に関する初期値を下記のように設定します。
 - glTFモデル初期位置の緯度、経度、高度　⇒　京都御所沿いの道路
@@ -470,6 +493,7 @@ class ModelController {
 
 最後に、カメラの位置・向きの設定、シーンのロードの順にメソッドを呼び出します。
 
+<!--@ 4 -->
 ```JavaScript
 constructor(container) {
     // Access Tokenを設定
@@ -505,6 +529,7 @@ constructor(container) {
 34～37行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
 画像プロバイダの生成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 33 -->
 ```JavaScript
 // 画像プロバイダを生成
 createImageProvider() {
@@ -517,6 +542,7 @@ createImageProvider() {
 40～64行目がカメラの位置・向きの設定メソッドです。
 カメラの位置・向きの設定は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 39 -->
 ```JavaScript
 // カメラ位置の設定
 SetCamera() {
@@ -550,6 +576,7 @@ SetCamera() {
 67～79行目がシーンのロードメソッドです。
 シーンのロードは、ヘルプページ『**glTFモデルの表示（SceneLoaderを使った表示）**』を参照してください。
 
+<!--@ 66 -->
 ```JavaScript
 // シーンの読み込み
 LoadScene() {
@@ -571,6 +598,7 @@ LoadScene() {
 81～87行目がリソース要求変換メソッドです。
 リソース要求変換は、ヘルプページ『**glTFモデルの表示（SceneLoaderを使った表示）**』を参照してください。
 
+<!--@ 81 -->
 ```JavaScript
 onTransform(url, type) {
     return {
@@ -585,6 +613,7 @@ onTransform(url, type) {
 89～95行目がシーンのロード終了イベントメソッドです。引数のisSuccessには、読み込み結果が格納されており、trueの場合のみ読み込んだglTFモデルを表示し、glTFモデルを操作できるようにします。
 glTFモデルのロード成功可否をtrueにし、glTFモデルの表示位置を設定するメソッドを呼び出します。glTFモデルの表示位置を設定するメソッドの詳細は後述します。
 
+<!--@ 89 -->
 ```JavaScript
 onLoadScene(loader, isSuccess) {
     if (isSuccess) {
@@ -600,6 +629,7 @@ onLoadScene(loader, isSuccess) {
 102行目でモデルの表示位置を設定、105行目でモデルの向きをそれぞれ設定します。
 なお、読み込んだモデルは1つ目のエンティティとなるため、エンティティ取得時の引数には0を指定します。
 
+<!--@ 97 -->
 ```JavaScript
 UpdateModelPosition() {
     // sceneのEntityを取得
@@ -618,6 +648,7 @@ UpdateModelPosition() {
 まず、110～119行目で、移動方向を表す変換行列を単位行列に初期化し、glTFモデルの初期の前方向であるY軸方向に単位移動量である1分移動させます。その後、移動方向を表す変換行列に、現在の向きを表す変換行列を掛け合わせることで、現在の移動方向を表す変換行列を求めます。
 そして、求めた現在の移動方向を表す変換行列から、移動方向成分に該当する部分を抜き出し、移動方向ベクトルとして設定します。
 
+<!--@ 108 -->
 ```JavaScript
 UpdateMoveVec() {
     // モデルの回転行列を求める
@@ -643,6 +674,7 @@ UpdateMoveVec() {
 #### 前進
 128～137行目が前進メソッドです。glTFモデルが正常に読み込まれている場合は、現在のglTFモデルの移動方向ベクトルに移動量を掛けた値をモデルの緯度・経度に加算し、glTFモデルの姿勢変換行列の設定メソッドを呼び出します。
 
+<!--@ 128 -->
 ```JavaScript
 Forward() {
     if (this.isLoadedModel == false) {
@@ -659,6 +691,7 @@ Forward() {
 #### 後進
 139～148行目が後退メソッドです。glTFモデルが正常に読み込まれている場合は、現在のglTFモデルの移動方向ベクトルに移動量を掛けた値をモデルの緯度・経度に減算し、glTFモデルの姿勢変換行列の設定メソッドを呼び出します。
 
+<!--@ 139 -->
 ```JavaScript
 Backward() {
     if (this.isLoadedModel == false) {
@@ -675,6 +708,7 @@ Backward() {
 #### 左回転
 150～160行目が左回転メソッドです。glTFモデルが正常に読み込まれている場合は、現在のglTFモデルの回転角度に90を加算し、glTFモデルの姿勢変換行列の設定メソッドを呼び出します。
 
+<!--@ 150 -->
 ```JavaScript
 LeftTurn() {
     if (this.isLoadedModel == false) {
@@ -692,6 +726,7 @@ LeftTurn() {
 #### 右回転
 162～172行目が右回転メソッドです。glTFモデルが正常に読み込まれている場合は、現在のglTFモデルの回転角度に90を減算し、glTFモデルの姿勢変換行列の設定メソッドを呼び出します。
 
+<!--@ 162 -->
 ```JavaScript
 RightTurn() {
     if (this.isLoadedModel == false) {
@@ -709,6 +744,7 @@ RightTurn() {
 #### glTFモデルを操作するクラスのインスタンス生成
 176～178行目の関数は、引数として渡されるブロックのidを利用して、glTFモデルを操作するクラスのインスタンスを生成します。
 
+<!--@ 176 -->
 ```JavaScript
 function CreateModelControllerInstance(container) {
     model_Controller = new ModelController(container);
@@ -718,6 +754,7 @@ function CreateModelControllerInstance(container) {
 #### 前進ボタンクリック時のイベント
 180～182行目の関数は、前進ボタンクリック時に呼ばれ、glTFモデルを操作するクラスの前進メソッドを呼び出します。
 
+<!--@ 180 -->
 ```JavaScript
 function ForwardButtonClicked() {
     model_Controller.Forward();
@@ -727,6 +764,7 @@ function ForwardButtonClicked() {
 #### 後進ボタンクリック時のイベント
 184～186行目の関数は、後進ボタンクリック時に呼ばれ、glTFモデルを操作するクラスの後進メソッドを呼び出します。
 
+<!--@ 184 -->
 ```JavaScript
 function BackwardButtonClicked() {
     model_Controller.Backward();
@@ -736,6 +774,7 @@ function BackwardButtonClicked() {
 #### 左回転ボタンクリック時のイベント
 188～190行目の関数は、左回転ボタンクリック時に呼ばれ、glTFモデルを操作するクラスの左回転メソッドを呼び出します。
 
+<!--@ 188 -->
 ```JavaScript
 function LeftTurnButtonClicked() {
     model_Controller.LeftTurn();
@@ -745,6 +784,7 @@ function LeftTurnButtonClicked() {
 #### 右回転ボタンクリック時のイベント
 192～194行目の関数は、右回転ボタンクリック時に呼ばれ、glTFモデルを操作するクラスの左回転メソッドを呼び出します。
 
+<!--@ 192 -->
 ```JavaScript
 function RightTurnButtonClicked() {
     model_Controller.RightTurn();
@@ -757,6 +797,7 @@ function RightTurnButtonClicked() {
 #### エンティティの設定
 8行目でentity_listという名称でエンティティを定義し、その中にエンティティの詳細を定義します。9行目のtypeという名称は、エンティティの種類を表し、glTFモデルの場合はmodelを指定します。
 
+<!--@ none -->
 ```json
 {
 
@@ -778,6 +819,7 @@ function RightTurnButtonClicked() {
 - チルト（Y軸回りの回転角度）（tilt）　⇒　-90
 - モデルスケール（scale）　⇒　0.1
 
+<!--@ 2 -->
 ```json
 "model_register": {
   "model-0": {
@@ -794,6 +836,7 @@ function RightTurnButtonClicked() {
 - モデルデータ（ref_model）　⇒　モデルデータのID（model-0）
 - 高度モード（altitude_mode）　⇒　初期位置の高度を絶対値で指定（absolute）
 
+<!--@ 8 -->
 ```json
 "type": "model",
 "mode": "basic",

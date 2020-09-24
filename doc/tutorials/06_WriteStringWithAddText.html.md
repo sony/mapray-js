@@ -1,3 +1,14 @@
+<!---
+title: "　6.2 文字の表示(addTextを使った表示)"
+date: 2019-12-02T18:29:00+09:00
+draft: false
+description: "文字の表示(addTextを使った表示)"
+keywords: ["チュートリアル", "文字", "表示"]
+type: tutorials
+menu: main
+weight: 2062
+--->
+
 ## 文字の表示（addTextを使った表示）
 
 mapray.TextEntityのaddTextを使って文字を表示する方法を説明します。
@@ -8,6 +19,7 @@ mapray.TextEntityのaddTextを使って文字を表示する**WriteStringWithAdd
 
 #### WriteStringWithAddText.html
 
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -95,6 +107,7 @@ mapray.TextEntityのaddTextを使って文字を表示する**WriteStringWithAdd
 1～25行目でhtmlがhtmlの定義です。ヘルプページ『**緯度経度によるカメラ位置の指定**』で示したhtmlファイルからタイトルのみを変更します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -127,6 +140,7 @@ mapray.TextEntityのaddTextを使って文字を表示する**WriteStringWithAdd
 29～63行目でMapray.Viewerクラスを作成し、カメラ位置を設定しています。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 28 -->
 ```JavaScript
 // Access Tokenを設定
 var accessToken = "<your access token here>";
@@ -169,6 +183,7 @@ viewer.camera.far = 500000;
 #### TextEntityの生成
 文字を表示するためには、文字情報を管理するクラス（TextEntity）が必要です。そのため、66行目でTextEntityのインスタンスを生成します。コンストラクタの引数には、作成したmapray.Viewerのシーンを指定します。
 
+<!--@ 65 -->
 ```JavaScript
 //文字のエンティティを作成
 var entity = new mapray.TextEntity(viewer.scene);
@@ -177,6 +192,7 @@ var entity = new mapray.TextEntity(viewer.scene);
 #### 文字の表示座標の定義
 69行目で、富士山頂上付近の緯度・経度・高度を定義します。
 
+<!--@ 68 -->
 ```JavaScript
 // 座標は富士山山頂付近
 var font_position = { longitude: 138.730647, latitude: 35.362773, height: 4000 };
@@ -185,6 +201,7 @@ var font_position = { longitude: 138.730647, latitude: 35.362773, height: 4000 }
 #### 文字情報の設定
 72～73行目でTextEntityに表示する文字の情報をaddText関数で設定します。文字の表示位置は、GeoPointクラスで表現する必要があるため、まず、72行目で、富士山頂上付近の座標からGeoPointクラスを生成します。そして、73行目のaddText関数で、文字、位置、文字のスタイルを設定します。このサンプルコードでは、文字として「Mt.Fuji」、位置として富士山頂上付近の座標、文字のスタイルとして文字の色に赤、文字の大きさに25を設定します。
 
+<!--@ 71 -->
 ```JavaScript
 // GeoPointクラスを生成して、テキストを追加
 var font_geopoint = new mapray.GeoPoint(font_position.longitude, font_position.latitude, font_position.height);
@@ -194,6 +211,7 @@ entity.addText("Mt.Fuji", font_geopoint, { color: [1, 0, 0], font_size: 25 } );
 #### TextEntityの追加
 76行目でTextEntityを作成したmapray.Viewerのシーンに追加します。mapray.Viewerのシーンに追加することで文字が表示されます。
 
+<!--@ 75 -->
 ```JavaScript
 // エンティティをシーンに追加
 viewer.scene.addEntity(entity);

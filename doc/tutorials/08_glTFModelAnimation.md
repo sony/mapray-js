@@ -1,3 +1,14 @@
+<!---
+title: "　8.3 glTFモデルのアニメーション"
+date: 2019-12-02T18:35:00+09:00
+draft: false
+description: "glTFモデルのアニメーション"
+keywords: ["チュートリアル", "モデル", "glTF", "位置", "向き", "京都御所"]
+type: tutorials
+menu: main
+weight: 2083
+--->
+
 ## glTFモデルのアニメーション
 動的にglTFモデルの位置・向きを変更するアニメーションを作成する方法を説明します。
 
@@ -8,6 +19,7 @@
 #### glTFデータの入手
 [Sketchfab](https://sketchfab.com/3d-models/truck-wip-33e925207e134652bd8c2465e5c16957)へアクセスし、glTFファイルフォーマットのデータをダウンロードする、もしくは[ダウンロードリンク](https://storage.cloud.google.com/mapray-examples/model/download/truck_wip.zip)をクリックしてダウンロードしてください。ダウンロードリンクからダウンロードした場合はzipファイルを展開してご利用ください。展開したデータは解凍した結果できたディレクトリを含めて、mapray-jsのルートディレクトリからの相対パスで以下のディレクトリに保存されているという想定で以下の説明を行います。
 
+<!--@ none -->
 ```
 ./examples/entity/gltf/data/
 ```
@@ -17,6 +29,7 @@
 
 #### glTFModelAnimation.html
 
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -47,6 +60,7 @@
 ```
 
 #### glTFModelAnimation.js
+<!--@ 1 -->
 ```JavaScript
 // JavaScript source code
 class ModelAnimation extends mapray.RenderCallback {
@@ -200,6 +214,7 @@ class ModelAnimation extends mapray.RenderCallback {
 ```
 
 #### シーンファイル（glTFAnimation.json）
+<!--@ 1 -->
 ```json
 {
   "model_register": {
@@ -225,6 +240,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### htmlの文字コード設定
 4行目でhtmlの文字コードを設定します。このサンプルコードでは、utf-8を設定します。
 
+<!--@ 4 -->
 ```HTML
 <meta charset="utf-8">
 ```
@@ -232,6 +248,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### タイトルの設定
 5行目でタイトルを設定します。このサンプルコードでは、glTFModelAnimationSampleを設定します。
 
+<!--@ 5 -->
 ```HTML
 <title>glTFModelAnimationSample</title>
 ```
@@ -239,6 +256,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### JavaScriptファイルのパス設定
 6～8行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、モデルのアニメーションJavaScriptファイル（**glTFModelAnimation.js**）を設定します。
 
+<!--@ 6 -->
 ```HTML
 <script src="https://resource.mapray.com/mapray-js/v0.8.2/mapray.min.js"></script>
 <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
@@ -248,6 +266,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### スタイルの設定
 9～20行目で表示する要素のスタイルを設定します。スタイルの詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 9 -->
 ```HTML
 <style>
     html, body {
@@ -267,6 +286,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 画面を表示するときに、glTFモデルアニメーションクラスを作成します。そのため、23行目でページの読み込み時に、地図表示部分のブロックのidからglTFモデルアニメーションクラスのインスタンスを生成します。
 glTFモデルアニメーションクラスはJavaScriptのサンプルコードの詳細で説明します。
 
+<!--@ 23 -->
 ```HTML
 <body onload="new ModelAnimation('mapray-container');">
 ```
@@ -275,6 +295,7 @@ glTFモデルアニメーションクラスはJavaScriptのサンプルコード
 24行目で地図表示部分のブロックを記述します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 24 -->
 ```HTML
 <div id="mapray-container"></div>
 ```
@@ -285,6 +306,7 @@ JavaScriptのサンプルコードの詳細を以下で解説します。
 #### クラスとグローバル変数の説明
 1～148行目のクラスは、glTFモデルアニメーションクラスです。アニメーションを表現するために、glTFモデルアニメーション作成クラスは、mapray.RenderCallbackクラスを継承します。
 
+<!--@ none -->
 ```JavaScript
 class ModelAnimation extends mapray.RenderCallback {
 
@@ -309,6 +331,7 @@ class ModelAnimation extends mapray.RenderCallback {
 
 最後に、カメラの位置・向きの設定、シーンのロードの順にメソッドを呼び出します。
 
+<!--@ 2 -->
 ```JavaScript
 constructor(container) {
     super();
@@ -352,6 +375,7 @@ constructor(container) {
 40～44行目がレンダリングループの開始時のコールバックメソッドです。
 レンダリングループの開始時のコールバックメソッドの詳細は、ヘルプページ『**パスに沿ったカメラアニメーション**』を参照してください。
 
+<!--@ 39 -->
 ```JavaScript
 // override
 onStart()  
@@ -367,6 +391,7 @@ onStart()
 次に、65～67行目で、線形補間の対象区間の緯度・経度・高度を線形補間し、現在の位置となる緯度・経度・高度を求めます。また、69行目で、線形補間の対象区間のglTFモデルの向きを線形補間し、現在のglTFモデルの向きを求めます。
 最後に、glTFモデルの姿勢変換行列の設定メソッドを呼び出し、現在の位置、向きを用いて、glTFモデルの姿勢変換行列を現在の状態に更新します。なお、glTFモデルの姿勢変換行列の詳細は後述します。
 
+<!--@ 46 -->
 ```JavaScript
 // override フレーム毎に呼ばれるメソッド
 onUpdateFrame(delta_time)
@@ -401,6 +426,7 @@ onUpdateFrame(delta_time)
 75～77行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
 画像プロバイダの生成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 74 -->
 ```JavaScript
 // 画像プロバイダを生成
 createImageProvider() {
@@ -412,6 +438,7 @@ createImageProvider() {
 80～104行目がカメラの位置・向きの設定メソッドです。
 カメラの位置・向きの設定は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 79 -->
 ```JavaScript
 // カメラ位置の設定
 SetCamera() {
@@ -445,6 +472,7 @@ SetCamera() {
 107～119行目がシーンのロードメソッドです。
 シーンのロードは、ヘルプページ『**glTFモデルの表示（SceneLoaderを使った表示）**』を参照してください。
 
+<!--@ 106 -->
 ```JavaScript
 // シーンの読み込み
 LoadScene() {
@@ -466,6 +494,7 @@ LoadScene() {
 121～127行目がリソース要求変換メソッドです。
 リソース要求変換は、ヘルプページ『**glTFモデルの表示（SceneLoaderを使った表示）**』を参照してください。
 
+<!--@ 121 -->
 ```JavaScript
 onTransform(url, type) {
     return {
@@ -480,6 +509,7 @@ onTransform(url, type) {
 129～135行目がシーンのロード終了イベントメソッドです。引数のisSuccessには、読み込み結果が格納されており、trueの場合のみ読み込んだglTFモデルを表示し、glTFモデルを操作できるようにします。
 glTFモデルのロード成功可否をtrueにし、glTFモデルの表示位置を設定するメソッドを呼び出します。glTFモデルの表示位置を設定するメソッドの詳細は後述します。
 
+<!--@ 129 -->
 ```JavaScript
 onLoadScene(loader, isSuccess) {
     if (isSuccess) {
@@ -495,6 +525,7 @@ onLoadScene(loader, isSuccess) {
 142行目でモデルの表示位置を、144行目でモデルの向きをそれぞれ設定します。
 なお、読み込んだモデルは1つ目のエンティティとなるため、エンティティ取得時の引数には0を指定します。
 
+<!--@ 137 -->
 ```JavaScript
 UpdateModelPosition() {
     // sceneのEntityを取得
@@ -514,6 +545,7 @@ UpdateModelPosition() {
 #### エンティティの設定
 8行目でentity_listという名称でエンティティを定義し、その中にエンティティの詳細を定義します。9行目のtypeという名称は、エンティティの種類を表し、glTFモデルの場合はmodelを指定します。
 
+<!--@ none -->
 ```json
 {
 
@@ -535,6 +567,7 @@ UpdateModelPosition() {
 - チルト（Y軸回りの回転角度）（tilt）　⇒　-90
 - モデルスケール（scale）　⇒　0.1
 
+<!--@ 2 -->
 ```json
 "model_register": {
   "model-0": {
@@ -551,6 +584,7 @@ UpdateModelPosition() {
 - モデルデータ（ref_model）　⇒　モデルデータのID（model-0）
 - 高度モード（altitude_mode）　⇒　初期位置の高度を絶対値で指定（absolute）
 
+<!--@ 8 -->
 ```json
 "type": "model",
 "mode": "basic",

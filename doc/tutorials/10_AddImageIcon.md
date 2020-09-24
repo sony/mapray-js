@@ -1,3 +1,14 @@
+<!---
+title: "　10.2 イメージアイコンの表示(addImageIconを使った表示)"
+date: 2019-12-02T18:35:00+09:00
+draft: false
+description: "イメージアイコンの表示(addImageIconを使った表示)"
+keywords: ["チュートリアル", "東京タワー", "イメージアイコン", "ImageIconEntity"]
+type: tutorials
+menu: main
+weight: 2102
+--->
+
 ## イメージアイコンの表示（addImageIconを使った表示）
 
 mapray.ImageIconEntityのaddImageIconを使ってイメージアイコンを表示する方法を説明します。
@@ -6,6 +17,7 @@ mapray.ImageIconEntityのaddImageIconを使ってイメージアイコンを表�
 mapray.ImageIconEntityのaddImageIconを使ってイメージアイコンを表示する**AddImageIcon.html**のサンプルコードです。
 このサンプルコードでは、東京タワーにイメージアイコンを表示します。
 
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -89,6 +101,7 @@ mapray.ImageIconEntityのaddImageIconを使ってイメージアイコンを表�
 1～25行目がでhtmlの定義です。ヘルプページ『**緯度経度によるカメラ位置の指定**』で示したhtmlファイルからタイトルのみを変更します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -121,6 +134,7 @@ mapray.ImageIconEntityのaddImageIconを使ってイメージアイコンを表�
 29～61行目でMapray.Viewerクラスを作成し、カメラ位置・向きを設定します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 28 -->
 ```JavaScript
 // Access Tokenを設定
 var accessToken = "<your access token here>";
@@ -161,6 +175,7 @@ viewer.camera.far = 500000;
 #### ImageIconEntityの生成
 イメージアイコンを表示するためには、イメージアイコンの情報を管理するクラス（ImageIconEntity）が必要です。そのため、64行目でImageIconEntityのインスタンスを生成します。コンストラクタの引数には、作成したMapray.Viewerのシーン（Mapray.Viewer.scene）を指定します。
 
+<!--@ 63 -->
 ```JavaScript
 // イメージアイコンのエンティティを作成
 var imag_icon_entity = new mapray.ImageIconEntity(viewer.scene);
@@ -169,6 +184,7 @@ var imag_icon_entity = new mapray.ImageIconEntity(viewer.scene);
 #### イメージアイコンの生成
 67～70行目で、イメージアイコンを生成します。67行目で東京タワーの経度・緯度・高度からGeoPointクラスを定義し、70行目のaddImageIcon関数でピンを作成します。addImageIcon関数には、表示する画像のURL、ピンを表示する位置、生成オプションとしてアイコンの大きさ（縦、横）を、それぞれ設定します。
 
+<!--@ 66 -->
 ```JavaScript
 // 東京タワーの座標を求める
 var image_icon_Point = new mapray.GeoPoint(139.745340, 35.658694, 100);
@@ -180,6 +196,7 @@ imag_icon_entity.addImageIcon("./image/TokyoTower.jpg", image_icon_Point, { size
 #### ImageIconEntityの追加
 73行目でImageIconEntityを作成したmapray.Viewerのシーンに追加します。mapray.Viewerのシーンに追加することでイメージアイコンが表示されます。
 
+<!--@ 72 -->
 ```JavaScript
 // エンティティをシーンに追加
 viewer.scene.addEntity(imag_icon_entity);

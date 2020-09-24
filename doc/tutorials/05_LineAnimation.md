@@ -1,3 +1,14 @@
+<!---
+title: "　5.4 ラインのアニメーション"
+date: 2019-12-02T18:23:00+09:00
+draft: false
+description: "ラインのアニメーション"
+keywords: ["チュートリアル", "直線", "ライン", "アニメーション", "動的"]
+type: tutorials
+menu: main
+weight: 2054
+--->
+
 ## ラインのアニメーション
 動的に線を追加し、表示するアニメーションを作成する方法を説明します。
 
@@ -7,6 +18,7 @@
 
 #### LineAnimation.html
 
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -38,6 +50,7 @@
 
 #### LineAnimation.js
 
+<!--@ 1 -->
 ```JavaScript
 class LineAnimation extends mapray.RenderCallback {
 
@@ -177,6 +190,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### htmlの文字コード設定
 4行目でhtmlの文字コードを設定します。このサンプルコードでは、utf-8を設定します。
 
+<!--@ 4 -->
 ```HTML
 <meta charset="utf-8">
 ```
@@ -184,6 +198,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### タイトルの設定
 5行目でタイトルを設定します。このサンプルコードでは、LineAnimationSampleを設定します。
 
+<!--@ 5 -->
 ```HTML
 <title>LineAnimationSample</title>
 ```
@@ -191,6 +206,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### JavaScriptファイルのパス設定
 6～8行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、ラインのアニメーションを作成するJavaScriptファイル（**LineAnimation.js**）を設定します。
 
+<!--@ 6 -->
 ```HTML
 <script src="https://resource.mapray.com/mapray-js/v0.8.2/mapray.min.js"></script>
 <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
@@ -201,6 +217,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 9～20行目で表示する要素のスタイルを設定します。
 スタイルの詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 9 -->
 ```HTML
 <style>
     html, body {
@@ -220,6 +237,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 画面を表示するときに、ラインアニメーション作成クラスを生成します。そのため、23行目でページの読み込み時に、地図表示部分のブロックのidからラインアニメーション作成クラスのインスタンスを生成します。
 ラインアニメーション作成クラスはJavaScriptのサンプルコードの詳細で説明します。
 
+<!--@ 23 -->
 ```HTML
 <body onload="new LineAnimation('mapray-container');">
 ```
@@ -228,6 +246,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 24行目で地図表示部分のブロックを記述します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 24 -->
 ```HTML
 <div id="mapray-container"></div>
 ```
@@ -238,6 +257,7 @@ JavaScriptのサンプルコードの詳細を以下で解説します。
 #### クラスとグローバル変数の説明
 1～130行目でラインのアニメーションを作成するクラスを定義します。アニメーションを表現するために、ラインアニメーション作成クラスは、mapray.RenderCallbackクラスを継承します。
 
+<!--@ none -->
 ```JavaScript
 class LineAnimation extends mapray.RenderCallback {
 
@@ -250,6 +270,7 @@ class LineAnimation extends mapray.RenderCallback {
 3～29行目がラインのアニメーションを作成するクラスのコンストラクタです。引数として渡されるブロックのidに対して、mapray.Viewerを作成し、カメラの位置・向きの設定します。viewerを作成する際の画像プロバイダは画像プロバイダの生成メソッドから取得します。mapray.Viewerの作成の詳細は、ヘルプページ『**カメラのアニメーション**』を参照してください。
 その後、アニメーションに必要な変数を定義します。線の通過点配列として、皇居、東京タワー、東京スカイツリー、東京ドームの緯度・経度・高度を、線形補間時の1秒当たりの増加割合として0.15を、線形補間時の現在の割合として0を、線形補間対象となる区間番号として0を、それぞれ設定します。最後に、線のエンティティを作成します。
 
+<!--@ 3 -->
 ```JavaScript
 constructor(container) {
     super();
@@ -284,6 +305,7 @@ constructor(container) {
 32～35行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
 画像プロバイダの生成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 31 -->
 ```JavaScript
 // 画像プロバイダを生成
 createImageProvider() {
@@ -296,6 +318,7 @@ createImageProvider() {
 37～63行目がカメラの位置・向きの設定メソッドです。
 カメラの位置・向きの設定は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 37 -->
 ```JavaScript
 SetCamera() {
     // カメラ位置の設定
@@ -330,6 +353,7 @@ SetCamera() {
 65～78行目が線のエンティティ作成メソッドです。線のエンティティを作成し、皇居の座標を追加します。
 線の頂点を設定する方法は、ヘルプページ『**線の表示（addPointsを使った表示）**』を参照してください。
 
+<!--@ 65 -->
 ```JavaScript
 CreateMarkerLineEntityAndAddLineStartPoint() {
     // 直線のエンティティを作成
@@ -351,6 +375,7 @@ CreateMarkerLineEntityAndAddLineStartPoint() {
 80～84行目がレンダリングループの開始時のコールバックメソッドです。
 レンダリングループの開始時のコールバックメソッドの詳細は、ヘルプページ『**パスに沿ったカメラアニメーション**』を参照してください。
 
+<!--@ 80 -->
 ```JavaScript
 onStart()  // override
 {
@@ -365,6 +390,7 @@ onStart()  // override
 そして、120行目で線の頂点追加メソッドに地心直交座標系の平行移動成分を指定し、曲線の構成点を追加します。
 線の頂点追加メソッドは以下で説明します。
 
+<!--@ 86 -->
 ```JavaScript
 // フレーム毎に呼ばれるメソッド
 onUpdateFrame(delta_time)  // override
@@ -408,6 +434,7 @@ onUpdateFrame(delta_time)  // override
 123～128行目が線の座標追加メソッドです。getEntity関数で取得した線のエンティティに引数の頂点を追加します。
 線の頂点を設定する方法は、ヘルプページ『**線の表示（addPointsを使った表示）**』を参照してください。
 
+<!--@ 123 -->
 ```JavaScript
 AddLinePoint(points)
 {

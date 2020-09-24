@@ -1,3 +1,14 @@
+<!---
+title: "　1.4 パスに沿ったカメラアニメーション"
+date: 2019-12-02T14:15:31+09:00
+draft: false
+description: "パスに沿ったカメラアニメーション"
+keywords: ["チュートリアル", "カメラ", "アニメーション", "パス", "皇居", "東京タワー", "東京スカイツリー", "東京ドーム"]
+type: tutorials
+menu: main
+weight: 2014
+--->
+
 ## パスに沿ったカメラアニメーション
 仮想的なパスに沿ってカメラをアニメーションさせる方法を説明します。
 
@@ -7,6 +18,7 @@
 
 #### VirtualPathCameraAnimation.html
 
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -38,6 +50,7 @@
 
 #### VirtualPathCameraAnimation.js
 
+<!--@ 1 -->
 ```JavaScript
 class VirtualPathCameraAnimation extends mapray.RenderCallback {
 
@@ -154,6 +167,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### htmlの文字コード設定
 4行目でhtmlの文字コードを設定します。このサンプルコードでは、utf-8を設定します。
 
+<!--@ 4 -->
 ```HTML
 <meta charset="utf-8">
 ```
@@ -161,6 +175,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### タイトルの設定
 5行目でタイトルを設定します。このサンプルコードでは、VirtualPathCameraAnimationSampleを設定します。
 
+<!--@ 5 -->
 ```HTML
 <title>VirtualPathCameraAnimationSample</title>
 ```
@@ -168,6 +183,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### JavaScriptファイルのパス設定
 6～8行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、パスに沿ってカメラアニメーションするJavaScriptファイル（**VirtualPathCameraAnimation.js**）を設定します。
 
+<!--@ 6 -->
 ```HTML
 <script src="https://resource.mapray.com/mapray-js/v0.8.2/mapray.min.js"></script>
 <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
@@ -177,6 +193,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### スタイルの設定
 9～20行目で表示する要素のスタイルを設定します。スタイルの詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 9 -->
 ```HTML
 <style>
     html, body {
@@ -196,6 +213,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 画面を表示するときに、パスに沿ったカメラアニメーションクラスを生成します。そのため、23行目でページの読み込み時に、地図表示部分のブロックのidからパスに沿ったカメラアニメーションクラスのインスタンスを生成します。
 パスに沿ったカメラアニメーションクラスはJavaScriptのサンプルコードの詳細で説明します。
 
+<!--@ 23 -->
 ```HTML
 <body onload="new VirtualPathCameraAnimation('mapray-container');">
 ```
@@ -204,6 +222,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 24行目で地図表示部分のブロックを記述します。
 要素の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 24 -->
 ```HTML
 <div id="mapray-container"></div>
 ```
@@ -214,6 +233,7 @@ JavaScriptのサンプルコードの詳細を以下で解説します。
 #### クラスとグローバル変数の説明
 1～108行目でパスに沿ったカメラアニメーションクラスを定義します。アニメーションを表現するために、パスに沿ったカメラアニメーションクラスは、mapray.RenderCallbackクラスを継承します。
 
+<!--@ none -->
 ```JavaScript
 class VirtualPathCameraAnimation extends mapray.RenderCallback {
 
@@ -232,6 +252,7 @@ class VirtualPathCameraAnimation extends mapray.RenderCallback {
 - カメラ位置の線形補間時の現在の割合 ⇒ 0
 - カメラ位置の線形補間対象となる区間番号　⇒　0
 
+<!--@ 3 -->
 ```JavaScript
 constructor(container) {
     super();
@@ -263,6 +284,7 @@ constructor(container) {
 28～32行目がレンダリングループの開始時のコールバックメソッドです。RenderCallbackクラスのonStartメソッドをオーバーライドしたメソッドで、レンダリングが始まる前に呼ばれます。
 このサンプルコードでは、線形補間の割合に0を設定します。
 
+<!--@ 28 -->
 ```JavaScript
 onStart()  // override
 {
@@ -276,6 +298,7 @@ onStart()  // override
 まず、現在の線形補間状態からカメラ位置を表す変換行列を求めるメソッド、カメラの視線方向を表すビュー変換行列を求めるメソッドを用いて、現時点のカメラ姿勢を反映します。そして、カメラの設定範囲（近接遠方平面）を設定し、現在の線形補間の割合および線形補間の対象区間を更新します。
 カメラ位置を表す変換行列を求めるメソッド、カメラの視線方向を表すビュー変換行列を求めるメソッドの詳細については後述します。
 
+<!--@ 34 -->
 ```JavaScript
 // フレーム毎に呼ばれるメソッド
 onUpdateFrame(delta_time)  // override
@@ -307,6 +330,7 @@ onUpdateFrame(delta_time)  // override
 60～62行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
 画像プロバイダの生成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 59 -->
 ```JavaScript
 // 画像プロバイダを生成
 createImageProvider() {
@@ -317,6 +341,7 @@ createImageProvider() {
 #### カメラ位置を表す変換行列の取得
 65～76行目がカメラ位置を表す変換行列の取得メソッドです。まず、66～70行目で、線形補間対象となる区間番号に対応する経由点間に対して、現在の線形補間の割合で線形補間し、カメラの緯度・経度・高度を求めます。そして、72～73行目で、その緯度・経度・高度の座標を地心直交座標系に変換することで、カメラ位置を表す変換行列を求めます。
 
+<!--@ 64 -->
 ```JavaScript
 // 2点の間を線形保管し、基準座標系から GOCS への変換行列を生成
 createInterpolationBaseToGocsMatrix() {
@@ -336,6 +361,7 @@ createInterpolationBaseToGocsMatrix() {
 #### カメラの視線方向を表すビュー変換行列の取得
 79～105行目がカメラの視線方向を表すビュー変換行列の取得メソッドです。まず、80～88行目で、相対視点位置を表す変換行列を単位行列に初期化し、注視点からの距離を設定した値になるように、相対視点位置をY軸方向に移動します。その後、91行目でカメラの仰俯角に対応する回転行列（X軸回りの回転行列）を生成し、94行目で相対視点位置を表す変換行列に回転行列を掛け合わせることで、相対視点位置を表す変換行列を作成します。最後に、97～102行目で、求めた相対視点位置、注視点、カメラの上方向ベクトルを利用して、最終的なビュー変換行列を求めます。
 
+<!--@ 78 -->
 ```JavaScript
 // カメラの相対位置を計算し、姿勢を決める
 createViewToBaseMatrix() {

@@ -1,3 +1,14 @@
+<!---
+title: "　8.1 glTFモデルの表示(SceneLoaderを使った表示)"
+date: 2019-12-02T18:35:00+09:00
+draft: false
+description: "glTFモデルの表示"
+keywords: ["チュートリアル", "モデル", "glTF", "SceneLoader", "薬師寺", "小倉城"]
+type: tutorials
+menu: main
+weight: 2081
+--->
+
 ## glTFモデルの表示（SceneLoaderを使った表示）
 
 mapray.SceneLoaderを使ってglTFモデルを表示する方法を説明します。
@@ -9,6 +20,7 @@ mapray.SceneLoaderを使ってglTFモデルを表示する**LoadglTFModel.html**
 #### glTFデータの入手
 [PART Community](https://b2b.partcommunity.com/community/knowledge/ja/detail/435/Yakushi-ji)へアクセスし、glTFファイルフォーマットのデータをダウンロードする、もしくは[ダウンロードリンク](https://storage.cloud.google.com/mapray-examples/model/download/Yakushiji_Temple.zip)をクリックしてダウンロードしてください。ダウンロードリンクからダウンロードした場合はzipファイルを展開してご利用ください。展開したデータは解凍した結果できたディレクトリを含めて、mapray-jsのルートディレクトリからの相対パスで以下のディレクトリに保存されているという想定で以下の説明を行います。
 
+<!--@ none -->
 ```
 ./examples/entity/gltf/data/
 ```
@@ -18,6 +30,7 @@ mapray.SceneLoaderを使ってglTFモデルを表示する**LoadglTFModel.html**
 
 
 #### LoadglTFModel.html
+<!--@ 1 -->
 ```HTML
 <!DOCTYPE html>
 <html>
@@ -48,6 +61,7 @@ mapray.SceneLoaderを使ってglTFモデルを表示する**LoadglTFModel.html**
 ```
 
 #### LoadglTFModel.js
+<!--@ 1 -->
 ```JavaScript
 class LoadModel {
     constructor(container) {
@@ -143,6 +157,7 @@ class LoadModel {
 ```
 
 #### シーンファイル（glTFLoad.json）
+<!--@ 1 -->
 ```json
 {
   "model_register": { "model-0": { "link": "./Yakushiji_Temple/Yakushiji_Temple.gltf" } },
@@ -163,6 +178,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### htmlの文字コード設定
 4行目でhtmlの文字コードを設定します。このサンプルコードでは、utf-8を設定します。
 
+<!--@ 4 -->
 ```HTML
 <meta charset="UTF-8">
 ```
@@ -170,6 +186,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### タイトルの設定
 5行目でタイトルを設定します。このサンプルコードでは、LoadglTFModelSampleを設定します。
 
+<!--@ 5 -->
 ```HTML
 <title>LoadglTFModelSample</title>
 ```
@@ -177,6 +194,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### JavaScriptファイルのパス設定
 6～8行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、モデルのシーンを読み込むJavaScriptファイル（**Load3DModel.js**）を設定します。
 
+<!--@ 6 -->
 ```HTML
 <script src="https://resource.mapray.com/mapray-js/v0.8.2/mapray.min.js"></script>
 <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
@@ -186,6 +204,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 #### スタイルの設定
 9～20行目で表示する要素のスタイルを設定します。スタイルの詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 9 -->
 ```HTML
 <style>
     html, body {
@@ -205,6 +224,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 画面を表示するときに、モデルシーン読み込みクラスを生成します。そのため、23行目でページの読み込み時に、地図表示部分のブロックのidからモデルシーン読み込みクラスのインスタンスを生成します。
 モデルシーン読み込みクラスはJavaScriptのサンプルコードの詳細で説明します。
 
+<!--@ 23 -->
 ```HTML
 <body onload="new LoadModel('mapray-container');">
 ```
@@ -213,6 +233,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 24行目で地図表示部分のブロックを記述します。
 詳細はヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 24 -->
 ```HTML
 <div id="mapray-container"></div>
 ```
@@ -223,6 +244,7 @@ JavaScriptのサンプルコードの詳細を以下で解説します。
 #### クラスの説明
 2～91行目で、モデルシーンを読み込み、表示するクラスを定義します。クラス内の各メソッドの詳細は以降で解説します。
 
+<!--@ none -->
 ```JavaScript
 class LoadModel {
 
@@ -235,6 +257,7 @@ class LoadModel {
 2～23行目がモデルシーンを読み込み、表示するクラスのコンストラクタです。引数として渡されるブロックのidに対して、mapray.Viewerを作成し、glTFモデルの出典情報を追加します。そして、カメラの位置・向きの設定メソッドを呼び出します。その後、シーンのロードメソッドを呼び出します。viewerを作成する際の画像プロバイダは画像プロバイダの生成メソッドから取得します。
 mapray.Viewerの作成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 2 -->
 ```JavaScript
 constructor(container) {
     // Access Tokenを設定
@@ -264,6 +287,7 @@ constructor(container) {
 26～29行目が画像プロバイダの生成メソッドです。生成した画像プロバイダを返します。
 画像プロバイダの生成の詳細は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 25 -->
 ```JavaScript
 // 画像プロバイダを生成
 createImageProvider() {
@@ -276,6 +300,7 @@ createImageProvider() {
 32～56行目がカメラの位置・向きの設定メソッドです。
 カメラの位置・向きの設定は、ヘルプページ『**緯度経度によるカメラ位置の指定**』を参照してください。
 
+<!--@ 31 -->
 ```JavaScript
 // カメラ位置の設定
 SetCamera() {
@@ -307,8 +332,9 @@ SetCamera() {
 
 #### シーンのロード
 59～71行目がシーンのロードメソッドです。mapray.SceneLoaderでシーンを読み込みます。
-SceneLoaderクラス生成時の引数には、シーンファイルのエンティティを追加するシーン、読み込むシーンファイルのURL、オプション集合の順に指定します。このサンプルコードでは、viewerクラスのシーン、61行目で設定したURL、リソース要求変換関数、シーンのロードが終了した時のコールバック関数の順に指定します。読み込むシーンのURLはhttpもしくはhttpsでアクセスできるURLを指定します。最後に、70行目のload関数を呼び出すことでシーンの読み込みができます。
+SceneLoaderクラス生成時の引数には、シーンファイルのエンティティを追加するシーン、読み込むシーンファイルのURL、オプション集合の順に指定します。このサンプルコードでは、viewerクラスのシーン、60行目で設定したURL、リソース要求変換関数、シーンのロードが終了した時のコールバック関数の順に指定します。読み込むシーンのURLはhttpもしくはhttpsでアクセスできるURLを指定します。最後に、70行目のload関数を呼び出すことでシーンの読み込みができます。
 
+<!--@ 58 -->
 ```JavaScript
 // シーンの読み込み
 LoadScene() {
@@ -329,6 +355,7 @@ LoadScene() {
 #### リソース要求変換
 73～79行目はリソース要求変換メソッドです。リソースのリクエスト時にURLなどを変換する内容を定義します。このサンプルコードでは、特に指定はしないので、リファレンスに沿った内容で定義します。
 
+<!--@ 73 -->
 ```JavaScript
 onTransform(url, type) {
     return {
@@ -343,6 +370,7 @@ onTransform(url, type) {
 81～89行目がシーンのロード終了イベントメソッドです。引数のisSuccessには、読み込み結果が格納されており、trueの場合のみ読み込んだglTFモデルを表示します。
 読み込んだモデルの向きを調整するため、87行目で、適切な向きをエンティティに反映させることで、地図上にglTFモデルを表示します。なお、読み込んだモデルは1つ目のエンティティとなるため、エンティティ取得時の引数には0を指定します。
 
+<!--@ 81 -->
 ```JavaScript
 onLoadScene(loader, isSuccess) {
     if (isSuccess) {
@@ -361,6 +389,7 @@ onLoadScene(loader, isSuccess) {
 #### エンティティの設定
 3行目でentity_listという名称でエンティティを定義し、その中にエンティティの詳細を定義します。4行目のtypeという名称は、エンティティの種類を表し、glTFモデルの場合はmodelを指定します。
 
+<!--@ none -->
 ```json
 {
 
@@ -379,6 +408,7 @@ onLoadScene(loader, isSuccess) {
 #### glTFモデルのデータ
 2行目でmodel_registerという名称でモデルデータを定義します。このシーンファイルでは、モデルデータのIDをmodel-0とし、モデルファイルをファイルから読み込むために、linkという名称にglTFファイルのURLを指定します。
 
+<!--@ 2 -->
 ```json
 "model_register": { "model-0": { "link": "./Yakushiji_Temple/Yakushiji_Temple.gltf" } },
 ```
@@ -390,6 +420,7 @@ onLoadScene(loader, isSuccess) {
 - モデルデータ（ref_model）　⇒　モデルデータのID（model-0）
 - 高度モード（altitude_mode）　⇒　初期位置の高度を絶対値で指定（absolute）
 
+<!--@ 4 -->
 ```json
 "type": "model",
 "mode": "basic",
@@ -417,6 +448,7 @@ onLoadScene(loader, isSuccess) {
 カメラの位置・向きの設定メソッドを下記のように変更します。
 この修正では、視点位置はを小倉城周辺に変更し、視線方向も小倉城が眺められる方向に変更しています。
 
+<!--@ none -->
 ```JavaScript
 SetCamera() {
     // 球面座標系（経度、緯度、高度）で視点を設定。モデルの座標を設定
@@ -450,6 +482,7 @@ SetCamera() {
 また、シーンファイル上でモデルの向き、スケールを設定するため、ロード後に実行することがなくなるので、今回はコールバック関数を設定しません。
 
 
+<!--@ none -->
 ```JavaScript
 LoadScene() {
     var scene_File_URL = "./data/glTFLoadVer2.json";
@@ -472,6 +505,7 @@ LoadScene() {
 - チルト（Y軸回りの回転角度）（tilt）　⇒　-90
 - モデルスケール（scale）　⇒　0.7
 
+<!--@ 1 -->
 ```json
 {
   "model_register": { "model-0": {
