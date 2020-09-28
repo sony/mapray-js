@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <title>CameraAnimationSample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.8.2/mapray.min.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.8.3/mapray.min.js"></script>
         <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <style>
             html, body {
@@ -18,7 +18,7 @@
             }
         </style>
     </head>
-    
+
     <body>
         <div id="mapray-container"></div>
     </body>
@@ -79,7 +79,7 @@
 
         // カメラの位置にX軸の回転行列をかける
         mapray.GeoMath.mul_AA(pitch_Mat, camera_pos_mat, camera_pos_mat);
-        
+
         // カメラの位置にZ軸の回転行列をかける
         mapray.GeoMath.mul_AA(turn_Mat, camera_pos_mat, camera_pos_mat);
 
