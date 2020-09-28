@@ -55,12 +55,10 @@ class RenderStage {
         this._point_cloud_collection = viewer.point_cloud_collection;
 
         // フレーム間のオブジェクトキャッシュ
-        if ( !viewer._render_cache ) {
-            viewer._render_cache = {
-                // 地表マテリアル
-                surface_material:   new SurfaceMaterial( viewer ),
-                wireframe_material: new WireframeMaterial( viewer )
-            };
+        const render_cache = viewer._render_cache || (viewer._render_cache = {});
+        if ( !render_cache.surface_material ) {
+            render_cache.surface_material = new SurfaceMaterial( viewer );
+            render_cache.wireframe_material = new WireframeMaterial( viewer );
         }
 
         // 地表マテリアルの選択
