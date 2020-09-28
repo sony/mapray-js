@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <title>AddPinSample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.8.2/mapray.min.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.8.3/mapray.min.js"></script>
         <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <style>
             html, body {
@@ -35,7 +35,7 @@
             dem_provider: new mapray.CloudDemProvider(accessToken)
         }
     );
-    
+
     // 球面座標系（経度、緯度、高度）で視点を設定。皇居と東京駅と東京タワーの中心点付近
     var home_pos = { longitude: 139.753175, latitude: 35.653943, height: 500 };
 
@@ -65,7 +65,7 @@
 
     // 皇居の座標を設定
     var fast_Pin_Point = new mapray.GeoPoint(139.7528, 35.685175, 13);
-    
+
     // ピンを追加
     pin_Entity.addPin(fast_Pin_Point, { size: 40, bg_color: [1, 0, 0] });
 
@@ -80,7 +80,7 @@
 
     // テキストピンを追加
     pin_Entity.addTextPin("T", third_Pin_Point, { size: 40, bg_color: [0, 0, 1] });
-    
+
     // エンティティをシーンに追加
     viewer.scene.addEntity(pin_Entity);
 </script>

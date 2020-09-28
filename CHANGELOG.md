@@ -1,4 +1,7 @@
 # Change Log
+## 0.8.3
+### Bug fix
+- material for flake will not be loaded [#139](https://github.com/sony/mapray-js/issues/139), [#138](https://github.com/sony/mapray-js/pull/138)
 ## 0.8.2
 ### Added
 - Support Animation in each entity and added path entity[#106](https://github.com/sony/mapray-js/issues/106), [#126](https://github.com/sony/mapray-js/pull/126)
