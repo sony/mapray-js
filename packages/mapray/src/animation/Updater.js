@@ -1017,11 +1017,22 @@ class VaryCurves {
         // 時刻区間 [t1, ∞) と交差する最初の時刻区間
         let it_A = this._continuous.findLower( t1 );
         if ( it_A !== null ) {
-            let it_P = it_A.findPredecessor();
-            if ( it_P !== null ) {
-                if ( it_P.value.interval.includesTime( t1 ) ) {
-                    // it_A の直前が [t1, ∞) と交差するなら it_A の直前を選ぶ
-                    it_A = it_P;
+            // it_A != null でも、時刻区間 Pred と交差している可能性もある
+            let it_Pred = it_A.findPredecessor();
+            if ( it_Pred !== null ) {
+                if ( it_Pred.value.interval.includesTime( t1 ) ) {
+                    // Pred と [t1, ∞) が交差するので it_Pred に置き換える
+                    it_A = it_Pred;
+                }
+            }
+        }
+        else {
+            // it_A == null でも、時刻区間 Last と交差している可能性がある
+            let it_Last = this._continuous.findLast();
+            if ( it_Last !== null ) {
+                if ( it_Last.value.interval.includesTime( t1 ) ) {
+                    // Last と [t1, ∞) が交差するので it_Last に置き換える
+                    it_A = it_Last;
                 }
             }
         }
