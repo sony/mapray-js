@@ -1019,7 +1019,7 @@ class VaryCurves {
         if ( it_A !== null ) {
             let it_P = it_A.findPredecessor();
             if ( it_P !== null ) {
-                if ( it_P.value.interval.includeTime( t1 ) ) {
+                if ( it_P.value.interval.includesTime( t1 ) ) {
                     // it_A の直前が [t1, ∞) と交差するなら it_A の直前を選ぶ
                     it_A = it_P;
                 }
