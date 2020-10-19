@@ -69,6 +69,7 @@ var mapray = {
     ImageIconEntity,
     SceneLoader,
     GeoJSONLoader,
+    Resource,
     URLResource,
     MaprayApi,
     DebugStats,
