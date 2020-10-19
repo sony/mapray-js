@@ -21,7 +21,7 @@ class GeoJSONLoader extends Loader {
      * @param {mapray.Scene} scene      読み込み先のシーン
      * @param {string}       resource        シーンファイルの URL
      * @param {object}       [options]  オプション集合
-     * @param {mapray.GeoJSONLoader.TransformCallback} [options.transform]  リソース要求変換関数
+     * @param {mapray.Loader.TransformCallback} [options.transform]  リソース要求変換関数
      * @param {mapray.GeoJSONLoader.FinishCallback}    [options.callback]   終了コールバック関数
      * @param {mapray.Loader.EntityCallback}           [options.onEntity]   エンティティコールバック関数
      */
@@ -63,7 +63,6 @@ class GeoJSONLoader extends Loader {
         this._getAltitudeMode = options.getAltitudeMode || defaultGetAltitudeModeCallback;
         this._getAltitude = options.getAltitude || defaultGetAltitudeCallback;
 
-        this._transform  = options.transform || defaultTransformCallback;
         this._glenv      = scene.glenv;
         this._references = {};
         this._cancelled  = false;
@@ -372,42 +371,6 @@ class GeoJSONLoader extends Loader {
     };
 }
 
-/**
- * @summary リソース要求変換関数
- * @callback TransformCallback
- * @desc
- * <p>リソースのリクエスト時に URL などを変換する関数の型である。</p>
- *
- * @param  {string}                          url   変換前のリソース URL
- * @param  {mapray.GeoJSONLoader.ResourceType} type  リソースの種類
- * @return {mapray.GeoJSONLoader.TransformResult}    変換結果を表すオブジェクト
- *
- * @example
- * function( url, type ) {
- *     return {
- *         url:         url,
- *         credentials: mapray.CredentialMode.SAME_ORIGIN,
- *         headers: {
- *             'Header-Name': 'Header-Value'
- *         }
- *     };
- * }
- *
- * @memberof mapray.GeoJSONLoader
- */
-
-
-/**
- * @summary リソース要求変換関数の変換結果
- * @typedef {object} TransformResult
- * @desc
- * <p>関数型 {@link mapray.GeoJSONLoader.TransformCallback} の戻り値のオブジェクト構造である。</p>
- * <p>注意: 現在のところ、リソースの種類が {@link mapray.GeoJSONLoader.ResourceType|ResourceType}.IMAGE のとき、headers プロパティの値は無視される。</p>
- * @property {string}                url                 変換後のリソース URL
- * @property {mapray.CredentialMode} [credentials=OMIT]  クレデンシャルモード
- * @property {object}                [headers={}]        リクエストに追加するヘッダーの辞書 (キーがヘッダー名、値がヘッダー値)
- * @memberof mapray.GeoJSONLoader
- */
 
 
 {
@@ -476,10 +439,6 @@ function defaultGetExtrudedHeightCallback( geojson )
     return GeoJSONLoader.defaultExtrudedHeight;
 }
 
-function defaultTransformCallback( url )
-{
-    return { url: url };
-}
 
 var TYPES = {
     FEATURE: "Feature",
