@@ -6,6 +6,7 @@ const ABSOLUTE_URL_PATTERN = new RegExp("^https?://");
 
 /**
  * @summary Utility Class for DOM
+ * @private
  * @memberof mapray
  */
 class Dom {
@@ -24,9 +25,10 @@ class Dom {
     }
 
     /**
-     * 画像を読み込みます。
+     * @summary 画像を読み込みます。
      * @param  {string|Blob}  src
-     * @param  {string}  options.crossOrigin
+     * @Param  {object}  options
+     * @param  {mapray.CredentialMode}  [options.credentials=mapray.CredentialMode.SAME_ORIGIN]
      */
     static async loadImage( src, options={} )
     {
@@ -44,7 +46,7 @@ class Dom {
     }
 
     /**
-     * 画像が読み込まれるまで待ちます。
+     * @summary 画像が読み込まれるまで待ちます。
      * @param  {HTMLImageElement}  image
      */
     static async waitForLoad( image )
