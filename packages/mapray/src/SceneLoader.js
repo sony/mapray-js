@@ -24,7 +24,7 @@ class SceneLoader extends Loader {
      * @param {mapray.Scene} scene      読み込み先のシーン
      * @param {string}       resource        シーンリソース
      * @param {object}       [options]  オプション集合
-     * @param {mapray.SceneLoader.TransformCallback} [options.transform]  リソース要求変換関数
+     * @param {mapray.Loader.TransformCallback} [options.transform]  リソース要求変換関数
      * @param {mapray.Loader.EntityCallback}         [options.onEntity]   エンティティコールバック
      * @param {mapray.SceneLoader.FinishCallback}    [options.callback]   終了コールバック関数
      */
@@ -276,43 +276,6 @@ class SceneLoader extends Loader {
  * @memberof mapray.SceneLoader
  */
 
-
-/**
- * @summary リソース要求変換関数
- * @callback TransformCallback
- * @desc
- * <p>リソースのリクエスト時に URL などを変換する関数の型である。</p>
- *
- * @param  {string}                          url   変換前のリソース URL
- * @param  {ResourceType} type  リソースの種類
- * @return {mapray.SceneLoader.TransformResult}    変換結果を表すオブジェクト
- *
- * @example
- * function( url, type ) {
- *     return {
- *         url:         url,
- *         credentials: mapray.CredentialMode.SAME_ORIGIN,
- *         headers: {
- *             'Header-Name': 'Header-Value'
- *         }
- *     };
- * }
- *
- * @memberof mapray.SceneLoader
- */
-
-
-/**
- * @summary リソース要求変換関数の変換結果
- * @typedef {object} TransformResult
- * @desc
- * <p>関数型 {@link mapray.SceneLoader.TransformCallback} の戻り値のオブジェクト構造である。</p>
- * <p>注意: 現在のところ、リソースの種類が {@link mapray.SceneLoader.ResourceType|ResourceType}.IMAGE のとき、headers プロパティの値は無視される。</p>
- * @property {string}                url                 変換後のリソース URL
- * @property {mapray.CredentialMode} [credentials=OMIT]  クレデンシャルモード
- * @property {object}                [headers={}]        リクエストに追加するヘッダーの辞書 (キーがヘッダー名、値がヘッダー値)
- * @memberof mapray.SceneLoader
- */
 
 
 

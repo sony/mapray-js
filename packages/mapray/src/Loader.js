@@ -194,4 +194,41 @@ function defaultOnEntityCallback( loader, entity )
 }
 
 
+/**
+ * @summary リソース要求変換関数
+ * @callback TransformCallback
+ * @desc
+ * <p>リソースのリクエスト時に URL などを変換する関数の型である。</p>
+ *
+ * @param  {string}                          url   変換前のリソース URL
+ * @param  {mapray.Resource.ResourceType} type  リソースの種類
+ * @return {mapray.Loader.TransformResult}    変換結果を表すオブジェクト
+ *
+ * @example
+ * function( url, type ) {
+ *     return {
+ *         url:         url,
+ *         credentials: mapray.CredentialMode.SAME_ORIGIN,
+ *         headers: {
+ *             'Header-Name': 'Header-Value'
+ *         }
+ *     };
+ * }
+ *
+ * @memberof mapray.Loader
+ */
+
+
+/**
+ * @summary リソース要求変換関数の変換結果
+ * @typedef {object} TransformResult
+ * @desc
+ * <p>関数型 {@link mapray.Loader.TransformCallback} の戻り値のオブジェクト構造である。</p>
+ * @property {string}                url                 変換後のリソース URL
+ * @property {mapray.CredentialMode} [credentials=SAME_ORIGIN]  クレデンシャルモード
+ * @property {object}                [headers={}]        リクエストに追加するヘッダーの辞書 (キーがヘッダー名、値がヘッダー値)
+ * @memberof mapray.Loader
+ */
+
+
 export default Loader;

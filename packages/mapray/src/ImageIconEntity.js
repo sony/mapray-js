@@ -28,7 +28,7 @@ class ImageIconEntity extends Entity {
      * @param {object}       [opts]       オプション集合
      * @param {object}       [opts.json]  生成情報
      * @param {object}       [opts.refs]  参照辞書
-     * @param {mapray.GeoJSONLoader.TransformCallback} [opts.transform] 
+     * @param {mapray.Loader.TransformCallback} [opts.transform] 
      */
     constructor( scene, opts )
     {
@@ -141,6 +141,7 @@ class ImageIconEntity extends Entity {
      * @param {object}          [props]             プロパティ
      * @param {mapray.Vector2}  [props.size]        アイコンサイズ
      * @param {string}          [props.id]          Entryを識別するID
+     * @param {mapray.Loader.Transform} [props.transform] URL変換関数
      * @return {mapray.ImageIconEntity.ImageEntry}  追加したEntry
      */
     addImageIcon( image_src, position, props ) 
@@ -569,6 +570,7 @@ class ImageEntry {
      * @param {object}                 [props]      プロパティ
      * @param {mapray.Vector2}         [props.size] アイコンサイズ
      * @param {string}                 [props.id]   Entryを識別するID
+     * @param {mapray.Loader.Transform} [props.transform] URL変換関数
      */
     constructor( owner, image_src, position, props )
     {
