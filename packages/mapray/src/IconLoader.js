@@ -1,5 +1,5 @@
 import Dom from "./util/Dom";
-
+import Resource, { ResourceType } from "./Resource";
 
 
 /**
@@ -374,6 +374,7 @@ class ImageIconLoaderItem extends IconLoaderItem {
     async doLoad() {
         const image_src = this._image_src;
         const image = (
+            image_src instanceof Resource          ? await image_src.load( { type: ResourceType.IMAGE } ):
             typeof( image_src ) === "string"       ? await Dom.loadImage( image_src ):
             image_src instanceof HTMLImageElement  ? await Dom.waitForLoad( image_src ):
             image_src instanceof HTMLCanvasElement ? image_src:

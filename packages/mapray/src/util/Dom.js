@@ -1,3 +1,4 @@
+import CredentialMode from "../CredentialMode";
 
 const DATA_URL_PATTERN = new RegExp("^data:");
 const ABSOLUTE_URL_PATTERN = new RegExp("^https?://");
@@ -33,8 +34,10 @@ class Dom {
                 const image = new Image();
                 image.onload  = event => resolve( event.target );
                 image.onerror = event => reject( new Error("Failed to load image") );
-                if ( options.crossOrigin !== undefined ) {
-                    image.crossOrigin = options.crossOrigin;
+                if ( options.credentials !== CredentialMode.OMIT ) {
+                    image.crossOrigin = (
+                        options.credentials === CredentialMode.INCLUDE ? "use-credentials" : "anonymous"
+                    );
                 }
                 image.src = src instanceof Blob ? URL.createObjectURL( src ) : src;
         } );
