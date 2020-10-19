@@ -20,8 +20,8 @@ class Resource {
     /**
      * @protected
      */
-    load( options={} ) {
-        return Promise.reject( new Error( "Not Implemented" ) );
+    async load( options={} ) {
+        throw new Error( "Not Implemented" );
     }
 
     /**
@@ -43,8 +43,8 @@ class Resource {
      * @param {mapray.Resource.ResourceType} [options.type] 
      * @protected
      */
-    loadSubResource( url, options={} ) {
-        return Promise.reject( new Error( "Not Supported" ) );
+    async loadSubResource( url, options={} ) {
+        throw new Error( "Not Supported" );
     }
 
     /**
@@ -57,8 +57,8 @@ class Resource {
     /**
      * @protected
      */
-    resolveResource( url ) {
-        return Promise.reject( new Error( "Not Supported" ) );
+    async resolveResource( url ) {
+        throw new Error( "Not Supported" );
     }
 
     /**
@@ -119,26 +119,16 @@ class URLResource extends Resource {
     /**
      * @param {object} [options]
      */
-    load( options={} ) {
-        const tr = this._transform( this._url, options.type );
-        const http_option = this._make_fetch_params( tr ) || {};
-        if ( options.signal ) http_option.signal = options.signal;
-        return (
-            HTTP.get( tr.url, null, http_option )
-            .then( response => {
-                    if ( !response.ok ) throw new Error( response.statusText );
-                    if ( options.type === ResourceType.JSON ) {
-                        return response.json();
-                    }
-                    else if ( options.type === ResourceType.IMAGE ) {
-                        return Dom.loadImage( tr.url, http_option );
-                    }
-                    else if ( options.type === ResourceType.BINARY ) {
-                        return response.arrayBuffer();
-                    }
-                    else return response;
-            })
-        );
+    get url() {
+        return this._url;
+    }
+
+    /**
+     * @summary このリソースを読み込みます。
+     * @param {object} [options]
+     */
+    async load( options={} ) {
+        return await this._loadURLResource( this._url, options.type || this._type, options );
     }
 
     /**
@@ -158,42 +148,8 @@ class URLResource extends Resource {
     /**
      * 
      */
-    loadSubResource( subUrl, options={} ) {
-        const url = Dom.resolveUrl( this._base_url, subUrl );
-        const tr = this._transform( url, options.type );
-        const http_option = tr.init || {};
-        if ( options.signal ) http_option.signal = options.signal;
-
-        if ( options.type === URLResource.ResourceType.BINARY ) {
-            return (
-                HTTP.get( tr.url, null, http_option )
-                .then( response => {
-                        if ( !response.ok ) throw new Error( response.statusText );
-                        return response.arrayBuffer();
-                })
-            );
-        }
-        else if ( options.type === URLResource.ResourceType.IMAGE ) {
-            return Dom.loadImage( tr.url, http_option );
-        }
-        else if ( options.type === URLResource.ResourceType.JSON ) {
-            return (
-                HTTP.get( tr.url, null, http_option )
-                .then( response => {
-                        if ( !response.ok ) throw new Error( response.statusText );
-                        return response.json();
-                })
-            );
-        }
-        else {
-            return (
-                HTTP.get( tr.url, null, this._make_fetch_params( tr ) )
-                .then( response => {
-                        if ( !response.ok ) throw new Error( response.statusText );
-                        return response;
-                })
-            );
-        }
+    async loadSubResource( subUrl, options={} ) {
+        return await this._loadURLResource( Dom.resolveUrl( this._base_url, subUrl ), options.type, options );
     }
 
     /**
@@ -214,12 +170,35 @@ class URLResource extends Resource {
         });
     }
 
+
+    /**
+     * @param {string} url
+     * @param {mapray.Resource.ResourceType} [type]
+     * @private
+     */
+    async _loadURLResource( url, type, options={} ) {
+        const tr = this._transform( url, type );
+        if ( type === ResourceType.IMAGE ) {
+            return await Dom.loadImage( tr.url, tr );
+        }
+        const http_option = this._make_fetch_params( tr ) || {};
+        if ( options.signal ) http_option.signal = options.signal;
+
+        const response = await HTTP.get( tr.url, null, http_option );
+        if ( !response.ok ) throw new Error( response.statusText );
+
+        return (
+            type === ResourceType.JSON ? await response.json():
+            type === ResourceType.BINARY ? await response.arrayBuffer():
+            response
+        );
+    }
+
     /**
      * fetch() の init 引数に与えるオブジェクトを生成
      * @private
      */
-    _make_fetch_params( tr )
-    {
+    _make_fetch_params( tr ) {
         var init = {
             signal:      this._abort_ctrl.signal,
             credentials: (tr.credentials || HTTP.CREDENTIAL_MODE.OMIT).credentials
@@ -231,56 +210,6 @@ class URLResource extends Resource {
 
         return init;
     }
-
-    /**
-     * バイナリを取得するときの fetch 関数のパラメータを取得
-     *
-     * @param  {string} url  バイナリの URL
-     * @return {object}      { url: URL, init: fetch() に与える init オブジェクト }
-     */
-    makeBinaryFetchParams( url, resourceType )
-    {
-        const tr = this._transform( url, resourceType );
-
-        var init = {
-            credentials: (tr.credentials || CredentialMode.OMIT).credentials
-        };
-        if ( tr.headers ) {
-            init.headers = tr.headers;
-        }
-
-        return {
-            url:  tr.url,
-            init: init
-        };
-    }
-
-
-    /**
-     * イメージを取得するときの Image のプロパティを取得
-     *
-     * @param  {string} url  バイナリの URL
-     * @return {object}      { url: URL, crossOrigin: Image#crossOrigin }
-     */
-    _makeImageLoadParams( url, resourceType )
-    {
-        const tr = this._transform( url, resourceType );
-
-        const params = {
-            url: tr.url
-        };
-
-        // crossorigin 属性の値
-        if ( tr.credentials === CredentialMode.SAME_ORIGIN ) {
-            params.crossOrigin = "anonymous";
-        }
-        else if ( tr.credentials === CredentialMode.INCLUDE ) {
-            params.crossOrigin = "use-credentials";
-        }
-
-        return params;
-    }
-
 }
 
 

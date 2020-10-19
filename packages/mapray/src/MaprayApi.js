@@ -157,10 +157,10 @@ class MaprayApi extends HTTP {
      * @summary get datasets
      * @return {Promise<object>} json
      */
-    getDatasets()
+    async getDatasets()
     {
         var opt = this._option;
-        return this.get( "datasets", [ opt.userId ], null );
+        return await this.get( "datasets", [ opt.userId ], null );
     }
 
     /**
@@ -168,10 +168,10 @@ class MaprayApi extends HTTP {
      * @param {string} datasetId
      * @return {Promise<object>} json
      */
-    getDataset( datasetId )
+    async getDataset( datasetId )
     {
         var opt = this._option;
-        return this.get( "datasets", [ opt.userId, datasetId ], null );
+        return await this.get( "datasets", [ opt.userId, datasetId ], null );
     }
 
     /**
@@ -180,24 +180,24 @@ class MaprayApi extends HTTP {
      * @param {string} description
      * @return {Promise<object>} json
      */
-    createDataset( name, description )
+    async createDataset( name, description )
     {
         var opt = this._option;
         var body = {
             name,
             description
         };
-        return this.post( "datasets", [ opt.userId ], null, body );
+        return await this.post( "datasets", [ opt.userId ], null, body );
     }
 
     /**
      * @summary Delete a dataset
      * @return {Promise<object>} json
      */
-    deleteDataset( datasetId/*, option={ wait: true }*/ )
+    async deleteDataset( datasetId/*, option={ wait: true }*/ )
     {
         var opt = this._option;
-        return this.delete( "datasets", [ opt.userId, datasetId ] );
+        return await this.delete( "datasets", [ opt.userId, datasetId ] );
     }
 
     /**
@@ -205,102 +205,102 @@ class MaprayApi extends HTTP {
      * @param {string} datasetId
      * @return {Promise<object>} json
      */
-    getFeatures( datasetId ) {
+    async getFeatures( datasetId ) {
         var opt = this._option;
-        return this.get( "datasets", [ opt.userId, datasetId, "features" ] );
+        return await this.get( "datasets", [ opt.userId, datasetId, "features" ] );
     }
 
     /**
      * @summary Insert feature
      * @return {Promise<object>} json
      */
-    insertFeature( datasetId, feature ) {
+    async insertFeature( datasetId, feature ) {
         var opt = this._option;
-        return this.post( "datasets", [ opt.userId, datasetId, "features" ], null, feature );
+        return await this.post( "datasets", [ opt.userId, datasetId, "features" ], null, feature );
     }
 
     /**
      * @summary Update feature
      * @return {Promise<object>} json
      */
-    updateFeature( datasetId, featureId, feature )
+    async updateFeature( datasetId, featureId, feature )
     {
         var opt = this._option;
-        return this.put( "datasets", [ opt.userId, "features", featureId ], null, feature );
+        return await this.put( "datasets", [ opt.userId, "features", featureId ], null, feature );
     }
 
     /**
      * @summary get 3D datasts
      * @return {Promise<object>} json
      */
-    get3DDatasets() {
+    async get3DDatasets() {
         const opt = this._option;
-        return this.get( "3ddatasets", [ opt.userId ] );
+        return await this.get( "3ddatasets", [ opt.userId ] );
     }
 
     /**
      * @summary create 3D datasts
      * @return {Promise<object>} json
      */
-    create3DDataset( name, description, coordinateSystem ) {
+    async create3DDataset( name, description, option ) {
         const opt = this._option;
         const body = {
             name,
             description,
-            path: coordinateSystem.path,
-            format: coordinateSystem.format,
-            srid: coordinateSystem.srid,
-            x: coordinateSystem.x,
-            y: coordinateSystem.y,
-            z: coordinateSystem.z
+            path: option.path,
+            format: option.format,
+            srid: option.srid,
+            x: option.x,
+            y: option.y,
+            z: option.z
         };
-        return this.post( "3ddatasets", [ opt.userId ], null, body );
+        return await this.post( "3ddatasets", [ opt.userId ], null, body );
     }
 
     /**
      * @summary update 3D datasts
      * @return {Promise<object>} json
      */
-    update3DDataset( datasetId, name, description, coordinateSystem ) {
+    async update3DDataset( datasetId, name, description, option ) {
         const opt = this._option;
         const body = {
             name,
             description,
-            path: coordinateSystem.path,
-            format: coordinateSystem.format,
-            srid: coordinateSystem.srid,
-            x: coordinateSystem.x,
-            y: coordinateSystem.y,
-            z: coordinateSystem.z
+            path: option.path,
+            format: option.format,
+            srid: option.srid,
+            x: option.x,
+            y: option.y,
+            z: option.z
         };
-        return this.patch( "3ddatasets", [ opt.userId, datasetId ], null, body );
+        return await this.patch( "3ddatasets", [ opt.userId, datasetId ], null, body );
     }
 
     /**
      * @summary create 3D datast upload url
      * @return {Promise<object>} json
      */
-    create3DDatasetUploadUrl( datasetId ) {
+    async create3DDatasetUploadUrl( datasetId ) {
         const opt = this._option;
-        return this.post( "3ddatasets", [ "uploads", opt.userId, datasetId ], null, {} );
+        return await this.post( "3ddatasets", [ "uploads", opt.userId, datasetId ], null, {} );
     }
 
     /**
      * @summary get 3D datast
      * @return {Promise<object>} json
      */
-    get3DDataset( datasetId ) {
+    async get3DDataset( datasetId ) {
         const opt = this._option;
-        return this.get( "3ddatasets", [ opt.userId, datasetId ], null );
+        return await this.get( "3ddatasets", [ opt.userId, datasetId ], null );
     }
 
     /**
      * @summary delete 3D datast
      * @return {Promise<object>} json
      */
-    delete3DDataset( datasetId ) {
+    async delete3DDataset( datasetId ) {
         const opt = this._option;
-        return this.delete( "3ddatasets", [ opt.userId, datasetId ] );
+        return await this.delete( "3ddatasets", [ opt.userId, datasetId ] );
     }
 
     /**
@@ -308,71 +308,69 @@ class MaprayApi extends HTTP {
      * @param {string|string[]} datasetIds
      * @return {object} シーンファイルの実体
      */
-    get3DDatasetScene( datasetIds ) {
+    async get3DDatasetScene( datasetIds ) {
         const opt = this._option;
-        return this.get( "3ddatasets", [ "scene", opt.userId ], { "3ddatasets_ids": Array.isArray(datasetIds) ? datasetIds.join(",") : datasetIds } )
-        .then(response => {
-            response.entity_list.forEach(entity => {
+        const response = await this.get( "3ddatasets", [ "scene", opt.userId ], { "3ddatasets_ids": Array.isArray(datasetIds) ? datasetIds.join(",") : datasetIds } );
+        response.entity_list.forEach(entity => {
                 const indexStr = entity.index;
                 const index = parseInt(indexStr);
                 if (index.toString() !== indexStr) {
-                  throw new Error("Internal Error: ID couldn't be convert to 'number'");
+                    throw new Error("Internal Error: ID couldn't be convert to 'number'");
                 }
                 entity.index = index;
-            });
-            return response;
         });
+        return response;
     }
 
     /**
      * @summary Get Point cloud datasts
      * @return {Promise<object>} json
      */
-    getPointCloudDatasets() {
+    async getPointCloudDatasets() {
         const opt = this._option;
-        return this.get( "pcdatasets", [ opt.userId ] );
+        return await this.get( "pcdatasets", [ opt.userId ] );
     }
 
     /**
      * @summary Get Point cloud datast
      * @return {Promise<object>} json
      */
-    getPointCloudDataset( datasetId ) {
+    async getPointCloudDataset( datasetId ) {
         const opt = this._option;
-        return this.get( "pcdatasets", [ opt.userId, datasetId ] )
+        return await this.get( "pcdatasets", [ opt.userId, datasetId ] )
     }
 
     /**
      * @protected
      * @return {Promise<object>} json
      */
-    get( api, args, query, option={} )
+    async get( api, args, query, option={} )
     {
-        return this.fetchAPI( HTTP.METHOD.GET, api, args, query, null, option );
+        return await this.fetchAPI( HTTP.METHOD.GET, api, args, query, null, option );
     }
 
     /**
      * @protected
      * @return {Promise<object>} json
      */
-    post( api, args, query, body, option={} )
-    {
-        if ( typeof( body ) !== "string" ) {
-            body = JSON.stringify(body);
-        }
-        return this.fetchAPI( HTTP.METHOD.POST, api, args, query, body, option );
-    }
-
-    /**
-     * @protected
-     * @return {Promise<object>} json
-     */
-    patch( api, args, query, body, option={} )
+    async post( api, args, query, body, option={} )
     {
         if ( typeof( body ) !== "string" ) {
             body = JSON.stringify(body);
         }
-        return this.fetchAPI( HTTP.METHOD.PATCH, api, args, query, body, option );
+        return await this.fetchAPI( HTTP.METHOD.POST, api, args, query, body, option );
+    }
+
+    /**
+     * @protected
+     * @return {Promise<object>} json
+     */
+    async patch( api, args, query, body, option={} )
+    {
+        if ( typeof( body ) !== "string" ) {
+            body = JSON.stringify(body);
+        }
+        return await this.fetchAPI( HTTP.METHOD.PATCH, api, args, query, body, option );
     }
 
     /**
@@ -412,32 +410,34 @@ class MaprayApi extends HTTP {
     /**
      * @protected
      */
-    fetch( method, url, query, body, option={} )
+    async fetch( method, url, query, body, option={} )
     {
         var opt = this._option;
         var headers = option.headers || (option.headers={});
         headers["x-api-key"] = opt.token;
-        return (
-            HTTP.fetch( method, url, query, body, option )
-            .catch( error => {
-                    if ( error.name === "FetchError" && error.response ) {
-                        return (
-                            error.response.json()
-                            .catch( additionalError => {
-                                    // Couldn't get additional info of the error.
-                                    // throw original error.
-                                    throw new MaprayApiError( -1, "Failed to fetch", url, null, error );
-                            } )
-                            .then( errorObject => {
-                                    throw new MaprayApiError( errorObject.code, errorObject.error, url, error.response, error );
-                            } )
-                        );
-                    }
-                    else {
-                        throw new MaprayApiError( -1, "Failed to fetch", url, null, error );
-                    }
-            } )
-        );
+
+        let response;
+        try {
+            response = await HTTP.fetch( method, url, query, body, option );
+        }
+        catch( error ) {
+            if ( error.name === "FetchError" && error.response ) {
+                let errorResponseJson;
+                try {
+                    errorResponseJson = await error.response.json();
+                }
+                catch( additionalError ) {
+                    // Couldn't get additional info of the error.
+                    // throw original error.
+                    throw new MaprayApiError( -1, "Failed to fetch", url, null, error );
+                }
+                throw new MaprayApiError( errorObject.code, errorObject.error, url, error.response, error );
+            }
+            else {
+                throw new MaprayApiError( -1, "Failed to fetch", url, null, error );
+            }
+        }
+        return response;
     }
 }
 

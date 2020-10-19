@@ -27,21 +27,16 @@ class Dom {
      * @param  {string|Blob}  src
      * @param  {string}  options.crossOrigin
      */
-    static loadImage( src, options={} )
+    static async loadImage( src, options={} )
     {
-        return new Promise( (resolve, reject) => {
+        return await new Promise( (resolve, reject) => {
                 const image = new Image();
                 image.onload  = event => resolve( event.target );
                 image.onerror = event => reject( new Error("Failed to load image") );
                 if ( options.crossOrigin !== undefined ) {
                     image.crossOrigin = options.crossOrigin;
                 }
-                if ( src instanceof Blob ) {
-                    image.src = URL.createObjectURL( src );
-                }
-                else {
-                    image.src = src;
-                }
+                image.src = src instanceof Blob ? URL.createObjectURL( src ) : src;
         } );
     }
 
@@ -49,13 +44,12 @@ class Dom {
      * 画像が読み込まれるまで待ちます。
      * @param  {HTMLImageElement}  image
      */
-    static waitForLoad( image )
+    static async waitForLoad( image )
     {
-        if ( !image.src ) return Promise.reject( new Error( "src was not set" ) );
-        if ( image.complete ) {
-            return Promise.resolve( image );
-        }
-        return new Promise( (resolve, reject) => {
+        if ( !image.src ) throw new Error( "src was not set" );
+        if ( image.complete ) return image;
+
+        return await new Promise( (resolve, reject) => {
                 const prevOnLoad  = image.onload;
                 const prevOnError = image.onerror;
                 image.onload = event => {
