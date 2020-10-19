@@ -36,16 +36,12 @@ class ApiUrlResource extends Resource {
     /**
      * @param {object} options
      */
-    load( options={} ) {
-        if ( options.type === ResourceType.JSON ) {
-            return (
-                this._api.fetch( HTTP.METHOD.GET, this._url )
-                .then( response => response.json() )
-            );
-        }
-        else {
-            return this._api.fetch( HTTP.METHOD.GET, this._url );
-        }
+    async load( options={} ) {
+        const response = await this._api.fetch( HTTP.METHOD.GET, this._url );
+        return (
+          options.type === ResourceType.JSON ? await response.json():
+          response
+        );
     }
 
     /**
@@ -60,30 +56,15 @@ class ApiUrlResource extends Resource {
      * @param {string} sub_url
      * @return {Resource}
      */
-    loadSubResource( sub_url, options={} ) {
+    async loadSubResource( sub_url, options={} ) {
         const url = Dom.resolveUrl( this._base_url, sub_url );
-        // const url = this._base_url + sub_url;
-        if ( options.type === ResourceType.BINARY ) {
-            return (
-                this._api.fetch( HTTP.METHOD.GET, url )
-                .then(response => {
-                        return response.arrayBuffer();
-                })
-            );
-        }
-        else if ( options.type === ResourceType.IMAGE ) {
-            return (
-                this._api.fetch( HTTP.METHOD.GET, url )
-                .then( response => {
-                        if ( !response.ok ) throw new Error( response.statusText );
-                        return response.blob();
-                } )
-                .then( Dom.loadImage )
-            );
-        }
-        else {
-            return this._api.fetch( HTTP.METHOD.GET, url );
-        }
+        const response = await this._api.fetch( HTTP.METHOD.GET, url );
+        if ( !response.ok ) throw new Error( response.statusText );
+        return (
+            options.type === ResourceType.BINARY ? await response.arrayBuffer():
+            options.type === ResourceType.IMAGE ? await Dom.loadImage( await response.blob() ):
+            response
+        );
     }
 }
 
@@ -102,8 +83,8 @@ export class DatasetResource extends Resource {
     /**
      * @return {Promise(object)} データ(geojson)
      */
-    load() {
-        return this._api.listFeatures( this._datasetId );
+    async load() {
+        return await this._api.listFeatures( this._datasetId );
     }
 }
 
@@ -127,8 +108,8 @@ export class Dataset3DSceneResource extends Resource {
     /**
      * @return {Promise(object)} シーンファイル(json)
      */
-    load() {
-        return this._api.get3DDatasetScene( this._datasetIds );
+    async load() {
+        return await this._api.get3DDatasetScene( this._datasetIds );
     }
 
     /**
@@ -168,8 +149,8 @@ export class PointCloudDatasetResource extends Resource {
     /**
      * @return {Promise<object>} 点群定義(json)
      */
-    load() {
-        return this._api.getPointCloudDataset( this._datasetId );
+    async load() {
+        return await this._api.getPointCloudDataset( this._datasetId );
     }
 
     /**

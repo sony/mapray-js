@@ -69,7 +69,8 @@ class IconLoaderItem {
 
     constructor() {
         this._status = IconLoaderItem.Status.NOT_LOADED;
-        this.funcs = [];
+        this._funcs = [];
+        this._icon = null;
     }
 
 
@@ -96,32 +97,27 @@ class IconLoaderItem {
     onEnd( func ) {
         const alreadyDone = this._status === IconLoaderItem.Status.LOADED || this._status === IconLoaderItem.Status.ABORTED;
         if ( alreadyDone ) func( this );
-        else this.funcs.push( func );
+        else this._funcs.push( func );
     }
 
 
     /**
      * @summary アイコンを読み込み関数（doLoad()）を実行し、成功時、失敗時それぞれ後続処理を行います。
      */
-    load() {
+    async load() {
         if ( this._status === IconLoaderItem.Status.NOT_LOADED ) {
             this._status = IconLoaderItem.Status.LOADING;
-            return this.doLoad()
-            .then( image => {
-                    this._icon = image;
-                    this._status = IconLoaderItem.Status.LOADED;
-                    for ( var i = 0; i < this.funcs.length; i++ ) {
-                        this.funcs[ i ]( this );
-                    }
-                    this.funcs.length = 0;
-            } )
-            .catch( error => {
-                    this._status = IconLoaderItem.Status.ABORTED;
-                    for ( var i = 0; i < this.funcs.length; i++ ) {
-                        this.funcs[ i ]( this );
-                    }
-                    this.funcs.length = 0;
-            } );
+            try {
+                this._icon = await this.doLoad();
+                this._status = IconLoaderItem.Status.LOADED;
+            }
+            catch( error ) {
+                this._status = IconLoaderItem.Status.ABORTED;
+            }
+            for ( var i = 0; i < this._funcs.length; i++ ) {
+                this._funcs[ i ]( this );
+            }
+            this._funcs.length = 0;
         }
     }
 
@@ -131,8 +127,8 @@ class IconLoaderItem {
      * @param {function} onload  成功時のコールバック
      * @param {function} onerror 失敗時のコールバック
      */
-    doLoad( onload, onerror ) {
-        return Promise.reject( new Error( "doLoad() is not implemented in: " + this.constructor.name ) );
+    async doLoad() {
+        throw new Error( "doLoad() is not implemented in: " + this.constructor.name );
     }
 
 
@@ -141,11 +137,11 @@ class IconLoaderItem {
     }
 
     get width() {
-        return this.icon ? this.icon.width : -1;
+        return this._icon ? this.icon.width : -1;
     }
 
     get height() {
-        return this.icon ? this.icon.height : -1;
+        return this._icon ? this.icon.height : -1;
     }
 
 
@@ -215,8 +211,8 @@ class URLIconLoaderItem extends IconLoaderItem {
     }
 
 
-    doLoad( onload, onerror ) {
-        return Dom.loadImage( this.url, { crossOrigin: "Anonymous" } );
+    async doLoad() {
+        return await Dom.loadImage( this.url, { crossOrigin: "Anonymous" } );
     }
 
 }
@@ -273,7 +269,7 @@ class TextIconLoaderItem extends IconLoaderItem {
     /**
      * @override
      */
-    doLoad( onload, onerror ) {
+    async doLoad() {
         var props = this.props;
         var size = props.size ? props.size[0] : 20;
         var fontFamily = props.font_family ? ("'" + props.font_family + "'") : Dom.SYSTEM_FONT_FAMILY;
@@ -282,7 +278,7 @@ class TextIconLoaderItem extends IconLoaderItem {
         context.textBaseline = "alphabetic";
         context.font = (size * 0.6756756757) + "px " + fontFamily;
         context.fillText( this.text, size * 0.5, size * 0.7432432432 );
-        return Promise.resolve( context.canvas );
+        return context.canvas;
     }
 
 
@@ -335,19 +331,21 @@ class ImageIconLoaderItem extends IconLoaderItem {
     /**
      * @override
      */
-    doLoad( onload, onerror ) {
+    async doLoad() {
         const image_src = this._image_src;
-        return (
-            typeof( image_src ) === "string"       ? Dom.loadImage( image_src ):
-            image_src instanceof HTMLImageElement  ? Dom.waitForLoad( image_src ):
-            image_src instanceof HTMLCanvasElement ? Promise.resolve( image_src ):
-            Promise.reject( new Error( "not supported: " + image_src ) )
+        const image = (
+            typeof( image_src ) === "string"       ? await Dom.loadImage( image_src ):
+            image_src instanceof HTMLImageElement  ? await Dom.waitForLoad( image_src ):
+            image_src instanceof HTMLCanvasElement ? image_src:
+            null
         );
+        if ( !image ) throw new Error( "not supported: " + image_src );
+        return image;
     }
 
 }
 
 
 
-export { URLTemplateIconLoader, TextIconLoader, ImageIconLoader }
+export { URLTemplateIconLoader, TextIconLoader, ImageIconLoader };
 export default IconLoader;
