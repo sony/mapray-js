@@ -214,7 +214,7 @@ class URLResource extends Resource {
     _make_fetch_params( tr ) {
         var init = {
             signal:      this._abort_ctrl.signal,
-            credentials: (tr.credentials || HTTP.CREDENTIAL_MODE.OMIT).credentials
+            credentials: (tr.credentials || CredentialMode.OMIT).credentials
         };
 
         if ( tr.headers ) {

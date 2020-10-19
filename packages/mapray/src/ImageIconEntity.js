@@ -8,11 +8,13 @@ import GeoPoint from "./GeoPoint";
 import { RenderTarget } from "./RenderStage";
 import AltitudeMode from "./AltitudeMode";
 import EntityRegion from "./EntityRegion";
-import IconLoader, { ImageIconLoader } from "./IconLoader";
+import { ImageIconLoader } from "./IconLoader";
 import Dom from "./util/Dom";
 import EasyBindingBlock from "./animation/EasyBindingBlock";
 import Type from "./animation/Type";
 import AnimUtil from "./animation/AnimUtil";
+import Resource, { URLResource } from "./Resource";
+
 
 /**
  * @summary 画像アイコンエンティティ
@@ -26,6 +28,7 @@ class ImageIconEntity extends Entity {
      * @param {object}       [opts]       オプション集合
      * @param {object}       [opts.json]  生成情報
      * @param {object}       [opts.refs]  参照辞書
+     * @param {mapray.GeoJSONLoader.TransformCallback} [opts.transform] 
      */
     constructor( scene, opts )
     {
@@ -142,7 +145,7 @@ class ImageIconEntity extends Entity {
      */
     addImageIcon( image_src, position, props ) 
     {
-        var entry = new ImageEntry( this, image_src, position, props )
+        var entry = new ImageEntry( this, image_src, position, props );
         this._entries.push( entry );
         this._primitive_producer.onAddEntry();
         return entry;
@@ -212,7 +215,7 @@ class ImageIconEntity extends Entity {
             position.setFromArray( entry.position );
             this.addImageIcon( position, entry );
         }
-        
+
         if ( json.size )     this.setSize( json.size );
         if ( json.origin )   this.setOrigin( json.origin );
     }
@@ -694,7 +697,7 @@ class ImageEntry {
                 size_temp[1] = value;
                 this.setSize( size_temp );
             }
-        } );             
+        } );
     }
 
     
@@ -707,7 +710,11 @@ class ImageEntry {
         if ( this._image_src !== image_src ) {
             // 画像のパスが変更された
             this._image_src = image_src;
-            this._icon = ImageEntry.iconLoader.load( image_src );
+            const resource = (
+                image_src instanceof Resource ? image_src:
+                new URLResource( image_src, { transform: this._props.transform })
+            );
+            this._icon = ImageEntry.iconLoader.load( resource );
             this._icon.onEnd(item => {
                     this._owner.getPrimitiveProducer()._dirty = true;
             });

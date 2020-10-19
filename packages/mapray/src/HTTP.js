@@ -88,23 +88,6 @@ HTTP.RESPONSE_STATUS = {
     NO_CONTENT: 204
 };
 
-HTTP.CREDENTIAL_MODE = {
-    /**
-     * 決してクッキーを送信しない
-     */
-    OMIT: { id: "OMIT", credentials: "omit" },
-
-    /**
-     * URL が呼び出し元のスクリプトと同一オリジンだった場合のみ、クッキーを送信
-     */
-    SAME_ORIGIN: { id: "SAME_ORIGIN", credentials: "same-origin" },
-
-    /**
-     * クロスオリジンの呼び出しであっても、常にクッキーを送信
-     */
-    INCLUDE: { id: "INCLUDE", credentials: "include" }
-
-};
 
 /**
  * @private
