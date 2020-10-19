@@ -1,3 +1,5 @@
+import GeoPoint from "./GeoPoint";
+
 /**
  * @summary データセットを表現する抽象クラス
  */
@@ -34,15 +36,6 @@ export class AbstractDataset {
         return this._name;
     }
 
-    /* 
-     * @summary 名前を設定
-     * @return {string} value
-     *
-    setName( value ) {
-        this._name = value;
-    }
-    */
-
     /**
      * @summary 説明を取得
      * @return {string}
@@ -50,15 +43,6 @@ export class AbstractDataset {
     getDescription() {
         return this._description;
     }
-
-    /*
-     * @summary 説明を設定
-     * @param {string} value
-     *
-    setDescription( value ) {
-        this._description = value;
-    }
-    */
 
     /**
      * @summary 作成日時を取得
@@ -140,6 +124,14 @@ export class Dataset3D extends AbstractDataset {
     }
 
     /**
+     * @summary 原点位置
+     * @return {mapray.GeoPoint}
+     */
+    getOrigin() {
+        return this._origin;
+    }
+
+    /**
      * @summary モデルが公開されているURL
      * @return {string}
      */
@@ -215,6 +207,7 @@ export class Dataset3D extends AbstractDataset {
         this._path = json.path;
         this._format = json.format;
         this._srid = json.srid;
+        this._origin = new GeoPoint(json.x, json.y, json.z);
     }
 
     /**

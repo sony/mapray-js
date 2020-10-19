@@ -87,7 +87,7 @@ export class DatasetResource extends Resource {
      * @return {Promise(object)} データ(geojson)
      */
     async load() {
-        return await this._api.listFeatures( this._datasetId );
+        return await this._api.getFeatures( this._datasetId );
     }
 }
 

@@ -87,8 +87,8 @@ class MaprayApi extends HTTP {
      * @param {number} [limit=5] 1ページに含まれる要素数。最大100まで指定することができます。
      * @return {Dataset[]}
      */
-    async loadDatasets() {
-        const datasets_json = await this.getDatasets();
+    async loadDatasets( page=1, limit=5 ) {
+        const datasets_json = await this.getDatasets( page, limit );
         return datasets_json.map( dataset_json => Dataset.createFromJson( this, dataset_json ) );
     }
 
@@ -109,8 +109,8 @@ class MaprayApi extends HTTP {
      * @param {number} [limit=5] 1ページに含まれる要素数。最大100まで指定することができます。
      * @return {Dataset3D[]}
      */
-    async load3DDatasets() {
-        const datasets_json = await this.get3DDatasets();
+    async load3DDatasets( page=1, limit=5 ) {
+        const datasets_json = await this.get3DDatasets( page, limit );
         return datasets_json.map( dataset_json => Dataset3D.createFromJson( this, dataset_json ) );
     }
 
@@ -131,8 +131,8 @@ class MaprayApi extends HTTP {
      * @param {number} [limit=5] 1ページに含まれる要素数。最大100まで指定することができます。
      * @return {PointCloudDataset[]}
      */
-    async loadPointCloudDatasets() {
-        const datasets_json = await this.getPointCloudDatasets();
+    async loadPointCloudDatasets( page=1, limit=5 ) {
+        const datasets_json = await this.getPointCloudDatasets( page, limit );
         return datasets_json.map( dataset_json => PointCloudDataset.createFromJson( this, dataset_json ) );
     }
 
@@ -185,10 +185,10 @@ class MaprayApi extends HTTP {
      * @param {number} [limit=5] 1ページに含まれる要素数。最大100まで指定することができます。
      * @return {object} json
      */
-    async getDatasets()
+    async getDatasets( page=1, limit=5 )
     {
         var opt = this._option;
-        return await this.get( "datasets", [ opt.userId ], null );
+        return await this.get( "datasets", [ opt.userId ], { page, limit } );
     }
 
     /**
@@ -267,9 +267,9 @@ class MaprayApi extends HTTP {
      * @param {number} [limit=5] 1ページに含まれる要素数。最大100まで指定することができます。
      * @return {object} json
      */
-    async get3DDatasets() {
+    async get3DDatasets( page=1, limit=5 ) {
         const opt = this._option;
-        return await this.get( "3ddatasets", [ opt.userId ] );
+        return await this.get( "3ddatasets", [ opt.userId ], { page, limit } );
     }
 
     /**
@@ -385,9 +385,9 @@ class MaprayApi extends HTTP {
      * @param {number} [limit=5] 1ページに含まれる要素数。最大100まで指定することができます。
      * @return {object} json
      */
-    async getPointCloudDatasets() {
+    async getPointCloudDatasets( page=1, limit=5 ) {
         const opt = this._option;
-        return await this.get( "pcdatasets", [ opt.userId ] );
+        return await this.get( "pcdatasets", [ opt.userId ], { page, limit } );
     }
 
     /**
