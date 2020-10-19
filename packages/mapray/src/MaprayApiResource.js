@@ -5,7 +5,7 @@ import Resource, { ResourceType } from "./Resource";
 
 
 /**
- * Mapray Cloudに登録されたデータにおいて、URLアクセスを要するリソースを表現する。
+ * @summary Mapray Cloudに登録されたデータにおいて、URLアクセスを要するリソースを表現する。
  * <dl>
  * <dt> index.htmlのように基準となるファイルを指定し、そのファイルからの相対パスでサブリソースへアクセスする。
  * <dd>
@@ -16,6 +16,7 @@ import Resource, { ResourceType } from "./Resource";
  *    コンストラクタで基準となるURLを指定する。この時、URLは必ず/で終了する必要があり、load()は動作が定義されない。
  *    loadSubResource( sub_url )は、sub_urlが相対パスの場合は基準となるURLからの相対パスとして解釈される。
  * </dl>
+ * @private
  */
 class ApiUrlResource extends Resource {
 
@@ -35,6 +36,7 @@ class ApiUrlResource extends Resource {
 
     /**
      * @param {object} options
+     * @override
      */
     async load( options={} ) {
         const response = await this._api.fetch( HTTP.METHOD.GET, this._url );
@@ -45,7 +47,7 @@ class ApiUrlResource extends Resource {
     }
 
     /**
-     * @protected
+     * @override
      */
     loadSubResourceSupported() {
         return true;
@@ -53,6 +55,7 @@ class ApiUrlResource extends Resource {
 
     /**
      * @summary リソースにアクセスする。sub_urlは相対・絶対の両方に対応。
+     * @override
      * @param {string} sub_url
      * @return {Resource}
      */

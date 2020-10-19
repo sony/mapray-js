@@ -1,3 +1,6 @@
+/**
+ * @private
+ */
 class HTTP {
 
     static async get( url, query, option={} )
@@ -25,6 +28,25 @@ class HTTP {
         return await this.fetch( HTTP.METHOD.DELETE, url, query, null, option );
     }
 
+    /**
+     * @summary call fetch
+     *
+     * <pre>
+     * query = {
+     *     key1: value1,
+     *     key2: value2,
+     * };
+     * URL: url?key1=value1&key2=value2
+     * </pre>
+     * window.fetch();
+     *
+     * @private
+     * @param {string} method
+     * @param {string} url
+     * @param {object} query
+     * @param {object|string} body
+     * @param {object} [option] second argument of window.fetch(url, [init]).
+     */
     static async fetch( method, url, query, body, option={} )
     {
         const queryText = !query ? "" : "?" + Object.keys( query ).map( k => k + "=" + query[k] ).join("&");
@@ -84,6 +106,9 @@ HTTP.CREDENTIAL_MODE = {
 
 };
 
+/**
+ * @private
+ */
 class FetchError extends Error {
     constructor( message, url, response, cause )
     {

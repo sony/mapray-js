@@ -24,10 +24,26 @@ class MaprayApiError extends FetchError {
 
 
 /**
- * MaprayApi
- * 
+ * @summary Mapray Cloudへアクセスするためのクラスです。
  * @classdesc
- * <p>MaprayApiへアクセスする手段を提供します。</p>
+ * <p>
+ * このクラスを利用するには事前にMapray Cloudアカウントを作成する必要があります。
+ * <a href="https://cloud.mapray.com/">https://cloud.mapray.com</a>からサインアップすることができます。
+ * </p>
+ * <p>
+ * 事前に下記の情報を調べておきます。
+ * </p>
+ * <dl>
+ * <dt>User ID
+ * <dd>Mapray Cloudの<a href="https://cloud.mapray.com/settings" target="_blank">ユーザー情報ページ</a>から確認します。
+ * 右上メニューのAccountメニューからこのページを開くことができます。
+ * <dt>Token
+ * <dd>Mapray Cloudの<a href="https://cloud.mapray.com/dashboard" target="_blank">Tokenページ</a>でトークンを作成します。
+ * 上部のTokensタブからこのページを開くことができます。
+ * <dt>データセット等のID
+ * <dd>Mapray Cloudへデータをアップロードし、そのデータを使用するには、<a href="https://cloud.mapray.com/datasetslist">データセットページ</a>
+ * からGeoJsonやglTFデータをアップロードしておき、表中のIDを確認します。
+ * </dl>
  *
  * @memberof mapray
  * @example
@@ -37,16 +53,17 @@ class MaprayApiError extends FetchError {
  *         userId: "...",
  *         token: "..."
  * });
- * maprayApi.getDatasets();
+ * const datasets = await maprayApi.getDatasets();
+ * ...
  */
 class MaprayApi extends HTTP {
 
     /**
-     * @param {object} option Option
-     * @param {string} [option.basePath]
-     * @param {string} option.version
-     * @param {string} option.userId
-     * @param {string} option.token
+     * @param {object} option
+     * @param {string} [option.basePath=https://cloud.mapray.com] Mapray CloudのURLを指定します。通常は省略します。
+     * @param {string} option.version Mapray Cloud の APIバージョン "v1" のように指定します。
+     * @param {string} option.userId Mapray Cloud アカウントの User ID を指定します。
+     * @param {string} option.token Mapray Cloud で生成した Token を指定します。
      */
     constructor( option = {} )
     {
@@ -65,7 +82,10 @@ class MaprayApi extends HTTP {
 
     /**
      * @summary データセットのリストを取得します。
-     * @return {Promise<Dataset[]>}
+     * ページごとにデータセットリストを取得します。
+     * @param {number} [page=1] 取得する要素のページ番号
+     * @param {number} [limit=5] 1ページに含まれる要素数。最大100まで指定することができます。
+     * @return {Dataset[]}
      */
     async loadDatasets() {
         const datasets_json = await this.getDatasets();
@@ -74,8 +94,8 @@ class MaprayApi extends HTTP {
 
     /**
      * @summary 指定したIDのデータセットを取得します。
-     * @param {string} datasetId
-     * @return {Promise<Dataset>}
+     * @param {string} datasetId データセットのID
+     * @return {Dataset}
      */
     async loadDataset( datasetId ) {
         const dataset_json = await this.getDataset( datasetId );
@@ -84,7 +104,10 @@ class MaprayApi extends HTTP {
 
     /**
      * @summary 3Dデータセットのリストを取得します。
-     * @return {Promise<Dataset3D[]>}
+     * ページごとにデータセットリストを取得します。
+     * @param {number} [page=1] 取得する要素のページ番号
+     * @param {number} [limit=5] 1ページに含まれる要素数。最大100まで指定することができます。
+     * @return {Dataset3D[]}
      */
     async load3DDatasets() {
         const datasets_json = await this.get3DDatasets();
@@ -94,7 +117,7 @@ class MaprayApi extends HTTP {
     /**
      * @summary 指定したIDの3Dデータセットを取得します。
      * @param {string} datasetId
-     * @return {Promise<Dataset3D>}
+     * @return {Dataset3D}
      */
     async load3DDataset( datasetId ) {
         const dataset_json = await this.get3DDataset( datasetId );
@@ -103,7 +126,10 @@ class MaprayApi extends HTTP {
 
     /**
      * @summary 点群データセットのリストを取得します。
-     * @return {Promise<PointCloudDataset[]>}
+     * ページごとにデータセットリストを取得します。
+     * @param {number} [page=1] 取得する要素のページ番号
+     * @param {number} [limit=5] 1ページに含まれる要素数。最大100まで指定することができます。
+     * @return {PointCloudDataset[]}
      */
     async loadPointCloudDatasets() {
         const datasets_json = await this.getPointCloudDatasets();
@@ -112,8 +138,8 @@ class MaprayApi extends HTTP {
 
     /**
      * @summary 指定したIDの点群データセットを取得します。
-     * @param {string} datasetId
-     * @return {Promise<PointCloudDataset>}
+     * @param {string} datasetId データセットID
+     * @return {PointCloudDataset}
      */
     async loadPointCloudDataset( datasetId ) {
         const dataset_json = await this.getPointCloudDataset( datasetId );
@@ -125,7 +151,7 @@ class MaprayApi extends HTTP {
 
     /**
      * @summary 指定したIDのデータセットをリソースとして取得します。
-     * @param {string} datasetId
+     * @param {string} datasetId データセットID
      * @return {Resource}
      */
     getDatasetAsResource( datasetId ) {
@@ -134,7 +160,7 @@ class MaprayApi extends HTTP {
 
     /**
      * @summary 指定したIDの3Dデータセットのシーンファイルをリソースとして取得します。
-     * @param {string} datasetId
+     * @param {string[]} datasetId データセットIDのリスト
      * @return {Resource}
      */
     get3DDatasetAsResource( datasetIds ) {
@@ -143,7 +169,7 @@ class MaprayApi extends HTTP {
 
     /**
      * @summary 指定したIDの点群データセットの定義ファイルをリソースとして取得します。
-     * @param {string} datasetId
+     * @param {string} datasetId データセットID
      * @return {Resource}
      */
     getPointCloudDatasetAsResource( datasetId ) {
@@ -154,8 +180,10 @@ class MaprayApi extends HTTP {
     // RestAPI
 
     /**
-     * @summary get datasets
-     * @return {Promise<object>} json
+     * @summary データセットリストを取得します
+     * @param {number} [page=1] 取得する要素のページ番号
+     * @param {number} [limit=5] 1ページに含まれる要素数。最大100まで指定することができます。
+     * @return {object} json
      */
     async getDatasets()
     {
@@ -166,7 +194,7 @@ class MaprayApi extends HTTP {
     /**
      * @summary get dataset
      * @param {string} datasetId
-     * @return {Promise<object>} json
+     * @return {object} json
      */
     async getDataset( datasetId )
     {
@@ -175,10 +203,10 @@ class MaprayApi extends HTTP {
     }
 
     /**
-     * @summary create a dataset
-     * @param {string} name
-     * @param {string} description
-     * @return {Promise<object>} json
+     * @summary データセットを作成します。
+     * @param {string} name 名前
+     * @param {string} description 説明
+     * @return {object}
      */
     async createDataset( name, description )
     {
@@ -191,8 +219,8 @@ class MaprayApi extends HTTP {
     }
 
     /**
-     * @summary Delete a dataset
-     * @return {Promise<object>} json
+     * @summary データセットを削除します。
+     * @return {object} json
      */
     async deleteDataset( datasetId/*, option={ wait: true }*/ )
     {
@@ -201,9 +229,9 @@ class MaprayApi extends HTTP {
     }
 
     /**
-     * @summary get Features
-     * @param {string} datasetId
-     * @return {Promise<object>} json
+     * @summary GeoJSONの内容を取得します。
+     * @param {string} datasetId データセットID
+     * @return {object} json
      */
     async getFeatures( datasetId ) {
         var opt = this._option;
@@ -211,8 +239,9 @@ class MaprayApi extends HTTP {
     }
 
     /**
-     * @summary Insert feature
-     * @return {Promise<object>} json
+     * @summary GeoJSON要素をアップロード（挿入）します。
+     * @param {string} datasetId データセットID
+     * @return {object} json
      */
     async insertFeature( datasetId, feature ) {
         var opt = this._option;
@@ -220,8 +249,11 @@ class MaprayApi extends HTTP {
     }
 
     /**
-     * @summary Update feature
-     * @return {Promise<object>} json
+     * @summary GeoJSON要素を更新（上書き）します。
+     * @param {string} datasetId データセットID
+     * @param {string} featureId GeoJSON要素ID
+     * @param {object} feature GeoJSON要素
+     * @return {object} json
      */
     async updateFeature( datasetId, featureId, feature )
     {
@@ -230,8 +262,10 @@ class MaprayApi extends HTTP {
     }
 
     /**
-     * @summary get 3D datasts
-     * @return {Promise<object>} json
+     * @summary 3Dデータセットのリストを取得します。
+     * @param {number} [page=1] 取得する要素のページ番号
+     * @param {number} [limit=5] 1ページに含まれる要素数。最大100まで指定することができます。
+     * @return {object} json
      */
     async get3DDatasets() {
         const opt = this._option;
@@ -239,8 +273,17 @@ class MaprayApi extends HTTP {
     }
 
     /**
-     * @summary create 3D datasts
-     * @return {Promise<object>} json
+     * @summary 3D datastを作成します。
+     * @param {string} name 名前
+     * @param {string} description 説明
+     * @param {object} option
+     * @param {string} option.path glTFファイルのパスを指定します（アップロードする際はディレクトリを指定するため、ディレクトリルートからのglTFファイルへのパスを指定します）
+     * @param {string} option.format "glTF"を指定します
+     * @param {string} option.srid 現在は4326（WGS 84）を指定します
+     * @param {number} option.x 経度
+     * @param {number} option.y 緯度
+     * @param {number} option.z 高さ
+     * @return {object} json
      */
     async create3DDataset( name, description, option ) {
         const opt = this._option;
@@ -258,8 +301,18 @@ class MaprayApi extends HTTP {
     }
 
     /**
-     * @summary update 3D datasts
-     * @return {Promise<object>} json
+     * @summary 3Dデータセットを更新します。
+     * @param {string} datasetId データセットId
+     * @param {string} name 名前
+     * @param {string} description 説明
+     * @param {object} option
+     * @param {string} option.path glTFファイルのパスを指定します（アップロードする際はディレクトリを指定するため、ディレクトリルートからのglTFファイルへのパスを指定します）
+     * @param {string} option.format "glTF"を指定します
+     * @param {string} option.srid 現在は4326（WGS 84）を指定します
+     * @param {number} option.x 経度
+     * @param {number} option.y 緯度
+     * @param {number} option.z 高さ
+     * @return {object} json
      */
     async update3DDataset( datasetId, name, description, option ) {
         const opt = this._option;
@@ -277,8 +330,9 @@ class MaprayApi extends HTTP {
     }
 
     /**
-     * @summary create 3D datast upload url
-     * @return {Promise<object>} json
+     * @summary 3Dデータセットアップロード用URLを取得します。
+     * @param {string} datasetId データセットId
+     * @return {object} json
      */
     async create3DDatasetUploadUrl( datasetId ) {
         const opt = this._option;
@@ -286,8 +340,10 @@ class MaprayApi extends HTTP {
     }
 
     /**
-     * @summary get 3D datast
-     * @return {Promise<object>} json
+     * @summary 3Dデータセット情報を取得します。
+     * データセットが保持するデータにアクセスするには、get3DDatasetScene()を利用します。
+     * @param {string} datasetId データセットId
+     * @return {object} json
      */
     async get3DDataset( datasetId ) {
         const opt = this._option;
@@ -295,8 +351,9 @@ class MaprayApi extends HTTP {
     }
 
     /**
-     * @summary delete 3D datast
-     * @return {Promise<object>} json
+     * @summary 3Dデータセットを削除します。
+     * @param {string} datasetId データセットId
+     * @return {object} json
      */
     async delete3DDataset( datasetId ) {
         const opt = this._option;
@@ -304,7 +361,7 @@ class MaprayApi extends HTTP {
     }
 
     /**
-     * @summary get 3D dataset scene
+     * @summary 3Dデータセットに含まれる scene情報 を取得します。
      * @param {string|string[]} datasetIds
      * @return {object} シーンファイルの実体
      */
@@ -323,8 +380,10 @@ class MaprayApi extends HTTP {
     }
 
     /**
-     * @summary Get Point cloud datasts
-     * @return {Promise<object>} json
+     * @summary 点群データセットリストを取得します。
+     * @param {number} [page=1] 取得する要素のページ番号
+     * @param {number} [limit=5] 1ページに含まれる要素数。最大100まで指定することができます。
+     * @return {object} json
      */
     async getPointCloudDatasets() {
         const opt = this._option;
@@ -332,8 +391,9 @@ class MaprayApi extends HTTP {
     }
 
     /**
-     * @summary Get Point cloud datast
-     * @return {Promise<object>} json
+     * @summary 点群データセットを取得します。
+     * @param {string} datasetId データセットId
+     * @return {object} json
      */
     async getPointCloudDataset( datasetId ) {
         const opt = this._option;
@@ -341,8 +401,8 @@ class MaprayApi extends HTTP {
     }
 
     /**
-     * @protected
-     * @return {Promise<object>} json
+     * @private
+     * @return {object} json
      */
     async get( api, args, query, option={} )
     {
@@ -350,8 +410,8 @@ class MaprayApi extends HTTP {
     }
 
     /**
-     * @protected
-     * @return {Promise<object>} json
+     * @private
+     * @return {object} json
      */
     async post( api, args, query, body, option={} )
     {
@@ -362,8 +422,8 @@ class MaprayApi extends HTTP {
     }
 
     /**
-     * @protected
-     * @return {Promise<object>} json
+     * @private
+     * @return {object} json
      */
     async patch( api, args, query, body, option={} )
     {
@@ -374,8 +434,8 @@ class MaprayApi extends HTTP {
     }
 
     /**
-     * @protected
-     * @return {Promise<object>} json
+     * @private
+     * @return {object} json
      */
     async put( api, args, query, body, option={} )
     {
@@ -386,8 +446,8 @@ class MaprayApi extends HTTP {
     }
 
     /**
-     * @protected
-     * @return {Promise<object>} json
+     * @private
+     * @return {object} json
      */
     async delete( api, args, query, option={} )
     {
@@ -395,8 +455,8 @@ class MaprayApi extends HTTP {
     }
 
     /**
-     * @protected
-     * @return {Promise<object>} json
+     * @private
+     * @return {object} json
      */
     async fetchAPI( method, api, args, query, body, option={} )
     {
@@ -408,7 +468,7 @@ class MaprayApi extends HTTP {
     }
 
     /**
-     * @protected
+     * @private
      */
     async fetch( method, url, query, body, option={} )
     {

@@ -141,23 +141,44 @@ export class Dataset3D extends AbstractDataset {
 
     /**
      * @summary モデルが公開されているURL
+     * @return {string}
      */
     getUrl() {
         return this._url;
     }
 
+    /**
+     * @summary フォーマット
+     * @private
+     * @return {string}
+     */
     getFormat() {
         return this._format;
     }
 
+    /**
+     * @summary シーンID
+     * @private
+     * @return {string}
+     */
     getSceneId() {
         return this._scene_id;
     }
 
+    /**
+     * @summary Path
+     * @private
+     * @return {string}
+     */
     getPath() {
         return this._path;
     }
 
+    /**
+     * @summary SRID
+     * @private
+     * @return {string}
+     */
     getSRID() {
         return this._srid;
     }

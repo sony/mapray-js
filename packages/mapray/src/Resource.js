@@ -5,64 +5,67 @@ import CredentialMode from "./CredentialMode";
 
 
 /**
- * @summary リソースクラス
+ * @classdesc リソースクラス
  * URLやDB、クラウドサービス等、各種リソースへのアクセスを同一インターフェースで提供することを目的とした抽象クラスです。
  * 基本機能：
  * ・コンストラクタ等によりあらかじめURLやデータの位置を示すプロパティを設定
  * ・load()によりリソースを読み込む
  * ・loadSubResource()によりサブリソースを読み込む
  *
- * サブリソースの読み込みについて、
  * @memberof mapray
  */
 class Resource {
 
     /**
-     * @protected
+     * リソースを読み込みます。
      */
     async load( options={} ) {
         throw new Error( "Not Implemented" );
     }
 
     /**
-     * @protected
+     * @summary リソースの読み込みをキャンセルできる場合はキャンセルします。
      */
     cancel() {
     }
 
     /**
-     * @protected
+     * @summary サブリソースをサポートするかを返します。
+     * @return {boolean}
      */
     loadSubResourceSupported() {
         return false;
     }
 
     /**
+     * @summary サブリソースを読み込みます。
      * @param {string}  url       URL
-     * @param {options} [options] 
-     * @param {mapray.Resource.ResourceType} [options.type] 
-     * @protected
+     * @param {object} options
+     * @param {mapray.Resource.ResourceType} [options.type] 返却するタイプを指定します。
+     * @return {object} options.type に応じた型で返却されます。
      */
     async loadSubResource( url, options={} ) {
         throw new Error( "Not Supported" );
     }
 
     /**
-     * @protected
+     * @summary 関連リソースをサポートするかを返します。
+     * @return {boolean}
      */
     resolveResourceSupported() {
       return false;
     }
 
     /**
-     * @protected
+     * @summary 関連リソースを読み込みます。
+     * @return {boolean}
      */
     async resolveResource( url ) {
         throw new Error( "Not Supported" );
     }
 
     /**
-     * 
+     * @summary リソース型
      */
     static get ResourceType() { return ResourceType; }
 }
@@ -83,12 +86,12 @@ const ResourceType = {
     JSON: { id: "JSON" },
 
     /**
-     * バイナリ
+     * バイナリ(ArrayBuffer)
      */
     BINARY: { id: "BINARY" },
 
     /**
-     * テクスチャ画像ファイル
+     * 画像（Image）
      */
     IMAGE: { id: "IMAGE" }
 
@@ -97,13 +100,15 @@ const ResourceType = {
 
 
 /**
- * 
+ * @classdesc URLリソースです。
  */
 class URLResource extends Resource {
 
     /**
      * @param {string} url
      * @param {object} [options]
+     * @param {mapray.Resource.ResourceType} [options.type]
+     * @param {mapray.Transform} [options.transform]
      */
     constructor( url, options={} ) {
         super();
@@ -117,7 +122,8 @@ class URLResource extends Resource {
     }
 
     /**
-     * @param {object} [options]
+     * @summary リソースのurl
+     * @type {string} リソースのurl
      */
     get url() {
         return this._url;
@@ -132,35 +138,42 @@ class URLResource extends Resource {
     }
 
     /**
-     * 
+     * @summary リソースの読み込みをキャンセルします。
      */
     cancel() {
         this._abort_ctrl.abort();
     }
 
     /**
-     * 
+     * @summary このクラスでのデフォルト実装では、trueを返却します。
+     * @return {boolean}
      */
     loadSubResourceSupported() {
         return true;
     }
 
     /**
-     * 
+     * @summary サブリソースを読み込みます。
+     * @param {string} subUrl URL
+     * @param {object} options
+     * @param {mapray.Resource.ResourceType} [options.type] 返却するタイプを指定します。
+     * @return {object} options.type に応じた型で返却されます。
      */
     async loadSubResource( subUrl, options={} ) {
         return await this._loadURLResource( Dom.resolveUrl( this._base_url, subUrl ), options.type, options );
     }
 
     /**
-     * @protected
+     * @summary 関連リソースをサポートするかを返します。
+     * @return {boolean}
      */
     resolveResourceSupported() {
       return true;
     }
 
     /**
-     * @param {string} sub_url
+     * @summary 関連リソースを読み込みます。
+     * @param {string} url　
      * @return {Resource}
      */
     resolveResource( sub_url ) {
