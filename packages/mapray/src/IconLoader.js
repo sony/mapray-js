@@ -3,22 +3,28 @@ import Dom from "./util/Dom";
 
 
 /**
- * @summary アイコン画像のローダーです。
- * 何らかのプロパティを指定し、アイコンが読み込まれます。
+ * @classdesc
+ * アイコン画像のローダーです。
+ * 何らかのプロパティに応じて、アイコンが読み込まれます。
  * 同一リソースが要求された場合は、読み込み中または読み込み済みのアイコンを返却します。
  * 同一リソースであるかの判定には、getKey(prop)関数により返却される値を用います。
+ * @private
  */
 class IconLoader {
 
+    /**
+     * @summary コンストラクタ
+     */
     constructor() {
         this._cache = new Map();
     }
 
 
     /**
-     * @desc
-     * プロパティに応じたアイコンを返却します。すでに同一リソースを生成した場合は生成済みのインスタンスを返却し、そうでない場合はdoCreate(prop)により生成します。
+     * @summary プロパティに応じたアイコンを返却します。
+     * すでに同一リソースを生成した場合は生成済みのインスタンスを返却し、そうでない場合はdoCreate(prop)により生成します。
      * @param {any} prop
+     * @return {IconLoaderItem}
      */
     create( prop ) {
         const key = this.getKey( prop );
@@ -29,15 +35,18 @@ class IconLoader {
 
 
     /**
-     * プロパティに応じたアイコンを生成します。（オーバーライドされることを想定した関数です）
+     * @summary プロパティに応じたアイコンを生成します。
+     * @abstract
      * @param {any} prop プロパティ
+     * @return {IconLoaderItem}
      */
     doCreate( prop ) {
     }
 
 
     /**
-     * プロパティに応じたキーを返却します。（必要に応じてオーバーライドされることを想定した関数です）。
+     * @summary プロパティに応じたキーを返却します。
+     * 必要に応じてオーバーライドされることを想定した関数です。
      * ディフォルトでは、プロパティ自体がキーとなるように動作します。
      * @param {any} prop プロパティ
      */
@@ -47,8 +56,11 @@ class IconLoader {
 
 
     /**
-     * プロパティに応じたアイコンの読み込みを開始し、インスタンスを返却します。読み込みは開始しますが読み込み完了していない可能性があります。
+     * @summary プロパティに応じたアイコンの読み込みを開始し、インスタンスを返却します。
+     * 読み込みは開始しますが読み込み完了していない可能性があります。
+     * この関数はasync関数ではありません。読み込み終了を監視するには、この関数の返却値に対してonEnd(callback)を呼び出します。
      * @param {any} prop プロパティ
+     * @return {IconLoaderItem}
      */
     load( prop ) {
         const icon = this.create( prop );
@@ -61,7 +73,7 @@ class IconLoader {
 
 
 /**
- * @summary アイコン画像ローダーのアイコンです。抽象クラスです。
+ * @classdesc アイコン画像ローダーのアイコンです。抽象クラスです。
  * ステータスの管理、読み込み完了後の通知等を行います。
  * @private
  */
@@ -84,6 +96,10 @@ class IconLoaderItem {
     }
 
 
+    /**
+     * @summary アイコンの読み込みが完了しているか
+     * @return {boolean}
+     */
     isLoaded() {
         return this._status === IconLoaderItem.Status.LOADED;
     }
@@ -102,7 +118,7 @@ class IconLoaderItem {
 
 
     /**
-     * @summary アイコンを読み込み関数（doLoad()）を実行し、成功時、失敗時それぞれ後続処理を行います。
+     * @summary アイコン読み込み関数（doLoad()）を実行し、成功時、失敗時それぞれ後続処理を行います。
      */
     async load() {
         if ( this._status === IconLoaderItem.Status.NOT_LOADED ) {
@@ -124,22 +140,37 @@ class IconLoaderItem {
 
     /**
      * @summary アイコンを読み込みます。この関数はオーバーライドされることを想定されています。
-     * @param {function} onload  成功時のコールバック
-     * @param {function} onerror 失敗時のコールバック
+     * @abstract
+     * @return {Image}
      */
     async doLoad() {
         throw new Error( "doLoad() is not implemented in: " + this.constructor.name );
     }
 
 
+    /**
+     * @summary アイコンを取得します。
+     * アイコンが読み込まれるまではnullを返却します。
+     * @return {Image|null}
+     */
     get icon() {
         return this._icon;
     }
 
+    /**
+     * @summary アイコンの幅
+     * アイコンが読み込まれるまでは-1を返却します。
+     * @return {number}
+     */
     get width() {
         return this._icon ? this.icon.width : -1;
     }
 
+    /**
+     * @summary アイコンの高さ
+     * アイコンが読み込まれるまでは-1を返却します。
+     * @return {number}
+     */
     get height() {
         return this._icon ? this.icon.height : -1;
     }
@@ -159,6 +190,9 @@ class IconLoaderItem {
 
 }
 
+/**
+ * @private
+ */
 IconLoaderItem.Status = {
     NOT_LOADED: "not loaded",
     LOADING: "loading",
@@ -169,7 +203,7 @@ IconLoaderItem.Status = {
 
 
 /**
- * @summary アイコン画像のURLを指定してアイコンを読み込むアイコンローダーです。
+ * @classdesc アイコン画像のURLを指定してアイコンを読み込むアイコンローダーです。
  * urlは下記のように生成します。
  * url = urlPrefix + id + urlSuffix
  * @private
@@ -187,6 +221,9 @@ class URLTemplateIconLoader extends IconLoader {
     }
 
 
+    /**
+     * @override
+     */
     doCreate( id ) {
         return new URLIconLoaderItem( this.urlPrefix + id + this.urlSuffix );
     }
@@ -196,8 +233,8 @@ class URLTemplateIconLoader extends IconLoader {
 
 
 /**
- * @summary URLTemplateIconLoaderのアイコンです。
- 
+ * @classdesc URLTemplateIconLoaderのアイコンです。
+ *
  * @private
  */
 class URLIconLoaderItem extends IconLoaderItem {
@@ -211,6 +248,9 @@ class URLIconLoaderItem extends IconLoaderItem {
     }
 
 
+    /**
+     * @override
+     */
     async doLoad() {
         return await Dom.loadImage( this.url, { crossOrigin: "Anonymous" } );
     }
@@ -220,8 +260,8 @@ class URLIconLoaderItem extends IconLoaderItem {
 
 
 /**
- * @summary テキストアイコンを生成するアイコンローダーです。
- * 
+ * @classdesc テキストアイコンを生成するアイコンローダーです。
+ *
  * @private
  */
 class TextIconLoader extends IconLoader {
@@ -248,7 +288,7 @@ class TextIconLoader extends IconLoader {
 
 
 /**
- * @summary TextIconLoaderのアイコンです。
+ * @classdesc TextIconLoaderのアイコンです。
  *
  * @private
  */
@@ -294,7 +334,7 @@ class TextIconLoaderItem extends IconLoaderItem {
 
 
 /**
- * @summary 画像からアイコンを生成するアイコンローダーです。
+ * @classdesc 画像からアイコンを生成するアイコンローダーです。
  * 
  * @private
  */
@@ -313,7 +353,7 @@ class ImageIconLoader extends IconLoader {
 
 
 /**
- * @summary ImageIconLoaderのアイコンです。
+ * @classdesc ImageIconLoaderのアイコンです。
  * 
  * @private
  */
