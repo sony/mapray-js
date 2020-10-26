@@ -19,9 +19,17 @@ class EasyBindingBlock extends BindingBlock
     {
         super();
 
-        this._entries = new Map();        // Map<id, Entry>
-        this._bounds  = new Map();        // Map<id, Binder>
+        // アニメーション可能なパラメータ
+        this._entries = new Map();  // Map<id, Entry>
+
+        // 結合中のパラメータ
+        this._bounds  = new Map();  // Map<id, Binder>
+
+        // すべての子孫の結合を解除するための関数のリスト
         this._descendant_unbinders = [];  // DescendantUnbinder[]
+
+        // 不変条件: this._bounds.has( id ) ⇒ this._entries.has( id )
+        //           this._bounds.has( id ) ⇔ (this._bounds.get( id ) !== undefined) ⇔ this.isBound()
     }
 
 
@@ -33,7 +41,7 @@ class EasyBindingBlock extends BindingBlock
      *
      * <p>types にはこのパラメータに結合可能なアニメーション関数の 1 つまたはそれ以上の型を配列で与える。</p>
      *
-     * <p>types 2 つ以上の型が存在するときは type_solver に型を決定する関数を指定しなければならない。
+     * <p>types に 2 つ以上の型が存在するときは type_solver に型を決定する関数を指定しなければならない。
      *    1 つしか型が存在しないとき type_solver は無視されるので null を与えてもよい。</p>
      *
      * <p>setter は実際のパラメータに値を設定する関数である。</p>
@@ -94,6 +102,9 @@ class EasyBindingBlock extends BindingBlock
      */
     isBound( id )
     {
+        // 不変条件により !this._entries.has( id ) ⇒ !this._bounds.has( id ) が
+        // 成り立つので、id がアニメーションに対応していないときは仕様通り false を返す
+
         return this._bounds.has( id );
     }
 
@@ -143,6 +154,10 @@ class EasyBindingBlock extends BindingBlock
 
         // パラメータを結合
         this._bounds.set( id, new Binder( updater, curve, type, entry.setter ) );
+
+        // assert: this.isBound( id )
+        // assert: this.getBoundUpdater( id ) === updater
+        // assert: this.getBoundCurve( id ) === curve
     }
 
 
@@ -155,6 +170,8 @@ class EasyBindingBlock extends BindingBlock
         if ( binder !== undefined ) {
             binder.unbind();
         }
+
+        // assert: !this.isBound( id )
     }
 
 
@@ -166,6 +183,8 @@ class EasyBindingBlock extends BindingBlock
         for ( let [/*id*/, binder] of this._bounds ) {
             binder.unbind();
         }
+
+        // assert: 任意の id に対して !this.isBound( id )
     }
 
 
