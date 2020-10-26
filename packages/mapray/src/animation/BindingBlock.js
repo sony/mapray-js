@@ -74,7 +74,7 @@ class BindingBlock
      *
      * @desc
      * <p>id が示すパラメータが結合されている Updater インスタンスを返す。</p>
-     * <p>ただし id が示すパラメータがアニメーションに対応していないときは null を返す。</p>
+     * <p>ただし this.isBound( id ) == false のときは null を返す。</p>
      *
      * @param {string} id  パラメータ ID
      *
@@ -93,7 +93,7 @@ class BindingBlock
      *
      * @desc
      * <p>id が示すパラメータが結合されている Curve インスタンスを返す。</p>
-     * <p>ただし id が示すパラメータがアニメーションに対応していないときは null を返す。</p>
+     * <p>ただし this.isBound( id ) == false のときは null を返す。</p>
      *
      * @param {string} id  パラメータ ID
      *
@@ -141,7 +141,7 @@ class BindingBlock
      *
      * @desc
      * <p>id が示すパラメータの結合を解除する。</p>
-     * <p>ただし id が示すパラメータが結合されていないとき、またはアニメーションに対応していないときは何もしない。</p>
+     * <p>ただし this.isBound( id ) == false のときは何もしない。</p>
      *
      * @param {string} id  パラメータ ID
      *
