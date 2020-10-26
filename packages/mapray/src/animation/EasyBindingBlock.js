@@ -169,6 +169,7 @@ class EasyBindingBlock extends BindingBlock
         let binder = this._bounds.get( id );
         if ( binder !== undefined ) {
             binder.unbind();
+            this._bounds.delete( id );
         }
 
         // assert: !this.isBound( id )
@@ -183,6 +184,7 @@ class EasyBindingBlock extends BindingBlock
         for ( let [/*id*/, binder] of this._bounds ) {
             binder.unbind();
         }
+        this._bounds.clear();
 
         // assert: 任意の id に対して !this.isBound( id )
     }
