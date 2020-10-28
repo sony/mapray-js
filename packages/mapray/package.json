@@ -55,6 +55,7 @@
     "@babel/polyfill": "^7.10.1",
     "@babel/preset-env": "^7.8.4",
     "@rollup/plugin-strip": "^2.0.0",
+    "babel-jest": "^25.1.0",
     "babel-loader": "^8.0.6",
     "core-js": "3",
     "cross-env": "^7.0.0",
