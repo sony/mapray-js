@@ -7,7 +7,6 @@ const Invariance       = animation.Invariance;
 const Type             = animation.Type;
 const Updater          = animation.Updater;
 const Binder           = animation.Binder;
-const BindingBlock     = animation.BindingBlock;
 const Curve            = animation.Curve;
 const ConstantCurve    = animation.ConstantCurve;
 const KFLinearCurve    = animation.KFLinearCurve;
@@ -145,7 +144,7 @@ describe('invariance single tests', () => {
     });
 
 
-    const createClosedInterval = ( nlower, nupper ) =>　{
+    const createClosedInterval = ( nlower, nupper ) => {
         let lower = Time.fromNumber( nlower );
         let upper = Time.fromNumber( nupper );
 
@@ -175,6 +174,178 @@ test('binder_tests', () => {
 
     binder.unbind();
 });
+
+
+describe( "EasyBindingBlock tests", () => {
+
+    const EasyBindingBlock  = animation.EasyBindingBlock;
+    const AnimationError    = animation.AnimationError;
+    const TypeMismatchError = animation.TypeMismatchError;
+
+    test( "empty binding block", () => {
+        const bb = new EasyBindingBlock();
+
+        expect( bb.enumSupportedParameters() ).toHaveLength( 0 );
+        expect( bb.isBound( "a" ) ).toBe( false );
+        expect( bb.getBoundUpdater( "a" ) ).toBeNull();
+        expect( bb.getBoundCurve( "a" ) ).toBeNull();
+
+        const updater = new Updater();
+        const   curve = new ConstantCurve( Type.find( "number" ) );
+
+        expect( () => bb.bind( "a", updater, curve ) ).toThrow( AnimationError );
+        expect( () => bb.unbind( "a" ) ).not.toThrow();
+        expect( () => bb.unbindAll() ).not.toThrow();
+        expect( () => bb.unbindAllRecursively() ).not.toThrow();
+    } );
+
+    test( "one parameter", () => {
+        let param;
+
+        const number = Type.find( "number" );
+        const  types = [number];
+
+        const bb = new EasyBindingBlock();
+
+        bb.addEntry( "param", types, null, value => { param = value; } );
+
+        expect( bb.enumSupportedParameters() ).toHaveLength( 1 );
+        expect( bb.enumSupportedParameters()[0].id ).toBe( "param" );
+        expect( bb.enumSupportedParameters()[0].types ).toHaveLength( types.length );
+        expect( bb.enumSupportedParameters()[0].types ).toContain( number );
+        expect( bb.isBound( "param" ) ).toBe( false );
+        expect( bb.getBoundUpdater( "param" ) ).toBeNull();
+        expect( bb.getBoundCurve( "param" ) ).toBeNull();
+
+        const updater = new Updater();
+        const   curve = new ConstantCurve( number );
+
+        expect( () => bb.bind( "param", updater, curve ) ).not.toThrow();
+        expect( bb.isBound( "param" ) ).toBe( true );
+        expect( bb.getBoundUpdater( "param" ) ).toBe( updater );
+        expect( bb.getBoundCurve( "param" ) ).toBe( curve );
+
+        expect( () => bb.unbind( "param" ) ).not.toThrow();
+        expect( bb.isBound( "param" ) ).toBe( false );
+        expect( bb.getBoundUpdater( "param" ) ).toBeNull();
+        expect( bb.getBoundCurve( "param" ) ).toBeNull();
+
+        expect( () => bb.unbindAll() ).not.toThrow();
+        expect( () => bb.unbindAllRecursively() ).not.toThrow();
+    } );
+
+    test( "two parameters", () => {
+        let p1;
+        let p2;
+
+        const number = Type.find( "number" );
+        const  types = [number];
+
+        const bb = new EasyBindingBlock();
+
+        bb.addEntry( "p1", types, null, value => { p1 = value; } );
+        bb.addEntry( "p2", types, null, value => { p2 = value; } );
+
+        expect( bb.enumSupportedParameters() ).toHaveLength( 2 );
+
+        const updater = new Updater();
+        const   curve = new ConstantCurve( number );
+
+        expect( () => bb.bind( "p1", updater, curve ) ).not.toThrow();
+        expect( () => bb.bind( "p2", updater, curve ) ).not.toThrow();
+
+        expect( bb.isBound( "p1" ) ).toBe( true );
+        expect( bb.isBound( "p2" ) ).toBe( true );
+
+        expect( () => bb.unbind( "p2" ) ).not.toThrow();
+        expect( bb.isBound( "p2" ) ).toBe( false );
+
+        expect( () => bb.unbindAll() ).not.toThrow();
+        expect( bb.isBound( "p1" ) ).toBe( false );
+    } );
+
+    test( "type mismatch", () => {
+        let p1;
+
+        const bb = new EasyBindingBlock();
+
+        bb.addEntry( "p1", [Type.find( "number" )], null, value => { p1 = value; } );
+
+        const updater = new Updater();
+        const   curve = new ConstantCurve( Type.find( "vector3" ) );
+
+        expect( () => bb.bind( "p1", updater, curve ) ).toThrow( TypeMismatchError );
+
+        expect( bb.isBound( "p1" ) ).toBe( false );
+    } );
+
+    test( "bind and update", () => {
+        let p1;
+
+        const number = Type.find( "number" );
+        const const_value = 100;
+
+        const bb = new EasyBindingBlock();
+
+        bb.addEntry( "p1", [number], null, value => { p1 = value; } );
+
+        const updater = new Updater();
+        const   curve = new ConstantCurve( number );
+        curve.setConstantValue( const_value );
+
+        bb.bind( "p1", updater, curve );
+
+        updater.update( Time.fromNumber( 0 ) );
+
+        expect( p1 ).toBeCloseTo( const_value );
+    } );
+
+    test( "unbind and update", () => {
+        let p1 = undefined;
+
+        const number = Type.find( "number" );
+        const const_value = 100;
+
+        const bb = new EasyBindingBlock();
+
+        bb.addEntry( "p1", [number], null, value => { p1 = value; } );
+
+        const updater = new Updater();
+        const   curve = new ConstantCurve( number );
+        curve.setConstantValue( const_value );
+
+        bb.bind( "p1", updater, curve );
+        bb.unbind( "p1" );
+
+        updater.update( Time.fromNumber( 0 ) );
+
+        expect( p1 ).toBeUndefined();
+    } );
+
+    test( "unbind and addEntry", () => {
+        // https://github.com/jozoprj/inou/issues/259 の問題をテスト
+
+        let p1;
+
+        const number = Type.find( "number" );
+        const  types = [number];
+        const setter = value => { p1 = value; };
+
+        const bb = new EasyBindingBlock();
+
+        bb.addEntry( "p1", types, null, setter );
+
+        const updater = new Updater();
+        const   curve = new ConstantCurve( number );
+
+        bb.bind( "p1", updater, curve );
+
+        // unbind() してから、同じ id で addEntry()
+        bb.unbind( "p1" );
+        expect( () => bb.addEntry( "p1", types, null, setter ) ).not.toThrow();
+    } );
+
+} );
 
 
 test('kflinear_curve_tests', () => {
