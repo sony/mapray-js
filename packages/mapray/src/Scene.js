@@ -128,15 +128,17 @@ class Scene {
         // プリミティブの配列を生成
         var op_prims = [];  // 不透明プリミティブ
         var tp_prims = [];  // 半透明プリミティブ
+        var ac_prims = [];  // アンカープリミティブ
 
         for ( let {entity} of this._enode_list ) {
             if ( !entity.visibility ) continue;
-            this._add_primitives( stage, entity, op_prims, tp_prims );
+            this._add_primitives( stage, entity, op_prims, tp_prims, ac_prims );
         }
 
         // プリミティブ配列を整列してから描画
         this._draw_opaque_primitives( stage, op_prims );
         this._draw_translucent_primitives( stage, tp_prims );
+        this._draw_anchor_primitives( stage, ac_prims );
     }
 
 
@@ -194,14 +196,18 @@ class Scene {
      * 視体積に含まれるプリミティブを追加
      * @private
      */
-    _add_primitives( stage, entity, op_prims, tp_prims )
+    _add_primitives( stage, entity,  op_prims, tp_prims, ac_prims )
     {
         let producer = entity.getPrimitiveProducer();
         if ( producer === null ) return;
 
         for ( let primitive of producer.getPrimitives( stage ) ) {
             if ( primitive.isVisible( stage ) ) {
-                let dst_prims = primitive.isTranslucent( stage ) ? tp_prims : op_prims;
+                let dst_prims = (
+                  entity.anchor_mode ? ac_prims :
+                  primitive.isTranslucent( stage ) ? tp_prims :
+                  op_prims
+                );
                 stage.onPushPrimitive( primitive, entity );
                 dst_prims.push( primitive );
             }
@@ -249,6 +255,52 @@ class Scene {
 
         for ( var i = 0; i < primitives.length; ++i ) {
             primitives[i].draw( stage );
+        }
+
+        gl.disable( gl.BLEND );
+        gl.depthMask( true );
+    }
+
+
+    /**
+     * @summary アンカープリミティブを整列してから描画。
+     * <p>{@link mapray.AbstractRenderStage#getRenderTarget} が {@link mapray.AbstractRenderStage.RenderTarget.SCENE} の場合は、
+     *   隠面処理で隠れてえしまう部分は半透明で描画し、それ以外の部分は通常の描画を行う。結果的にアンカーオブジェクトが隠面において重なった場合は色が混ざった表示となる</p>
+     * <p>{@link mapray.AbstractRenderStage#getRenderTarget} が {@link mapray.AbstractRenderStage.RenderTarget.RID} の場合は、
+     *   隠面処理で隠れてえしまう部分は強制的に描画し、それ以外の部分は通常の描画を行う。結果的にアンカーオブジェクトが隠面において重なった場合はzソートした順番でRIDが上書きされる</p>
+     * @see {@link mapray.Entity#anchor_mode}
+     * @private
+     */
+    _draw_anchor_primitives( stage, primitives )
+    {
+        // 不透明プリミティブの整列: 近接 -> 遠方 (Z 降順)
+        primitives.sort( function( a, b ) { return b.sort_z - a.sort_z; } );
+
+        var gl = this._glenv.context;
+        gl.disable( gl.DEPTH_TEST );
+        gl.depthMask( false );
+        if (stage.getRenderTarget() === RenderTarget.SCENE) {
+            stage.setTranslucentMode( true );
+            gl.enable( gl.BLEND );
+        }
+        else {
+            gl.disable( gl.BLEND );
+        }
+
+        // 遠方 -> 近接 (Z 昇順)
+        for ( var i = primitives.length-1; i >= 0; --i ) {
+            primitives[i].draw( stage );
+        }
+
+        gl.depthMask( true );
+        gl.enable( gl.DEPTH_TEST );
+
+        if (stage.getRenderTarget() === RenderTarget.SCENE) {
+            stage.setTranslucentMode( false );
+            // 近接 -> 遠方 (Z 降順)
+            for ( var i = 0; i < primitives.length; ++i ) {
+                primitives[i].draw( stage );
+            }
         }
 
         gl.disable( gl.BLEND );

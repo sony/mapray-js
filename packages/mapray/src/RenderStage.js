@@ -90,6 +90,9 @@ class AbstractRenderStage {
         this._flake_material = null;
         this._flake_list = null;
 
+        // 半透明化モード
+        this._translucent_mode = false;
+
         // フレーム間のオブジェクトキャッシュ
         const render_cache = viewer._render_cache || (viewer._render_cache = {});
         if ( !render_cache.surface_material ) {
@@ -100,6 +103,27 @@ class AbstractRenderStage {
 
         // デバッグ統計
         this._debug_stats = viewer.debug_stats;
+    }
+
+    /**
+     * 半透明化モードを取得。エンティティモデルを半透明化して描画する。
+     * Sceneがエンティティへ"半透明化モード"を伝達するのに用いる。
+     * @see mapray.Entity#anchor_mode
+     * @return {boolean}
+     * @private
+     */
+    getTranslucentMode() {
+        return this._translucent_mode;
+    }
+
+    /**
+     * @summary 半透明化モードを設定。
+     * @see getTranslucentMode()
+     * @parm {boolean} transparent_mode
+     * @private
+     */
+    setTranslucentMode( translucent_mode ) {
+        this._translucent_mode = translucent_mode;
     }
 
     /**

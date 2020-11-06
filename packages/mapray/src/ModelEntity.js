@@ -36,6 +36,9 @@ class ModelEntity extends Entity {
 
         this._setupAnimationBindingBlock();
 
+        // アンカーモード
+        this._anchor_mode = false;
+
         if ( opts && opts.json ) {
             var json = opts.json;
             var refs = opts.refs || {};
@@ -43,6 +46,25 @@ class ModelEntity extends Entity {
             this._setupModelObject( json, refs );
         }
     }
+
+
+    /**
+     * @override
+     * @private
+     */
+    get anchor_mode() { return this._anchor_mode; }
+
+    /**
+     * @summary アンカーモードを設定。
+     * @see {@link mapray.Entity#anchor_mode}
+     * @param {boolean} anchor_mode
+     * @private
+     */
+    setAnchorMode( anchor_mode )
+    {
+      this._anchor_mode = anchor_mode;
+    }
+
 
 
     /**
