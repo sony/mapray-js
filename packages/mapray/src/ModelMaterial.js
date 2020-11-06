@@ -51,7 +51,12 @@ class ModelMaterial extends EntityMaterial {
 
         if (stage.getRenderTarget() === RenderTarget.SCENE) {
             // 基本色係数
-            this.setVector4( "u_base_color", pbrMR["baseColorFactor"] );
+            var bcf = pbrMR["baseColorFactor"];
+            const u_base_color = (
+                stage.getTranslucentMode() ? [ 0.5 * bcf[ 0 ], 0.5 * bcf[ 1 ], 0.5 * bcf[ 2 ], 0.5 * bcf[ 3 ] ] :
+                bcf
+            );
+            this.setVector4( "u_base_color", u_base_color );
 
             // ライト逆方向 (視点座標系) と強さ
             this.setVector3( "u_light_dir", [0, 0, 1] );
