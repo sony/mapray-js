@@ -18,6 +18,7 @@ start => <SCENE>
 <ENTITY> => {
   id?: <ID>
   altitude_mode?: <ALTITUDE-MODE> = "absolute"
+  visibility?: Boolean = true
   <MODEL-CONTENT> | <MARKERLINE-CONTENT> | <PATH-CONTENT> | <TEXT-CONTENT> | <POLYGON-CONTENT>
 }
 

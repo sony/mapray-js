@@ -130,6 +130,7 @@ class Scene {
         var tp_prims = [];  // 半透明プリミティブ
 
         for ( let {entity} of this._enode_list ) {
+            if ( !entity.visibility ) continue;
             this._add_primitives( stage, entity, op_prims, tp_prims );
         }
 
@@ -305,6 +306,7 @@ class Scene {
         let producers = [];
 
         for ( let {entity} of this._enode_list ) {
+            if ( !entity.visibility ) continue;
             let prod = entity.getFlakePrimitiveProducer();
             if ( prod !== null ) {
                 producers.push( prod );
