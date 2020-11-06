@@ -42,10 +42,31 @@ class Entity {
         //   子孫は存在しないので animation には何も追加しない
         this._animation = new EasyBindingBlock();
 
+        this._visibility = true;
+
         // 生成情報から設定
         if ( opts && opts.json ) {
             this._setupEntityByJson( opts.json );
         }
+    }
+
+
+    /**
+     * @summary 可視性フラグを取得
+     * @type {boolean}
+     * @readonly
+     */
+    get visibility() { return this._visibility; }
+
+
+    /**
+     * @summary 可視性フラグを設定
+     *
+     * @param {boolean} visibility  可視性フラグ
+     */
+    setVisibility( visibility )
+    {
+        this._visibility = visibility;
     }
 
 
@@ -155,6 +176,8 @@ class Entity {
                 console.error( "unrecognized altitude_mode: " + json.altitude_mode );
             }
         }
+
+        if ( json.visibility !== undefined ) this.setVisibility( json.visibility );
     }
 
 }
