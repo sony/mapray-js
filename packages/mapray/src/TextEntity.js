@@ -73,7 +73,9 @@ class TextEntity extends Entity {
      */
     onChangeAltitudeMode( prev_mode )
     {
-        this._primitive_producer.onChangeAltitudeMode();
+        if ( this._primitive_producer ) {
+          this._primitive_producer.onChangeAltitudeMode();
+        }
     }
 
 
@@ -326,7 +328,9 @@ class TextEntity extends Entity {
         var props = this._text_parent_props;
         if ( props[name] != value ) {
             props[name] = value;
-            this._primitive_producer.onChangeParentProperty();
+            if ( this._primitive_producer ) {
+                this._primitive_producer.onChangeParentProperty();
+            }
         }
     }
 
@@ -339,7 +343,9 @@ class TextEntity extends Entity {
         var dst = this._text_parent_props[name];
         if ( dst.r != value[0] || dst.g != value[1] || dst.b != value[2] ) {
             Color.setOpacityColor( value, dst );
-            this._primitive_producer.onChangeParentProperty();
+            if ( this._primitive_producer ) {
+              this._primitive_producer.onChangeParentProperty();
+            }
         }
     }
 
@@ -1363,10 +1369,10 @@ class Layout {
             if ( item._entry.enable_background ) {
                 item.drawRect( context );
             }
-            item.drawText( context );
             if ( item._entry.enable_stroke ) {
                 item.drawStrokeText( context );
             }
+            item.drawText( context );
         }
 
         var glenv = this._owner._glenv;
@@ -1828,10 +1834,32 @@ class LItem {
      */
     drawStrokeText( context )
     {
+        /*
+         context.fillText()
+             .------------.   
+             |',',',',',',|   
+             |',',',',',',|   
+             |',',',',',',|   
+             |',',',',',',|   
+             |',',',',',',|   
+
+         context.strokeText()
+         .--------------------.
+         |',',',',',',',',',',|
+         |','.------------.,',|
+         |','|',',',',',',|,',|
+         |','|','.----.,',|,',|
+         |','|','|    |,',|,',|
+         |','|','|    |,',|,',|
+         |<--|-->|
+           a   b
+         b will be overwrite by fillText();
+        */
         var entry = this._entry;
 
+        context.font = entry.font;
         context.strokeStyle = entry.stroke_color.toRGBString();
-        context.lineWidth = entry.stroke_width;
+        context.lineWidth = entry.stroke_width * 2;
         context.lineJoin = "round";
         context.strokeText( entry.text, this._pos_x, this._pos_y );
     }
