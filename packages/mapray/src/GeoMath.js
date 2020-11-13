@@ -1105,6 +1105,26 @@ class GeoPoint {
       return dst;
     }
 
+
+    /**
+     * @summary 地表面(高度0)での2地点間の距離を算出
+     * @desc
+     * <p> GeoMath.DEGREE を半径とする真球として計算する。</p>
+     *
+     * @param  {mapray.GeoPoint} to
+     * @return {number}   arc 距離(m)
+     */
+    getGeographicalDistance( to ) {
+        var from_vec = this.getAsGocs( GeoMath.createVector3() );
+        var   to_vec = to.getAsGocs( GeoMath.createVector3() );
+        var cross = GeoMath.cross3( from_vec, to_vec, GeoMath.createVector3() );
+        return GeoMath.EARTH_RADIUS * Math.atan2(
+            Math.sqrt( cross[0]*cross[0] + cross[1]*cross[1] + cross[2]*cross[2] ),
+            GeoMath.dot3( from_vec, to_vec )
+        );
+    }
+
+
     /**
      * @summary 球面座標を地心直交座標に変換
      *
