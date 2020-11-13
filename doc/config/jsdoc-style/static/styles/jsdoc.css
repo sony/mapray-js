@@ -1,0 +1,99 @@
+html
+{
+    overflow: auto;
+    background-color: #fff;
+    font-size: 14px;
+}
+
+body
+{
+    font-family: 'Open Sans', sans-serif;
+    color: #4d4e53;
+    margin: 0;
+}
+
+.page-title
+{
+    font-family: 'Open Sans Light', sans-serif;
+    font-size: 30px;
+    font-weight: 1000;
+    letter-spacing: -1px;
+    padding: 5px 10px;
+    margin: 0;
+}
+
+section {
+    padding: 10px;
+    margin-right: 0;
+    border-bottom: none;
+}
+
+.member {
+    border-style: solid;
+    border-color: #ccc;
+    border-width: 1px;
+    padding: 10px;
+}
+.member + .member {
+    border-width: 0 1px 1px 1px;
+}
+
+.method {
+    border-style: solid;
+    border-color: #ccc;
+    border-width: 1px;
+    padding: 10px;
+}
+.method + .method {
+    border-width: 0 1px 1px 1px;
+}
+
+h2, h3.subsection-title {
+    margin-top: 10px;
+    margin-bottom: 0;
+    font-size: 20px;
+}
+h2:first-child {
+    margin-top: 0;
+}
+
+
+nav {
+    margin-top: 0;
+    border-left: none;
+}
+
+footer {
+    /* border-top: 1px solid #ccc; */
+    margin:0;
+}
+
+header {
+    padding: 0;
+}
+
+article dl {
+    margin-bottom: 0;
+}
+
+.props, .params {
+    margin-left: 20px;
+}
+
+.prettyprint {
+    background: #f6f6f6;
+    padding: 10px;
+    overflow: scroll;
+    margin-left: 20px;
+}
+
+.verbos {
+}
+
+ul {
+    margin: 5px 0;
+}
+
+thead tr {
+    background: #e4e4e4;
+}

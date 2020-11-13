@@ -6,5 +6,8 @@
     "default": {
       "outputSourceFiles": false
     }
+  },
+  "opts": {
+    "template": "../../doc/config/jsdoc-style"
   }
 }
