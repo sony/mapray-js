@@ -295,12 +295,10 @@ class Scene {
         gl.depthMask( true );
         gl.enable( gl.DEPTH_TEST );
 
-        if (stage.getRenderTarget() === RenderTarget.SCENE) {
-            stage.setTranslucentMode( false );
-            // 近接 -> 遠方 (Z 降順)
-            for ( var i = 0; i < primitives.length; ++i ) {
-                primitives[i].draw( stage );
-            }
+        stage.setTranslucentMode( false );
+        // 近接 -> 遠方 (Z 降順)
+        for ( var i = 0; i < primitives.length; ++i ) {
+          primitives[i].draw( stage );
         }
 
         gl.disable( gl.BLEND );
