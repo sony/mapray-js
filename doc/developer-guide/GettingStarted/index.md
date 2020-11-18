@@ -20,9 +20,9 @@ maprayJSは、JavaScriptファイルを`<script>`で直接読み込む方式(以
 ### CDN方式
 HTMLファイルでJavaScriptを読み込みます。`<head>`タグ内で以下のようにインクルードして下さい。
 ```html
-  <script src="https://resource.mapray.com/mapray-js/v0.8.3/mapray.js"></script>
+  <script src="https://resource.mapray.com/mapray-js/v0.8.4/mapray.js"></script>
 ```
-上記はバージョン0.8.3の場合です。`v0.8.3`には任意のバージョンを指定して下さい。
+上記はバージョン0.8.4の場合です。`v0.8.4`には任意のバージョンを指定して下さい。
 リリースされている該当のバージョンがあれば、アクセスすることができます。
 
 ### モジュール形式
@@ -68,7 +68,7 @@ mapray cloud のリソースへアクセスするのに必要なAccess Tokenの�
 <head>
     <meta charset="UTF-8">
     <title>Hello Globe</title>
-    <script src="https://resource.mapray.com/mapray-js/v0.8.3/mapray.min.js"></script>
+    <script src="https://resource.mapray.com/mapray-js/v0.8.4/mapray.min.js"></script>
 </head>
 <style>
     html, body {

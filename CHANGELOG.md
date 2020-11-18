@@ -4,7 +4,7 @@
 - Implement mouse event for each entities [#105](https://github.com/sony/mapray-js/issues/105), [#132](https://github.com/sony/mapray-js/pull/132)
 - Support overlay entity[#145](https://github.com/sony/mapray-js/issues/145)
 - compute geographical distance between two GePoints[#152](https://github.com/sony/mapray-js/issues/152), [#155](https://github.com/sony/mapray-js/pull/155)
-- Supported smoothly changing camera position and roration[#153] https://github.com/sony/mapray-js/issues/153), [#155](https://github.com/sony/mapray-js/pull/155)
+- Supported smoothly changing camera position and roration[#153](https://github.com/sony/mapray-js/issues/153), [#155](https://github.com/sony/mapray-js/pull/155)
 - Supported to set position and rotation of camera on URL [#154](https://github.com/sony/mapray-js/issues/154), [#155](https://github.com/sony/mapray-js/pull/155)
 
 ## Improved
@@ -14,8 +14,8 @@
 
 ### Bug gix
 - Animation isn't working with sigle KFLCorve[#144](https://github.com/sony/mapray-js/issues/144),[#143](https://github.com/sony/mapray-js/pull/143)
-- Couldn't rebind EasyBindingBlock [#149](https://github.com/sony/mapray-js/issues/149, [#150](https://github.com/sony/mapray-js/pull/150)
-- bugfix of depth hit test of anchor object [#156]https://github.com/sony/mapray-js/issues/156],  [#157](https://github.com/sony/mapray-js/pull/157)
+- Couldn't rebind EasyBindingBlock [#149](https://github.com/sony/mapray-js/issues/149), [#150](https://github.com/sony/mapray-js/pull/150)
+- bugfix of depth hit test of anchor object [#156](https://github.com/sony/mapray-js/issues/156),  [#157](https://github.com/sony/mapray-js/pull/157)
 
 ## 0.8.3
 ### Bug fix
