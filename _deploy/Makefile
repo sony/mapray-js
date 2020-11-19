@@ -73,3 +73,4 @@ pack-ui: # packing ui
 .PHONY: build-css
 build-css: # build css
 	cd $(UI_DIR); yarn css;
+	
