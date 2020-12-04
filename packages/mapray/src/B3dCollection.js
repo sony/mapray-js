@@ -1,4 +1,6 @@
 import B3dTree from "./B3dTree";
+import WasmTool from "./WasmTool";
+import b3dtile_base64 from "./wasm/b3dtile.wasm";
 
 
 /**
@@ -13,8 +15,42 @@ class B3dCollection {
     {
         this._tree_map = new Map();  // 辞書: B3dProvider -> B3dTree
 
+        this._wa_module = this._loadWasmModule();
+
         // シェーダをキャッシュするための特殊なプロパティ
         this.shader_cache = {};
+    }
+
+
+    /**
+     * @summary b3dtile wasm モジュールの生成
+     *
+     * b3dtile wasm モジュールの生成を開始して null を返す。
+     *
+     * モジュールの生成が完了したとき、各 B3dTree インスタンスの
+     * load_wasm_instance() よ呼び出す。そして this._wa_module に設定する。
+     *
+     * @return null
+     *
+     * @private
+     */
+    _loadWasmModule()
+    {
+        WasmTool.createModuleByBese64( b3dtile_base64 )
+            .then( wa_module => {
+                // コンパイル中に追加されたツリーを処理
+                for ( let tree of this._tree_map.values() ) {
+                    tree.__requestNativeInstance( wa_module );
+                }
+
+                // this に本来のオブジェクトを設定
+                this._wa_module = wa_module;
+            } )
+            .catch( e => {
+                // エラーは想定していない
+            } );
+
+        return null;
     }
 
 

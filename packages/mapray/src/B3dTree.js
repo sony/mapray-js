@@ -1,9 +1,12 @@
 import Area3D from "./Area3D";
 import GeoMath from "./GeoMath";
-import B3dBinary from "./B3dBinary";
 import Mesh from "./Mesh";
+import B3dNative from "./B3dNative";
+import B3dBinary from "./B3dBinary";
 import B3dMaterial from "./B3dMaterial";
 import B3dCubeMaterial from "./B3dCubeMaterial";
+import WasmTool from "./WasmTool";
+import b3dtile_factory from "./wasm/b3dtile.js";
 
 
 /**
@@ -22,16 +25,57 @@ class B3dTree {
     {
         this._owner     = owner;
         this._provider  = provider;
-        this._status    = TreeState.REQ_META;
+        this._status    = null;
+        this._native    = null;
         this._root_cube = new B3dCube();
 
         this._rho          = undefined;
         this._a0cs_to_gocs = undefined;
         this._lod_factor   = B3dTree.DEFAULT_LOD_FACTOR;  // TODO: パラメータ化により外部から指定
 
+        this._meta_req_id   = undefined;
         this._frame_counter = 0;  // 現行フレーム番号
 
-        this._meta_red_id = provider.requestMeta( data => this._setupMetaData( data ) );
+        this.__requestNativeInstance( owner._wa_module );
+    }
+
+
+    /**
+     * @summary B3dNative インスタンスをリクエスト
+     *
+     * wa_module から B3dNative インスタンスの生成を開始する。
+     * ただし wa_module が null のときは、準備ができてから開始する。
+     *
+     * B3dNative インスタンスの生成が完了したとき this._native を設定する。
+     *
+     * B3dCollection#_load_wasm_module() からも呼び出されることに注意されたい。
+     *
+     * @param {?WebAssembly.Module} wa_module
+     *
+     * @package
+     */
+    __requestNativeInstance( wa_module )
+    {
+        if ( this._status === TreeState.CANCELLED ) return;
+
+        if ( wa_module !== null ) {
+            WasmTool.createEmObjectByModule( wa_module, b3dtile_factory )
+                .then( em_module => {
+                    if ( this._status === TreeState.CANCELLED ) return;
+
+                    console.assert( this._status === TreeState.REQ_NATIVE, new Error() );
+
+                    this._native = new B3dNative( em_module );
+
+                    this._meta_req_id = this._provider.requestMeta( data => this._setupMetaData( data ) );
+                    this._status = TreeState.REQ_META;
+                } )
+                .catch( e => {
+                    // エラーは想定していない
+                } );
+        }
+
+        this._status = TreeState.REQ_NATIVE;
     }
 
 
@@ -42,9 +86,12 @@ class B3dTree {
     {
         this._status = TreeState.CANCELLED;
 
-        if ( this._status === TreeState.REQ_META ) {
-            this._provider.cancelRequest( this._meta_red_id );
-            this._meta_red_id = null;  // 不要になったので捨てる
+        if ( this._status === TreeState.REQ_NATIVE ) {
+            // 何もすることはない
+        }
+        else if ( this._status === TreeState.REQ_META ) {
+            this._provider.cancelRequest( this._meta_req_id );
+            this._meta_req_id = null;  // 不要になったので捨てる
         }
         else if ( this._status === TreeState.REQ_ROOT ) {
             this._root_cube.cancelRequest( this._provider );
@@ -94,7 +141,11 @@ class B3dTree {
      */
     _setupMetaData( data )
     {
-        if ( (data === null) || (this._status === TreeState.CANCELLED) ) {
+        if ( this._status === TreeState.CANCELLED ) return;
+
+        console.assert( this._status === TreeState.REQ_META, new Error() );
+
+        if ( data === null ) {
             // 獲得に失敗またはキャンセル
             this._status = TreeState.CANCELLED;
             return;
@@ -102,6 +153,7 @@ class B3dTree {
 
         if ( (data.format === undefined) || (data.format > 1) ) {
             // 未対応の形式
+            console.error( "b3dtile format error" );
             this._status = TreeState.CANCELLED;
             return;
         }
@@ -111,11 +163,11 @@ class B3dTree {
         this._a0cs_to_gocs = GeoMath.createMatrix( data.transform );
 
         // 基底タイルをリクエスト
-        let req_id = this._provider.requestTile( new Area3D(), data => this._setupRootLoaded( data ) );
+        let req_id = this._provider.requestTile( new Area3D(), data => { this._setupRootLoaded( data ); } );
         this._root_cube.__setupRootRequested( req_id );
 
         // 設定の終了
-        this._meta_red_id = null;  // 不要になったので捨てる
+        this._meta_req_id = null;  // 不要になったので捨てる
         this._status = TreeState.REQ_ROOT;
     }
 
@@ -129,14 +181,18 @@ class B3dTree {
      */
     _setupRootLoaded( data )
     {
-        if ( (data === null) || (this._status === TreeState.CANCELLED) ) {
+        if ( this._status === TreeState.CANCELLED ) return;
+
+        console.assert( this._status === TreeState.REQ_ROOT, new Error() );
+
+        if ( data === null ) {
             // 獲得に失敗またはキャンセル
             this._status = TreeState.CANCELLED;
             return;
         }
 
         // 基底 Cube のタイルを設定
-        this._root_cube.__setupRootLoaded( data );
+        this._root_cube.__setupRootLoaded( this._native, data );
 
         // 設定の終了
         this._status = TreeState.NORMAL;
@@ -160,6 +216,7 @@ class B3dStage {
     {
         this._provider = tree._provider;
         this._glenv    = pstage._glenv;
+        this._native   = tree._native;
         this._shader_cache = tree._owner.shader_cache;
 
         let viewer = pstage._viewer;
@@ -432,7 +489,7 @@ class B3dStage {
                 let child_tile_area = tile_area.getChild( which );
                 let child_tile_cube = tile_cube.getChild( which );
 
-                child_tile_cube.requestTile( this._provider, child_tile_area );
+                child_tile_cube.requestTile( this._provider, this._native, child_tile_area );
             }
         }
 
@@ -646,11 +703,14 @@ class B3dCube {
     /**
      * @summary タイルをプロバイダにリクエスト
      *
-     * @param {mapray.B3dProvider} provider  プロバイダ
-     * @param {mapray.Area3D}      area      タイルの領域
+     * @param {mapray.B3dProvider} provider
+     * @param {mapray.B3dNative}     native
+     * @param {mapray.Area3D}          area  タイルの領域
      */
-    requestTile( provider, area )
+    requestTile( provider, native, area )
     {
+        console.assert( native, new Error() );
+
         if ( this._b3d_state !== B3dState.NONE ) {
             // リクエストできる状態ではない
             return;
@@ -664,7 +724,7 @@ class B3dCube {
 
             if ( data !== null ) {
                 this._b3d_state = B3dState.LOADED;
-                this._b3d_data  = new B3dBinary( data );
+                this._b3d_data  = new B3dBinary( native, data );
             }
             else {
                 this._b3d_state = B3dState.FAILED;
@@ -710,12 +770,15 @@ class B3dCube {
      *
      * Note: B3dTree のみが使用
      *
-     * @param {ArrayBuffer} data  バイナリデータ
+     * @param {mapray.B3dNative} native
+     * @param {ArrayBuffer}        data  バイナリデータ
      */
-    __setupRootLoaded( data )
+    __setupRootLoaded( native, data )
     {
+        console.assert( native, new Error() );
+
         this._b3d_state = B3dState.LOADED;
-        this._b3d_data  = new B3dBinary( data );
+        this._b3d_data  = new B3dBinary( native, data );
     }
 
 }
@@ -936,12 +999,17 @@ class MeshNode {
 var TreeState = {
 
     /**
+     * B3dNative インスタンスを生成中
+     */
+    REQ_NATIVE: { id: "REQ_NATIVE" },
+
+    /**
      * メタデータをリクエスト中
      */
     REQ_META: { id: "REQ_META" },
 
     /**
-     * メタデータをリクエスト中
+     * 最上位タイルをリクエスト中
      */
     REQ_ROOT: { id: "REQ_ROOT" },
 
