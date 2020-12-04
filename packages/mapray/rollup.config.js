@@ -4,6 +4,7 @@ import { string } from 'rollup-plugin-string'
 import resolve from 'rollup-plugin-node-resolve'
 import commonjs from 'rollup-plugin-commonjs'
 import strip from '@rollup/plugin-strip';
+import { base64 } from 'rollup-plugin-base64';
 // import typescript from '@rollup/plugin-typescript'
 import typescript from 'rollup-plugin-typescript2';
 
@@ -48,6 +49,9 @@ export default [
     ],
     plugins: [
       resolve(),
+      base64({
+        include: '**/*.wasm'
+      }),
       strip(strip_option),
       string({
         include: extensions
@@ -78,6 +82,9 @@ export default [
     },
     plugins: [
       resolve(),
+      base64({
+        include: '**/*.wasm'
+      }),
       strip(strip_option),
       string({
         include: extensions
@@ -109,6 +116,9 @@ export default [
     plugins: [
       resolve(),
       commonjs(),
+      base64({
+        include: '**/*.wasm'
+      }),
       strip(strip_option),
       string({
         include: extensions
@@ -147,6 +157,9 @@ export default [
     plugins: [
       resolve(),
       commonjs(),
+      base64({
+        include: '**/*.wasm'
+      }),
       strip(strip_option),
       string({
         include: extensions
