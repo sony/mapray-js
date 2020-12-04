@@ -4,6 +4,7 @@ import { string } from 'rollup-plugin-string'
 import resolve from 'rollup-plugin-node-resolve'
 import commonjs from 'rollup-plugin-commonjs'
 import strip from '@rollup/plugin-strip';
+import { base64 } from 'rollup-plugin-base64';
 
 const extensions = ['**/*.vert', '**/*.frag', '**/*.glsl']
 var outdir = "dist/"
@@ -37,6 +38,9 @@ export default [
     plugins: [
       commonjs(),
       resolve(),
+      base64({
+        include: '**/*.wasm'
+      }),
       strip(strip_option),
       string({
         include: extensions
@@ -54,6 +58,9 @@ export default [
     plugins: [
       commonjs(),
       resolve(),
+      base64({
+        include: '**/*.wasm'
+      }),
       strip(strip_option),
       string({
         include: extensions
@@ -78,6 +85,9 @@ export default [
     plugins: [
       commonjs(),
       resolve(),
+      base64({
+        include: '**/*.wasm'
+      }),
       strip(strip_option),
       string({
         include: extensions
@@ -100,6 +110,9 @@ export default [
     plugins: [
       commonjs(),
       resolve(),
+      base64({
+        include: '**/*.wasm'
+      }),
       strip(strip_option),
       string({
         include: extensions
