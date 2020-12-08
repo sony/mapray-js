@@ -1,0 +1,22 @@
+--- emsdk.orig/upstream/emscripten/emcc.py	2020-11-17 04:10:05.000000000 +0900
++++ emsdk/upstream/emscripten/emcc.py	2020-12-26 14:40:16.834381300 +0900
+@@ -359,7 +359,7 @@
+       key = shared.Settings.alt_names[key]
+ 
+     # In those settings fields that represent amount of memory, translate suffixes to multiples of 1024.
+-    if key in ('TOTAL_STACK', 'INITIAL_MEMORY', 'MEMORY_GROWTH_LINEAR_STEP', 'MEMORY_GROWTH_GEOMETRIC_STEP',
++    if key in ('TOTAL_STACK', 'INITIAL_MEMORY', 'MEMORY_GROWTH_LINEAR_STEP',
+                'GL_MAX_TEMP_BUFFER_SIZE', 'MAXIMUM_MEMORY', 'DEFAULT_PTHREAD_STACK_SIZE'):
+       value = str(expand_byte_size_suffixes(value))
+ 
+--- emsdk.orig/upstream/emscripten/src/library.js	2020-11-17 04:10:05.000000000 +0900
++++ emsdk/upstream/emscripten/src/library.js	2020-12-26 15:06:07.523803100 +0900
+@@ -567,7 +567,7 @@
+       var overGrownHeapSize = oldSize + {{{ MEMORY_GROWTH_LINEAR_STEP }}} / cutDown; // ensure linear growth
+ #endif
+ 
+-      var newSize = Math.min(maxHeapSize, alignUp(Math.max(minHeapSize, requestedSize, overGrownHeapSize), {{{ WASM_PAGE_SIZE }}}));
++      var newSize = Math.min(maxHeapSize, alignUp(Math.max(requestedSize, overGrownHeapSize), {{{ WASM_PAGE_SIZE }}}));
+ 
+ #if ASSERTIONS == 2
+       var t0 = _emscripten_get_now();
