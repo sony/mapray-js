@@ -1,0 +1,146 @@
+#+STARTUP: noindent
+
+* ビルド環境の準備
+
+  事前に以下のコマンドがインストールされている必要である。
+
+  - git
+  - patch
+  - cmake
+  - make
+
+  以降では、 ={EMSDK}= を Emscripten SDK をインストールするディレクトリ、 ={MAPRAY}= を
+  =mapray-jsディレクトリ/packages/mapray= に読み替えられたい。
+
+** Emscripten SDK のインストール
+
+   #+begin_example
+     $ git clone --branch=2.0.9 --depth=1 https://github.com/emscripten-core/emsdk.git {EMSDK}
+     $ cd {EMSDK}
+     $ ./emsdk install latest
+     $ ./emsdk activate latest
+     $ patch --strip=1 --forward < {MAPRAY}/wasm/emsdk.patch
+   #+end_example
+
+** 環境変数の設定
+
+   #+begin_example
+     $ source {EMSDK}/emsdk_env.sh
+   #+end_example
+
+   一般的にこれはログイン後に一度だけ実行する。
+
+* CMake による wasm モジュールのビルド
+
+  例えば b3dtile の wasm モジュールをビルドするときは、次のようにビルドする。
+
+  #+begin_example
+    $ cd {MAPRAY}/wasm/b3dtile
+    $ mkdir build
+    $ cd build
+    $ emcmake cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+    $ make -j
+    $ make install  # {MAPRAY}/src/wasm/ にモジュールを配置
+  #+end_example
+
+  デバッグ版をビルドするときは cmake に ~-DCMAKE_BUILD_TYPE=Debug~ を指定する。
+
+  実行するブラウザでソースレベルでバッグを行うときは、ブラウザから =http://localhost:8080/=
+  にアクセスしたときに、開発環境の ~{MAPRAY}/wasm/~ を参照できるようにしなければな
+  らない。
+
+* 単体テスト
+
+  現在のブラウザ環境のデバッガでは、変数が参照できないなど機能が不足している。
+
+  そのため Linux や Windows などのホスト環境でビルドして一般的なデバッガで確認でき
+  るようにする。
+
+  動作確認プログラムは [[https://www.boost.org/doc/libs/1_71_0/libs/test/doc/html/index.html][Boost.Test]] のフレームワークで記述する。
+
+** Conan と CMake の準備
+
+   1. C++ パッケージマネージャ Conan 1.25 以上のクライアントをインストール
+
+      <https://conan.io/>
+
+   2. CMake 3.10 以上 (Windows の場合は 3.17 以上) をインストール
+
+      <https://cmake.org/>
+
+   #+begin_note
+     GCC でビルドする場合は GCC 8.4 以上が必要になる。そのため
+     =~/.conan/profiles/default= の =compiler.libcxx= を次のように設定したほうが良い。
+
+     : compiler.libcxx=libstdc++11
+
+     詳細は <https://docs.conan.io/en/latest/howtos/manage_gcc_abi.html>
+   #+end_note
+
+** ビルド方法
+
+   {MAPRAY}/wasm/tests/ の直下に適当なディレクトリを作成して、そこでビルドを行う。
+   ディレクトリ名は任意で、いくつ作っても良い。
+
+   #+begin_example
+     $ mkdir build
+     $ cd build
+   #+end_example
+
+   構成ごとのビルドは次のように行う。
+
+   - リリース版
+
+     - UNIX 系
+
+       #+begin_example
+         $ conan install --build=missing .. -s build_type=Release
+         $ cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+         $ make
+       #+end_example
+
+     - Visual Studio 2017
+
+       #+begin_example
+         > conan install --build=missing .. -s build_type=Release
+         > cmake .. -G "Visual Studio 15 2017" -A x64
+         > cmake --build . --config Release
+       #+end_example
+
+   - デバッグ版
+
+     - UNIX 系
+
+       #+begin_example
+         $ conan install --build=missing .. -s build_type=Debug
+         $ cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug
+         $ make
+       #+end_example
+
+     - Visual Studio 2017
+
+       #+begin_example
+         > conan install --build=missing .. -s build_type=Debug
+         > cmake .. -G "Visual Studio 15 2017" -A x64
+         > cmake --build . --config Debug
+       #+end_example
+
+** テストの実行
+
+   すべてのテストを実行する。
+
+   #+begin_example
+     $ bin/unit_test
+   #+end_example
+
+   b3dtile_suite のみを実行する。
+
+   #+begin_example
+     $ bin/unit_test --run_test=b3dtile_suite
+   #+end_example
+
+   オプションの詳細は以下で確認できる。
+
+   #+begin_example
+     $ bin/unit_test --help
+   #+end_example
