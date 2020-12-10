@@ -1,6 +1,7 @@
 import Entity from "./Entity";
 import GeoMath from "./GeoMath";
 import GeoPoint from "./GeoPoint";
+import GeoRegion from "./GeoRegion";
 import Orientation from "./Orientation";
 import AltitudeMode from "./AltitudeMode";
 import EntityRegion from "./EntityRegion";
@@ -82,6 +83,21 @@ class ModelEntity extends Entity {
     onChangeAltitudeMode( prev_mode )
     {
         this._primitive_producer.onChangeAltitudeMode();
+    }
+
+
+    /**
+     * @summary bboxを利用して簡易的にバウンディングを算出
+     *
+     * @override
+     * @return {mapray.GeoRegion}  バウンディング情報を持ったGeoRegion
+     */
+    getBounds()
+    {
+        const bounds = this._primitive_producer.getBounds();
+        const region = new GeoRegion();
+        region.addPointsAsArray( bounds );
+        return region;
     }
 
 
@@ -368,6 +384,90 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
             GeoMath.mul_AA( entity_to_gocs, ptoe, prim.transform );
         }
         return primitives;
+    }
+
+
+    /**
+     * @summary bboxを利用して簡易的にバウンディングを算出
+     *
+     * @return {Float64Array}  min_lon,min_lat,min_alt,max_lon,max_lat,max_alt
+     */
+    getBounds()
+    {
+        const entity = this.entity;
+
+        // this._abs_position を更新
+        this._updateAbsPosition();
+
+        const mlocs_to_gocs   = this._abs_position.getMlocsToGocsMatrix( GeoMath.createMatrix() );
+        const entity_to_mlocs = mul_RS( entity._rotation, entity._scale, GeoMath.createMatrix() );
+        const entity_to_gocs  = GeoMath.mul_AA( mlocs_to_gocs, entity_to_mlocs, GeoMath.createMatrix() );
+
+        // Primitive#transform を設定
+        const primitives = this._primitives;
+        const ptoe_array = this._ptoe_array;
+
+        let min_lon =  Number.MAX_VALUE;
+        let max_lon = -Number.MAX_VALUE;
+        let min_lat =  Number.MAX_VALUE;
+        let max_lat = -Number.MAX_VALUE;
+        let min_alt =  Number.MAX_VALUE;
+        let max_alt = -Number.MAX_VALUE;
+
+        let transform = new Float64Array( 4 * 4 );
+        for ( var i = 0; i < primitives.length; ++i ) {
+            const prim = primitives[i];
+            const ptoe = ptoe_array[i];
+            // prim.transform = entity_to_gocs * ptoe
+            GeoMath.mul_AA( entity_to_gocs, ptoe, transform );
+
+            const bbox = prim.bbox;
+            const bbox0_x = bbox[0][0]*transform[0] + bbox[0][1]*transform[4] + bbox[0][2]*transform[8]  + transform[12];
+            const bbox0_y = bbox[0][0]*transform[1] + bbox[0][1]*transform[5] + bbox[0][2]*transform[9]  + transform[13];
+            const bbox0_z = bbox[0][0]*transform[2] + bbox[0][1]*transform[6] + bbox[0][2]*transform[10] + transform[14];
+
+            const bbox1_x = bbox[1][0]*transform[0] + bbox[1][1]*transform[4] + bbox[1][2]*transform[8]  + transform[12];;
+            const bbox1_y = bbox[1][0]*transform[1] + bbox[1][1]*transform[5] + bbox[1][2]*transform[9]  + transform[13];;
+            const bbox1_z = bbox[1][0]*transform[2] + bbox[1][1]*transform[6] + bbox[1][2]*transform[10] + transform[14];;
+
+            let points0 = new GeoPoint();
+            points0.setFromGocs( [bbox0_x, bbox0_y, bbox0_z] );
+            let points1 = new GeoPoint();
+            points1.setFromGocs( [bbox1_x, bbox1_y, bbox1_z] );
+
+            // bbox0
+            let lon = points0.longitude;
+            let lat = points0.latitude;
+            let alt = points0.altitude;
+
+            if ( lon < min_lon ) min_lon = lon;
+            if ( lon > max_lon ) max_lon = lon;
+            if ( lat < min_lat ) min_lat = lat;
+            if ( lat > max_lat ) max_lat = lat;
+            if ( alt < min_alt ) min_alt = alt;
+            if ( alt > max_alt ) max_alt = alt;
+
+            // bbox1
+            lon = points1.longitude;
+            lat = points1.latitude;
+            alt = points1.altitude;
+
+            if ( lon < min_lon ) min_lon = lon;
+            if ( lon > max_lon ) max_lon = lon;
+            if ( lat < min_lat ) min_lat = lat;
+            if ( lat > max_lat ) max_lat = lat;
+            if ( alt < min_alt ) min_alt = alt;
+            if ( alt > max_alt ) max_alt = alt;
+        }
+        const bounds_array = new Float64Array( 3 * 2 );
+        bounds_array[0] = min_lon;
+        bounds_array[1] = min_lat;
+        bounds_array[2] = min_alt;
+        bounds_array[3] = max_lon;
+        bounds_array[4] = max_lat;
+        bounds_array[5] = max_alt;
+
+        return bounds_array;
     }
 
 

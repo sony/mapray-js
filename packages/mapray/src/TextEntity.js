@@ -13,6 +13,7 @@ import Dom from "./util/Dom";
 import Color from "./util/Color";
 import EasyBindingBlock from "./animation/EasyBindingBlock";
 import Type from "./animation/Type";
+import AbstractPointEntity from "./AbstractPointEntity";
 
 /**
  * @summary テキストエンティティ
@@ -20,7 +21,7 @@ import Type from "./animation/Type";
  * @memberof mapray
  * @extends mapray.Entity
  */
-class TextEntity extends Entity {
+class TextEntity extends AbstractPointEntity {
 
     /**
      * @param {mapray.Scene} scene        所属可能シーン
@@ -31,9 +32,6 @@ class TextEntity extends Entity {
     constructor( scene, opts )
     {
         super( scene, opts );
-
-        // テキスト管理
-        this._entries = [];
 
         // テキストの親プロパティ
         this._text_parent_props = {

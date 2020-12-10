@@ -4,6 +4,7 @@ import Mesh from "./Mesh";
 import LineMaterial from "./LineMaterial";
 import GeoMath from "./GeoMath";
 import GeoPoint from "./GeoPoint";
+import GeoRegion from "./GeoRegion";
 import AltitudeMode from "./AltitudeMode";
 import EntityRegion from "./EntityRegion";
 import AreaUtil from "./AreaUtil";
@@ -126,6 +127,20 @@ class AbstractLineEntity extends Entity {
             this._opacity = opacity;
             this._producer.onChangeProperty();
         }
+    }
+
+
+    /**
+     * @summary すべての頂点のバウンディングを算出
+     *
+     * @override
+     * @return {mapray.GeoRegion}  バウンディング情報を持ったGeoRegion
+     */
+    getBounds()
+    {
+        const region = new GeoRegion();
+        region.addPointsAsArray( this._point_array );
+        return region;
     }
 
 

@@ -14,6 +14,7 @@ import EasyBindingBlock from "./animation/EasyBindingBlock";
 import Type from "./animation/Type";
 import AnimUtil from "./animation/AnimUtil";
 import Resource, { URLResource } from "./Resource";
+import AbstractPointEntity from "./AbstractPointEntity";
 
 
 /**
@@ -21,7 +22,7 @@ import Resource, { URLResource } from "./Resource";
  * @memberof mapray
  * @extends mapray.Entity
  */
-class ImageIconEntity extends Entity {
+class ImageIconEntity extends AbstractPointEntity {
 
     /**
      * @param {mapray.Scene} scene        所属可能シーン
@@ -33,9 +34,6 @@ class ImageIconEntity extends Entity {
     constructor( scene, opts )
     {
         super( scene, opts );
-
-        // 要素管理
-        this._entries = [];
 
         // 親プロパティ
         this._parent_props = {

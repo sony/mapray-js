@@ -3,6 +3,7 @@ import Viewer from "./Viewer";
 import Camera from "./Camera";
 import GeoMath from "./GeoMath";
 import GeoPoint from "./GeoPoint";
+import GeoRegion from "./GeoRegion";
 import Orientation from "./Orientation";
 import Ray from "./Ray";
 import AltitudeMode from "./AltitudeMode";
@@ -46,6 +47,7 @@ var mapray = {
     Camera,
     GeoMath,
     GeoPoint,
+    GeoRegion,
     Orientation,
     Ray,
     AltitudeMode,

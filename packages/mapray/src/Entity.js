@@ -116,6 +116,18 @@ class Entity {
 
 
     /**
+     * @summary バウンディングボックスを算出
+     *
+     * @abstract
+     * @return {mapray.GeoRegion}  バウンディングボックス
+     */
+    getBounds()
+    {
+        throw new Error( "mapray.Entity#getBounds() method has not been overridden." );
+    }
+
+
+    /**
      * @summary 高度モードが変更された後の通知
      *
      * @desc
