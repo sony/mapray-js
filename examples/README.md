@@ -12,6 +12,7 @@ const accessToken = "<your access token here>";
 
 | Section  | Summary                              | Detail                                                      | HTML file                           | JavaScript                                        | data file |
 |----------|--------------------------------------|-------------------------------------------------------------|-------------------------------------|---------------------------------------------------|-------------|
+| Animation | Animation Samples                   | Refer [readme in animation directory](https://github.com/sony/mapray-js/blob/animation-sample/examples/animation/README.md) | | |
 | Camera   | Camera position                      | View Mt. Fuji from Mt. Kitadake                             | LongitudeAndLatitudeCameraPos.html  | -                                                 | -           |
 |          | Camera animation                     | Rotate the camera around Mt. Fuji                           | CameraAnimation.html                | CameraAnimation.js                                | -           |
 |          |                                      | Changing the angle of view with rotating                    | CameraAnimationVer2.html            | CameraAnimationVer2.js                            | -           |
