@@ -1,40 +1,40 @@
 # animation-samples
 
-### サンプルプログラム
-* AnimePinLiner  
-KFLinerCurveを使用したサイズと色変更アニメーション  
-KFLinearCurveで、sizeとbg_colorをbindして、PinEntityのサイズと色を線形にアニメーションします
+## AnimePinLiner  
+An animation using KFLinerCurve to change pin size and color.
+On the KFLinearCurve, bind size and bg_color to animate the size and color of the PinEntity linearly.
 
-* AnimePinStep  
-KFStepCurveを使用したサイズと色変更アニメーション  
-KFStepCurveで、sizeとbg_colorをbindして、PinEntityのサイズと色を階段形にアニメーションします
+## AnimePinStep 
+An animation using KFStepCurve to change pin size and color.
+In the KFStepCurve, bind size and bg_color to animate the size and color of the PinEntity into a stepped shape.
 
-* AnimePinCurve  
-Curveのサブクラスを使用したサイズ変更アニメーション  
-CosCurveというコサイン関数の値を返すCurveを作成しています  
-サブクラスのgetInvarianceにより期限無く動作するCurveとしています  
-CosCurveでPinEntityのサイズをアニメーションします
+## AnimePinCurve
+Animation that uses a subclass of Curve to change the pin size.
+I have written my own curve called CosCurve that returns the value of the cosine function.
+The subclass getInvariance gives an infinite Curve setting.
+Animate in CosCurve for the size of PinEntity.
 
-* AnimePinCurveCombo  
-ComboVectorCurve, ConstantCurve, Curveのサブクラスを使用した位置変更アニメーション  
-地面をクリックするとその位置の上空でPinが上下移動アニメーションします  
-CosCurveWithTimeというコサイン関数の値を返すCurveを作成しています  
-サブクラスのgetInvarianceにより動作時間を設定できるようにしています  
-ComboVectorCurveでvector3のコンボCurveを作成し、  
-1番目の要素にはクリックされた地面位置のlongitudeをConstantCurveに設定  
-2番目の要素にはクリックされた地面位置のlatitudeをConstantCurveに設定  
-3番目の要素にはCosCurveを設定しています。  
-ComboVectorCurveをPinEntityのpositionにbindすることで、CosCurveの値でPinEntityの高度をアニメーションするようにしています
+## AnimePinCurveCombo
+Reposition animation using a subclass of ComboVectorCurve, ConstantCurve and Curve.
+The pin moves up and down in the sky above where you click the ground plane.
+I have written my own Curve that returns the value of the cosine function CosCurveWithTime.
+The operation time is set by getInvariance of the subclass.
+Create a vector3 combo Curve with ComboVectorCurve.
+The first element is set to ConstantCurve as the longitude of the ground position you clicked.
+Second element sets the latitude of the ground position you clicked to ConstantCurve.
+The third element is set to CosCurve.
+This is an example of animating the elevation of a PinEntity with the value of CosCurve by binding the ComboVectorCurve to the position of the PinEntity.
 
-* AnimePinCurveText  
-Curveのサブクラスを使用したテキスト変更アニメーション  
-地面をクリックするとその位置にPinを作成し、テキストで数字がカウントアップします  
-CosCurveTextというコサイン関数の値をStringにして返すCurveを作成しています  
-サブクラスのgetInvarianceにより期限無く動作するCurveとしています  
-CosCurveでPinEntityのテキストをアニメーションします
+## AnimePinCurveText
+Animation using subclasses of Curve to modify text.
+Click the ground plane to create a pin at that location, and the number counts up in the text.
+We are creating a Curve that returns the value of the cosine function CosCurveText as a String.
+It is a curve setting that works indefinitely with the subclass getInvariance.
+Animate the PinEntity text in CosCurve.
 
-* AnimePathEasyBinding  
-EasyBindingBlockを使用したPathEntityとTextEntityのアニメーション  
-EasyBindingにより、Pathの長さとテキストの文字、Pinとテキストの位置をアニメーションします  
-lengthという識別子の数値型アニメーションを登録して、そのパラメータ設定関数内でそれぞれのEntityのパラメータを設定しています  
-CurveはKFLinearCurveで、0から30までを30秒の線形値として利用しています
+
+## AnimePathEasyBinding
+This is the PathEntity and TextEntity animation using the EasyBindingBlock.
+EasyBinding animates the length of the Path and the character of the text, and the position of the Pin and text.
+It registers a numeric animation with the identifier length and sets the parameters for each entity in its parameterization function.
+Curve is a KFLinearCurve, using 0 to 30 as linear values in 30 seconds.
