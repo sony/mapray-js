@@ -1,0 +1,40 @@
+# animation-samples
+
+### サンプルプログラム
+* AnimePinLiner  
+KFLinerCurveを使用したサイズと色変更アニメーション  
+KFLinearCurveで、sizeとbg_colorをbindして、PinEntityのサイズと色を線形にアニメーションします
+
+* AnimePinStep  
+KFStepCurveを使用したサイズと色変更アニメーション  
+KFStepCurveで、sizeとbg_colorをbindして、PinEntityのサイズと色を階段形にアニメーションします
+
+* AnimePinCurve  
+Curveのサブクラスを使用したサイズ変更アニメーション  
+CosCurveというコサイン関数の値を返すCurveを作成しています  
+サブクラスのgetInvarianceにより期限無く動作するCurveとしています  
+CosCurveでPinEntityのサイズをアニメーションします
+
+* AnimePinCurveCombo  
+ComboVectorCurve, ConstantCurve, Curveのサブクラスを使用した位置変更アニメーション  
+地面をクリックするとその位置の上空でPinが上下移動アニメーションします  
+CosCurveWithTimeというコサイン関数の値を返すCurveを作成しています  
+サブクラスのgetInvarianceにより動作時間を設定できるようにしています  
+ComboVectorCurveでvector3のコンボCurveを作成し、  
+1番目の要素にはクリックされた地面位置のlongitudeをConstantCurveに設定  
+2番目の要素にはクリックされた地面位置のlatitudeをConstantCurveに設定  
+3番目の要素にはCosCurveを設定しています。  
+ComboVectorCurveをPinEntityのpositionにbindすることで、CosCurveの値でPinEntityの高度をアニメーションするようにしています
+
+* AnimePinCurveText  
+Curveのサブクラスを使用したテキスト変更アニメーション  
+地面をクリックするとその位置にPinを作成し、テキストで数字がカウントアップします  
+CosCurveTextというコサイン関数の値をStringにして返すCurveを作成しています  
+サブクラスのgetInvarianceにより期限無く動作するCurveとしています  
+CosCurveでPinEntityのテキストをアニメーションします
+
+* AnimePathEasyBinding  
+EasyBindingBlockを使用したPathEntityとTextEntityのアニメーション  
+EasyBindingにより、Pathの長さとテキストの文字、Pinとテキストの位置をアニメーションします  
+lengthという識別子の数値型アニメーションを登録して、そのパラメータ設定関数内でそれぞれのEntityのパラメータを設定しています  
+CurveはKFLinearCurveで、0から30までを30秒の線形値として利用しています

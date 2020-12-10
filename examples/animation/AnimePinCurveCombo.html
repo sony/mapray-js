@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>AnimePinCurveComboSample</title>
+        <script src="https://resource.mapray.com/mapray-js/v0.8.4/mapray.min.js"></script>
+        <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
+        <script src="AnimePinCurveCombo.js"></script>
+        <script src="CosCurveWithTime.js"></script>
+        <script src="CheckInputKeyAndMouse.js"></script>
+        <style>
+            html, body {
+                height: 100%;
+                margin: 0;
+            }
+
+            div#mapray-container {
+                display: flex;
+                position: relative;
+                height: 100%;
+            }
+        </style>
+    </head>
+
+    <body onload="new AnimePinCurveCombo('mapray-container');">
+      <div id="mapray-container"></div>
+    </body>
+</html>
