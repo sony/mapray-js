@@ -4,6 +4,7 @@ import Mesh from "./Mesh";
 import PolygonMaterial from "./PolygonMaterial";
 import GeoMath from "./GeoMath";
 import GeoPoint from "./GeoPoint";
+import GeoRegion from "./GeoRegion";
 import AltitudeMode from "./AltitudeMode";
 import EntityRegion from "./EntityRegion";
 import Triangulator from "./Triangulator";
@@ -215,6 +216,21 @@ class PolygonEntity extends Entity {
         this._addBoundary( points, true );
     }
 
+
+    /**
+     * @summary すべての頂点のバウンディングを算出
+     *
+     * @override
+     * @return {mapray.GeoRegion}  バウンディング情報を持ったGeoRegion
+     */
+    getBounds()
+    {
+        const region = new GeoRegion();
+        for ( let bo of this._boundaries ) {
+            region.addPointsAsArray( bo.points );
+        }
+        return region;
+    }
 
     /**
      * @summary 境界を追加

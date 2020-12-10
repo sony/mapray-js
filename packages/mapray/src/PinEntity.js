@@ -13,6 +13,7 @@ import Dom from "./util/Dom";
 import EasyBindingBlock from "./animation/EasyBindingBlock";
 import Type from "./animation/Type";
 import AnimUtil from "./animation/AnimUtil";
+import AbstractPointEntity from "./AbstractPointEntity";
 
 /**
  * @summary ピンエンティティ
@@ -34,7 +35,7 @@ import AnimUtil from "./animation/AnimUtil";
  * viewer.scene.addEntity(pin);
  *
  */
-class PinEntity extends Entity {
+class PinEntity extends AbstractPointEntity {
 
     /**
      * @param {mapray.Scene} scene        所属可能シーン
@@ -45,9 +46,6 @@ class PinEntity extends Entity {
     constructor( scene, opts )
     {
         super( scene, opts );
-
-        // 要素管理
-        this._entries = [];
 
         // 親プロパティ
         this._parent_props = {
