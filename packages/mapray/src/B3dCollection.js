@@ -15,22 +15,46 @@ class B3dCollection {
     {
         this._tree_map = new Map();  // 辞書: B3dProvider -> B3dTree
 
-        this._wa_module = this._loadWasmModule();
+        this._wa_module = null;
 
-        // シェーダをキャッシュするための特殊なプロパティ
-        this.shader_cache = {};
+        this._shader_cache = {};
+
+        this._loadWasmModule();
     }
+
+
+    /**
+     * シェーダをキャッシュするための特殊なプロパティ
+     *
+     * @type {object}
+     * @readonly
+     *
+     * @package
+     */
+    get shader_cache() { return this._shader_cache; }
+
+
+    /**
+     * @summary wasm モジュールを取得
+     *
+     * B3dTree が必要とする wasm モジュールを返す。まだモジュールがロードされていない
+     * ときは null を返す。
+     *
+     * @return {?WebAssembly.Module}
+     *
+     * @package
+     */
+    getWasmModule() { return this._wa_module; }
 
 
     /**
      * @summary b3dtile wasm モジュールの生成
      *
-     * b3dtile wasm モジュールの生成を開始して null を返す。
+     * b3dtile wasm モジュールの生成を開始する。
      *
-     * モジュールの生成が完了したとき、各 B3dTree インスタンスの
-     * load_wasm_instance() よ呼び出す。そして this._wa_module に設定する。
+     * モジュールの生成が完了したとき this._wa_module を設定する。
      *
-     * @return null
+     * その後、各 B3dTree インスタンスに通知する。
      *
      * @private
      */
@@ -38,19 +62,18 @@ class B3dCollection {
     {
         WasmTool.createModuleByBese64( b3dtile_base64 )
             .then( wa_module => {
-                // コンパイル中に追加されたツリーを処理
-                for ( let tree of this._tree_map.values() ) {
-                    tree.__requestNativeInstance( wa_module );
-                }
-
                 // this に本来のオブジェクトを設定
                 this._wa_module = wa_module;
+
+                // wasm ロード中に追加された B3dTree インスタンスに wasm が
+                // ロードされたことを通知
+                for ( let tree of this._tree_map.values() ) {
+                    tree.onLoadWasmModule();
+                }
             } )
             .catch( e => {
                 // エラーは想定していない
             } );
-
-        return null;
     }
 
 
