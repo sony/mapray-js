@@ -25,57 +25,50 @@ class B3dTree {
     {
         this._owner     = owner;
         this._provider  = provider;
-        this._status    = null;
+        this._status    = TreeState.NOT_READY;
         this._native    = null;
-        this._root_cube = new B3dCube();
+        this._root_cube = null;
 
+        // 幾何計算関連
         this._rho          = undefined;
         this._a0cs_to_gocs = undefined;
         this._lod_factor   = B3dTree.DEFAULT_LOD_FACTOR;  // TODO: パラメータ化により外部から指定
 
-        this._meta_req_id   = undefined;
-        this._frame_counter = 0;  // 現行フレーム番号
+        // キャッシュ処理関連
+        this._frame_counter   = 0;  // 現行フレーム番号
 
-        this.__requestNativeInstance( owner._wa_module );
+        this._num_tree_cubes  = 0;  // ツリー上の B3dCube インスタンス数
+        this._num_touch_cubes = 0;  // 現行フレームでのアクセス B3dCube 数 (祖先含む)
+        this._hist_stats = new HistStats();  // _num_touch_cubes の履歴
+
+        this._num_tree_meshes  = 0;  // ツリー上の MeshNode インスタンス数
+        this._num_touch_meshes = 0;  // 現行フレームでのアクセス MeshNode 数
+
+        this._num_tile_requesteds = 0;  // 現在の REQUESTED 状態の数
+
+        // 初期用の特殊プロパティ
+        this._b3d_req_id = undefined;
+
+        if ( owner.getWasmModule() ) {
+            this._startInitialization( owner.getWasmModule() );
+        }
     }
 
 
     /**
-     * @summary B3dNative インスタンスをリクエスト
+     * @summary wasm モジュールがロードされたことを通知
      *
-     * wa_module から B3dNative インスタンスの生成を開始する。
-     * ただし wa_module が null のときは、準備ができてから開始する。
-     *
-     * B3dNative インスタンスの生成が完了したとき this._native を設定する。
-     *
-     * B3dCollection#_load_wasm_module() からも呼び出されることに注意されたい。
-     *
-     * @param {?WebAssembly.Module} wa_module
+     * this._owner の wasm モジュールがロードされたときに呼び出される。
      *
      * @package
      */
-    __requestNativeInstance( wa_module )
+    onLoadWasmModule()
     {
-        if ( this._status === TreeState.CANCELLED ) return;
-
-        if ( wa_module !== null ) {
-            WasmTool.createEmObjectByModule( wa_module, b3dtile_factory )
-                .then( em_module => {
-                    if ( this._status === TreeState.CANCELLED ) return;
-
-                    console.assert( this._status === TreeState.REQ_NATIVE, new Error() );
-
-                    this._native = new B3dNative( em_module );
-
-                    this._meta_req_id = this._provider.requestMeta( data => this._setupMetaData( data ) );
-                    this._status = TreeState.REQ_META;
-                } )
-                .catch( e => {
-                    // エラーは想定していない
-                } );
+        if ( this._status === TreeState.FAILED ) {
+            return;
         }
 
-        this._status = TreeState.REQ_NATIVE;
+        this._startInitialization( this._owner.getWasmModule() );
     }
 
 
@@ -84,21 +77,23 @@ class B3dTree {
      */
     cancel()
     {
-        this._status = TreeState.CANCELLED;
+        if ( this._status === TreeState.NOT_READY ) {
+            // 準備中のリクエストを取り消す
+            if ( this._b3d_req_id ) {
+                this._provider.cancelRequest( this._b3d_req_id );
+                this._b3d_req_id = undefined;
+            }
+        }
+        else if ( this._status === TreeState.READY ) {
+            // ツリー上の REQUESTED をキャンセル
+            for ( let cube of this._root_cube.flatten() ) {
+                cube.cancelTileRequest();
+            }
+        }
 
-        if ( this._status === TreeState.REQ_NATIVE ) {
-            // 何もすることはない
-        }
-        else if ( this._status === TreeState.REQ_META ) {
-            this._provider.cancelRequest( this._meta_req_id );
-            this._meta_req_id = null;  // 不要になったので捨てる
-        }
-        else if ( this._status === TreeState.REQ_ROOT ) {
-            this._root_cube.cancelRequest( this._provider );
-        }
-        else if ( this._status === TreeState.NORMAL ) {
-            // TODO: ツリー上の REQUESTED をキャンセル
-        }
+        console.assert( this._num_tile_requesteds == 0 );
+
+        this._status = TreeState.FAILED;
     }
 
 
@@ -109,7 +104,7 @@ class B3dTree {
      */
     draw( stage )
     {
-        if ( this._status !== TreeState.NORMAL ) {
+        if ( this._status !== TreeState.READY ) {
             // 描画できる状態ではない
             return;
         }
@@ -123,79 +118,185 @@ class B3dTree {
      */
     endFrame()
     {
-        if ( this._status !== TreeState.NORMAL ) {
+        if ( this._status !== TreeState.READY ) {
             // 描画できる状態ではない
             return;
         }
 
+        console.assert( this._num_tree_cubes >= this._num_touch_cubes );
+        console.assert( this._num_tree_meshes >= this._num_touch_meshes );
+        console.assert( this._num_touch_cubes >= 1 );
+
+        this._reduceCubesIfNecessary();
+        this._reduceMeshesIfNecessary();
+
+        // 次のフレームのカウンターを準備
+        this._num_touch_cubes  = 0;
+        this._num_touch_meshes = 0;
         ++this._frame_counter;
+    }
+
+
+    /**
+     * @summary 初期化を開始
+     *
+     * @param {WebAssembly.Module} wa_module
+     *
+     * @private
+     */
+    async _startInitialization( wa_module )
+    {
+        try {
+            const meta_data = await this._getMetaData();
+            this._setupMetadata( meta_data );
+
+            const [tile_data,
+                   em_module] = await Promise.all( [this._getRootTile(),
+                                                    WasmTool.createEmObjectByModule( wa_module,
+                                                                                     b3dtile_factory )] );
+
+            this._native = new B3dNative( em_module );
+
+            // 基底 Cube のタイルを設定
+            this._root_cube = new B3dCube( null, -1 );
+            this._root_cube.$$setupRootNode( this, tile_data );
+
+            this._status = TreeState.READY;
+        }
+        catch ( e ) {
+            this._status = TreeState.FAILED;
+        }
+
+        this._b3d_req_id = undefined;
+    }
+
+
+    /**
+     * @brief b3dtile のメタデータを取得
+     *
+     * ※ 最初に this._b3d_req_id にリクエスト ID が設定される。
+     *
+     * @return {Promise.<object>}  metadata を解決する Promise
+     *
+     * @private
+     */
+    _getMetaData()
+    {
+        return new Promise( (resolve, reject) => {
+            this._b3d_req_id = this._provider.requestMeta( data => {
+                if ( data !== null )
+                    resolve( data );
+                else
+                    reject( new Error( "failed to get metadata for b3dtile" ) );
+            } );
+        } );
+    }
+
+
+    /**
+     * @brief b3dtile の最上位タイルデータを取得
+     *
+     * ※ 最初に this._b3d_req_id にリクエスト ID が設定される。
+     *
+     * @return {Promise.<ArrayBuffer>}  data を解決する Promise
+     *
+     * @private
+     */
+    _getRootTile()
+    {
+        return new Promise( (resolve, reject) => {
+            this._b3d_req_id = this._provider.requestTile( new Area3D(), data => {
+                if ( data !== null )
+                    resolve( data );
+                else
+                    reject( new Error( "failed to get a tile data for b3dtile" ) );
+            } );
+        } );
     }
 
 
     /**
      * @summary メタデータの設定
      *
-     * @param {object} data  "tile-index.json" の内容
+     * @param {object} metadata  "tile-index.json" の内容
      *
      * @private
      */
-    _setupMetaData( data )
+    _setupMetadata( metadata )
     {
-        if ( this._status === TreeState.CANCELLED ) return;
-
-        console.assert( this._status === TreeState.REQ_META, new Error() );
-
-        if ( data === null ) {
-            // 獲得に失敗またはキャンセル
-            this._status = TreeState.CANCELLED;
-            return;
-        }
-
-        if ( (data.format === undefined) || (data.format > 1) ) {
+        if ( (metadata.format === undefined) || (metadata.format > 1) ) {
             // 未対応の形式
-            console.error( "b3dtile format error" );
-            this._status = TreeState.CANCELLED;
-            return;
+            throw Error( "b3dtile format error" );
         }
 
         // メタデータを取得
-        this._rho          = data.rho;
-        this._a0cs_to_gocs = GeoMath.createMatrix( data.transform );
-
-        // 基底タイルをリクエスト
-        let req_id = this._provider.requestTile( new Area3D(), data => { this._setupRootLoaded( data ); } );
-        this._root_cube.__setupRootRequested( req_id );
-
-        // 設定の終了
-        this._meta_req_id = null;  // 不要になったので捨てる
-        this._status = TreeState.REQ_ROOT;
+        this._rho          = metadata.rho;
+        this._a0cs_to_gocs = GeoMath.createMatrix( metadata.transform );
     }
 
 
     /**
-     * @summary 基底 Cube の読み込み設定
-     *
-     * @param {ArrayBuffer} data  "0/0/0/0.bin" の内容
+     * @summary 必要なら B3dCube インスタンスを削減
      *
      * @private
      */
-    _setupRootLoaded( data )
+    _reduceCubesIfNecessary()
     {
-        if ( this._status === TreeState.CANCELLED ) return;
+        const max_touch_cubes = this._hist_stats.getMaxValue( this._num_touch_cubes );
 
-        console.assert( this._status === TreeState.REQ_ROOT, new Error() );
-
-        if ( data === null ) {
-            // 獲得に失敗またはキャンセル
-            this._status = TreeState.CANCELLED;
+        if ( this._num_tree_cubes <= B3dTree.CUBE_REDUCE_THRESH * max_touch_cubes ) {
+            // 最近使用した cube 数に対してツリー上の cube 数はそれほど
+            // 多くないので、まだ削減しない
             return;
         }
 
-        // 基底 Cube のタイルを設定
-        this._root_cube.__setupRootLoaded( this._native, data );
+        // B3dCube を集めて、優先度で整列
+        const tree_cubes = this._root_cube.getCubesFlattened();
+        console.assert( tree_cubes.length == this._num_tree_cubes );
 
-        // 設定の終了
-        this._status = TreeState.NORMAL;
+        tree_cubes.sort( (a, b) => a.compareForReduce( b ) );
+
+        // 優先度の低い B3dCube を削除
+        const num_tree_cubes = Math.floor( B3dTree.CUBE_REDUCE_FACTOR * max_touch_cubes );
+
+        for ( let cube of tree_cubes.slice( num_tree_cubes ) ) {
+            cube.dispose();
+        }
+        console.assert( this._num_tree_cubes == num_tree_cubes );
+    }
+
+
+    /**
+     * @summary 必要なら MeshNode インスタンスを削減
+     *
+     * @private
+     */
+    _reduceMeshesIfNecessary()
+    {
+        if ( this._num_tree_meshes <= B3dTree.MESH_REDUCE_LOWER ) {
+            // ツリー上のメッシュの絶対数がそれほど多くないので、
+            // まだ削減しない
+            return;
+        }
+
+        if ( this._num_tree_meshes <= B3dTree.MESH_REDUCE_THRESH * this._num_touch_meshes ) {
+            // 現行フレームで使用したメッシュ数に対してツリー上のメッシュは
+            // それほど多くないので、まだ削減しない
+            return;
+        }
+
+        // MeshNode を集めて、優先度で整列
+        const tree_meshes = this._root_cube.getMeshesFlattened();
+        console.assert( tree_meshes.length == this._num_tree_meshes );
+        tree_meshes.sort( (a, b) => a.compareForReduce( b ) );
+
+        // 優先度の低い MeshNode を削除
+        const num_tree_meshes = Math.floor( B3dTree.MESH_REDUCE_FACTOR * this._num_touch_meshes );
+
+        for ( let mesh_node of tree_meshes.slice( num_tree_meshes ) ) {
+            mesh_node.dispose();
+        }
+        console.assert( this._num_tree_meshes == num_tree_meshes );
     }
 
 }
@@ -203,6 +304,7 @@ class B3dTree {
 
 /**
  * @summary B3dTree のレンダリングサブステージ
+ *
  * @memberof mapray.B3dTree
  * @private
  */
@@ -248,7 +350,6 @@ class B3dStage {
 
         // トラバース用の情報
         this._root_cube  = tree._root_cube;
-        this._area_route = new Array( B3dTree.MAX_DEPTH );
         this._mesh_node_list = null;
     }
 
@@ -272,69 +373,49 @@ class B3dStage {
      */
     _traverse()
     {
-        let area = new Area3D();
-        let cube = this._root_cube;
-
-        let context = {
-            area,  // 現在の領域
-            cube   // area に対応する B3dCube インスタンス
-        };
-
         this._mesh_node_list = [];
-        this._traverse_recur( context );
+        this._traverse_recur( this._root_cube );
     }
 
 
     /**
-     * @summary area の領域をトラバース
+     * @summary cube とその子孫をトラバース
      *
-     * @param {object} context  詳細は _traverse()
+     * @param {mapray.B3dTree.B3dCube} cube
      *
      * @private
      */
-    _traverse_recur( context )
+    _traverse_recur( cube )
     {
-        let area = context.area;
+        // cube を使ったことにする
+        cube.touch();
 
-        if ( this._is_invisible( area ) ) {
-            // area が視体積に入らないので無視
+        if ( this._isInvisible( cube ) ) {
+            // 視体積に入らないので無視
             return;
         }
 
-        let target_level = this._get_tile_target_level( area );
+        const target_level = this._get_tile_target_level( cube );
 
         if ( target_level < 0 ) {
-            // 子領域に分割して再帰
-            if ( area.level >= this._area_route.length ) {
-                // area.level が想定を超えたので描画を諦める
-                return;
-            }
-
-            let cube = context.cube;
-            let data = cube.getTileData();
+            const tile_data = cube.getTileData();
 
             for ( let which = 0; which < 8; ++which ) {
-                if ( (data !== null) && data.isVoidArea( which ) ) {
+                if ( (tile_data !== null) && tile_data.isVoidArea( which ) ) {
                     // 何もない子領域なので描画をスキップ
                     continue;
                 }
 
-                let ctx_child = {
-                    area: area.getChild( which ),
-                    cube: cube.newChild( which )
-                };
-
-                this._area_route[area.level] = which;
-                this._traverse_recur( ctx_child );
+                this._traverse_recur( cube.newChild( which ) );
             }
         }
         else {
-            // area に対応するメッシュ情報を取得
-            let mesh_node = this._get_mesh_node( context, target_level );
-            mesh_node.__ensure( this._glenv );
+            // cube に対応するメッシュ情報を取得
+            const mesh_node = cube.getMeshNode( target_level );
+            mesh_node.$$ensure( this._glenv );
 
             // メッシュ情報をリストに追加
-            if ( mesh_node.isVisible() ) {
+            if ( mesh_node.hasGeometry() ) {
                 this._mesh_node_list.push( mesh_node );
             }
         }
@@ -342,32 +423,34 @@ class B3dStage {
 
 
     /**
-     * @summary area の領域の可視性を検査
+     * @summary cube の領域の可視性を検査
      *
-     * area の領域が画面上に現れるか不明のときは false, そうでないときは true を返す。
+     * @desc
+     * cube の領域が画面上に現れるか不明のときは false, そうでないときは
+     * true を返す。
      *
-     * @param {mapray.Area3D} area
+     * @param {mapray.B3dTree.B3dCube} cube
      *
      * @return {boolean}
      *
      * @private
      */
-    _is_invisible( area )
+    _isInvisible( cube )
     {
-        let s = Math.pow( 2, -area.level );
-        let c = area.coords;
+        const s = cube.area_size;
+        const c = cube.area_origin;
 
         for ( let plane of this._volume_planes ) {
             let is_invisible = true;
 
             for ( let i = 0; i < 8; ++i ) {
-                // ある四隅の座標 (A0CS)
-                let p0 = s * (c[0] + (i & 1));
-                let p1 = s * (c[1] + (i & 2));
-                let p2 = s * (c[2] + (i & 4));
+                // ある角の座標 (A0CS)
+                const p0 = c[0] + s * (i        & 1);
+                const p1 = c[1] + s * ((i >> 1) & 1);
+                const p2 = c[2] + s * ((i >> 2) & 1);
 
                 // 平面からの符号付き距離
-                let dist = p0*plane[0] + p1*plane[1] + p2*plane[2] + plane[3];
+                const dist = p0*plane[0] + p1*plane[1] + p2*plane[2] + plane[3];
 
                 // 位置の判定
                 if ( dist >= 0 ) {
@@ -378,7 +461,7 @@ class B3dStage {
             }
 
             if ( is_invisible ) {
-                // 四隅がすべて plane の裏側にあるので不可視が確定
+                // 角がすべて plane の裏側にあるので不可視が確定
                 return true;
             }
         }
@@ -389,145 +472,60 @@ class B3dStage {
 
 
     /**
-     * @summary 現在の視点で area に適したタイルのレベルを取得
+     * @summary 現在の視点で cube に適したタイルのレベルを取得
      *
-     * area に適したタイルの整数レベル (>= 0) を返す。
+     * @desc
+     * cube に適したタイルの整数レベル (>= 0) を返す。
      * ただし分割が必要なときは負数を返す。
      *
-     * 常に (戻り値) <= area.level が成り立つ。
+     * 常に (戻り値) <= cube.level が成り立つ。
      *
-     * @param {mapray.Area3D} area
+     * @param {mapray.B3dTree.B3dCube} cube
      *
      * @return {number}
      *
      * @private
      */
-    _get_tile_target_level( area )
+    _get_tile_target_level( cube )
     {
-        let s = Math.pow( 2, -area.level );
-        let c = area.coords;
+        const h = cube.area_size / 2;  // 半分の寸法
+        const c = cube.area_origin;
 
-        // area の中心位置 (A0CS)
-        let p0 = s * (c[0] + 0.5);
-        let p1 = s * (c[1] + 0.5);
-        let p2 = s * (c[2] + 0.5);
+        // cube の中心位置 (A0CS)
+        const p0 = c[0] + h;
+        const p1 = c[1] + h;
+        const p2 = c[2] + h;
 
-        // 視点から area の中心までの深度距離 (A0CS)
-        let plane = this._depth_plane;
-        let depth = p0*plane[0] + p1*plane[1] + p2*plane[2] + plane[3];
+        // 視点から cube の中心までの深度距離 (A0CS)
+        const plane = this._depth_plane;
+        const depth = p0*plane[0] + p1*plane[1] + p2*plane[2] + plane[3];
 
-        // area を内包する球の半径 (A0CS)
-        let radius = s * B3dTree.RADIUS_FACTOR;
+        // cube を内包する球の半径 (A0CS)
+        const radius = h * B3dTree.RADIUS_FACTOR;
 
-        // 視点から area までの最小深度距離 (A0CS)
-        let min_depth = depth - radius;
+        // 視点から cube までの最小深度距離 (A0CS)
+        const min_depth = depth - radius;
 
         if ( min_depth <= 0 ) {
-            // 視点と同じか後方に area の点が存在する可能性がある
+            // 視点と同じか後方に cube の点が存在する可能性がある
+            // LOD が計算できないので分割
             return -1;
         }
 
-        // area 内のタイルのレベルの最小値と最大値 (連続値)
-        let min_level = this._lod_offset - Math.maprayLog2( depth + radius );
-        let max_level = this._lod_offset - Math.maprayLog2( min_depth );
+        // cube 内のタイルのレベルの最小値と最大値 (連続値)
+        const min_level = this._lod_offset - Math.maprayLog2( depth + radius );
+        const max_level = this._lod_offset - Math.maprayLog2( min_depth );
 
         if ( max_level - min_level >= B3dTree.LEVEL_INTERVAL ) {
-            // area 内のレベルの差が大きすぎるので area を分割
+            // cube 内のレベルの差が大きすぎるので cube を分割
             return -1;
         }
 
-        // area に対するタイルの代表レベル (整数値 >= 0)
-        let tile_level = Math.max( Math.round( (min_level + max_level) / 2 ), 0 );
+        // cube に対するタイルの代表レベル (整数値 >= 0)
+        const tile_level = Math.max( Math.round( (min_level + max_level) / 2 ), 0 );
 
-        // タイルの寸法のほうが小さいとき、area を分割
-        return (tile_level <= area.level) ? tile_level : -1;
-    }
-
-
-    /**
-     * @summary 描画するメッシュを取得
-     *
-     * @param {object} context       詳細は _traverse()
-     * @param {number} target_level  希望するタイルのレベル
-     *
-     * @return {mapray.B3dTree.MeshNode}  メッシュ情報
-     *
-     * @private
-     */
-    _get_mesh_node( context, target_level )
-    {
-        // Ca = context.cube (その領域は context.area)
-        // Lt = target_level (<= context.area.level)
-
-        // (1)
-        // タイルデータを持つ、レベルが 0 から Lt の Ca の祖先の中で、最もレベルの高いものを
-        // Cd とする (レベル 0 はタイルデータを持っているので必ず存在する)
-
-        // (2)
-        // Ca が Cd のタイルデータに対応するメッシュを持っていれば、それを取得
-        //
-        // メッシュを持っていなければ、Cd のタイルデータから、Ca の領域で切り取ったメッシュ
-        // を生成し、Ca にそのメッシュをキャッシュする
-
-        // (3)
-        // Cd のレベルが Lt より小さいとき、Cd のタイルの (Ca の領域に包含される) 1 レベル
-        // 高いノードを Cf とする。
-        // Cf に対応するタイルがプロバイダに存在することが分かっていて、リクエストされていない
-        // 状態のとき、そのタイルをプロバイダにリクエストする
-
-
-        // 現在の状態で context に相応しいタイルデータを取得
-        let [tile_cube, tile_area] = this._get_tile_data_node( target_level );
-        let tile_data = tile_cube.getTileData();
-
-        // 必要ならタイルデータをプロバイダにリクエスト
-        if ( tile_area.level < target_level ) {
-            let which = this._area_route[tile_area.level];
-
-            if ( tile_data.hasChild( which ) ) {
-                // 子タイルがプロバイダに存在 -> リクエスト
-                let child_tile_area = tile_area.getChild( which );
-                let child_tile_cube = tile_cube.getChild( which );
-
-                child_tile_cube.requestTile( this._provider, this._native, child_tile_area );
-            }
-        }
-
-        // tile_data と context.area に対応したメッシュを取得
-        return context.cube.getMeshNode( tile_data, tile_area, context.area );
-    }
-
-
-    /**
-     * @summary タイルデータを持つノードを取得
-     *
-     * @param {number} target_level  希望するタイルのレベル
-     *
-     * @return  [mapray.B3dTree.B3dCube, mapray.Area3D]
-     *
-     * @private
-     */
-    _get_tile_data_node( target_level )
-    {
-        let cube = this._root_cube;
-        let area = new Area3D();
-
-        let last_cube = cube;
-        let last_area = area.clone();
-
-        for ( let level = 0; level < target_level; ++level ) {
-            let which = this._area_route[level];
-
-            cube = cube.getChild( which );
-            Area3D.getChild( area, which, area );
-
-            if ( cube.getTileData() ) {
-                last_cube = cube;
-                last_area.assign( area );
-            }
-        }
-
-        return [last_cube, last_area];
+        // タイルの寸法のほうが小さいとき、cube を分割
+        return (tile_level <= cube.level) ? tile_level : -1;
     }
 
 
@@ -550,7 +548,7 @@ class B3dStage {
             this._clip_flag = (mesh_node._clip_size != 1);
 
             material.setParameters( this, mesh_node.getTransform() );
-            let mesh = mesh_node.getMesh();
+            let mesh = mesh_node.getTileMesh();
             mesh.draw( material );
         }
 
@@ -605,17 +603,87 @@ class B3dStage {
 
 /**
  * @summary B3dTree の立方体ノード
+ *
  * @memberof mapray.B3dTree
  * @private
  */
 class B3dCube {
 
-    constructor()
+    /**
+     * @param {?mapray.B3dTree.B3dCube} parent  親ノード (最上位の場合は null)
+     * @param {number}                  which   子インデックス (最上位の場合は無視)
+     */
+    constructor( parent, which )
     {
+        this._owner      = undefined;
+        this._parent     = parent;
         this._children   = null;  // 配列は必要になってから生成
         this._b3d_state  = B3dState.NONE;
-        this._b3d_data   = null;
-        this._mesh_nodes = null;  // Map<B3dBinary, ?MeshNode>
+        this._b3d_data   = null;  // B3dBinary または cancel ID または null
+        this._mesh_nodes = null;  // Map<int, MeshNode>
+        this._aframe     = -1;
+
+        /**
+         *  @summary 領域の原点 (A0CS)
+         *
+         *  ※ 誤差なしの厳密値を想定している。
+         *
+         *  @member mapray.B3dTree.B3dCube
+         *  @type {number[]}
+         */
+        this.area_origin = undefined;
+
+        /**
+         *  @summary 領域の寸法 (A0CS)
+         *
+         *  ※ 誤差なしの厳密値を想定している。
+         *
+         *  @member mapray.B3dTree.B3dCube
+         *  @type {number}
+         */
+        this.area_size = undefined;
+
+        /**
+         *  @summary レベル
+         *
+         *  最上位を 0 とする整数レベルを表す。
+         *
+         *  実際には -log2( this.area_size ) と同じだが、
+         *  利便性のためにプロパティとしている。
+         *
+         *  @member mapray.B3dTree.B3dCube
+         *  @type {number}
+         */
+        this.level = undefined;
+
+
+        if ( parent === null ) {
+            /* 最上位の領域 */
+
+            // this._owner は $$setupRootNode() で設定
+
+            this.area_size   = 1;
+            this.area_origin = [0, 0, 0];
+            this.level       = 0;
+
+            // this._owner._num_tree_cubes は $$setupRootNode() でカウント
+        }
+        else {
+            this._owner = parent._owner;
+
+            this.area_size   = parent.area_size / 2;
+            this.area_origin = new Array( 3 );
+
+            for ( let i = 0; i < 3; ++i ) {
+                // which == u + 2*v + 4*w
+                const d = (which >> i) & 1;
+                this.area_origin[i] = parent.area_origin[i] + d * this.area_size;
+            }
+
+            this.level = parent.level + 1;
+
+            ++this._owner._num_tree_cubes;
+        }
     }
 
 
@@ -630,35 +698,18 @@ class B3dCube {
     {
         if ( this._children === null ) {
             this._children = new Array( 8 );
-            for ( let i = 0; i < 8; ++i ) {
-                this._children[i] = null;
-            }
+            this._children.fill( null );
         }
 
         let child = this._children[which];
 
         if ( child === null ) {
             // 子供がいなければ新規に生成
-            child = new B3dCube();
+            child = new B3dCube( this, which );
             this._children[which] = child;
         }
 
         return child;
-    }
-
-
-    /**
-     * @summary 子ノードを取得
-     *
-     * 指定した子ノードが存在しない場合、動作は不定である。
-     *
-     * @param {number} which  子インデックス (u + 2*v + 4*w)
-     *
-     * @return {mapray.B3dTree.B3dCube}
-     */
-    getChild( which )
-    {
-        return this._children[which];
     }
 
 
@@ -676,109 +727,494 @@ class B3dCube {
     /**
      * @summary メッシュ情報を取得
      *
-     * @param {mapray.B3dBinary} tile_data  メッシュの元となるタイルデータ
-     * @param {mapray.Area3D}    tile_area  タイルの領域
-     * @param {mapray.Area3D}    clip_area  切り取り領域
+     * @pre tile_level <= this.level
+     *
+     * @param {number} tile_level  希望のタイルのレベル
      *
      * @return {mapray.B3dTree.MeshNode}  メッシュ情報
      */
-    getMeshNode( tile_data, tile_area, clip_area )
+    getMeshNode( tile_level )
     {
+        console.assert( tile_level <= this.level );
+
+        // このノードのタイルを使えるのが理想
+        const target_node = this._find_target_node( tile_level );
+
+        // いくつかの直近ノードを検索 (tile_level のノードとその祖先の中から)
+        let loaded_node = null;  // B3dState.LOADED
+        let failed_node = null;  // B3dState.FAILED ノード (B3dState.LOADED までで)
+
+        for ( let node = target_node; node !== null; node = node._parent ) {
+            if ( node._b3d_state === B3dState.LOADED ) {
+                loaded_node = node;
+                break;
+            }
+            else if ( node._b3d_state === B3dState.FAILED ) {
+                if ( failed_node === null ) {
+                    failed_node = node;
+                }
+            }
+        }
+
+        // loaded_node に実際に使えるタイルがある
+        console.assert( loaded_node );
+
+        // すでにキャッシュにメッシュ情報が存在すれば取得
         if ( this._mesh_nodes === null ) {
-            this._mesh_nodes = new Map();  // Map<B3dBinary, ?MeshNode>
+            this._mesh_nodes = new Map();  // Map<int, MeshNode>
         }
+        let mesh_node = this._mesh_nodes.get( loaded_node.level );
 
-        let mesh_node = this._mesh_nodes.get( tile_data );
-
+        // キャッシュに存在しなければ、メッシュ情報を生成して登録
         if ( mesh_node === undefined ) {
-            // 存在しないので生成して辞書に追加
-            mesh_node = new MeshNode( tile_data, tile_area, clip_area );
-            this._mesh_nodes.set( tile_data, mesh_node );
+            mesh_node = new MeshNode( this, loaded_node );
+            this._mesh_nodes.set( loaded_node.level, mesh_node );
         }
+
+        // タイルのリクエストを試みる
+        target_node._tryRequestTile( loaded_node, failed_node );
+
+        // メッシュを使ったことにする
+        mesh_node.touch();
 
         return mesh_node;
     }
 
 
     /**
-     * @summary タイルをプロバイダにリクエスト
-     *
-     * @param {mapray.B3dProvider} provider
-     * @param {mapray.B3dNative}     native
-     * @param {mapray.Area3D}          area  タイルの領域
+     * getMeshNode() のサブルーチン
+     * @private
      */
-    requestTile( provider, native, area )
+    _find_target_node( target_level )
     {
-        console.assert( native, new Error() );
+        let node = this;
 
-        if ( this._b3d_state !== B3dState.NONE ) {
-            // リクエストできる状態ではない
+        // tile_level のノードを検索
+        for ( let i = 0; i < this.level - target_level; ++i ) {
+            node = node._parent;
+        }
+        console.assert( node.level == target_level );
+
+        return node;
+    }
+
+
+    /**
+     * @summary タイルのリクエストを試みる
+     *
+     * それぞれのパラメータの意味は getMeshNode() の実装を参照のこと。
+     *
+     * loaded_node, failed_node は this または this の祖先で、次の条件が成り立つ。
+     *
+     *  - loaded_node.level <= this.level
+     *  - failed_node == null || loaded_node.level < failed_node.level
+     *
+     * @param {mapray.B3dTree.B3dCube}  loaded_node
+     * @param {?mapray.B3dTree.B3dCube} failed_node
+     *
+     * @private
+     */
+    _tryRequestTile( loaded_node,
+                     failed_node )
+    {
+        console.assert( loaded_node );
+
+        if ( this._owner._num_tile_requesteds >= B3dTree.MAX_TILE_REQUESTEDS ) {
+            // 要求が最大数に達しているので受け入れない
             return;
         }
 
-        provider.requestTile( area, data => {
+        if ( this === loaded_node ) {
+            // this 自身が loaded_node なのでリクエストは不要
+            return;
+        }
+
+        console.assert( loaded_node.level < this.level );
+
+        if ( loaded_node._b3d_data.isLeaf() ) {
+            // 子孫タイルは存在しないのでリクエストは不要
+            return;
+        }
+
+        // 世代順のノード配列 (loaded_node, this]
+        const node_routes = this._create_node_routes( loaded_node );
+        console.assert( node_routes.length >= 1 );
+
+        // loaded_node._b3d_data の既知の子孫タイルで、最も高いレベルのタイルと
+        // 一致するノードを (loaded_node, this] から検索
+        let cand_node = B3dCube._find_request_candidate_node( loaded_node, node_routes );
+        if ( cand_node === null ) {
+            // this を包含する子タイルがプロバイダに存在しない
+            // リクエストするタイルがないので終了
+            return;
+        }
+
+        // failed_node があるときの処理
+        if ( failed_node !== null ) {
+            if ( node_routes[0] === failed_node ) {
+                // (loaded_node, cand_node] の先頭が failed_node なら何もしない
+                // ※ 失敗したタイルの子孫は、その情報がなくなるまで取得しない方針
+                return;
+            }
+
+            // 残りから failed_node の親を探しそれを候補とする
+            // 見つからなければ候補はそのまま
+            for ( let i = 1; i < node_routes[i]; ++i ) {
+                const node = node_routes[i];
+                if ( node === failed_node ) {
+                    // failed_node の親を候補に変更
+                    cand_node = node_routes[i - 1];
+                    break;
+                }
+                else if ( node === cand_node ) {
+                    // 候補はそのまま
+                    break;
+                }
+            }
+        }
+
+        if ( cand_node._b3d_state === B3dState.REQUESTED ) {
+            // 最終的な候補がすでにリクエスト中なので何もしない
+            return;
+        }
+        console.assert( cand_node._b3d_state === B3dState.NONE );
+
+        // 最終候補ノードのタイルをリクエスト
+        cand_node._requestTile();
+    }
+
+
+    /**
+     * _tryRequestTile() のサブルーチン
+     * @private
+     */
+    _create_node_routes( loaded_node )
+    {
+        // 世代順ノード配列 (loaded_node, this]
+        const node_routes = new Array( this.level - loaded_node.level );
+
+        let node = this;
+        for ( let i = node_routes.length - 1; i >= 0; --i ) {
+            node_routes[i] = node;
+            node = node._parent;
+        }
+
+        return node_routes;
+    }
+
+
+    /**
+     * _tryRequestTile() のサブルーチン
+     *
+     * loaded_node._b3d_data の既知の子孫タイルで、最も高いレベルのタイルと
+     * 一致するノードを node_routes = (loaded_node, this] から検索
+     *
+     * ※ 現在のタイル形式は直接の子タイル (1 レベル差) しか有無を判断できない
+     *
+     * @private
+     */
+    static
+    _find_request_candidate_node( loaded_node,
+                                  node_routes )
+    {
+        const tile_center = loaded_node._getCenterPosition();
+
+        const cand_node = node_routes[0];  // loaded_node の子ノード
+
+        let which = 0;
+        for ( let i = 0; i < 3; ++i ) {
+            if ( cand_node.area_origin[i] >= tile_center[i] ) {
+                which += (1 << i);
+            }
+        }
+
+        const tile_data = loaded_node._b3d_data;
+
+        if ( tile_data.hasChild( which ) ) {
+            return cand_node;
+        }
+        else {
+            // cand_node を包含する子タイルがプロバイダに存在しない
+            return null;
+        }
+    }
+
+
+    /**
+     * @summary 中心位置を取得 (A0CS)
+     *
+     * @return {number[]}
+     * @private
+     */
+    _getCenterPosition()
+    {
+        const c = this.area_origin.concat();
+        const h = this.area_size / 2;
+
+        for ( let i = 0; i < 3; ++i ) {
+            c[i] += h;
+        }
+
+        return c;
+    }
+
+
+    /**
+     * @summary タイルをプロバイダにリクエスト
+     *
+     * @private
+     */
+    _requestTile()
+    {
+        console.assert( this._b3d_state === B3dState.NONE );
+
+        const tree = this._owner;
+
+        const native = tree._native;
+        console.assert( native );
+
+        this._b3d_data = tree._provider.requestTile( this._convert_to_area(), data => {
             if ( this._b3d_state !== B3dState.REQUESTED ) {
-                // キャンセルされている
+                // キャンセルまたは this は破棄されている
                 return;
             }
 
             if ( data !== null ) {
+                // タイルの読み込みに成功
                 this._b3d_state = B3dState.LOADED;
                 this._b3d_data  = new B3dBinary( native, data );
             }
             else {
+                // タイルの読み込みに失敗
                 this._b3d_state = B3dState.FAILED;
                 this._b3d_data  = null;
             }
+
+            console.assert( tree._num_tile_requesteds > 0 );
+            --tree._num_tile_requesteds;
         } );
 
+        ++tree._num_tile_requesteds;
         this._b3d_state = B3dState.REQUESTED;
     }
 
 
     /**
-     * @summary リクエストを取り消す
+     * @summary タイルのリクエストを取り消す
      *
-     * @param {mapray.B3dProvider} provider  プロバイダ
+     * リクエスト中ならリクエストを取り消し、状態を B3dState.NONE にする。
      */
-    cancelRequest( provider )
+    cancelTileRequest()
     {
         if ( this._b3d_state === B3dState.REQUESTED ) {
-            provider.cancelRequest( this._b3d_data );
+            const tree = this._owner;
+
+            tree._provider.cancelRequest( this._b3d_data );
             this._b3d_state = B3dState.NONE;
             this._b3d_data  = null;
+
+            console.assert( tree._num_tile_requesteds > 0 );
+            --tree._num_tile_requesteds;
         }
     }
 
 
     /**
-     * @summary 基底 Cube 専用の設定
-     *
-     * Note: B3dTree のみが使用
-     *
-     * @param {object} req_id  requestTile() の結果
+     * @summary アクセスフレームを更新
      */
-    __setupRootRequested( req_id )
+    touch()
     {
-        this._b3d_state = B3dState.REQUESTED;
-        this._b3d_data  = req_id;
+        const owner = this._owner;
+
+        if ( this._aframe !== owner._frame_counter ) {
+            this._aframe = owner._frame_counter;
+            ++owner._num_touch_cubes;
+        }
     }
 
 
     /**
-     * @summary 基底 Cube 専用の設定
+     * @summary 自己と子孫を破棄
      *
-     * Note: B3dTree のみが使用
+     * this と this の子孫を破棄し、this の親から this を削除する。
      *
-     * @param {mapray.B3dNative} native
-     * @param {ArrayBuffer}        data  バイナリデータ
+     * ※ このメソッドを呼び出した後は、他のメソッドを呼び出すことはできない。
      */
-    __setupRootLoaded( native, data )
+    dispose()
     {
-        console.assert( native, new Error() );
+        console.assert( this._level != 0 ); // 最上位ノードは破棄されない
 
+        if ( this._parent === null ) {
+            // すでに破棄済み
+            return;
+        }
+
+        if ( this._b3d_state === B3dState.REQUESTED ) {
+            this.cancelTileRequest();
+        }
+        else if ( this._b3d_state === B3dState.LOADED ) {
+            this._b3d_data.dispose();
+        }
+
+        this._b3d_state = B3dState.NONE;
+        this._b3d_data  = null;
+
+        // メッシュを破棄
+        if ( this._mesh_nodes !== null ) {
+            for ( let mesh_node of Array.from( this._mesh_nodes.values() ) ) {
+                mesh_node.dispose();
+            }
+            console.assert( this._mesh_nodes === null || this._mesh_nodes.size == 0 );
+        }
+
+        // 子孫を破棄
+        if ( this._children !== null ) {
+            for ( let child of this._children ) {
+                if ( child !== null ) {
+                    child.dispose();
+                }
+            }
+            this._children = null;
+        }
+
+        // 親ノードから this を削除
+        const my_index = this._parent._children.indexOf( this );
+        this._parent._children[my_index] = null;
+        this._parent = null;
+
+        // B3dCube 数を減らす
+        --this._owner._num_tree_cubes;
+    }
+
+
+    /**
+     * @summary 自己と子孫の平坦化リストを取得
+     *
+     * @return {mapray.B3dTree.B3dCube[]}
+     */
+    getCubesFlattened()
+    {
+        const list = [];
+
+        this.flattenCubesRecur( list );
+
+        return list;
+    }
+
+
+    /**
+     * @summary 自己と子孫に存在する MeshNode インスタンスを取得
+     *
+     * @return {mapray.B3dTree.MeshNode[]}
+     */
+    getMeshesFlattened()
+    {
+        const list = [];
+
+        this.flattenMeshesRecur( list );
+
+        return list;
+    }
+
+
+    /**
+     * @summary 削減優先順位のための比較
+     *
+     * @param  {mapray.B3dTree.B3dCube} other  比較対象
+     * @return {number}                        比較値
+     */
+    compareForReduce( other )
+    {
+        // 最近アクセスしたものを優先
+        // 同じならレベルが小さい方を優先
+
+        let a = this;
+        let b = other;
+        let aframe = b._aframe - a._aframe;
+
+        return (aframe !== 0) ? aframe : a.level - b.level;
+    }
+
+
+    /**
+     * @private
+     */
+    flattenCubesRecur( list )
+    {
+        list.push( this );
+
+        if ( this._children !== null ) {
+            for ( let child of this._children ) {
+                if ( child !== null ) {
+                    child.flattenCubesRecur( list );
+                }
+            }
+        }
+    }
+
+
+    /**
+     * @private
+     */
+    flattenMeshesRecur( list )
+    {
+        if ( this._mesh_nodes !== null ) {
+            for ( let mesh_node of this._mesh_nodes.values() ) {
+                list.push( mesh_node );
+            }
+        }
+
+        if ( this._children !== null ) {
+            for ( let child of this._children ) {
+                if ( child !== null ) {
+                    child.flattenMeshesRecur( list );
+                }
+            }
+        }
+    }
+
+
+    /**
+     * @summary 最上位 Cube 専用の設定
+     *
+     * 最上位 Cube を外部から B3dState.LOADED 状態に設定する。
+     *
+     * ※ B3dTree のみが使用
+     *
+     * @param {mapray.B3dTree} owner  ツリーを所有するオブジェクト
+     * @param {ArrayBuffer}     data  バイナリデータ
+     *
+     * @package
+     */
+    $$setupRootNode( owner, data )
+    {
+        console.assert( data );
+
+        const native = owner._native;
+        console.assert( native );
+
+        this._owner     = owner;
         this._b3d_state = B3dState.LOADED;
         this._b3d_data  = new B3dBinary( native, data );
+
+        ++owner._num_tree_cubes;
+    }
+
+
+    /**
+     * @private
+     */
+    _convert_to_area()
+    {
+        const area = new Area3D();
+
+        area.level = this.level;
+
+        for ( let i = 0; i < 3; ++i ) {
+            area.coords[i] = this.area_origin[i] / this.area_size;
+        }
+
+        return area;
     }
 
 }
@@ -793,56 +1229,67 @@ class B3dCube {
 class MeshNode {
 
     /**
-     * @param {mapray.B3dBinary} tile_data  メッシュの元となるタイルデータ
-     * @param {mapray.Area3D}    tile_area  タイルの領域
-     * @param {mapray.Area3D}    clip_area  切り取り領域
+     * @param {mapray.B3dTree.B3dCube} owner      this を所有するノード
+     * @param {mapray.B3dTree.B3dCube} tile_cube  タイルを持つノード
      */
-    constructor( tile_data, tile_area, clip_area )
+    constructor( owner,
+                 tile_cube )
     {
-        this._mesh = null;
+        this._cube = owner;
+        this._key  = tile_cube.level;  // owner._mesh_nodes での this のキー
 
-        this._tile_data = tile_data;
+        this._tile_mesh = null;  // tile_cube のタイルを owner の領域で切り取ったメッシュ
+        this._area_mesh = null;  // 立方体ワイヤーフレームメッシュ
 
-        this._tile_to_a0cs = this._get_tile_to_a0cs( tile_area );
+        this._mesh_to_a0cs = MeshNode._get_area_to_a0cs( tile_cube );
 
-        let pot = (tile_area.level == clip_area.level) ? 1 : Math.pow( 2, tile_area.level - clip_area.level );
+        // クリップ立方体の寸法 (メッシュ座標系)
+        this._clip_size = owner.area_size / tile_cube.area_size;
 
-        // クリップ立方体の原点 (tile_area 座標系)
+        console.assert( Number.isSafeInteger( 1 / this._clip_size ) );
+        console.assert( 0 < this._clip_size && this._clip_size <= 1 );
+
+        // クリップ立方体の原点 (メッシュ座標系)
         this._clip_origin = GeoMath.createVector3();
         for ( let i = 0; i < 3; ++i ) {
-            this._clip_origin[i] = pot * clip_area.coords[i] - tile_area.coords[i];
+            this._clip_origin[i] = (owner.area_origin[i] - tile_cube.area_origin[i]) / tile_cube.area_size;
+
+            console.assert( Number.isSafeInteger( this._clip_origin[i] / this._clip_size ) );
+            console.assert( 0 <= this._clip_origin[i] && this._clip_origin[i] < 1 );
         }
 
-        // クリップ立方体の寸法 (tile_area 座標系)
-        // ※ tile_area と clip_area のレベルが同じとき、厳密に 1 になる
-        this._clip_size = pot;
+        // キャッシュ関連
+        this._aframe = -1;
 
-        // 立方体ワイヤーフレームメッシュ
-        this._cube_mesh = null;
+        const tree = owner._owner;
+        ++tree._num_tree_meshes;
+
+        // ensure() で必要
+        this._tile_data = tile_cube._b3d_data;
     }
 
 
     /**
-     * @summary Mesh は見えるか？
+     * @summary Mesh は幾何を持っているか？
      *
      * @return {boolean}
      */
-    isVisible()
+    hasGeometry()
     {
-        return this._mesh != "EMPTY MESH";
+        return this._tile_mesh !== MeshNode.EMPTY_TILE_MESH;
     }
 
 
     /**
      * @summary メッシュを取得
      *
-     * isVisible() == false のとき、動作は不定である。
+     * hasGeometry() == false のとき、動作は不定である。
      *
      * @return {mapray.Mesh}
      */
-    getMesh()
+    getTileMesh()
     {
-        return this._mesh;
+        return this._tile_mesh;
     }
 
 
@@ -853,20 +1300,20 @@ class MeshNode {
      */
     getTransform()
     {
-        return this._tile_to_a0cs;
+        return this._mesh_to_a0cs;
     }
 
 
     /**
-     * @summary 領域メッシュを取得
+     * @summary 領域メッシュ (ワイヤーフレーム) を取得
      *
      * @return {mapray.Mesh}
      */
     getAreaMesh( glenv )
     {
-        if ( this._cube_mesh === null ) {
+        if ( this._area_mesh === null ) {
             // メッシュ生成
-            let mesh_data = {
+            const mesh_data = {
                 vtype: [
                     { name: "a_position", size: 3 }
                 ],
@@ -875,10 +1322,74 @@ class MeshNode {
                 indices:  this._createCubeIndices()
             };
 
-            this._cube_mesh = new Mesh( glenv, mesh_data );
+            this._area_mesh = new Mesh( glenv, mesh_data );
         }
 
-        return this._cube_mesh;
+        return this._area_mesh;
+    }
+
+
+    /**
+     * @summary 削減優先順位のための比較
+     *
+     * @param  {mapray.B3dTree.MeshNode} other  比較対象
+     * @return {number}                         比較値
+     */
+    compareForReduce( other )
+    {
+        // 最近アクセスしたものを優先
+        const a = this;
+        const b = other;
+        return b._aframe - a._aframe;
+    }
+
+
+    /**
+     * @summary アクセスフレームを更新
+     */
+    touch()
+    {
+        const tree = this._cube._owner;
+
+        if ( this._aframe !== tree._frame_counter ) {
+            this._aframe = tree._frame_counter;
+            ++tree._num_touch_meshes;
+        }
+    }
+
+
+    /**
+     * @summary インスタンスを破棄
+     *
+     * this のリソースを破棄し、this を所有する B3dCube インスタンスから this
+     * を削除する。
+     *
+     * ※ このメソッドを呼び出した後は、他のメソッドを呼び出すことはできない。
+     */
+    dispose()
+    {
+        if ( this._tile_mesh !== null && this._tile_mesh !== MeshNode.EMPTY_TILE_MESH ) {
+            this._tile_mesh.dispose();
+            this._tile_mesh = null;
+        }
+
+        if ( this._area_mesh !== null ) {
+            this._area_mesh.dispose();
+            this._area_mesh = null;
+        }
+
+        const cube = this._cube;  // this の所有者
+        console.assert( cube._mesh_nodes.get( this._key ) === this );
+
+        // cube から this を削除
+        cube._mesh_nodes.delete( this._key );
+        if ( cube._mesh_nodes.size == 0 ) {
+            cube._mesh_nodes = null;
+        }
+
+        // キャッシュ用カウント
+        const tree = cube._owner;
+        --tree._num_tree_meshes;
     }
 
 
@@ -941,49 +1452,174 @@ class MeshNode {
      * @summary メッシュを使えるようにする
      *
      * ※ アルゴリズムと本質的に関係ない glenv を深いところまで持ち運ばないように、
-     *    構築子と処理を分けた。
+     *    構築子と処理を分けた。B3dStage が使用する専用メソッドである。
      *
      * @param {mapray.GlEnv} glenv
      *
-     * @private
+     * @package
      */
-    __ensure( glenv )
+    $$ensure( glenv )
     {
-        if ( this._mesh !== null ) {
+        if ( this._tile_mesh !== null ) {
             // すでに処理済み
             return;
         }
 
         // メッシュを生成
-        this._mesh = this._tile_data.clip( glenv, this._clip_origin, this._clip_size ) || "EMPTY MESH";
+        this._tile_mesh = this._tile_data.clip( glenv, this._clip_origin, this._clip_size ) || MeshNode.EMPTY_TILE_MESH;
     }
 
 
     /**
-     * @summary tile_area から A0CS への変換行列を取得
+     * @summary cube から A0CS への変換行列を取得
      *
-     * @param {mapray.Area3D} tile_area  タイルの領域
+     * @param {mapray.B3dTree.B3dCube} cube
      *
      * @return {mapray.Matrix}
      *
      * @private
      */
-    _get_tile_to_a0cs( tile_area )
+    static
+    _get_area_to_a0cs( cube )
     {
-        // 文献 LargeScale3DSce の「A0CS 上でのレンダリング処理」を参照
-        let pot = Math.pow( 2, -tile_area.level );
+        const matrix = GeoMath.setIdentity( GeoMath.createMatrix() );
 
-        let matrix = GeoMath.setIdentity( GeoMath.createMatrix() );
-
-        matrix[ 0] = pot;
-        matrix[ 5] = pot;
-        matrix[10] = pot;
+        matrix[ 0] = cube.area_size;
+        matrix[ 5] = cube.area_size;
+        matrix[10] = cube.area_size;
 
         for ( let i = 0; i < 3; ++i ) {
-            matrix[12 + i] = pot * tile_area.coords[i];
+            matrix[12 + i] = cube.area_origin[i];
         }
 
         return matrix;
+    }
+
+}
+
+
+/**
+ * @summary 履歴統計
+ *
+ * todo: Globe.js と共通化
+ *
+ * @memberof mapray.B3dTree
+ * @private
+ */
+class HistStats {
+
+    constructor( hsize = 200 )
+    {
+        console.assert( hsize >= 3 );
+
+        this._max_value = -Number.MAX_VALUE;
+
+        this._history = new Float64Array( hsize );
+        this._history.fill( this._max_value );
+
+        this._bindex = 0;
+        this._eindex = 0;
+        this._length = hsize;
+    }
+
+
+    /**
+     * @summary 最大値を取得
+     */
+    getMaxValue( value )
+    {
+        const old_max = this._max_value;
+
+        if ( value >= old_max ) {
+            // 最大値は value に変わる
+            this._max_value = value;
+            this._pop_front();
+        }
+        else if ( this._get_front() < old_max ) {
+            // 最大値は変わらず
+            this._pop_front();
+        }
+        else {
+            // 最大値は変わる可能性がある
+            this._pop_front();
+            this._max_value = this._find_max();
+        }
+
+        this._push_back( value );
+
+        return this._max_value;
+    }
+
+
+    /**
+     * @return {number}
+     * @private
+     */
+    _get_front()
+    {
+        console.assert( this._length > 0 );
+
+        return this._history[this._bindex];
+    }
+
+
+    /**
+     * @param {number} value
+     * @private
+     */
+    _push_back( value )
+    {
+        console.assert( this._length < this._history.length );
+
+        this._history[this._eindex] = value;
+
+        if ( ++this._eindex == this._history.length ) {
+            this._eindex = 0;
+        }
+
+        ++this._length;
+    }
+
+
+    /**
+     * @private
+     */
+    _pop_front()
+    {
+        console.assert( this._length > 0 );
+
+        if ( ++this._bindex == this._history.length ) {
+            this._bindex = 0;
+        }
+
+        --this._length;
+    }
+
+
+    /**
+     * @return {number}
+     * @private
+     */
+    _find_max()
+    {
+        console.assert( this._length > 0 );
+
+        const history = this._history;
+        let     index = this._bindex;
+
+        let max_value = history[index];
+
+        for ( let i = 1; i < this._length; ++i ) {
+            if ( ++index == history.length ) {
+                index = 0;
+            }
+
+            if ( history[index] > max_value ) {
+                max_value = history[index];
+            }
+        }
+
+        return max_value;
     }
 
 }
@@ -999,29 +1635,21 @@ class MeshNode {
 var TreeState = {
 
     /**
-     * B3dNative インスタンスを生成中
+     * 準備中 (初期状態)
      */
-    REQ_NATIVE: { id: "REQ_NATIVE" },
+    NOT_READY: { id: "NOT_READY" },
 
     /**
-     * メタデータをリクエスト中
+     * 準備完了
      */
-    REQ_META: { id: "REQ_META" },
+    READY: { id: "READY" },
 
     /**
-     * 最上位タイルをリクエスト中
+     * 失敗状態
+     *
+     * 初期化に失敗またはキャンセルされた。
      */
-    REQ_ROOT: { id: "REQ_ROOT" },
-
-    /**
-     * 通常状態
-     */
-    NORMAL: { id: "NORMAL" },
-
-    /**
-     * 取り消しされた (続行できない失敗があった)
-     */
-    CANCELLED: { id: "CANCELLED" }
+    FAILED: { id: "FAILED" }
 
 };
 
@@ -1060,15 +1688,23 @@ var B3dState = {
 
 B3dTree.DEFAULT_LOD_FACTOR = 4.0;
 
-B3dTree.RADIUS_FACTOR = Math.sqrt( 3 ) / 2;
+B3dTree.RADIUS_FACTOR = Math.sqrt( 3 );
 
 // LEVEL_INTERVAL が小さすぎるとタイルの分割が多くなり、
 // 大きすぎるとレベルの誤差が大きくなる
 // レベルの誤差は最大で (LEVEL_INTERVL + 1) / 2
 B3dTree.LEVEL_INTERVAL = 0.5;
 
-// トラバースの最大の深さ
-B3dTree.MAX_DEPTH = 48;
+B3dTree.CUBE_REDUCE_THRESH = 1.5;  // B3dCube 削減閾値
+B3dTree.CUBE_REDUCE_FACTOR = 1.2;  // B3dCube 削減係数
+
+B3dTree.MESH_REDUCE_LOWER  = 300;  // この個数以下なら削減しない
+B3dTree.MESH_REDUCE_THRESH = 1.5;  // MeshNode 削減閾値
+B3dTree.MESH_REDUCE_FACTOR = 1.2;  // MeshNode 削減係数
+
+B3dTree.MAX_TILE_REQUESTEDS = 15;  // リクエスト中のリクエスト数の最大値
+
+MeshNode.EMPTY_TILE_MESH = { id: "EMPTY_TILE_MESH" };
 
 
 export default B3dTree;

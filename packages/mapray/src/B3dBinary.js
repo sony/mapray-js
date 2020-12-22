@@ -30,7 +30,7 @@ class B3dBinary {
 
 
     /**
-     * @summary 子供は存在するか？
+     * @summary 指定した子供は存在するか？
      *
      * @param {number} which  子供の位置 (0-7)
      *
@@ -52,6 +52,17 @@ class B3dBinary {
     isVoidArea( which )
     {
         return (this._void_areas & (1 << which)) != 0;
+    }
+
+
+    /**
+     * @summary 子孫が存在しないタイルか？
+     *
+     * @return {boolean}  子孫が存在しないとき true, それ以外のとき false
+     */
+    isLeaf()
+    {
+        return this._children == 0;
     }
 
 
