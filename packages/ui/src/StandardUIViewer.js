@@ -618,7 +618,7 @@ class StandardUIViewer extends mapray.RenderCallback
                     range = length.toFixed(5);
                     heading = this._camera_parameter.yaw.toFixed(5);
                   }
-                  new_hash = `${lat}/${lon}/${alt}a/${tilt}t/${range}r/${heading}h`
+                  new_hash = `#${lat}/${lon}/${alt}a/${tilt}t/${range}r/${heading}h`;
 
                   this._last_camera_parameter.latitude = this._camera_parameter.latitude;
                   this._last_camera_parameter.longitude = this._camera_parameter.longitude;
@@ -626,7 +626,8 @@ class StandardUIViewer extends mapray.RenderCallback
                   this._last_camera_parameter.pitch = this._camera_parameter.pitch;
                   this._last_camera_parameter.yaw = this._camera_parameter.yaw;
 
-                  window.location.hash = new_hash;
+                  const new_url = window.location.href.replace(window.location.hash, new_hash);
+                  window.location.replace(new_url);
               }
           }
       }
