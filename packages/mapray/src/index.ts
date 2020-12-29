@@ -13,7 +13,6 @@ export { default as Scene } from "./Scene";
 export { default as RenderCallback } from "./RenderCallback";
 
 export { default as Ray } from "./Ray";
-export { default as Area3D } from "./Area3D";
 export { default as AltitudeMode } from "./AltitudeMode";
 export { default as CredentialMode } from "./CredentialMode";
 export { default as DebugStats } from "./DebugStats";
