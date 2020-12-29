@@ -12,7 +12,7 @@ import CredentialMode from "./CredentialMode";
  *   prefix + "tile-index.json"
  * </pre>
 
- * <p>L = area.level, C = area.coords のとき、[requestTile]{@link mapray.StandardB3dProvider#requestTile}( area )
+ * <p>L = level, C = coords のとき、[requestTile]{@link mapray.StandardB3dProvider#requestTile}( level, coords )
  *    は次の URL のオブジェクトを要求する。<p>
  * <pre>
  *   prefix + L + '/' + C[0] + '/' + C[1] + '/' + C[2] + suffix
@@ -36,7 +36,7 @@ class StandardB3dProvider extends B3dProvider {
     {
         super();
 
-        var opts = options || {};
+        const opts = options || {};
 
         this._prefix = prefix;
         this._suffix = suffix;
@@ -54,7 +54,7 @@ class StandardB3dProvider extends B3dProvider {
      */
     requestMeta( callback )
     {
-        var actrl = new AbortController();
+        const actrl = new AbortController();
 
         fetch( this._makeMetaURL(), { credentials: this._meta_credentials,
                                       headers:     this._meta_headers,
@@ -79,13 +79,13 @@ class StandardB3dProvider extends B3dProvider {
     /**
      * @override
      */
-    requestTile( area, callback )
+    requestTile( level, coords, callback )
     {
-        var actrl = new AbortController();
+        const actrl = new AbortController();
 
-        fetch( this._makeTileURL( area ), { credentials: this._tile_credentials,
-                                            headers:     this._tile_headers,
-                                            signal:      actrl.signal } )
+        fetch( this._makeTileURL( level, coords ), { credentials: this._tile_credentials,
+                                                     headers:     this._tile_headers,
+                                                     signal:      actrl.signal } )
             .then( response => {
                 return response.ok ?
                     response.arrayBuffer() : Promise.reject( Error( response.statusText ) );
@@ -108,7 +108,7 @@ class StandardB3dProvider extends B3dProvider {
      */
     cancelRequest( id )
     {
-        var actrl = id;  // 要求 ID を AbortController に変換
+        const actrl = id;  // 要求 ID を AbortController に変換
         actrl.abort();   // 取り消したので要求を中止
     }
 
@@ -127,11 +127,11 @@ class StandardB3dProvider extends B3dProvider {
      * タイルデータの URL を作成
      * @private
      */
-    _makeTileURL( area )
+    _makeTileURL( level, coords )
     {
-        let c = area.coords;
+        const c = coords;
 
-        return this._prefix + area.level + '/' + c[0] + '/' + c[1] + '/' + c[2] + this._suffix;
+        return this._prefix + level + '/' + c[0] + '/' + c[1] + '/' + c[2] + this._suffix;
     }
 
 }
