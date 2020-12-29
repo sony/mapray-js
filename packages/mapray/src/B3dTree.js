@@ -1,4 +1,3 @@
-import Area3D from "./Area3D";
 import GeoMath from "./GeoMath";
 import Mesh from "./Mesh";
 import B3dNative from "./B3dNative";
@@ -205,7 +204,7 @@ class B3dTree {
     _getRootTile()
     {
         return new Promise( (resolve, reject) => {
-            this._b3d_req_id = this._provider.requestTile( new Area3D(), data => {
+            this._b3d_req_id = this._provider.requestTile( 0, [0, 0, 0], data => {
                 if ( data !== null )
                     resolve( data );
                 else
@@ -973,7 +972,12 @@ class B3dCube {
         const native = tree._native;
         console.assert( native );
 
-        this._b3d_data = tree._provider.requestTile( this._convert_to_area(), data => {
+        const tile_coords = new Array( 3 );
+        for ( let i = 0; i < 3; ++i ) {
+            tile_coords[i] = this.area_origin[i] / this.area_size;
+        }
+
+        this._b3d_data = tree._provider.requestTile( this.level, tile_coords, data => {
             if ( this._b3d_state !== B3dState.REQUESTED ) {
                 // キャンセルまたは this は破棄されている
                 return;
@@ -1198,23 +1202,6 @@ class B3dCube {
         this._b3d_data  = new B3dBinary( native, data );
 
         ++owner._num_tree_cubes;
-    }
-
-
-    /**
-     * @private
-     */
-    _convert_to_area()
-    {
-        const area = new Area3D();
-
-        area.level = this.level;
-
-        for ( let i = 0; i < 3; ++i ) {
-            area.coords[i] = this.area_origin[i] / this.area_size;
-        }
-
-        return area;
     }
 
 }
