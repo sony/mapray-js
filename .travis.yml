@@ -82,12 +82,9 @@ deploy:
     script: bash ./_deploy/scripts/deploy_to_npm_com.sh -t mapray -n ${NPM_TOKEN} -d
     on:
       all_branches: true
-      condition: $TRAVIS_BRANCH =~ ^(?!master)
   - provider: script
     skip_cleanup: true
     script: bash ./_deploy/scripts/deploy_to_npm_com.sh -t ui -n ${NPM_TOKEN} -d
     on:
       all_branches: true
-      condition: $TRAVIS_BRANCH =~ ^(?!master)
-
 
