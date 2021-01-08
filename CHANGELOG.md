@@ -1,4 +1,12 @@
 # Change Log
+## 0.8.5
+### Added
+- Implement bounding box from entities [#166](https://github.com/sony/mapray-js/issues/166), [#167](https://github.com/sony/mapray-js/pull/167)
+- Sample code for animation [#142](https://github.com/sony/mapray-js/issues/142) 
+
+### Bug fix
+- Fixed histroy stack is filled with mapray's URL [#168](https://github.com/sony/mapray-js/issues/168), [#169](https://github.com/sony/mapray-js/pull/169)
+
 ## 0.8.4
 ### Added
 - Implement mouse event for each entities [#105](https://github.com/sony/mapray-js/issues/105), [#132](https://github.com/sony/mapray-js/pull/132)
