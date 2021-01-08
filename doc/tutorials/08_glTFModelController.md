@@ -37,7 +37,7 @@ weight: 2084
     <head>
         <meta charset="utf-8">
         <title>glTFModelControllerSample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.8.4/mapray.min.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.8.5/mapray.min.js"></script>
         <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <script src="glTFModelController.js"></script>
         <style>
@@ -354,7 +354,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 6～8行目で参照するJavaScript及びスタイルシートのパスを設定します。このサンプルコードでは、maprayのJavaScriptファイル、スタイルシート、glTFモデルを操作するJavaScriptファイル（**glTFModelController.js**）を設定します。
 <!--@ 6 -->
 ```HTML
-<script src="https://resource.mapray.com/mapray-js/v0.8.4/mapray.min.js"></script>
+<script src="https://resource.mapray.com/mapray-js/v0.8.5/mapray.min.js"></script>
 <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
 <script src="glTFModelController.js"></script>
 ```

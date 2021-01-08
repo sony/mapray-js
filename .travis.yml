@@ -11,7 +11,7 @@ cache:
 before_install:
   - npm install -g firebase-tools
 
-script: 
+script:
   - yarn test
   - echo "yarn test finished"
   - yarn build
@@ -81,11 +81,10 @@ deploy:
     skip_cleanup: true
     script: bash ./_deploy/scripts/deploy_to_npm_com.sh -t mapray -n ${NPM_TOKEN} -d
     on:
-      tags: false
       all_branches: true
   - provider: script
     skip_cleanup: true
     script: bash ./_deploy/scripts/deploy_to_npm_com.sh -t ui -n ${NPM_TOKEN} -d
     on:
-      tags: false
       all_branches: true
+
