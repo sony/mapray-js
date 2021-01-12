@@ -78,6 +78,21 @@ class Tile {
     ~Tile();
 
 
+    /** @brief 子孫の最大深度を取得
+     *
+     *  パラメータは基本的に B3dBinary#getDescendantDepth() と同等である。
+     *
+     *  @note 深度が 24 を超える可能性があるので、座標は倍精度であることが重要
+     *
+     *  @return 既知の最大深度
+     */
+    int
+    get_descendant_depth( double  x,
+                          double  y,
+                          double  z,
+                          int limit ) const;
+
+
     /** @brief 指定領域で切り取る
      *
      *  パラメータの座標系は ALCS を想定している。
@@ -107,6 +122,7 @@ class Tile {
     static clip_result_func_t* clip_result_;
 
     class Base;
+    class DescDepth;
     class Analyzer;
     class BCollector;
     class Clipper;

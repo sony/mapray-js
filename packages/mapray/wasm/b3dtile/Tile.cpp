@@ -44,6 +44,11 @@ class Tile::Base {
     static constexpr size_t NUM_COLOR_COMPOS = 3;
 
 
+    /** @brief DESCENDANTS フィールドの先頭データからの位置
+     */
+    static constexpr size_t OFFSET_DESCENDANTS = 0;
+
+
     /** @brief ノードサイズの単位
      *
      *  TREE_SIZE の 1 単位のバイト数
@@ -88,15 +93,6 @@ class Tile::Base {
     /** @brief ALCS から正規化 uint16 座標への変換係数
      */
     static constexpr auto ALCS_TO_U16 = static_cast<real_t>( std::numeric_limits<p_elem_t>::max() );
-
-
-    /** @brief ノードの種類
-     */
-    enum class NodeType {
-        NONE   = 0,
-        BRANCH = 1,
-        LEAF   = 2,
-    };
 
 
     /** @brief 要素数からそのインデックス型のサイズを取得
@@ -145,7 +141,7 @@ class Tile::Base {
     template<typename Type>
     static const Type&
     ref_value( const byte_t* data,
-               size_t      offset )
+               size_t      offset = 0 )
     {
         return *reinterpret_cast<const Type*>( data + offset );
     }
@@ -160,21 +156,177 @@ class Tile::Base {
         return static_cast<Type>( (pos + N - 1) / N * N );
     }
 
+
+    /** @brief 子ノードの領域を取得
+     */
+    template<typename T>
+    static Rect<T, DIM>
+    get_child_rect( const Rect<T, DIM>&          parent,
+                    const std::array<int, DIM>& whiches )
+    {
+        Rect<T, DIM> rect;
+
+        for ( size_t i = 0; i < DIM; ++i ) {
+            const T hsize = (parent.upper[i] - parent.lower[i]) / 2;
+
+            rect.lower[i] = parent.lower[i] + static_cast<T>( whiches[i] ) * hsize;
+            rect.upper[i] = rect.lower[i] + hsize;
+        }
+
+        return rect;
+    }
+
+};
+
+
+/** @brief Tile::get_descendant_depth() の実装
+ */
+class Tile::DescDepth : Base {
+
+    // 子孫ツリーのノード種類
+    enum class NodeType {
+        EMPTY_VOID = 0,
+        EMPTY_GEOM = 1,
+        BRANCH     = 2,
+        LEAF       = 3,
+    };
+
+
+  public:
+    using position_t = std::array<double, DIM>;
+
+
+  public:
+    /** @brief 初期化
+     */
+    DescDepth( const byte_t*    data,
+               const position_t& pos,
+               int             limit )
+        : root_bnode_{ data + OFFSET_DESCENDANTS },
+          target_pos_{ pos },
+          limit_{ limit }
+    {}
+
+
+    /** @brief 処理を実行
+     */
+    int
+    run()
+    {
+        int     level = 0;
+        auto position = target_pos_;
+        auto   cursor = root_bnode_;
+
+        for (;;) {
+            /* Skip TREE_SIZE */  read_value<uint16_t>( cursor );
+            const auto children = read_value<uint16_t>( cursor );
+
+            const auto child_index = get_target_child( position );
+            const auto  child_type = get_child_node_type( children, child_index );
+
+            if ( child_type == NodeType::BRANCH ) {
+                if ( ++level >= limit_ ) {
+                    // 上限レベルに到達したので終了
+                    break;
+                }
+
+                cursor = skip_younger_siblings( children, child_index, cursor );
+                continue;
+            }
+            else if ( child_type == NodeType::LEAF ) {
+                // 最もレベルの高い子孫に到達したので終了
+                ++level;
+                break;
+            }
+            else {
+                assert( child_type == NodeType::EMPTY_VOID ||
+                        child_type == NodeType::EMPTY_GEOM );
+                // 子ノードがないときは、これまでで一番深い深度を返す
+                break;
+            }
+        }
+
+        assert( level <= limit_ );
+        return level;
+    }
+
+
+  private:
+    /** @brief 子ノードの型を取得
+     */
+    static NodeType
+    get_child_node_type( unsigned  children,
+                         size_t child_index )
+    {
+        return static_cast<NodeType>( (children >> (2 * child_index)) & 0b11u );
+    }
+
+
+    /** @brief 目標に向かう子ノードの情報を取得
+     *
+     *  pos は親ノード座標系から子ノード座標系の座標に更新される。
+     *
+     *  @param[in,out] pos  目標位置 (ALCS)
+     *
+     *  @return 子ノードのインデックス
+     */
+    static size_t
+    get_target_child( position_t& pos )
+    {
+        unsigned child_index = 0;
+
+        for ( size_t i = 0; i < DIM; ++i ) {
+            pos[i] *= 2;
+
+            if ( pos[i] >= 1 ) {
+                pos[i] -= 1;
+                child_index |= (1u << i);
+            }
+        }
+
+        return child_index;
+    }
+
+
+    /**
+     *  children 上の child_index より前の子ノードとその子孫をスキップする。
+     */
+    static const byte_t*
+    skip_younger_siblings( unsigned  children,
+                           size_t child_index,
+                           const byte_t* next )
+    {
+        auto cursor = next;
+
+        for ( size_t i = 0; i < child_index; ++i ) {
+            // 弟ノードの型
+            const auto child_type = get_child_node_type( children, i );
+
+            if ( child_type == NodeType::BRANCH ) {
+                const auto tree_size = ref_value<uint16_t>( cursor );
+                cursor += WORD_SIZE * tree_size;
+            }
+        }
+
+        return cursor;
+    }
+
+
+  private:
+    const byte_t* const root_bnode_;  // 最上位ノードへのポインタ
+    const position_t    target_pos_;  // タイル上の目標位置 (ALCS)
+    const int                limit_;  // レベル上限
+
 };
 
 
 /** @brief バイナリを解析
  *
- *  run() を実行した後に、タイル情報のメンバー変数にアクセスできる。
+ *  構築子を実行した後に、タイル情報のメンバー変数にアクセスできる。
  */
 class Tile::Analyzer : Base {
 
     // バイナリフォーマットの情報
-    static constexpr size_t OFFSET_CONTENTS      = 4;
-    static constexpr size_t OFFSET_NUM_VERTICES  = 8;
-    static constexpr size_t OFFSET_NUM_TRIANGLES = 12;
-    static constexpr size_t OFFSET_POSITIONS     = 16;
-
     static constexpr uint32_t FLAG_N_ARRAY  = (1u << 0);
     static constexpr uint32_t FLAG_C_ARRAY  = (1u << 1);
     static constexpr uint32_t FLAG_TRI_TREE = (1u << 8);
@@ -216,14 +368,19 @@ class Tile::Analyzer : Base {
           tblock_table{ nullptr },
           root_node{ nullptr }
     {
-        const auto& contents = ref_value<uint32_t>( data, OFFSET_CONTENTS );
+        const auto tree_size = ref_value<uint16_t>( data, OFFSET_DESCENDANTS );
+        const byte_t* cursor = data + OFFSET_DESCENDANTS + WORD_SIZE * tree_size;
 
-        num_vertices  = ref_value<uint32_t>( data, OFFSET_NUM_VERTICES );
-        num_triangles = ref_value<uint32_t>( data, OFFSET_NUM_TRIANGLES );
-        vindex_size   = get_index_size( num_vertices );
-        tindex_size   = get_index_size( num_triangles );
+        // CONTENTS
+        const auto contents = read_value<uint32_t>( cursor );
 
-        size_t offset = OFFSET_POSITIONS;
+        num_vertices  = read_value<uint32_t>( cursor );
+        num_triangles = read_value<uint32_t>( cursor );
+
+        vindex_size = get_index_size( num_vertices );
+        tindex_size = get_index_size( num_triangles );
+
+        size_t offset = cursor - data;
 
         // 位置配列 (POSITIONS)
         positions = get_pointer<p_elem_t>( data, offset );
@@ -393,6 +550,13 @@ class Tile::BCollector : Base {
     traverse_branch( const byte_t* node_data,
                      const rect_t& node_rect )
     {
+        // 三角形ツリーのノード種類
+        enum class NodeType {
+            NONE   = 0,
+            BRANCH = 1,
+            LEAF   = 2,
+        };
+
         const byte_t* cursor = node_data;
 
         // TREE_SIZE
@@ -413,7 +577,7 @@ class Tile::BCollector : Base {
                     const auto  node_type = static_cast<NodeType>( (children >> (2 * child_index)) & 0b11u );
 
                     if ( node_type == NodeType::BRANCH ) {
-                        const rect_t child_rect = get_child_rect( node_rect, { u, v, w } );
+                        const auto child_rect = get_child_rect( node_rect, { u, v, w } );
                         if ( child_rect.is_cross( clip_rect_ ) ) {
                             cursor = traverse_branch( cursor, child_rect );
                         }
@@ -422,7 +586,7 @@ class Tile::BCollector : Base {
                         }
                     }
                     else if ( node_type == NodeType::LEAF ) {
-                        const rect_t child_rect = get_child_rect( node_rect, { u, v, w } );
+                        const auto child_rect = get_child_rect( node_rect, { u, v, w } );
                         if ( child_rect.is_cross( clip_rect_ ) ) {
                             cursor = traverse_leaf( cursor );
                         }
@@ -526,28 +690,6 @@ class Tile::BCollector : Base {
         cursor += get_aligned<4>( adata_.bindex_size * num_blocks );
 
         return cursor;
-    }
-
-
-    /** @brief 子ノードの領域を取得
-     *
-     *  ※ TILE_RECT から開始して、深くないレベルを想定しているので
-     *     戻り値は厳密な値になることを期待している。
-     */
-    static rect_t
-    get_child_rect( const rect_t&                parent,
-                    const std::array<int, DIM>& whiches )
-    {
-        rect_t rect;
-
-        for ( size_t i = 0; i < DIM; ++i ) {
-            const real_t hsize = (parent.upper[i] - parent.lower[i]) / 2;
-
-            rect.lower[i] = parent.lower[i] + static_cast<real_t>( whiches[i] ) * hsize;
-            rect.upper[i] = rect.lower[i] + hsize;
-        }
-
-        return rect;
     }
 
 
@@ -1664,6 +1806,17 @@ Tile::Tile( size_t size )
 Tile::~Tile()
 {
     delete[] data_;
+}
+
+
+int
+Tile::get_descendant_depth( double  x,
+                            double  y,
+                            double  z,
+                            int limit ) const
+{
+    assert( limit >= 1 );
+    return Tile::DescDepth{ data_, { x, y, z }, limit }.run();
 }
 
 
