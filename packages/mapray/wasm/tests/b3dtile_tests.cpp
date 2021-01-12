@@ -101,4 +101,29 @@ BOOST_AUTO_TEST_CASE( tile_clip_part )
 }
 
 
+BOOST_AUTO_TEST_CASE( tile_descendant_depth )
+{
+    const auto tile = create_tile( "tile.bin" );
+
+    const size_t num_divs = 64;
+    const double     size = 1.0 / num_divs;
+
+    int min_depth = 1000;
+    int max_depth = 0;
+
+    for ( double z = 0; z < 1; z += size ) {
+        for ( double y = 0; y < 1; y += size ) {
+            for ( double x = 0; x < 1; x += size ) {
+                const auto depth = tile->get_descendant_depth( x, y, z, 100 );
+                min_depth = std::min( min_depth, depth );
+                max_depth = std::max( max_depth, depth );
+            }
+        }
+    }
+
+    BOOST_CHECK( min_depth >= 0 );
+    BOOST_CHECK( max_depth <= 100 );
+}
+
+
 BOOST_AUTO_TEST_SUITE_END()
