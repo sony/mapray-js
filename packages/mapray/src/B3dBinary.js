@@ -21,24 +21,33 @@ class B3dBinary {
         this._handle = native.addBinary( buffer );
 
         // ヘッダー情報を取得
-        let header = new DataView( buffer );
+        let data = new DataView( buffer );
 
-        this._children   = header.getUint16( B3dBinary.OFFSET_CHILDREN,   true );
-        this._void_areas = header.getUint16( B3dBinary.OFFSET_VOID_AREAS, true );
-        this._contents   = header.getUint32( B3dBinary.OFFSET_CONTENTS,   true );
-    }
+        // DESCENDANTS
+        // 最上位の枝ノード
+        const tree_size = data.getUint16( B3dBinary.OFFSET_DESCENDANTS + 0, true );
+        const children  = data.getUint16( B3dBinary.OFFSET_DESCENDANTS + 2, true );
 
+        this._void_areas = 0;
+        this._is_leaf    = true;
 
-    /**
-     * @summary 指定した子供は存在するか？
-     *
-     * @param {number} which  子供の位置 (0-7)
-     *
-     * @return {boolean}  存在するとき true, それ以外のとき false
-     */
-    hasChild( which )
-    {
-        return (this._children & (1 << which)) != 0;
+        for ( let i = 0; i < 8; ++i ) {
+            const shift = 2 * i;
+            const  mask = 3 << shift;
+            const ntype = (children & mask) >> shift;
+
+            if ( ntype == 0 ) {
+                // 子なし (VOID)
+                this._void_areas += (1 << i);
+            }
+            else if ( this._is_leaf && ntype >= 2 ) {
+                // 枝ノード(2) or 葉ノード(3)
+                this._is_leaf = false;
+            }
+        }
+
+        // CONTENTS
+        this._contents = data.getUint32( B3dBinary.OFFSET_DESCENDANTS + 4 * tree_size, true );
     }
 
 
@@ -62,7 +71,30 @@ class B3dBinary {
      */
     isLeaf()
     {
-        return this._children == 0;
+        return this._is_leaf;
+    }
+
+
+    /**
+     * @summary 子孫の最大深度を取得
+     *
+     * 位置 position を包含する子孫タイルが this 存在すれば (既知の) 最大深度を
+     * 返す。ただし position の位置に子孫が存在しないときは 0 を返す。
+     *
+     * position に limit より深い子孫タイルが存在しても limit を返す可能性がある。
+     *
+     * position の各要素 x は 0 <= x < 1 でなければならない。
+     *
+     * ※ 一般的に limit が小さいほうが速度的に有利な可能性がある
+     *
+     * @param {mapray.Vector3} position  確認する位置 (ALCS)
+     * @param {number}            limit  最大の深さ (>= 1)
+     *
+     * @return {number}  既知の最大深度
+     */
+    getDescendantDepth( position, limit )
+    {
+        return this._native.getDescendantDepth( this._handle, position, limit );
     }
 
 
@@ -187,12 +219,7 @@ align4( bytes )
 }
 
 
-B3dBinary.OFFSET_CHILDREN   = 0;
-B3dBinary.OFFSET_VOID_AREAS = 2;
-B3dBinary.OFFSET_CONTENTS   = 4;
-// B3dBinary.OFFSET_NUM_VERTICES  = 8;
-// B3dBinary.OFFSET_NUM_TRIANGLES = 12;
-// B3dBinary.OFFSET_DATA = 16;
+B3dBinary.OFFSET_DESCENDANTS    = 0;
 B3dBinary.CONTENTS_MASK_N_ARRAY = 1;
 B3dBinary.CONTENTS_MASK_C_ARRAY = 2;
 
