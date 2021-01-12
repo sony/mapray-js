@@ -41,6 +41,18 @@ tile_destroy( const Tile* tile )
 
 
 extern "C" EMSCRIPTEN_KEEPALIVE
+wasm_i32_t
+tile_get_descendant_depth( const Tile* tile,
+                           wasm_f64_t     x,
+                           wasm_f64_t     y,
+                           wasm_f64_t     z,
+                           wasm_i32_t limit )
+{
+    return static_cast<wasm_i32_t>( tile->get_descendant_depth( x, y, z, static_cast<int>( limit ) ) );
+}
+
+
+extern "C" EMSCRIPTEN_KEEPALIVE
 void
 tile_clip( const Tile* tile,
            wasm_f32_t     x,

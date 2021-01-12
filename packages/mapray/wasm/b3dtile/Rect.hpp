@@ -134,6 +134,23 @@ class Rect {
         return true;
     }
 
+
+    /** @brief 直方体の中心を取得
+     *
+     *  @pre is_valid_size()
+     */
+    constexpr position_t
+    get_center() const
+    {
+        position_t pos;
+
+        for ( size_t i = 0; i < Dim; ++i ) {
+            pos[i] = (lower[i] + upper[i]) / static_cast<EType>( 2 );
+        }
+
+        return pos;
+    }
+
 };
 
 } // namespace b3dtile
