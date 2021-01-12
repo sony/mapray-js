@@ -68,6 +68,21 @@ class B3dNative {
 
 
     /**
+     * @summary 子孫の最大深度を取得
+     *
+     * @see {@link mapray.B3dBinary#getDescendantDepth}
+     */
+    getDescendantDepth( handle, position, limit )
+    {
+        const x = position[0];
+        const y = position[1];
+        const z = position[2];
+
+        return this._emod._tile_get_descendant_depth( handle, x, y, z, limit );
+    }
+
+
+    /**
      * @summary クリッピング処理
      *
      * @param {number}         handle  オブジェクトハンドル

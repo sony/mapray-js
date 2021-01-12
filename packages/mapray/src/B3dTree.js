@@ -808,7 +808,7 @@ class B3dCube {
      *  - loaded_node.level <= this.level
      *  - failed_node == null || loaded_node.level < failed_node.level
      *
-     * @param {mapray.B3dTree.B3dCube}  loaded_node
+     * @param {mapray.B3dTree.B3dCube}  loaded_node  現状で this に最も近い (タイルを持つ) ノード
      * @param {?mapray.B3dTree.B3dCube} failed_node
      *
      * @private
@@ -885,6 +885,11 @@ class B3dCube {
 
     /**
      * _tryRequestTile() のサブルーチン
+     *
+     * @param {mapray.B3dTree.B3dCube} loaded_node
+     *
+     * @return {mapray.B3dTree.B3dCube[]}
+     *
      * @private
      */
     _create_node_routes( loaded_node )
@@ -905,10 +910,10 @@ class B3dCube {
     /**
      * _tryRequestTile() のサブルーチン
      *
-     * loaded_node._b3d_data の既知の子孫タイルで、最も高いレベルのタイルと
-     * 一致するノードを node_routes = (loaded_node, this] から検索
+     * @param {mapray.B3dTree.B3dCube}   loaded_node  タイルデータを持つノード
+     * @param {mapray.B3dTree.B3dCube[]} node_routes  (loaded_node, this]
      *
-     * ※ 現在のタイル形式は直接の子タイル (1 レベル差) しか有無を判断できない
+     * @return {?mapray.B3dTree.B3dCube}
      *
      * @private
      */
@@ -916,45 +921,39 @@ class B3dCube {
     _find_request_candidate_node( loaded_node,
                                   node_routes )
     {
-        const tile_center = loaded_node._getCenterPosition();
+        const tgt_node = node_routes[node_routes.length - 1];
 
-        const cand_node = node_routes[0];  // loaded_node の子ノード
+        // tgt_node.area_origin (A0CS) を loaded_node の座標系 (ALCS) の位置 Pa に変換
+        //
+        // Pa = 2^L Po - C
+        //    = (1 / loaded_node.area_size) tgt_node.area_origin - loaded_node.area_origin / loaded_node.area_size
+        //    = (tgt_node.area_origin - loaded_node.area_origin) / loaded_node.area_size
+        //
+        // ここで
+        //   Po = tgt_node.area_origin
+        //   L  = loaded_node.level
+        //   C  = loaded_node.area_origin / loaded_node.area_size
+        //
+        // 文献 LargeScale3DScene の「A0CS と ALCS との間の座標変換」を参照
 
-        let which = 0;
+        const tgt_Pa = new Array( 3 );
+
         for ( let i = 0; i < 3; ++i ) {
-            if ( cand_node.area_origin[i] >= tile_center[i] ) {
-                which += (1 << i);
-            }
+            tgt_Pa[i] = (tgt_node.area_origin[i] - loaded_node.area_origin[i]) / loaded_node.area_size;
         }
 
-        const tile_data = loaded_node._b3d_data;
+        // tgt_node 領域を包含する、loaded_node タイルの子孫タイルの深さ (既知の最大深度)
+        const depth = loaded_node._b3d_data.getDescendantDepth( tgt_Pa, node_routes.length );
 
-        if ( tile_data.hasChild( which ) ) {
-            return cand_node;
+        if ( depth > 0 ) {
+            // tgt_node 以下のレベルのタイルの子孫が存在
+            const index = depth - 1;
+            return node_routes[index];
         }
         else {
-            // cand_node を包含する子タイルがプロバイダに存在しない
+            // tgt_node の位置に子孫タイルは存在しない
             return null;
         }
-    }
-
-
-    /**
-     * @summary 中心位置を取得 (A0CS)
-     *
-     * @return {number[]}
-     * @private
-     */
-    _getCenterPosition()
-    {
-        const c = this.area_origin.concat();
-        const h = this.area_size / 2;
-
-        for ( let i = 0; i < 3; ++i ) {
-            c[i] += h;
-        }
-
-        return c;
     }
 
 
