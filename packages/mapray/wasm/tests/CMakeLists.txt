@@ -13,6 +13,7 @@ set(unit_test_src
   unit_tests.cpp
   b3dtile_tests.cpp
   ../b3dtile/Tile.cpp
+  ../b3dtile/Tile/Clipper.cpp
 )
 
 

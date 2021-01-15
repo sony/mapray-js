@@ -16,6 +16,12 @@ class Tile {
   public:
     using  byte_t = unsigned char;
 
+    class Base;
+    class DescDepth;
+    class Analyzer;
+    class BCollector;
+    class Clipper;
+
 
   public:
     /** @brief タイルデータをコピーする関数の型
@@ -120,12 +126,6 @@ class Tile {
 
     static binary_copy_func_t* binary_copy_;
     static clip_result_func_t* clip_result_;
-
-    class Base;
-    class DescDepth;
-    class Analyzer;
-    class BCollector;
-    class Clipper;
 
     // ES6 の Uint8Array との一致を確認
     static_assert( std::numeric_limits<byte_t>::digits == 8 );
