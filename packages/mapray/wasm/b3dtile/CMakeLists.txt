@@ -12,7 +12,11 @@ project(b3dtile)
 # (set use_cxx_exception 1)
 
 # メインターゲットのソースファイル
-File(GLOB main_target_src "*.cpp")
+set(main_target_src
+  b3dtile.cpp
+  Tile.cpp
+  Tile/Clipper.cpp
+)
 
 # コンパイル構成の共通設定
 set(cxx_flags_common "-Wall -Wextra -pedantic --no-entry --emit-symbol-map")
