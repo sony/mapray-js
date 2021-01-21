@@ -189,6 +189,30 @@ class B3dBinary {
 
 
     /**
+     * @summary タイル内の三角形とレイとの交点を探す
+     *
+     * @param {mapray.Ray} ray  半直線を表すレイ (ALCS)
+     * @param {number}   limit  制限距離
+     * @param {mapray.Vector3} rect_origin  ヒント直方体の原点 (ALCS)
+     * @param {number}         rect_size    ヒント直方体の寸法 (ALCS)
+     *
+     * @return {number}  交点までの距離
+     */
+    findRayDistance( ray, limit, rect_origin, rect_size )
+    {
+        let result;
+
+        this._native.findRayDistance( this._handle,
+                                      ray, limit, rect_origin, rect_size,
+                                      (distance, id) => {
+            result = distance;
+        } );
+
+        return result;
+    }
+
+
+    /**
      * @summary インスタンスを破棄
      *
      * this のリソースを解放する。this のメソッドは呼び出せなくなる。
