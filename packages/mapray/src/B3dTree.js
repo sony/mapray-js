@@ -1,4 +1,5 @@
 import GeoMath from "./GeoMath";
+import Ray from "./Ray";
 import Mesh from "./Mesh";
 import B3dNative from "./B3dNative";
 import B3dBinary from "./B3dBinary";
@@ -31,6 +32,7 @@ class B3dTree {
         // 幾何計算関連
         this._rho          = undefined;
         this._a0cs_to_gocs = undefined;
+        this._gocs_to_a0cs = undefined;
         this._lod_factor   = B3dTree.DEFAULT_LOD_FACTOR;  // TODO: パラメータ化により外部から指定
 
         // キャッシュ処理関連
@@ -137,6 +139,37 @@ class B3dTree {
 
 
     /**
+     * @summary B3D シーンとレイとの交点を探す
+     *
+     * @desc
+     * this 全体の三角形と線分 (ray.position を始点とし、そこから ray.direction
+     * 方向に limit 距離未満にある点) との交点の中で、始点から最も近い交点までの
+     * 距離を返す。ただし線分と交差する三角形が見つからないときは limit を返す。
+     *
+     * @param {mapray.Ray} ray  半直線を表すレイ (GOCS)
+     * @param {number}   limit  制限距離
+     *
+     * @return {number}  交点までの距離
+     */
+    findRayDistance( ray, limit )
+    {
+        if ( this._status !== TreeState.READY ) {
+            // 準備ができていないときは見つけられない
+            return limit;
+        }
+
+        const ray_a0cs = Ray.transform_A( this._gocs_to_a0cs, ray, new Ray() );
+
+        if ( this._root_cube.isAreaCross( ray_a0cs, limit ) ) {
+            return this._root_cube.findRayDistanceOnTree( ray_a0cs, limit );
+        }
+        else {
+            return limit;
+        }
+    }
+
+
+    /**
      * @summary 初期化を開始
      *
      * @param {WebAssembly.Module} wa_module
@@ -231,6 +264,7 @@ class B3dTree {
         // メタデータを取得
         this._rho          = metadata.rho;
         this._a0cs_to_gocs = GeoMath.createMatrix( metadata.transform );
+        this._gocs_to_a0cs = GeoMath.inverse_A( this._a0cs_to_gocs, GeoMath.createMatrix() );
     }
 
 
@@ -620,6 +654,7 @@ class B3dCube {
         this._b3d_state  = B3dState.NONE;
         this._b3d_data   = null;  // B3dBinary または cancel ID または null
         this._mesh_nodes = null;  // Map<int, MeshNode>
+        this._has_tile_in_descendants = false;  // ある子孫ノードが B3dBinary インスタンスを持っているか？
         this._aframe     = -1;
 
         /**
@@ -986,6 +1021,7 @@ class B3dCube {
                 // タイルの読み込みに成功
                 this._b3d_state = B3dState.LOADED;
                 this._b3d_data  = new B3dBinary( native, data );
+                this._update_tile_in_descendants_for_load();
             }
             else {
                 // タイルの読み込みに失敗
@@ -1037,6 +1073,180 @@ class B3dCube {
 
 
     /**
+     * @summary 立方体とレイとの交差の有無
+     *
+     * @desc
+     * this の立方体と線分 (ray.position を始点とし、そこから ray.direction
+     * 方向に limit 距離未満にある点) が交差するかどうかを返す。
+     *
+     * @param {mapray.Ray} ray  半直線を表すレイ (A0CS)
+     * @param {number}   limit  制限距離
+     *
+     * @return {boolean}  交差の有無
+     */
+    isAreaCross( ray, limit )
+    {
+        const distance = findCubeRayDistance( this.area_origin, this.area_size, ray, limit );
+
+        return distance != limit;
+    }
+
+
+    /**
+     * @summary B3dCube ツリーとレイとの交点を探す
+     *
+     * @desc
+     * this ツリーの三角形と線分 (ray.position を始点とし、そこから ray.direction
+     * 方向に limit 距離未満にある点) との交点の中で、始点から最も近い交点までの
+     * 距離を返す。ただし線分と交差する三角形が見つからないときは limit を返す。
+     *
+     * @param {mapray.Ray} ray  半直線を表すレイ (A0CS)
+     * @param {number}   limit  制限距離
+     *
+     * @return {number}  交点までの距離
+     */
+    findRayDistanceOnTree( ray, limit )
+    {
+        if ( this._has_tile_in_descendants ) {
+            for ( let cinfo of this._children_in_crossing_order( ray, limit ) ) {
+                let distance;
+
+                if ( cinfo instanceof B3dCube ) {
+                    // 交差する子ノードがある場合は再帰する
+                    distance = cinfo.findRayDistanceOnTree( ray, limit );
+                }
+                else {
+                    // そうでない場合は、自己または祖先のタイルとの交点を探す
+                    distance = this._findRayDistanceByPath( ray, limit, cinfo );
+                }
+
+                if ( distance != limit ) {
+                    // 交点が見つかったので、全体の処理を終了
+                    return distance;
+                }
+            }
+
+            return limit;  // 交差はなかった
+        }
+        else {
+            /* this は末端のタイルを持か、子孫も含めてタイルを持たない */
+            return this._findRayDistanceByPath( ray, limit, this );
+        }
+    }
+
+
+    /**
+     * this または this の祖先ノードで this に最も近くのタイルを保有するノー
+     * ドを N とする。
+     *
+     * ノード N のタイルとレイとの最も近い交点までの距離を返す。ただし交点が見つ
+     * からなければ limit を返す。
+     *
+     * 以上の交点検索の範囲は rect の領域に制限される。
+     *
+     * @param {mapray.Ray} ray  半直線を表すレイ (A0CS)
+     * @param {number}   limit  制限距離
+     * @param {object}         rect
+     * @param {mapray.Vector3} rect.area_origin  立方体の原点 (A0CS)
+     * @param {number}         rect.area_size    立方体の寸法 (A0CS)
+     *
+     * @return {number}  交点までの距離
+     *
+     * @private
+     */
+    _findRayDistanceByPath( ray, limit, rect )
+    {
+        let tnode;  // タイルを持つ直近ノード
+        for ( tnode = this; tnode.getTileData() === null; tnode = tnode._parent ) {}
+
+        console.assert( tnode !== null && tnode.getTileData() !== null );
+
+        // ray を A0CS から tnode での ALCS に変換 -> tray
+        const tray = new Ray();
+        for ( let i = 0; i < 3; ++i ) {
+            tray.position[i]  = (ray.position[i] - tnode.area_origin[i]) / tnode.area_size;
+            tray.direction[i] = ray.direction[i] / tnode.area_size;
+        }
+
+        // rect を A0CS から tnode での ALCS に変換 -> trect_*
+        const trect_origin = GeoMath.createVector3();
+        const trect_size   = rect.area_size / tnode.area_size;
+        for ( let i = 0; i < 3; ++i ) {
+            trect_origin[i] = (rect.area_origin[i] - tnode.area_origin[i]) / tnode.area_size;
+        }
+
+        // タイルに処理を任せる
+        const tile = tnode.getTileData();
+        return tile.findRayDistance( tray, limit, trect_origin, trect_size );
+    }
+
+
+    /**
+     * レイと交差する this の子領域情報の列挙可能オブジェクトを取得する。
+     *
+     * 子領域情報はレイの視点から交差する位置が近い順に列挙される。
+     *
+     * 子領域情報は B3dCube インスタンスまたは、立方体情報オブジェクトのどちらか
+     * である。
+     *
+     * 立方体情報オブジェクトはその子領域を表す area_origin プロパティと
+     * area_size プロパティを持つ (このプロパティは B3dCube インスタンスも持つ)。
+     *
+     * @param {mapray.Ray} ray  半直線を表すレイ (A0CS)
+     * @param {number}   limit  制限距離
+     *
+     * @return {iterable.<object>}
+     *
+     * @private
+     */
+    _children_in_crossing_order( ray, limit )
+    {
+        const child_origin = GeoMath.createVector3();
+        const   child_size = this.area_size / 2;
+
+        const order_list = [];
+
+        for ( let w = 0; w < 8; ++w ) {
+            // 子領域の原点を設定
+            for ( let i = 0; i < 3; ++i ) {
+                child_origin[i] = this.area_origin[i] + child_size * ((w >> i) & 1);
+            }
+
+            const distance = findCubeRayDistance( child_origin, child_size, ray, limit );
+
+            if ( distance != limit ) {
+                // w の子領域が交差するので order_list に情報を追加
+                let cinfo = (this._children !== null) ? this._children[w] : null;
+
+                if ( cinfo === null ) {
+                    cinfo = {
+                        area_origin: GeoMath.createVector3( child_origin ),
+                        area_size:   child_size
+                    };
+                }
+
+                order_list.push( { distance, cinfo } );
+            }
+        }
+
+        // 最低 1 つの子領域が交差するはず
+        console.assert( order_list.length >= 1 );
+
+        // ノードを視点から近い順に並び替える
+        order_list.sort( (a, b) => a.distance - b.distance );
+
+        // order_list から反復可能オブジェクトを生成
+        const children = new Array( order_list.length );
+
+        for ( let i = 0; i < order_list.length; ++i ) {
+            children[i] = order_list[i].cinfo;
+        }
+
+        return children;
+    }
+
+
+    /**
      * @summary 自己と子孫を破棄
      *
      * this と this の子孫を破棄し、this の親から this を削除する。
@@ -1080,6 +1290,14 @@ class B3dCube {
             this._children = null;
         }
 
+        // 子孫にタイルが存在しないことにする
+        // 上の処理により this 自体にもタイルは存在しない
+        this._has_tile_in_descendants = false;
+
+        if ( this._parent !== null ) {
+            this._parent._update_tile_in_descendants_for_kill();
+        }
+
         // 親ノードから this を削除
         const my_index = this._parent._children.indexOf( this );
         this._parent._children[my_index] = null;
@@ -1087,6 +1305,81 @@ class B3dCube {
 
         // B3dCube 数を減らす
         --this._owner._num_tree_cubes;
+    }
+
+
+    /**
+     * タイル読み込み時の _has_tile_in_descendants プロパティ更新
+     *
+     * これは this が B3dBinary インスタンスを所有したことによる、祖先ノードの
+     * 状態変化である。
+     *
+     * @private
+     */
+    _update_tile_in_descendants_for_load()
+    {
+        for ( let cube = this._parent; cube !== null; cube = cube._parent ) {
+            if ( cube._has_tile_in_descendants ) {
+                // すでに子孫がタイルデータを持っていることになっている
+                // cube の祖先もそうなっているはずなので、ここで終了する
+                break;
+            }
+            else {
+                // 子孫がタイルデータを持っていることにする
+                cube._has_tile_in_descendants = true;
+            }
+        }
+    }
+
+
+    /**
+     * Cube インスタンス破棄時の _has_tile_in_descendants プロパティ更新
+     *
+     * これは this が破棄されたことによる、祖先ノードの状態変化である。
+     *
+     * @private
+     */
+    _update_tile_in_descendants_for_kill()
+    {
+        if ( !this._has_tile_in_descendants ) {
+            // すでに this の子孫にタイルが存在しないことになっている。そのため this も
+            // this の祖先も変更しない。
+            return;
+        }
+
+        // this の子ノードが削除されたので this._has_tile_in_descendants を true から
+        // false に変えなければならない可能性がある。そして this が変われば this の
+        // 親も変えなければならない可能性がある。これが最上位ノードまで続く可能性が
+        // ある。
+
+        for ( let cube = this; cube !== null; cube = cube._parent ) {
+            // cube のある子ノード child が child._has_tile_in_tree() なら、cube とその
+            // 祖先を変える必要はない。そうでなければ cube を変える必要がある。
+
+            console.assert( cube._has_tile_in_descendants );
+
+            for ( let child of cube._children ) {
+                if ( child !== null && child._has_tile_in_tree() ) {
+                    // cube の子孫にタイルが存在することが分かったので、cube とその祖先は
+                    // 変更しない
+                    return;
+                }
+            }
+
+            // cube の子孫にタイルが存在しなくなったことが分かったので、cube を変更する
+            cube._has_tile_in_descendants = false;
+        }
+    }
+
+
+    /**
+     * 自己または子孫にタイルデータは存在するか？
+     *
+     * @private
+     */
+    _has_tile_in_tree()
+    {
+        return (this.getTileData() !== null) || this._has_tile_in_descendants;
     }
 
 
@@ -1670,6 +1963,74 @@ var B3dState = {
     FAILED: { id: "FAILED" }
 
 };
+
+
+/**
+ * @summary 立方体とレイとの交点を探す
+ *
+ * @desc
+ * 立方体 (原点 が origin で寸法 size) と線分 (ray.position を始点とし、そこ
+ * から ray.direction 方向に limit 距離未満にある点) との交点の中で、始点か
+ * ら最も近い交点までの距離を返す。ただし立方体と線分が交差しないときは
+ * limit を返す。
+ *
+ * @param {mapray.Vector3} origin  立方体の原点
+ * @param {number}           size  立方体の寸法
+ * @param {mapray.Ray}        ray  半直線を表すレイ
+ * @param {number}          limit  制限距離
+ *
+ * @return {number}  交点までの距離
+ *
+ * @see 文献 LargeScale3DScene の「レイと直方体の交差」
+ *
+ * @private
+ */
+function
+findCubeRayDistance( origin, size, ray, limit )
+{
+    // P_0 = origin
+    // P_1 = origin + size
+    //   q = ray.position
+    //   r = ray.direction
+
+    let tmin = 0;
+    let tmax = limit;
+
+    for ( let i = 0; i < 3; ++i ) {
+        const rni = ray.direction[i];  // r . n_i
+
+        if ( rni != 0 ) {
+            // tA = ((P_0 - q) . n_i) / (r . n_i)
+            // tB = ((P_1 - q) . n_i) / (r . n_i)
+            const tA = (origin[i]        - ray.position[i]) / rni;
+            const tB = (origin[i] + size - ray.position[i]) / rni;
+
+            const t0 = (rni > 0) ? tA : tB;
+            const t1 = (rni > 0) ? tB : tA;
+            console.assert( t0 < t1 );
+
+            tmin = Math.max( t0, tmin );
+            tmax = Math.min( t1, tmax );
+
+            if ( tmin >= tmax ) {
+                // 共通区間が存在しないので交差しない
+                return limit;
+            }
+        }
+        else { // rni == 0
+            if ( (ray.position[i] - origin[i]        <  0) ||
+                 (ray.position[i] - origin[i] - size >= 0) ) {
+                // すべての i において、以下が満たされないので交差しない
+                // (q - P_0) . n_i >= 0
+                // (q - P_1) . n_i < 0
+                return limit;
+            }
+        }
+    }
+
+    console.assert( tmin < tmax );
+    return tmin;
+}
 
 
 B3dTree.DEFAULT_LOD_FACTOR = 4.0;

@@ -20,6 +20,7 @@ class B3dNative {
         // wasm とやり取りするための一時変数
         this._src_binary  = null;  // タイルデータ (ArrayBuffer)
         this._clip_result = null;  // クリッピング結果を受け取る関数 (mapray.B3dNative.ClipResult)
+        this._ray_result  = null;  // レイ判定結果を受け取る関数 (mapray.B3dNative.findRayDistance)
 
         // 関数登録: Tile.hpp の binary_copy_func_t を参照
         const binary_copy = em_module.addFunction( (dst_begin) => {
@@ -37,8 +38,14 @@ class B3dNative {
             this._clip_result = null;
         }, "viii" );
 
+        // 関数登録: Tile.hpp の ray_result_func_t を参照
+        const ray_result = em_module.addFunction( (distance, id) => {
+            this._ray_result.call( null, distance, id );
+            this._ray_result = null;
+        }, "vdi" );
+
         // b3dtile インスタンスを初期化
-        em_module._initialize( binary_copy, clip_result );
+        em_module._initialize( binary_copy, clip_result, ray_result );
     }
 
 
@@ -83,21 +90,55 @@ class B3dNative {
 
 
     /**
-     * @summary クリッピング処理
+     * @see {@link mapray.B3dBinary#clip}
      *
      * @param {number}         handle  オブジェクトハンドル
      * @param {mapray.Vector3} origin  クリップ立方体の原点 (ALCS)
      * @param {number}         size    クリップ立方体の寸法 (ALCS)
-     * @param {mapray.B3dNative.ClipResult} clip_result  クリッピング結果を受け取る関数
+     * @param {mapray.B3dNative.ClipResult} fn_result  結果を受け取る関数
      */
-    clip( handle, origin, size, clip_result )
+    clip( handle, origin, size, fn_result )
     {
         const x = origin[0];
         const y = origin[1];
         const z = origin[2];
 
-        this._clip_result = clip_result;
+        this._clip_result = fn_result;
         this._emod._tile_clip( handle, x, y, z, size );
+    }
+
+
+    /**
+     * @see {@link mapray.B3dBinary#findRayDistance}
+     *
+     * @param {number}      handle  オブジェクトハンドル
+     * @param {function} fn_result  結果を受け取る関数 (Tile.hpp の ray_result_func_t を参照)
+     */
+    findRayDistance( handle,
+                     // [[[
+                     // B3dBinary#findRayDistance() と同じ引数
+                     ray, limit, rect_origin, rect_size,
+                     // ]]]
+                     fn_result )
+    {
+        this._ray_result = fn_result;
+
+        this._emod._tile_find_ray_distance( handle,
+
+                                            ray.position[0],
+                                            ray.position[1],
+                                            ray.position[2],
+
+                                            ray.direction[0],
+                                            ray.direction[1],
+                                            ray.direction[2],
+
+                                            limit,
+
+                                            rect_origin[0],
+                                            rect_origin[1],
+                                            rect_origin[2],
+                                            rect_size );
     }
 
 }
