@@ -149,6 +149,31 @@ class B3dCollection {
         }
     }
 
+
+    /**
+     * @summary すべての B3D シーンとレイとの交点を探す
+     *
+     * @desc
+     * this 全体の三角形と線分 (ray.position を始点とし、そこから ray.direction
+     * 方向に limit 距離未満にある点) との交点の中で、始点から最も近い交点までの
+     * 距離を返す。ただし線分と交差する三角形が見つからないときは limit を返す。
+     *
+     * @param {mapray.Ray} ray  半直線を表すレイ (GOCS)
+     * @param {number}   limit  制限距離
+     *
+     * @return {number}  交点までの距離
+     */
+    findRayDistance( ray, limit )
+    {
+        let distance = limit;
+
+        for ( let tree of this._tree_map.values() ) {
+            distance = tree.findRayDistance( ray, distance );
+        }
+
+        return distance;
+    }
+
 }
 
 
