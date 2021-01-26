@@ -448,6 +448,68 @@ class GeoMath {
 
 
     /**
+     * @summary 位置を変換 (アフィン変換)
+     *
+     * @desc
+     * <p>位置 pos を変換行列 mat により座標変換して dst に代入する。</p>
+     *
+     * <p>mat は pos が想定する座標系から、ある座標系へ位置ベクトルを変換するための
+     * 行列である。</p>
+     *
+     * @param mat {mapray.Matrix}   変換行列
+     * @param pos {mapray.Vector3}  位置
+     * @param dst {mapray.Vector3}  結果を代入するベクトル
+     *
+     * @return {mapray.Vector4}  dst
+     */
+    static
+    transformPosition_A( mat, pos, dst )
+    {
+        const m = mat;
+        const x = pos[0];
+        const y = pos[1];
+        const z = pos[2];
+
+        dst[0] = x*m[ 0] + y*m[ 4] + z*m[ 8] + m[12];
+        dst[1] = x*m[ 1] + y*m[ 5] + z*m[ 9] + m[13];
+        dst[2] = x*m[ 2] + y*m[ 6] + z*m[10] + m[14];
+
+        return dst;
+    }
+
+
+    /**
+     * @summary 方向を変換 (アフィン変換)
+     *
+     * @desc
+     * <p>方向 dir を変換行列 mat により座標変換して dst に代入する。</p>
+     *
+     * <p>mat は dir が想定する座標系から、ある座標系へ方向ベクトルを変換するための
+     * 行列である。</p>
+     *
+     * @param mat {mapray.Matrix}   変換行列
+     * @param dir {mapray.Vector3}  方向
+     * @param dst {mapray.Vector3}  結果を代入するベクトル
+     *
+     * @return {mapray.Vector4}  dst
+     */
+    static
+    transformDirection_A( mat, dir, dst )
+    {
+        const m = mat;
+        const x = dir[0];
+        const y = dir[1];
+        const z = dir[2];
+
+        dst[0] = x*m[ 0] + y*m[ 4] + z*m[ 8];
+        dst[1] = x*m[ 1] + y*m[ 5] + z*m[ 9];
+        dst[2] = x*m[ 2] + y*m[ 6] + z*m[10];
+
+        return dst;
+    }
+
+
+    /**
      * @summary 平面ベクトルを変換 (アフィン変換)
      * @desc
      * <p>mat には平面ベクトルを変換する行列を指定する。
