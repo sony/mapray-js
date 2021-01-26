@@ -454,7 +454,64 @@ class GeoMath {
 
 
     /**
+     * 位置を変換 (アフィン変換)
+     *
+     * 位置 pos を変換行列 mat により座標変換して dst に代入する。
+     *
+     * mat は pos が想定する座標系から、ある座標系へ位置ベクトルを変換するための行列である。
+     *
+     * @param mat   変換行列
+     * @param pos   位置
+     * @param dst   結果を代入するベクトル
+     *
+     * @return dst
+     */
+    static transformPosition_A( mat: Matrix, pos: Vector3, dst: Vector3 ): Vector3
+    {
+        const m = mat;
+        const x = pos[0];
+        const y = pos[1];
+        const z = pos[2];
+
+        dst[0] = x*m[ 0] + y*m[ 4] + z*m[ 8] + m[12];
+        dst[1] = x*m[ 1] + y*m[ 5] + z*m[ 9] + m[13];
+        dst[2] = x*m[ 2] + y*m[ 6] + z*m[10] + m[14];
+
+        return dst;
+    }
+
+
+    /**
+     * 方向を変換 (アフィン変換)
+     *
+     * 方向 dir を変換行列 mat により座標変換して dst に代入する。
+     *
+     * mat は dir が想定する座標系から、ある座標系へ方向ベクトルを変換するための行列である。
+     *
+     * @param mat   変換行列
+     * @param dir   方向
+     * @param dst   結果を代入するベクトル
+     *
+     * @return dst
+     */
+    static transformDirection_A( mat: Matrix, dir: Vector3, dst: Vector3 ): Vector3
+    {
+        const m = mat;
+        const x = dir[0];
+        const y = dir[1];
+        const z = dir[2];
+
+        dst[0] = x*m[ 0] + y*m[ 4] + z*m[ 8];
+        dst[1] = x*m[ 1] + y*m[ 5] + z*m[ 9];
+        dst[2] = x*m[ 2] + y*m[ 6] + z*m[10];
+
+        return dst;
+    }
+
+
+    /**
      * 平面ベクトルを変換 (アフィン変換)
+     *
      * mat には平面ベクトルを変換する行列を指定する。
      * 位置ベクトルを変換する行列が M なら、平面ベクトルを変換する行列は M<sup>-1</sup> を指定する。
      *
