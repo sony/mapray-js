@@ -633,7 +633,18 @@ class Viewer {
             return null;
         }
 
-        var distance = globe.root_flake.findRayDistance( ray, Number.MAX_VALUE );
+        var distance = Number.MAX_VALUE;
+
+        // B3dCollection
+        const b3d_info = this._b3d_collection.getRayIntersection( ray, distance );
+
+        if ( b3d_info !== null ) {
+            distance = b3d_info.distance;
+        }
+
+        // Globe
+        distance = globe.root_flake.findRayDistance( ray, distance );
+
         if ( distance === Number.MAX_VALUE ) {
             // 交点が見つからなかった
             return null;
