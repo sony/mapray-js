@@ -3,26 +3,11 @@
 #include "Tile/Analyzer.hpp"
 #include "Tile/DescDepth.hpp"
 #include "Tile/Clipper.hpp"
+#include "Tile/RaySolver.hpp"
 #include <cassert>
 
 
 namespace b3dtile {
-
-Tile::binary_copy_func_t*
-Tile::binary_copy_;
-
-Tile::clip_result_func_t*
-Tile::clip_result_;
-
-
-void
-Tile::setup_javascript_functions( binary_copy_func_t* binary_copy,
-                                  clip_result_func_t* clip_result )
-{
-    binary_copy_ = binary_copy;
-    clip_result_ = clip_result;
-}
-
 
 Tile::Tile( size_t size )
     : data_{ new byte_t[size] }
@@ -73,6 +58,18 @@ Tile::clip( float    x,
         // クリッピング結果を返す
         Clipper{ analyzer, clip_rect }.run();
     }
+}
+
+
+void
+Tile::find_ray_distance( const coords_t<double, DIM>& ray_pos,
+                         const coords_t<double, DIM>& ray_dir,
+                         double                         limit,
+                         const Rect<float, DIM>&        lrect ) const
+{
+    const Analyzer analyzer{ data_ };
+
+    RaySolver{ analyzer, ray_pos, ray_dir, limit, lrect }.run();
 }
 
 } // namespace b3dtile

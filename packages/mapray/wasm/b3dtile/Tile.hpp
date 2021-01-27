@@ -1,6 +1,8 @@
 ﻿#pragma once
 
+#include "Rect.hpp"
 #include "wasm_types.hpp"
+#include <array>
 #include <limits>
 #include <cstddef>  // for size_t
 
@@ -16,11 +18,21 @@ class Tile {
   public:
     using  byte_t = unsigned char;
 
+    template<typename EType, size_t Dim>
+    using coords_t = const std::array<EType, Dim>;
+
     class Base;
     class DescDepth;
     class Analyzer;
     class BCollector;
     class Clipper;
+    class TriNode;
+    class RaySolver;
+
+
+    /** @brief 空間の次元数
+     */
+    static constexpr int DIM = 3;
 
 
   public:
@@ -59,6 +71,22 @@ class Tile {
                                       const void*         data );
 
 
+    /** @brief find_ray_distance() の結果を受け取る関数の型
+     *
+     *  distance と find_ray_distance() の limit 引数が違う値のとき、レイとタイル
+     *  内の三角形が交差したことを表す。それ以外のときは交差がなかったことを表す。
+     *
+     *  交差がなかったときは、distance 以外のパラメータは意味を持たない。
+     *
+     *  @param distance  交差した位置の距離
+     *  @param id        交差した三角形のフィーチャー ID
+     *
+     *  @see setup_javascript_functions()
+     */
+    using ray_result_func_t = void ( wasm_f64_t distance,
+                                     wasm_i32_t       id );
+
+
   public:
     /** @brief JavaScript 関数の登録
      *
@@ -66,7 +94,13 @@ class Tile {
      */
     static void
     setup_javascript_functions( binary_copy_func_t* binary_copy,
-                                clip_result_func_t* clip_result );
+                                clip_result_func_t* clip_result,
+                                ray_result_func_t*   ray_result )
+    {
+        binary_copy_ = binary_copy;
+        clip_result_ = clip_result;
+        ray_result_  = ray_result;
+    }
 
 
     /** @brief 初期化
@@ -117,6 +151,19 @@ class Tile {
           float size ) const;
 
 
+    /** @brief タイル内の三角形とレイとの交点を探す
+     *
+     *  パラメータの座標系は ALCS を想定している。
+     *
+     *  結果は ray_result() を呼び出して返す。
+     */
+    void
+    find_ray_distance( const coords_t<double, DIM>& ray_pos,
+                       const coords_t<double, DIM>& ray_dir,
+                       double                       limit,
+                       const Rect<float, DIM>&      lrect ) const;
+
+
     Tile( const Tile& ) = delete;
     void operator=( const Tile& ) = delete;
 
@@ -124,8 +171,9 @@ class Tile {
   private:
     byte_t* const data_;  // タイルデータのバイト列
 
-    static binary_copy_func_t* binary_copy_;
-    static clip_result_func_t* clip_result_;
+    static inline binary_copy_func_t* binary_copy_;
+    static inline clip_result_func_t* clip_result_;
+    static inline ray_result_func_t*   ray_result_;
 
     // ES6 の Uint8Array との一致を確認
     static_assert( std::numeric_limits<byte_t>::digits == 8 );
