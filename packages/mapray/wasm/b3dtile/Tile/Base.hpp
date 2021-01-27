@@ -24,11 +24,6 @@ class Tile::Base {
     using uint32_t = std::uint32_t;
 
 
-    /** @brief 空間の次元数
-     */
-    static constexpr int DIM = 3;
-
-
     /** @brief 1 つの三角形の頂点数
      */
     static constexpr size_t NUM_TRI_CORNERS = 3;
