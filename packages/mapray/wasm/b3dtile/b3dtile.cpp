@@ -1,4 +1,5 @@
 ﻿#include "Tile.hpp"
+#include "Rect.hpp"
 #include "wasm_types.hpp"
 #include <emscripten/emscripten.h>  // for EMSCRIPTEN_KEEPALIVE
 #include <cstddef>  // for size_t
@@ -6,19 +7,22 @@
 
 using std::size_t;
 using b3dtile::Tile;
+using b3dtile::Rect;
 
 
 /** @brief b3dtile インスタンスを初期化
  *
  *  @param binary_copy  詳細は Tile.hpp を参照
  *  @param clip_result  詳細は Tile.hpp を参照
+ *  @param  ray_result  詳細は Tile.hpp を参照
  */
 extern "C" EMSCRIPTEN_KEEPALIVE
 void
 initialize( Tile::binary_copy_func_t* binary_copy,
-            Tile::clip_result_func_t* clip_result )
+            Tile::clip_result_func_t* clip_result,
+            Tile::ray_result_func_t*   ray_result )
 {
-    Tile::setup_javascript_functions( binary_copy, clip_result );
+    Tile::setup_javascript_functions( binary_copy, clip_result, ray_result );
 }
 
 
@@ -61,4 +65,28 @@ tile_clip( const Tile* tile,
            wasm_f32_t  size )
 {
     tile->clip( x, y, z, size );
+}
+
+
+extern "C" EMSCRIPTEN_KEEPALIVE
+void
+tile_find_ray_distance( const Tile*    tile,
+                        wasm_f64_t   ray_px,
+                        wasm_f64_t   ray_py,
+                        wasm_f64_t   ray_pz,
+                        wasm_f64_t   ray_dx,
+                        wasm_f64_t   ray_dy,
+                        wasm_f64_t   ray_dz,
+                        wasm_f64_t    limit,
+                        wasm_f32_t lrect_ox,
+                        wasm_f32_t lrect_oy,
+                        wasm_f32_t lrect_oz,
+                        wasm_f32_t lrect_size )
+{
+    const auto lrect = Rect<float, Tile::DIM>::create_cube( { lrect_ox, lrect_oy, lrect_oz }, lrect_size );
+
+    tile->find_ray_distance( { ray_px, ray_py, ray_pz },
+                             { ray_dx, ray_dy, ray_dz },
+                             limit,
+                             lrect );
 }

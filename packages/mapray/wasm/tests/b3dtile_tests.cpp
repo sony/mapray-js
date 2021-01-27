@@ -1,4 +1,5 @@
 ﻿#include "../b3dtile/Tile.hpp"
+#include "../b3dtile/Rect.hpp"
 #include <boost/test/unit_test.hpp>
 #include <filesystem>
 #include <fstream>
@@ -9,6 +10,7 @@
 namespace utf = boost::unit_test;
 namespace  fs = std::filesystem;
 using b3dtile::Tile;
+using b3dtile::Rect;
 
 
 struct Env {
@@ -16,7 +18,8 @@ struct Env {
     Env()
     {
         Tile::setup_javascript_functions( &binary_copy,
-                                          &clip_result );
+                                          &clip_result,
+                                          &ray_result );
     }
 
 
@@ -34,18 +37,19 @@ struct Env {
     clip_result( wasm_i32_t /*num_vertices*/,
                  wasm_i32_t /*num_triangles*/,
                  const void*         /*data*/ )
-    {
-    }
+    {}
 
 
-    static const void* src_begin;
-    static std::size_t src_size;
+    static void
+    ray_result( wasm_f64_t /*distance*/,
+                wasm_i32_t       /*id*/ )
+    {}
+
+
+    static inline const void* src_begin;
+    static inline std::size_t src_size;
 
 };
-
-
-const void* Env::src_begin;
-std::size_t Env::src_size;
 
 
 std::unique_ptr<Tile>
@@ -123,6 +127,17 @@ BOOST_AUTO_TEST_CASE( tile_descendant_depth )
 
     BOOST_CHECK( min_depth >= 0 );
     BOOST_CHECK( max_depth <= 100 );
+}
+
+
+
+BOOST_AUTO_TEST_CASE( tile_find_ray_distance )
+{
+    const auto tile = create_tile( "tile.bin" );
+
+    const auto rect = Rect<float, Tile::DIM>::create_cube( { 0, 0, 0 }, 1 );
+
+    tile->find_ray_distance( { 0, 0, 0 }, { 1, 1, 1 }, 100, rect );
 }
 
 
