@@ -10,7 +10,6 @@
 #include <algorithm>  // for min(), max(), copy(), transform()
 #include <utility>    // for move(), pair, make_pair()
 #include <iterator>   // for input_iterator_tag
-#include <limits>
 #include <cmath>      // for round()
 #include <cassert>
 #include <cstddef>    // for ptrdiff_t
@@ -199,51 +198,6 @@ class Tile::Clipper : Base {
 
     // 辞書: インデックス -> インデックス
     using index_map_t = IndexHashMap;
-
-
-    /** @brief 三角形 (頂点インデックス)
-     */
-    class Triangle {
-
-      public:
-        /** @brief 初期化
-         *
-         *  @param triangles  三角形配列 (頂点インデックス配列)
-         *  @param tid        三角形インデックス
-         */
-        template<typename VIndex>
-        Triangle( const VIndex* triangles,
-                  size_t              tid )
-        {
-            auto src = triangles + NUM_TRI_CORNERS * tid;
-
-            std::copy( src, src + NUM_TRI_CORNERS, corners_.begin() );
-        }
-
-
-        /** @brief 角 cid の頂点インデックスを取得
-         */
-        size_t
-        get_vertex_index( size_t cid ) const
-        {
-            return corners_[cid];
-        }
-
-
-        /** @brief 頂点インデックスの配列を参照
-         */
-        const auto&
-        ref_corners() const
-        {
-            return corners_;
-        }
-
-
-      private:
-        // 三角形の角 (頂点インデックス配列)
-        std::array<size_t, NUM_TRI_CORNERS> corners_;
-
-    };
 
 
     /** @brief 凸多角形 (重心座標)
