@@ -87,12 +87,58 @@ class Tile::Base {
 
     /** @brief ALCS から正規化 uint16 座標への変換係数
      */
-    static constexpr auto ALCS_TO_U16 = static_cast<real_t>( std::numeric_limits<p_elem_t>::max() );
+    template<typename Type = real_t>
+    static constexpr auto ALCS_TO_U16 = static_cast<Type>( std::numeric_limits<p_elem_t>::max() );
+
+
+    /** @brief 三角形 (頂点インデックス)
+     */
+    class Triangle {
+
+      public:
+        /** @brief 初期化
+         *
+         *  @param triangles  三角形配列 (頂点インデックス配列)
+         *  @param tid        三角形インデックス
+         */
+        template<typename VIndex>
+        Triangle( const VIndex* triangles,
+                  size_t              tid )
+        {
+            auto src = triangles + NUM_TRI_CORNERS * tid;
+
+            std::copy( src, src + NUM_TRI_CORNERS, corners_.begin() );
+        }
+
+
+        /** @brief 角 cid の頂点インデックスを取得
+         */
+        size_t
+        get_vertex_index( size_t cid ) const
+        {
+            return corners_[cid];
+        }
+
+
+        /** @brief 頂点インデックスの配列を参照
+         */
+        const auto&
+        ref_corners() const
+        {
+            return corners_;
+        }
+
+
+      private:
+        // 三角形の角 (頂点インデックス配列)
+        std::array<size_t, NUM_TRI_CORNERS> corners_;
+
+    };
 
 
     /** @brief 要素数からそのインデックス型のサイズを取得
      */
-    static size_t
+    static constexpr size_t
     get_index_size( size_t count )
     {
         return (count > INDEX_SIZE_BORDER) ? sizeof( uint32_t ) : sizeof( uint16_t );
@@ -155,7 +201,7 @@ class Tile::Base {
     /** @brief 子ノードの領域を取得
      */
     template<typename T>
-    static Rect<T, DIM>
+    static constexpr Rect<T, DIM>
     get_child_rect( const Rect<T, DIM>&          parent,
                     const std::array<int, DIM>& whiches )
     {
@@ -165,6 +211,27 @@ class Tile::Base {
             const T hsize = (parent.upper[i] - parent.lower[i]) / 2;
 
             rect.lower[i] = parent.lower[i] + static_cast<T>( whiches[i] ) * hsize;
+            rect.upper[i] = rect.lower[i] + hsize;
+        }
+
+        return rect;
+    }
+
+
+    /** @brief 子ノードの領域を取得
+     */
+    template<typename T>
+    static constexpr Rect<T, DIM>
+    get_child_rect( const Rect<T, DIM>& parent,
+                    size_t              cindex )
+    {
+        Rect<T, DIM> rect;
+
+        for ( size_t i = 0; i < DIM; ++i ) {
+            const T    hsize = (parent.upper[i] - parent.lower[i]) / 2;
+            const auto coord = static_cast<T>( (cindex >> i) & 1u );
+
+            rect.lower[i] = parent.lower[i] + coord * hsize;
             rect.upper[i] = rect.lower[i] + hsize;
         }
 
