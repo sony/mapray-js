@@ -1,5 +1,7 @@
 ﻿#include "../b3dtile/Tile.hpp"
 #include "../b3dtile/Rect.hpp"
+#include "../b3dtile/HashMap.hpp"
+#include "../b3dtile/HashSet.hpp"
 #include <boost/test/unit_test.hpp>
 #include <filesystem>
 #include <fstream>
@@ -138,6 +140,30 @@ BOOST_AUTO_TEST_CASE( tile_find_ray_distance )
     const auto rect = Rect<float, Tile::DIM>::create_cube( { 0, 0, 0 }, 1 );
 
     tile->find_ray_distance( { 0, 0, 0 }, { 1, 1, 1 }, 100, rect );
+}
+
+
+BOOST_AUTO_TEST_CASE( hash_map )
+{
+    using b3dtile::HashMap;
+
+    HashMap<int> hash_map;
+
+    for ( size_t i = 0; i < 1000; ++i ) {
+        hash_map.insert( i, static_cast<int>( i + 1 ) );
+    }
+}
+
+
+BOOST_AUTO_TEST_CASE( hash_set )
+{
+    using b3dtile::HashSet;
+
+    HashSet hash_set;
+
+    for ( size_t i = 1000; i < 2000; ++i ) {
+        hash_set.insert( i );
+    }
 }
 
 
