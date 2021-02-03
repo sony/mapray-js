@@ -2,8 +2,8 @@
 
 #include "Base.hpp"
 #include "Analyzer.hpp"
+#include "../HashSet.hpp"
 #include <vector>
-#include <algorithm>  // for sort(), unique()
 #include <cassert>
 
 
@@ -60,7 +60,6 @@ class Tile::BCollector : Base {
 
             // トラバース
             traverse_branch( adata_.root_node, TILE_RECT );
-            reduce_collected_tblocks();
 
             // 本来のブロックを使う
             num_tblocks  = adata_.num_tblocks;
@@ -217,7 +216,10 @@ class Tile::BCollector : Base {
         const auto   end = begin + num_blocks;
 
         for ( auto it = begin; it != end; ++it ) {
-            collected_tblocks.push_back( *it );
+            const size_t bindex = *it;
+            if ( bindex_set_.insert( bindex ) ) {
+                collected_tblocks.push_back( bindex );
+            }
         }
 
         return bindices_data + get_aligned<4>( sizeof( BiType ) * num_blocks );
@@ -241,24 +243,12 @@ class Tile::BCollector : Base {
     }
 
 
-    /** @brief collected_tblocks の重複を削減
-     */
-    void
-    reduce_collected_tblocks()
-    {
-        auto& seq = collected_tblocks;
-
-        std::sort( seq.begin(), seq.end() );
-
-        const auto last = std::unique( seq.begin(), seq.end() );
-
-        seq.erase( last, seq.end() );
-    }
-
-
   private:
     const Analyzer&  adata_;
     const rect_t clip_rect_;
+
+    // 三角形ブロックの重複を除去するための一時情報
+    HashSet bindex_set_;
 
     // 仮想 1 ブロック用ダミー
     union {
