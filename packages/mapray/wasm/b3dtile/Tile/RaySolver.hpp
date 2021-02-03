@@ -5,7 +5,7 @@
 #include "Base.hpp"
 #include "../Rect.hpp"
 #include "../Vector.hpp"
-#include <unordered_set>
+#include "../HashSet.hpp"
 #include <vector>
 #include <array>
 #include <algorithm>  // for sort()
@@ -469,7 +469,7 @@ class Tile::RaySolver : Base {
     size_t
     check_and_register_tblock_index( size_t index )
     {
-        if ( tblock_manager_.insert( index ).second ) {
+        if ( tblock_manager_.insert( index ) ) {
             return index;
         }
         else {
@@ -489,7 +489,7 @@ class Tile::RaySolver : Base {
     ray_elem_t lrect_lower_dist_;
     ray_elem_t lrect_upper_dist_;
 
-    std::unordered_set<size_t> tblock_manager_;
+    HashSet tblock_manager_;
 
 };
 

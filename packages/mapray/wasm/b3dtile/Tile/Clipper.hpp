@@ -3,16 +3,14 @@
 #include "BCollector.hpp"
 #include "Analyzer.hpp"
 #include "Base.hpp"
+#include "../HashMap.hpp"
 #include "../Vector.hpp"
-#include <unordered_map>
 #include <vector>
 #include <array>
-#include <algorithm>  // for min(), max(), copy(), transform()
-#include <utility>    // for move(), pair, make_pair()
-#include <iterator>   // for input_iterator_tag
+#include <algorithm>  // for min(), max(), transform()
+#include <utility>    // for move()
 #include <cmath>      // for round()
 #include <cassert>
-#include <cstddef>    // for ptrdiff_t
 
 
 namespace b3dtile {
@@ -21,147 +19,7 @@ namespace b3dtile {
  */
 class Tile::Clipper : Base {
 
-    /** @brief 頂点索引辞書 (配列)
-     */
-    class IndexTableMap {
-
-        static constexpr auto NOENTRY = static_cast<size_t>( -1 );
-
-      public:
-        /** @brief 入力イテレータ
-         *
-         *  仕様は LegacyInputIterator 要件を満たす。
-         *
-         *  @see https://ja.cppreference.com/w/cpp/named_req/InputIterator
-         */
-        class iterator {
-
-          public:
-            // std::iterator_traits 用の型定義
-            using value_type        = std::pair<size_t, size_t>;
-            using difference_type   = std::ptrdiff_t;
-            using reference         = value_type;  // 入力イテレータなので参照である必要はない
-            using pointer           = const value_type*;
-            using iterator_category = std::input_iterator_tag;
-
-          public:
-            bool
-            operator==( const iterator& rhs ) const
-            {
-                return this->old_index_ == rhs.old_index_;
-            }
-
-            bool
-            operator!=( const iterator& rhs ) const
-            {
-                return !(*this == rhs);
-            }
-
-            reference
-            operator*() const
-            {
-                const auto&      dict = *container_;
-                const auto& new_index = dict[old_index_];
-                return std::make_pair( old_index_, new_index );
-            }
-
-            // pointer
-            // operator->() const
-            // {
-            // }
-
-            iterator&
-            operator++()
-            {
-                const auto& dict = *container_;
-                for ( ++old_index_; old_index_ < dict.size(); ++old_index_ ) {
-                    if ( dict[old_index_] != NOENTRY ) {
-                        break;
-                    }
-                }
-                return *this;
-            }
-
-            iterator
-            operator++( int )
-            {
-                const iterator temp = *this;
-                ++(*this);
-                return temp;
-            }
-
-          private:
-            iterator( const std::vector<size_t>* container,
-                      size_t                     old_index ) :
-                container_{ container },
-                old_index_{ old_index } {}
-
-          private:
-            const std::vector<size_t>* container_;
-            size_t                     old_index_;
-
-        friend IndexTableMap;
-        };
-
-      public:
-        explicit
-        IndexTableMap( size_t max_vertices ) :
-            dict_( max_vertices, NOENTRY ),
-            num_vertices_{ 0 }
-        {}
-
-        /** @brief 頂点数を取得
-         */
-        size_t
-        num_vertices() const
-        {
-            return num_vertices_;
-        }
-
-        /** @brief 旧頂点索引を新頂点索引に変換
-         */
-        size_t
-        new_index( size_t old_index )
-        {
-            auto index = dict_[old_index];
-
-            if ( index == NOENTRY ) {
-                index = num_vertices_;
-                dict_[old_index] = index;
-                ++num_vertices_;
-            }
-
-            return index;
-        }
-
-        iterator
-        begin() const
-        {
-            size_t old_index;
-
-            for ( old_index = 0; old_index < dict_.size(); ++old_index ) {
-                if ( dict_[old_index] != NOENTRY ) {
-                    break;
-                }
-            }
-
-            return iterator{ &dict_, old_index };
-        }
-
-        iterator
-        end() const
-        {
-            return iterator{ &dict_, dict_.size() };
-        }
-
-      private:
-        std::vector<size_t> dict_;
-        size_t      num_vertices_;
-
-    };
-
-
-    /** @brief 頂点索引辞書 (ハッシュ)
+    /** @brief 頂点索引辞書
      */
     class IndexHashMap {
 
@@ -174,7 +32,8 @@ class Tile::Clipper : Base {
         size_t
         num_vertices() const
         {
-            return dict_.size();
+            assert( old_to_new_.size() == new_to_old_.size() );
+            return old_to_new_.size();
         }
 
         /** @brief 旧頂点索引を新頂点索引に変換
@@ -182,22 +41,36 @@ class Tile::Clipper : Base {
         size_t
         new_index( size_t old_index )
         {
-            const auto it = dict_.emplace( old_index, dict_.size() ).first;
-            return it->second;
+            const size_t new_index_candidate = num_vertices();
+
+            const auto& result = old_to_new_.insert( old_index, new_index_candidate );
+
+            const size_t new_index_actual = result.first;
+
+            if ( result.second ) {
+                // 新しい頂点が追加された
+                assert( new_index_actual == new_index_candidate );
+                assert( new_index_actual == new_to_old_.size() );
+                new_to_old_.push_back( old_index );
+            }
+
+            return new_index_actual;
         }
 
-        auto begin() const { return dict_.begin(); }
-
-        auto end() const { return dict_.end(); }
+        /** @brief 新頂点索引を旧頂点索引に変換
+         */
+        size_t
+        old_index( size_t new_index ) const
+        {
+            assert( new_index < new_to_old_.size() );
+            return new_to_old_[new_index];
+        }
 
       private:
-        std::unordered_map<size_t, size_t> dict_;
+        HashMap<size_t>     old_to_new_;
+        std::vector<size_t> new_to_old_;
 
     };
-
-
-    // 辞書: インデックス -> インデックス
-    using index_map_t = IndexHashMap;
 
 
     /** @brief 凸多角形 (重心座標)
@@ -531,9 +404,10 @@ class Tile::Clipper : Base {
         void
         set_vertices_A()
         {
-            for ( const auto& item : clipper_.index_map_A_ ) {
-                const auto& old_index = item.first;
-                const auto& new_index = item.second;
+            const auto& map = clipper_.index_map_A_;
+
+            for ( size_t new_index = 0; new_index < map.num_vertices(); ++new_index ) {
+                const size_t old_index = map.old_index( new_index );
 
                 // POSITIONS
                 copy_vertex_to_buffer<DIM>( adata_.positions,
@@ -972,7 +846,7 @@ class Tile::Clipper : Base {
     rect_t clip_rect_;
 
     // クリッピングなし部分の情報
-    index_map_t           index_map_A_;  // 旧頂点索引 -> 新頂点索引
+    IndexHashMap          index_map_A_;  // 旧頂点索引 <-> 新頂点索引
     std::vector<size_t> tri_indices_A_;  // 新頂点索引による三角形リスト
 
     // クリッピングあり部分の情報
