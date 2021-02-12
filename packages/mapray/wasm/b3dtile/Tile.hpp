@@ -79,12 +79,14 @@ class Tile {
      *  交差がなかったときは、distance 以外のパラメータは意味を持たない。
      *
      *  @param distance  交差した位置の距離
-     *  @param id        交差した三角形のフィーチャー ID
+     *  @param id_0      交差した三角形の feature ID (下位 32 ビット)
+     *  @param id_1      交差した三角形の feature ID (上位 32 ビット)
      *
      *  @see setup_javascript_functions()
      */
     using ray_result_func_t = void ( wasm_f64_t distance,
-                                     wasm_i32_t       id );
+                                     wasm_f64_t     id_0,
+                                     wasm_f64_t     id_1 );
 
 
   public:
