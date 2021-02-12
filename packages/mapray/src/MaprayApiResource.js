@@ -171,3 +171,42 @@ export class PointCloudDatasetResource extends Resource {
         return new ApiUrlResource( this._api, sub_url );
     }
 }
+
+
+/**
+ * Mapray Cloudに登録されたB3D Datasetを表現するリソース。
+ */
+export class B3dDatasetResource extends Resource {
+
+    /**
+     * @param {MaprayApi} api
+     * @param {string} datasetId データセットのid
+     */
+    constructor( api, datasetId ) {
+        super();
+        this._api = api;
+        this._datasetId = datasetId;
+    }
+
+    /**
+     * @return {Promise<object>} 点群定義(json)
+     */
+    async load() {
+        return await this._api.getB3dDataset( this._datasetId );
+    }
+
+    /**
+     * @protected
+     */
+    resolveResourceSupported() {
+      return true;
+    }
+
+    /**
+     * @param {string} sub_url 街データが公開されているURLへアクセスするためのResource。
+     * @return {Resource} 街データファイルリソース
+     */
+    resolveResource( sub_url ) {
+        return new ApiUrlResource( this._api, sub_url );
+    }
+}

@@ -1,6 +1,6 @@
 import HTTP, { FetchError } from "./HTTP";
-import { Dataset, Dataset3D, PointCloudDataset } from "./MaprayApiModel";
-import { DatasetResource, Dataset3DSceneResource, PointCloudDatasetResource,  }  from "./MaprayApiResource";
+import { Dataset, Dataset3D, PointCloudDataset, B3dDataset } from "./MaprayApiModel";
+import { DatasetResource, Dataset3DSceneResource, PointCloudDatasetResource, B3dDatasetResource  }  from "./MaprayApiResource";
 
 
 
@@ -146,6 +146,27 @@ class MaprayApi extends HTTP {
         return PointCloudDataset.createFromJson( this, dataset_json );
     }
 
+    /**
+     * @summary 街データセットのリストを取得します。
+     * ページごとにデータセットリストを取得します。
+     * @param {number} [page=1] 取得する要素のページ番号
+     * @param {number} [limit=5] 1ページに含まれる要素数。最大100まで指定することができます。
+     * @return {B3dDataset[]}
+     */
+    async loadB3dDatasets( page=1, limit=5 ) {
+        const datasets_json = await this.getB3dDatasets( page, limit );
+        return datasets_json.map( dataset_json => B3dDataset.createFromJson( this, dataset_json ) );
+    }
+
+    /**
+     * @summary 指定したIDの街データセットを取得します。
+     * @param {string} datasetId データセットID
+     * @return {B3dDataset}
+     */
+    async loadB3dDataset( datasetId ) {
+        const dataset_json = await this.getB3dDataset( datasetId );
+        return B3dDataset.createFromJson( this, dataset_json );
+    }
 
     // Resources
 
@@ -174,6 +195,15 @@ class MaprayApi extends HTTP {
      */
     getPointCloudDatasetAsResource( datasetId ) {
         return new PointCloudDatasetResource( this, datasetId );
+    }
+
+    /**
+     * @summary 指定したIDの街データセットの定義ファイルをリソースとして取得します。
+     * @param {string} datasetId データセットID
+     * @return {Resource}
+     */
+    getB3dDatasetAsResource( datasetId ) {
+        return new B3dDatasetResource( this, datasetId );
     }
 
 
@@ -398,6 +428,27 @@ class MaprayApi extends HTTP {
     async getPointCloudDataset( datasetId ) {
         const opt = this._option;
         return await this.get( "pcdatasets", [ opt.userId, datasetId ] )
+    }
+
+    /**
+     * @summary 街データセットリストを取得します。
+     * @param {number} [page=1] 取得する要素のページ番号
+     * @param {number} [limit=5] 1ページに含まれる要素数。最大100まで指定することができます。
+     * @return {object} json
+     */
+    async getB3dDatasets( page=1, limit=5 ) {
+        const opt = this._option;
+        return await this.get( "b3ddatasets", [ opt.userId ], { page, limit } );
+    }
+
+    /**
+     * @summary 街データセットを取得します。
+     * @param {string} datasetId データセットId
+     * @return {object} json
+     */
+    async getB3dDataset( datasetId ) {
+        const opt = this._option;
+        return await this.get( "b3ddatasets", [ opt.userId, datasetId ] )
     }
 
     /**

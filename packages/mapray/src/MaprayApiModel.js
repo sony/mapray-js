@@ -293,3 +293,80 @@ export class PointCloudDataset extends AbstractDataset {
         return dataset;
     }
 }
+
+
+/**
+ * @summary 街データセットを表現するクラス
+ */
+export class B3dDataset extends AbstractDataset {
+
+    /**
+     * @param {MaprayApi} api
+     */
+    constructor( api ) {
+        super( api );
+    }
+
+    /**
+     * @summary 街データファイルが公開されているURLを取得
+     */
+    getUrl() {
+        return this._url;
+    }
+
+    /**
+     * @summary 街データのバウンディングボックスを取得
+     */
+    getBoundingBox() {
+        return this._bounding_box;
+    }
+
+    /**
+     * @summary フォーマット
+     * @return number
+     */
+    getFormat() {
+        return this._format;
+    }
+
+    /**
+     * @summary タイルの分割レベル
+     * @return number
+     */
+    getRho() {
+        return this._rho;
+    }
+
+    /**
+     * @summary transform
+     * @return number[]
+     */
+    getTransform() {
+        return this._transform;
+    }
+
+    /**
+     * @private
+     * @param {json} サーバから返却されたjson
+     */
+    _restoreFromJson( json ) {
+        super._restoreFromJson( json );
+        this._url = json.url;
+        // this._bounding_box = json.bbox;
+        this._format = json.format;
+        this._rho = json.rho;
+        this._transform = json.transform;
+    }
+
+    /**
+     * @private
+     * @param {MaprayApi} api
+     * @param {json} サーバから返却されたjson
+     * @return {B3dDataset}
+     */
+    static createFromJson( api, json ) {
+        const dataset = new B3dDataset( api );
+        dataset._restoreFromJson( json );
+        return dataset;
+    }
+}
