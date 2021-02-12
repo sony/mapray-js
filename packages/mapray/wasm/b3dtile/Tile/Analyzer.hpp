@@ -16,18 +16,21 @@ class Tile::Analyzer : Base {
     // バイナリフォーマットの情報
     static constexpr uint32_t FLAG_N_ARRAY  = (1u << 0);
     static constexpr uint32_t FLAG_C_ARRAY  = (1u << 1);
+    static constexpr uint32_t FID_DATA      = (1u << 7);
     static constexpr uint32_t FLAG_TRI_TREE = (1u << 8);
 
 
   public:
     // 要素数
-    size_t  num_vertices;
-    size_t num_triangles;
-    size_t   num_tblocks;
+    size_t    num_vertices;
+    size_t   num_triangles;
+    size_t num_fid_entries;
+    size_t     num_tblocks;
 
     // インデックス型のバイト数
     size_t vindex_size;
     size_t tindex_size;
+    size_t findex_size;
     size_t bindex_size;
 
     // 要素配列
@@ -35,6 +38,10 @@ class Tile::Analyzer : Base {
     const void*     triangles;  // vindex_t[]
     const n_elem_t*   n_array;  // optional
     const c_elem_t*   c_array;  // optional
+
+    // feature ID (optional)
+    const uint32_t* fid_palette;  // (num_fid_entries > 0) ⇔ fid_palette ⇔ fid_indices
+    const void*     fid_indices;  // findex_t[]
 
     // 三角形ツリー (optional)
     const void* tblock_table;  // tindex_t[]
@@ -47,13 +54,17 @@ class Tile::Analyzer : Base {
      *  @param data  タイルのバイナリーデータ
     */
     explicit
-    Analyzer( const byte_t* data )
-        : num_tblocks{ 0 },
-          bindex_size{ 0 },
-          n_array{ nullptr },
-          c_array{ nullptr},
-          tblock_table{ nullptr },
-          root_node{ nullptr }
+    Analyzer( const byte_t* data ) :
+        num_fid_entries{ 0 },
+        num_tblocks{ 0 },
+        findex_size{ 0 },
+        bindex_size{ 0 },
+        n_array{ nullptr },
+        c_array{ nullptr},
+        fid_palette{ nullptr },
+        fid_indices{ nullptr },
+        tblock_table{ nullptr },
+        root_node{ nullptr }
     {
         const auto tree_size = ref_value<uint16_t>( data, OFFSET_DESCENDANTS );
         const byte_t* cursor = data + OFFSET_DESCENDANTS + WORD_SIZE * tree_size;
@@ -87,6 +98,20 @@ class Tile::Analyzer : Base {
         if ( contents & FLAG_C_ARRAY ) {
             c_array = get_pointer<c_elem_t>( data, offset );
             offset += get_aligned<4>( NUM_COLOR_COMPOS * sizeof( c_elem_t ) * num_vertices );
+        }
+
+        // feature ID データ
+        if ( contents & FID_DATA ) {
+            num_fid_entries = ref_value<uint32_t>( data, offset );
+            offset += sizeof( uint32_t );
+
+            findex_size = get_index_size( num_fid_entries );
+
+            fid_palette = get_pointer<uint32_t>( data, offset );
+            offset += 2 * sizeof( uint32_t ) * num_fid_entries;
+
+            fid_indices = get_pointer<void>( data, offset );
+            offset += get_aligned<4>( findex_size * num_triangles );
         }
 
         // 三角形ツリー

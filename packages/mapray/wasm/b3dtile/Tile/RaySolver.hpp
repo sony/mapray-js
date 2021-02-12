@@ -11,6 +11,7 @@
 #include <algorithm>  // for sort()
 #include <limits>
 #include <cmath>      // for min(), max()
+#include <cassert>
 
 
 namespace b3dtile {
@@ -19,14 +20,21 @@ namespace b3dtile {
  */
 class Tile::RaySolver : Base {
 
-    using ray_elem_t = double;
-    using  ray_vec_t = Vector<ray_elem_t, DIM>;
+    using   ray_elem_t = double;
+    using    ray_vec_t = Vector<ray_elem_t, DIM>;
+    using feature_id_t = std::array<uint32_t, 2>;
+
 
     /** @brief インデックスが登録済みのときの戻り値
      *
      *  @see check_and_register_tblock_index()
      */
     static constexpr auto ALREADY_REGISTERED_TBLOCK_INDEX = static_cast<size_t>( -1 );
+
+
+    /** @brief 割り当てなしを表すの feature ID
+     */
+    static constexpr feature_id_t UNASSIGNED_FEATURE_ID = { 0, 0 };
 
 
   public:
@@ -45,7 +53,8 @@ class Tile::RaySolver : Base {
           limit_{ limit },
           lrect_{ lrect },
           lrect_lower_dist_{ std::numeric_limits<ray_elem_t>::lowest() },
-          lrect_upper_dist_{ std::numeric_limits<ray_elem_t>::max()    }
+          lrect_upper_dist_{ std::numeric_limits<ray_elem_t>::max()    },
+          crossed_triangle_{ 0 }
     {
         setup_lrect_distance_bounds( ray_pos, ray_dir, lrect );
     }
@@ -72,8 +81,14 @@ class Tile::RaySolver : Base {
             distance = find_ray_distance_for_notree();
         }
 
+        const auto feature_id = (adata_.findex_size == sizeof( uint16_t )) ?
+                                get_feature_id<uint16_t>() :
+                                get_feature_id<uint32_t>();
+
+        // 結果を JavaScript 側に通知
         ray_result_( static_cast<wasm_f64_t>( distance ),
-                     static_cast<wasm_i32_t>( 0 ) );
+                     static_cast<wasm_f64_t>( feature_id[0] ),
+                     static_cast<wasm_f64_t>( feature_id[1] ) );
     }
 
 
@@ -117,9 +132,11 @@ class Tile::RaySolver : Base {
 
 
     /** @brief タイル全体の三角形から探す
+     *
+     *  交差した三角形を見つけたときは crossed_triangle_ に設定する。
      */
     ray_elem_t
-    find_ray_distance_for_notree() const
+    find_ray_distance_for_notree()
     {
         const size_t b_tid = 0;
         const size_t e_tid = adata_.num_triangles;
@@ -135,6 +152,8 @@ class Tile::RaySolver : Base {
     /** @brief 枝ノードの処理
      *
      *  @tparam BiType  三角形ブロックインデックスの型
+     *
+     *  交差した三角形を見つけたときは crossed_triangle_ に設定する。
      */
     template<typename BiType>
     ray_elem_t
@@ -220,7 +239,7 @@ class Tile::RaySolver : Base {
     template<typename ViType,
              typename TiType>
     ray_elem_t
-    find_ray_distance_for_tblocks( const std::vector<size_t>& tblock_indices ) const
+    find_ray_distance_for_tblocks( const std::vector<size_t>& tblock_indices )
     {
         ray_elem_t min_limit = limit_;
 
@@ -251,7 +270,7 @@ class Tile::RaySolver : Base {
     ray_elem_t
     find_ray_distance_for_triangles( size_t begin_tid,
                                      size_t   end_tid,
-                                     ray_elem_t limit ) const
+                                     ray_elem_t limit )
     {
         auto ldist = limit;
 
@@ -313,6 +332,9 @@ class Tile::RaySolver : Base {
 
             // これまでで一番近い交差になったので、最短距離を更新
             ldist = t;
+
+            // 交差した三角形を更新
+            crossed_triangle_ = tid;
         }
 
         return ldist;
@@ -478,6 +500,34 @@ class Tile::RaySolver : Base {
     }
 
 
+    /** @brief feature ID を取得
+     *
+     *  crossed_triangle_ に対する feature ID を取得する。
+     *
+     *  交差がなかったとき、返される値は意味を持たない。
+     */
+    template<typename FiType>
+    feature_id_t
+    get_feature_id() const
+    {
+        auto feature_id = UNASSIGNED_FEATURE_ID;
+
+        if ( (adata_.num_fid_entries > 0) && (adata_.num_triangles > 0) ) {
+            // サイズが 1 以上の fid_palette と fid_indices が存在
+            assert( crossed_triangle_ < adata_.num_triangles );
+
+            const auto fid_indices = static_cast<const FiType*>( adata_.fid_indices );
+            const auto&  fid_index = fid_indices[crossed_triangle_];
+
+            for ( size_t i = 0; i < feature_id.size(); ++i ) {
+                feature_id[i] = adata_.fid_palette[feature_id.size() * fid_index + i];
+            }
+        }
+
+        return feature_id;
+    }
+
+
   private:
     const Analyzer&   adata_;
     const ray_vec_t ray_pos_;  // レイの始点 (ALCS_TO_U16)
@@ -488,6 +538,8 @@ class Tile::RaySolver : Base {
     // lrect_ がレイ (無限直線) と交差する距離範囲
     ray_elem_t lrect_lower_dist_;
     ray_elem_t lrect_upper_dist_;
+
+    size_t crossed_triangle_;  // 最も近い位置で交差する三角形のインデックス
 
     HashSet tblock_manager_;
 
