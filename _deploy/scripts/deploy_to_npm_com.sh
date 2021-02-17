@@ -61,6 +61,11 @@ if [ ${_DEV_FLAG} = 1 ]; then
   sed -i -e "s/@mapray\/${_NAME}/@mapray\/${_NAME}-dev/g" ${PACKAGE_ROOT}/package.json
   sed -i -e 's/\"version\": \"'${_CURRENT_VERSION}'\"/\"version\": \"'${_VERSION}'\"/g' ${PACKAGE_ROOT}/package.json
 
+  # replace dependency in ui
+  if [ ${_TARGET} = "ui" ]; then
+    sed -i -e "s/\"@mapray\/mapray-js\": \"^${_CURRENT_VERSION}\"/\"@mapray\/mapray-js-dev\": \"${_VERSION}\"/g" ${PACKAGE_ROOT}/package.json
+  fi
+
   cat ${PACKAGE_ROOT}/package.json
 fi
 
