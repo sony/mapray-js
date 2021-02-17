@@ -229,7 +229,7 @@ class AbstractRenderStage {
         // 描画地表断片数を記録
         var stats = this._debug_stats;
         if ( stats !== null ) {
-            stats.num_drawing_flakes = flake_list.length;
+            stats.num_drawing_flakes = this._flake_list.length;
         }
 
         // フレーム終了処理
