@@ -12,7 +12,7 @@ weight: 1001
 # QuickStart
 
 このドキュメントでは最小構成の地図アプリケーションを作成する例をご説明します。
-mapray cloud のアカウト登録はすでに完了している前提で記載しています。アカウント登録に関しては[アカウント](/documents/overview/Account/)を参照してください。
+mapray cloud のアカウト登録はすでに完了している前提で記載しています。アカウント登録に関しては[アカウント](/documents/overview/account/)を参照してください。
 
 ## 1. maprayJS本体の取得
 maprayJSは、JavaScriptファイルを`<script>`で直接読み込む方式(以下CDN方式)と、npmパッケージでモジュールとして読み込む方式（以下モジュール方式）のどちらかで読み込みます。
@@ -143,17 +143,16 @@ Access Tokenを書き換えたファイルを任意の名前で保存し、ブ�
 以下のアプリケーションは簡単に動作させることができます。
 各サンプルのReadMeをご覧ください。
 
-- [Fall](/apps/fall): 富士山に向かって滑らかなカメラアニメーションを行うアプリケーションです。
-- [nextRambler](/apps/next): キーボードとマウスで自由にカメラを操作することができるアプリケーションです([DEMO](https://mapray.com/nextRambler.html))。
+- [Fall](https://github.com/sony/mapray-js/tree/master/apps/fall): 富士山に向かって滑らかなカメラアニメーションを行うアプリケーションです。
+- [nextRambler](https://github.com/sony/mapray-js/tree/master/apps/next_esm): キーボードとマウスで自由にカメラを操作することができるアプリケーションです。
 
 ## 5. Example
-[Example](/examples/)以下がサンプル集になります。同様のサンプルを[Webサイト](https://mapray.com/documents/examples/index.html)でご覧になれます。
-
+[Example](https://github.com/sony/mapray-js/tree/master/examples) 以下がサンプル集になります。同様のサンプルを[Webサイト](https://mapray.com/documents/examples/index.html) でもご覧になれます。
 ## What's next?
-- [mapray cloudへ接続する例(2D)](/documents/overview/connectmapraycloud-2D/)
-- [mapray cloudへ接続する例(3D)](/documents/overview/connectmapraycloud-3D/)
-- [mapray cloudへ接続する例(点群)](/documents/overview/connectmapraycloud-PC/)
+- [mapray cloudへ接続する例(2D)](/documents/overview/connectmapraycloud-2d/)
+- [mapray cloudへ接続する例(3D)](/documents/overview/connectmapraycloud-3d/)
+- [mapray cloudへ接続する例(点群)](/documents/overview/connectmapraycloud-pc/)
 - [maprayJSの機能開発例](/documents/tutorials/)
 
 
-※ プログラムやデータに関するライセンスについては[こちら](/documents/overview/Licence)をご確認ください。
+※ プログラムやデータに関するライセンスについては[こちら](/documents/overview/licence)をご確認ください。
