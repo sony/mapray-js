@@ -123,7 +123,7 @@ class URLResource extends Resource {
 
     /**
      * @summary リソースのurl
-     * @type {string} リソースのurl
+     * @type {string}
      */
     get url() {
         return this._url;
