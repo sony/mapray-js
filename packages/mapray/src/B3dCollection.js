@@ -154,24 +154,49 @@ class B3dCollection {
      * @summary すべての B3D シーンとレイとの交点を探す
      *
      * @desc
-     * this 全体の三角形と線分 (ray.position を始点とし、そこから ray.direction
-     * 方向に limit 距離未満にある点) との交点の中で、始点から最も近い交点までの
-     * 距離を返す。ただし線分と交差する三角形が見つからないときは limit を返す。
+     * <p>線分 (ray.position を始点とし、そこから ray.direction 方向に limit 距離
+     * 未満にある点) と this 全体の三角形との交点の中で、始点から最も近い交点の情
+     * 報を返す。ただし線分と交差する三角形が見つからないときは null を返す。</p>
+     *
+     * <p>戻り値のオブジェクト形式は次のようになる。ここで uint32 は 0 から
+     *    2^32 - 1 の整数値である。</p>
+     *
+     * <pre>
+     * {
+     *     provider:   B3dProvider,
+     *     distance:   number,
+     *     feature_id: [uint32, uint32]
+     * }
+     * </pre>
+     *
+     * <p>戻り値のオブジェクトと、そこから参照できるオブジェクトは変更しても問
+     *    題ない。</p>
      *
      * @param {mapray.Ray} ray  半直線を表すレイ (GOCS)
-     * @param {number}   limit  制限距離
+     * @param {number}   limit  制限距離 (ray.direction の長さを単位)
      *
-     * @return {number}  交点までの距離
+     * @return {?object}  交点の情報
      */
-    findRayDistance( ray, limit )
+    getRayIntersection( ray, limit )
     {
         let distance = limit;
+        let   result = null;
 
-        for ( let tree of this._tree_map.values() ) {
-            distance = tree.findRayDistance( ray, distance );
+        for ( let [provider, tree] of this._tree_map ) {
+
+            const info = tree.getRayIntersection( ray, distance );
+            if ( info === null ) continue;
+
+            // provider の tree が交差した
+            distance = info.distance;
+            result   = {
+                provider,
+                distance,
+                feature_id: info.feature_id  // 複製の必要はない
+            };
         }
 
-        return distance;
+        return result;
     }
 
 }

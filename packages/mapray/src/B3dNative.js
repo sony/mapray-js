@@ -39,10 +39,10 @@ class B3dNative {
         }, "viii" );
 
         // 関数登録: Tile.hpp の ray_result_func_t を参照
-        const ray_result = em_module.addFunction( (distance, id) => {
-            this._ray_result.call( null, distance, id );
+        const ray_result = em_module.addFunction( (distance, id_0, id_1) => {
+            this._ray_result.call( null, distance, id_0, id_1 );
             this._ray_result = null;
-        }, "vdi" );
+        }, "vddd" );
 
         // b3dtile インスタンスを初期化
         em_module._initialize( binary_copy, clip_result, ray_result );
@@ -116,7 +116,7 @@ class B3dNative {
      */
     findRayDistance( handle,
                      // [[[
-                     // B3dBinary#findRayDistance() と同じ引数
+                     // B3dBinary#getRayIntersection() と同じ引数
                      ray, limit, rect_origin, rect_size,
                      // ]]]
                      fn_result )

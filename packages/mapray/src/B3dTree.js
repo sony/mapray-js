@@ -142,29 +142,43 @@ class B3dTree {
      * @summary B3D シーンとレイとの交点を探す
      *
      * @desc
-     * this 全体の三角形と線分 (ray.position を始点とし、そこから ray.direction
-     * 方向に limit 距離未満にある点) との交点の中で、始点から最も近い交点までの
-     * 距離を返す。ただし線分と交差する三角形が見つからないときは limit を返す。
+     * <p>線分 (ray.position を始点とし、そこから ray.direction 方向に limit 距離
+     * 未満にある点) と this 全体の三角形との交点の中で、始点から最も近い交点の情
+     * 報を返す。ただし線分と交差する三角形が見つからないときは null を返す。</p>
+     *
+     * <p>戻り値のオブジェクト形式は次のようになる。ここで uint32 は 0 から
+     *    2^32 - 1 の整数値である。</p>
+     *
+     * <pre>
+     * {
+     *     distance:   number,
+     *     feature_id: [uint32, uint32]
+     * }
+     * </pre>
+     *
+     * <p>戻り値のオブジェクトと、そこから参照できるオブジェクトは変更しても問
+     *    題ない。</p>
      *
      * @param {mapray.Ray} ray  半直線を表すレイ (GOCS)
-     * @param {number}   limit  制限距離
+     * @param {number}   limit  制限距離 (ray.direction の長さを単位)
      *
-     * @return {number}  交点までの距離
+     * @return {?object}  交点の情報
      */
-    findRayDistance( ray, limit )
+    getRayIntersection( ray, limit )
     {
         if ( this._status !== TreeState.READY ) {
             // 準備ができていないときは見つけられない
-            return limit;
+            return null;
         }
 
         const ray_a0cs = Ray.transform_A( this._gocs_to_a0cs, ray, new Ray() );
 
         if ( this._root_cube.isAreaCross( ray_a0cs, limit ) ) {
-            return this._root_cube.findRayDistanceOnTree( ray_a0cs, limit );
+            return this._root_cube.getRayIntersectionOnTree( ray_a0cs, limit );
         }
         else {
-            return limit;
+            // 最上位タイルの空間全体と交差しない
+            return null;
         }
     }
 
@@ -1096,65 +1110,66 @@ class B3dCube {
      * @summary B3dCube ツリーとレイとの交点を探す
      *
      * @desc
-     * this ツリーの三角形と線分 (ray.position を始点とし、そこから ray.direction
-     * 方向に limit 距離未満にある点) との交点の中で、始点から最も近い交点までの
-     * 距離を返す。ただし線分と交差する三角形が見つからないときは limit を返す。
+     * <p>仕様は基本的に B3dTree#getRayIntersection() と同じである。</p>
      *
-     * @param {mapray.Ray} ray  半直線を表すレイ (A0CS)
-     * @param {number}   limit  制限距離
-     *
-     * @return {number}  交点までの距離
+     * <p>ただし ray の座標系は A0CS で、this の立方体と線分 [ray, limit] は必ず
+     *    交差していることが前提になっている。</p>
      */
-    findRayDistanceOnTree( ray, limit )
+    getRayIntersectionOnTree( ray, limit )
     {
         if ( this._has_tile_in_descendants ) {
             for ( let cinfo of this._children_in_crossing_order( ray, limit ) ) {
-                let distance;
+                let xinfo;  // 交差情報
 
                 if ( cinfo instanceof B3dCube ) {
                     // 交差する子ノードがある場合は再帰する
-                    distance = cinfo.findRayDistanceOnTree( ray, limit );
+                    xinfo = cinfo.getRayIntersectionOnTree( ray, limit );
                 }
                 else {
                     // そうでない場合は、自己または祖先のタイルとの交点を探す
-                    distance = this._findRayDistanceByPath( ray, limit, cinfo );
+                    xinfo = this._getRayIntersectionByPath( ray, limit, cinfo );
                 }
 
-                if ( distance != limit ) {
+                if ( xinfo !== null ) {
                     // 交点が見つかったので、全体の処理を終了
-                    return distance;
+                    return xinfo;
                 }
             }
 
-            return limit;  // 交差はなかった
+            return null;  // 交差はなかった
         }
         else {
             /* this は末端のタイルを持か、子孫も含めてタイルを持たない */
-            return this._findRayDistanceByPath( ray, limit, this );
+            return this._getRayIntersectionByPath( ray, limit, this );
         }
     }
 
 
     /**
-     * this または this の祖先ノードで this に最も近くのタイルを保有するノー
+     * @summary getRayIntersectionOnTree() のサブルーチン
+     *
+     * @desc
+     * this または this の祖先ノードで this に最も近くの (タイルを保有する) ノー
      * ドを N とする。
      *
-     * ノード N のタイルとレイとの最も近い交点までの距離を返す。ただし交点が見つ
-     * からなければ limit を返す。
+     * ノード N のタイルとレイとの最も近い交点の情報を返す。ただし交点が見つから
+     *  なければ null を返す。
+     *
+     * 戻り値のオブジェクトは B3dTree#getRayIntersection() と同じ形式である。
      *
      * 以上の交点検索の範囲は rect の領域に制限される。
      *
      * @param {mapray.Ray} ray  半直線を表すレイ (A0CS)
      * @param {number}   limit  制限距離
-     * @param {object}         rect
+     * @param {object}         rect              制限立方体
      * @param {mapray.Vector3} rect.area_origin  立方体の原点 (A0CS)
      * @param {number}         rect.area_size    立方体の寸法 (A0CS)
      *
-     * @return {number}  交点までの距離
+     * @return {?object}  交点の情報
      *
      * @private
      */
-    _findRayDistanceByPath( ray, limit, rect )
+    _getRayIntersectionByPath( ray, limit, rect )
     {
         let tnode;  // タイルを持つ直近ノード
         for ( tnode = this; tnode.getTileData() === null; tnode = tnode._parent ) {}
@@ -1177,7 +1192,7 @@ class B3dCube {
 
         // タイルに処理を任せる
         const tile = tnode.getTileData();
-        return tile.findRayDistance( tray, limit, trect_origin, trect_size );
+        return tile.getRayIntersection( tray, limit, trect_origin, trect_size );
     }
 
 
