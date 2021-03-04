@@ -191,21 +191,22 @@ class B3dBinary {
     /**
      * @summary タイル内の三角形とレイとの交点を探す
      *
-     * @param {mapray.Ray} ray  半直線を表すレイ (ALCS)
-     * @param {number}   limit  制限距離
-     * @param {mapray.Vector3} rect_origin  ヒント直方体の原点 (ALCS)
-     * @param {number}         rect_size    ヒント直方体の寸法 (ALCS)
-     *
-     * @return {number}  交点までの距離
+     * 座標系が ALCS であること以外は B3dCube#_getRayIntersectionByPath() と同じ
+     * 仕様である。
      */
-    findRayDistance( ray, limit, rect_origin, rect_size )
+    getRayIntersection( ray, limit, rect_origin, rect_size )
     {
-        let result;
+        let result = null;
 
         this._native.findRayDistance( this._handle,
                                       ray, limit, rect_origin, rect_size,
-                                      (distance, id) => {
-            result = distance;
+                                      (distance, id_0, id_1) => {
+            if ( distance != limit ) {
+                result = {
+                    distance,
+                    feature_id: [id_0, id_1]
+                };
+            }
         } );
 
         return result;
