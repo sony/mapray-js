@@ -35,6 +35,7 @@ class Viewer {
      * @param {array}                           [options.layers]                    地図レイヤー情報の配列
      * @param {boolean}                         [options.ground_visibility=true]    地表の可視性
      * @param {boolean}                         [options.entity_visibility=true]    エンティティの可視性
+     * @param {boolean}                         [options.b3d_scene_visibility=true] B3D シーンの可視性
      * @param {mapray.RenderCallback}           [options.render_callback]           レンダリングコールバック
      * @param {mapray.Viewer.RenderMode}        [options.render_mode]               レンダリングモード
      * @param {mapray.DebugStats}               [options.debug_stats]               デバッグ統計オブジェクト
@@ -66,10 +67,11 @@ class Viewer {
         this._layers             = this._createLayerCollection( options );
         this._globe              = new Globe( this._glenv, this._dem_provider );
         this._tile_texture_cache = new TileTextureCache( this._glenv, this._image_provider );
-        this._b3d_collection     = new B3dCollection();
+        this._b3d_collection     = new B3dCollection( this );
         this._scene              = new Scene( this, this._glenv );
         this._ground_visibility  = Viewer._getBoolOption( options, "ground_visibility", true );
         this._entity_visibility  = Viewer._getBoolOption( options, "entity_visibility", true );
+        this._b3d_scene_visibility = Viewer._getBoolOption( options, "b3d_scene_visibility", true );
         this._render_mode        = (options && options.render_mode) || RenderMode.SURFACE;
         this._debug_stats        = (options && options.debug_stats) || null;
         this._point_cloud_collection = this._createPointCloudCollection( options );
@@ -77,11 +79,6 @@ class Viewer {
         this._frame_req_id       = 0;
         this._previous_time      = undefined;
         this._is_destroyed       = false;
-
-        this.b3d_degug = {
-            render_mode: 0,
-            lod_factor:  2
-        };
 
         // マウス・Attribution開発
         this._logo_controller = ( options && options.logo_controller ) || new LogoController( this._container_element );
@@ -147,7 +144,7 @@ class Viewer {
         this._layers.cancel();
 
         // すべての B3dScene インスタンスを削除
-        this._b3d_collection.clear();
+        this._b3d_collection.clearScenes();
 
         // 各 SceneLoader の読み込みを取り消す
         this._scene.cancelLoaders();
@@ -356,6 +353,14 @@ class Viewer {
 
 
     /**
+     * @summary B3dScene 管理
+     * @type {mapray.B3dCollection}
+     * @readonly
+     */
+    get b3d_collection() { return this._b3d_collection; }
+
+
+    /**
      * @summary レンダリングコールバック
      * @type {mapray.RenderCallback}
      * @readonly
@@ -429,15 +434,6 @@ class Viewer {
 
 
     /**
-     * 内部的に実装で使用される B3dCollection インスタンス
-     * @type {mapray.B3dCollection}
-     * @readonly
-     * @package
-     */
-    get b3d_collection() { return this._b3d_collection; }
-
-
-    /**
      *
      * @type {mapray.LogoController}
      * @readonly
@@ -457,7 +453,8 @@ class Viewer {
      * @summary 可視性を設定
      * @desc
      * <p>target に属するオブジェクトを表示するかどうかを指定する。</p>
-     * <p>可視性は Viewer の構築子の ground_visibility と entity_visibility オプションでも指定することができる。</p>
+     * <p>可視性は Viewer の構築子の ground_visibility, entity_visibility,
+     *    b3d_scene_visibility オプションでも指定することができる。</p>
      *
      * @param {mapray.Viewer.Category} target      表示対象
      * @param {boolean}                visibility  表示するとき true, 表示しないとき false
@@ -472,6 +469,9 @@ class Viewer {
             break;
         case Category.ENTITY:
             this._entity_visibility = visibility;
+            break;
+        case Category.B3D_SCENE:
+            this._b3d_scene_visibility = visibility;
             break;
         default:
             throw new Error( "invalid target: " + target );
@@ -496,6 +496,8 @@ class Viewer {
             return this._ground_visibility;
         case Category.ENTITY:
             return this._entity_visibility;
+        case Category.B3D_SCENE:
+            return this._b3d_scene_visibility;
         default:
             throw new Error( "invalid target: " + target );
         }
@@ -618,78 +620,99 @@ class Viewer {
 
 
     /**
-     * @summary レイと地表の交点を取得
+     * @summary レイとの交点を取得
+     *
      * @desc
-     * <p>ray と地表の最も近い交点を取得する。ただし交点が存在しない場合は null を返す。</p>
-     * @param  {mapray.Ray}      ray  レイ (GOCS)
-     * @return {?mapray.Vector3}      交点または null
+     * <p>ray と最も近いオブジェクトとの交点の情報を取得する。ただし交差が存在しない場合は
+     *    null を返す。</p>
+     *
+     * <p>options.extra_info が false のとき、交差があればその交点の位置 (GOCS) を返す。</p>
+     *
+     * <p>options.extra_info が true のとき、交差があれば次の形式のオブジェクトを返す。</p>
+     *
+     * <pre>
+     * {
+     *     category:   mapray.Viewer.Category,  // 交差したオブジェクトの種類
+     *     position:   mapray.Vector3,   // 交点した位置 (GOCS)
+     *     distance:   number,           // 交点までの距離 (ray.direction の長さが単位)
+
+     *     // 種類が mapray.Viewer.Category.B3D_SCENE のとき、追加されるプロパティ
+     *     b3d_scene:  mapray.B3dScene,  // 交差したオブジェクトのインスタンス
+     *     feature_id: [uint32, uint32]  // feature ID (uint32 は 0 から 2^32 - 1 の整数値)
+     * }
+     * </pre>
+     *
+     * @param {mapray.Ray} ray    レイ (GOCS)
+     * @param {object} [options]  オプション
+     * @param {number} [options.limit=Number.MAX_VALUE]  制限距離 (ray.direction の長さが単位)
+     * @param {number} [options.extra_info=false]        交点位置以外の情報も返すとき true
+     *
+     * @return {?(mapray.Vector3|object)}  交点情報または null
      */
-    getRayIntersection( ray )
+    getRayIntersection( ray, options )
     {
-        var globe = this._globe;
+        const opts       = options || {};
+        const limit      = (opts.limit      !== undefined) ? opts.limit      : Number.MAX_VALUE;
+        const extra_info = (opts.extra_info !== undefined) ? opts.extra_info : false;
 
-        if ( globe.status !== Globe.Status.READY ) {
-            // Globe の準備ができていない
-            return null;
-        }
+        let category;
+        let distance = limit;
 
-        var distance = Number.MAX_VALUE;
-
-        // B3dCollection
+        // B3D
         const b3d_info = this._b3d_collection.getRayIntersection( ray, distance );
 
         if ( b3d_info !== null ) {
+            category = Category.B3D_SCENE;
             distance = b3d_info.distance;
         }
 
-        // Globe
-        distance = globe.root_flake.findRayDistance( ray, distance );
+        // 地表
+        if ( this._ground_visibility && (this._globe.status === Globe.Status.READY) ) {
+            const globe_dist = this._globe.root_flake.findRayDistance( ray, distance );
 
-        if ( distance === Number.MAX_VALUE ) {
-            // 交点が見つからなかった
+            if ( globe_dist !== distance ) {
+                // 地表と交差した
+                category = Category.GROUND;
+                distance = globe_dist;
+            }
+        }
+
+        // 交差の有無を確認
+        if ( category === undefined ) {
+            // 交差なし
             return null;
         }
 
-        // P = Q + distance V
-        var p = GeoMath.createVector3();
-        var q = ray.position;
-        var v = ray.direction;
+        // 位置 P = Q + distance V
+        const p = GeoMath.createVector3();
+        const q = ray.position;
+        const v = ray.direction;
 
-        p[0] = q[0] + distance * v[0];
-        p[1] = q[1] + distance * v[1];
-        p[2] = q[2] + distance * v[2];
+        for ( let i = 0; i < 3; ++i ) {
+            p[i] = q[i] + distance * v[i];
+        }
 
-        return p;
-    }
+        // 結果を返す
+        if ( extra_info ) {
+            // 位置以外の情報も返す
+            const ex_info = {
+                category,
+                distance,
+                position: p
+            };
 
+            // B3D 専用の情報を追加
+            if ( category === Category.B3D_SCENE ) {
+                ex_info.b3d_scene  = b3d_info.b3d_scene;
+                ex_info.feature_id = b3d_info.feature_id;
+            }
 
-    /**
-     * @summary B3dProvider インスタンスを追加
-     *
-     * 仕様未確定
-     *
-     * @param {mapray.B3dProvider} provider
-     *
-     * @private
-     */
-    addB3dProvider( provider )
-    {
-        this._b3d_collection.add( provider );
-    }
-
-
-    /**
-     * @summary B3dProvider インスタンスを削除
-     *
-     * 仕様未確定
-     *
-     * @param {mapray.B3dProvider} provider
-     *
-     * @private
-     */
-    removeB3dProvider( provider )
-    {
-        this._b3d_collection.remove( provider );
+            return ex_info;
+        }
+        else {
+            // 位置のみを返す
+            return p;
+        }
     }
 
 
@@ -837,7 +860,13 @@ var Category = {
     /**
      * エンティティ
      */
-    ENTITY: { id: "ENTITY" }
+    ENTITY: { id: "ENTITY" },
+
+
+    /**
+     * B3D シーン
+     */
+    B3D_SCENE: { id: "B3D_SCENE" }
 
 };
 
