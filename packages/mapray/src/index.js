@@ -29,6 +29,8 @@ import SceneLoader from "./SceneLoader";
 import GeoJSONLoader from "./GeoJSONLoader";
 import B3dProvider from "./B3dProvider";
 import StandardB3dProvider from "./StandardB3dProvider";
+import B3dCollection from "./B3dCollection";
+import B3dScene from "./B3dScene";
 import DebugStats from "./DebugStats";
 import MaprayApi from "./MaprayApi";
 import PointCloud from "./PointCloud";
@@ -78,6 +80,8 @@ var mapray = {
     MaprayApi,
     B3dProvider,
     StandardB3dProvider,
+    B3dCollection,
+    B3dScene,
     DebugStats,
     PointCloud,
     RawPointCloudProvider,
