@@ -259,7 +259,7 @@ class Viewer {
         // 各レイヤーの のリクエストを取り消す
         this._layers.cancel();
 
-        // すべての B3dTree インスタンスを削除
+        // すべての B3dScene インスタンスを削除
         this._b3d_collection.clear();
 
         // 各 SceneLoader の読み込みを取り消す

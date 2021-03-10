@@ -15,7 +15,7 @@ import b3dtile_factory from "./wasm/b3dtile.js";
  * @memberof mapray
  * @private
  */
-class B3dTree {
+class B3dScene {
 
     /**
      * @param {mapray.B3dCollection}  owner  this の所有者
@@ -33,7 +33,7 @@ class B3dTree {
         this._rho          = undefined;
         this._a0cs_to_gocs = undefined;
         this._gocs_to_a0cs = undefined;
-        this._lod_factor   = B3dTree.DEFAULT_LOD_FACTOR;  // TODO: パラメータ化により外部から指定
+        this._lod_factor   = B3dScene.DEFAULT_LOD_FACTOR;  // TODO: パラメータ化により外部から指定
 
         // キャッシュ処理関連
         this._frame_counter   = 0;  // 現行フレーム番号
@@ -291,7 +291,7 @@ class B3dTree {
     {
         const max_touch_cubes = this._hist_stats.getMaxValue( this._num_touch_cubes );
 
-        if ( this._num_tree_cubes <= B3dTree.CUBE_REDUCE_THRESH * max_touch_cubes ) {
+        if ( this._num_tree_cubes <= B3dScene.CUBE_REDUCE_THRESH * max_touch_cubes ) {
             // 最近使用した cube 数に対してツリー上の cube 数はそれほど
             // 多くないので、まだ削減しない
             return;
@@ -304,7 +304,7 @@ class B3dTree {
         tree_cubes.sort( (a, b) => a.compareForReduce( b ) );
 
         // 優先度の低い B3dCube を削除
-        const num_tree_cubes = Math.floor( B3dTree.CUBE_REDUCE_FACTOR * max_touch_cubes );
+        const num_tree_cubes = Math.floor( B3dScene.CUBE_REDUCE_FACTOR * max_touch_cubes );
 
         for ( let cube of tree_cubes.slice( num_tree_cubes ) ) {
             cube.dispose();
@@ -320,13 +320,13 @@ class B3dTree {
      */
     _reduceMeshesIfNecessary()
     {
-        if ( this._num_tree_meshes <= B3dTree.MESH_REDUCE_LOWER ) {
+        if ( this._num_tree_meshes <= B3dScene.MESH_REDUCE_LOWER ) {
             // ツリー上のメッシュの絶対数がそれほど多くないので、
             // まだ削減しない
             return;
         }
 
-        if ( this._num_tree_meshes <= B3dTree.MESH_REDUCE_THRESH * this._num_touch_meshes ) {
+        if ( this._num_tree_meshes <= B3dScene.MESH_REDUCE_THRESH * this._num_touch_meshes ) {
             // 現行フレームで使用したメッシュ数に対してツリー上のメッシュは
             // それほど多くないので、まだ削減しない
             return;
@@ -338,7 +338,7 @@ class B3dTree {
         tree_meshes.sort( (a, b) => a.compareForReduce( b ) );
 
         // 優先度の低い MeshNode を削除
-        const num_tree_meshes = Math.floor( B3dTree.MESH_REDUCE_FACTOR * this._num_touch_meshes );
+        const num_tree_meshes = Math.floor( B3dScene.MESH_REDUCE_FACTOR * this._num_touch_meshes );
 
         for ( let mesh_node of tree_meshes.slice( num_tree_meshes ) ) {
             mesh_node.dispose();
@@ -350,15 +350,15 @@ class B3dTree {
 
 
 /**
- * @summary B3dTree のレンダリングサブステージ
+ * @summary B3dScene のレンダリングサブステージ
  *
- * @memberof mapray.B3dTree
+ * @memberof mapray.B3dScene
  * @private
  */
 class B3dStage {
 
     /**
-     * @param {mapray.B3dTree}     tree    クライアント B3dTree
+     * @param {mapray.B3dScene}    tree    クライアント B3dScene
      * @param {mapray.RenderStage} pstage  親レンダリングステージ
      */
     constructor( tree, pstage )
@@ -428,7 +428,7 @@ class B3dStage {
     /**
      * @summary cube とその子孫をトラバース
      *
-     * @param {mapray.B3dTree.B3dCube} cube
+     * @param {mapray.B3dScene.B3dCube} cube
      *
      * @private
      */
@@ -476,7 +476,7 @@ class B3dStage {
      * cube の領域が画面上に現れるか不明のときは false, そうでないときは
      * true を返す。
      *
-     * @param {mapray.B3dTree.B3dCube} cube
+     * @param {mapray.B3dScene.B3dCube} cube
      *
      * @return {boolean}
      *
@@ -527,7 +527,7 @@ class B3dStage {
      *
      * 常に (戻り値) <= cube.level が成り立つ。
      *
-     * @param {mapray.B3dTree.B3dCube} cube
+     * @param {mapray.B3dScene.B3dCube} cube
      *
      * @return {number}
      *
@@ -548,7 +548,7 @@ class B3dStage {
         const depth = p0*plane[0] + p1*plane[1] + p2*plane[2] + plane[3];
 
         // cube を内包する球の半径 (A0CS)
-        const radius = h * B3dTree.RADIUS_FACTOR;
+        const radius = h * B3dScene.RADIUS_FACTOR;
 
         // 視点から cube までの最小深度距離 (A0CS)
         const min_depth = depth - radius;
@@ -563,7 +563,7 @@ class B3dStage {
         const min_level = this._lod_offset - Math.maprayLog2( depth + radius );
         const max_level = this._lod_offset - Math.maprayLog2( min_depth );
 
-        if ( max_level - min_level >= B3dTree.LEVEL_INTERVAL ) {
+        if ( max_level - min_level >= B3dScene.LEVEL_INTERVAL ) {
             // cube 内のレベルの差が大きすぎるので cube を分割
             return -1;
         }
@@ -649,16 +649,16 @@ class B3dStage {
 
 
 /**
- * @summary B3dTree の立方体ノード
+ * @summary B3dScene の立方体ノード
  *
- * @memberof mapray.B3dTree
+ * @memberof mapray.B3dScene
  * @private
  */
 class B3dCube {
 
     /**
-     * @param {?mapray.B3dTree.B3dCube} parent  親ノード (最上位の場合は null)
-     * @param {number}                  which   子インデックス (最上位の場合は無視)
+     * @param {?mapray.B3dScene.B3dCube} parent  親ノード (最上位の場合は null)
+     * @param {number}                   which   子インデックス (最上位の場合は無視)
      */
     constructor( parent, which )
     {
@@ -676,7 +676,7 @@ class B3dCube {
          *
          *  ※ 誤差なしの厳密値を想定している。
          *
-         *  @member mapray.B3dTree.B3dCube
+         *  @member mapray.B3dScene.B3dCube
          *  @type {number[]}
          */
         this.area_origin = undefined;
@@ -686,7 +686,7 @@ class B3dCube {
          *
          *  ※ 誤差なしの厳密値を想定している。
          *
-         *  @member mapray.B3dTree.B3dCube
+         *  @member mapray.B3dScene.B3dCube
          *  @type {number}
          */
         this.area_size = undefined;
@@ -699,7 +699,7 @@ class B3dCube {
          *  実際には -log2( this.area_size ) と同じだが、
          *  利便性のためにプロパティとしている。
          *
-         *  @member mapray.B3dTree.B3dCube
+         *  @member mapray.B3dScene.B3dCube
          *  @type {number}
          */
         this.level = undefined;
@@ -740,7 +740,7 @@ class B3dCube {
      *
      * @param {number} which  子インデックス (u + 2*v + 4*w)
      *
-     * @return {mapray.B3dTree.B3dCube}
+     * @return {mapray.B3dScene.B3dCube}
      */
     newChild( which )
     {
@@ -779,7 +779,7 @@ class B3dCube {
      *
      * @param {number} tile_level  希望のタイルのレベル
      *
-     * @return {mapray.B3dTree.MeshNode}  メッシュ情報
+     * @return {mapray.B3dScene.MeshNode}  メッシュ情報
      */
     getMeshNode( tile_level )
     {
@@ -857,8 +857,8 @@ class B3dCube {
      *  - loaded_node.level <= this.level
      *  - failed_node == null || loaded_node.level < failed_node.level
      *
-     * @param {mapray.B3dTree.B3dCube}  loaded_node  現状で this に最も近い (タイルを持つ) ノード
-     * @param {?mapray.B3dTree.B3dCube} failed_node
+     * @param {mapray.B3dScene.B3dCube}  loaded_node  現状で this に最も近い (タイルを持つ) ノード
+     * @param {?mapray.B3dScene.B3dCube} failed_node
      *
      * @private
      */
@@ -867,7 +867,7 @@ class B3dCube {
     {
         console.assert( loaded_node );
 
-        if ( this._owner._num_tile_requesteds >= B3dTree.MAX_TILE_REQUESTEDS ) {
+        if ( this._owner._num_tile_requesteds >= B3dScene.MAX_TILE_REQUESTEDS ) {
             // 要求が最大数に達しているので受け入れない
             return;
         }
@@ -935,9 +935,9 @@ class B3dCube {
     /**
      * _tryRequestTile() のサブルーチン
      *
-     * @param {mapray.B3dTree.B3dCube} loaded_node
+     * @param {mapray.B3dScene.B3dCube} loaded_node
      *
-     * @return {mapray.B3dTree.B3dCube[]}
+     * @return {mapray.B3dScene.B3dCube[]}
      *
      * @private
      */
@@ -959,10 +959,10 @@ class B3dCube {
     /**
      * _tryRequestTile() のサブルーチン
      *
-     * @param {mapray.B3dTree.B3dCube}   loaded_node  タイルデータを持つノード
-     * @param {mapray.B3dTree.B3dCube[]} node_routes  (loaded_node, this]
+     * @param {mapray.B3dScene.B3dCube}   loaded_node  タイルデータを持つノード
+     * @param {mapray.B3dScene.B3dCube[]} node_routes  (loaded_node, this]
      *
-     * @return {?mapray.B3dTree.B3dCube}
+     * @return {?mapray.B3dScene.B3dCube}
      *
      * @private
      */
@@ -1110,7 +1110,7 @@ class B3dCube {
      * @summary B3dCube ツリーとレイとの交点を探す
      *
      * @desc
-     * <p>仕様は基本的に B3dTree#getRayIntersection() と同じである。</p>
+     * <p>仕様は基本的に B3dScene#getRayIntersection() と同じである。</p>
      *
      * <p>ただし ray の座標系は A0CS で、this の立方体と線分 [ray, limit] は必ず
      *    交差していることが前提になっている。</p>
@@ -1155,7 +1155,7 @@ class B3dCube {
      * ノード N のタイルとレイとの最も近い交点の情報を返す。ただし交点が見つから
      *  なければ null を返す。
      *
-     * 戻り値のオブジェクトは B3dTree#getRayIntersection() と同じ形式である。
+     * 戻り値のオブジェクトは B3dScene#getRayIntersection() と同じ形式である。
      *
      * 以上の交点検索の範囲は rect の領域に制限される。
      *
@@ -1401,7 +1401,7 @@ class B3dCube {
     /**
      * @summary 自己と子孫の平坦化リストを取得
      *
-     * @return {mapray.B3dTree.B3dCube[]}
+     * @return {mapray.B3dScene.B3dCube[]}
      */
     getCubesFlattened()
     {
@@ -1416,7 +1416,7 @@ class B3dCube {
     /**
      * @summary 自己と子孫に存在する MeshNode インスタンスを取得
      *
-     * @return {mapray.B3dTree.MeshNode[]}
+     * @return {mapray.B3dScene.MeshNode[]}
      */
     getMeshesFlattened()
     {
@@ -1431,7 +1431,7 @@ class B3dCube {
     /**
      * @summary 削減優先順位のための比較
      *
-     * @param  {mapray.B3dTree.B3dCube} other  比較対象
+     * @param  {mapray.B3dScene.B3dCube} other  比較対象
      * @return {number}                        比較値
      */
     compareForReduce( other )
@@ -1490,10 +1490,10 @@ class B3dCube {
      *
      * 最上位 Cube を外部から B3dState.LOADED 状態に設定する。
      *
-     * ※ B3dTree のみが使用
+     * ※ B3dScene のみが使用
      *
-     * @param {mapray.B3dTree} owner  ツリーを所有するオブジェクト
-     * @param {ArrayBuffer}     data  バイナリデータ
+     * @param {mapray.B3dScene} owner  ツリーを所有するオブジェクト
+     * @param {ArrayBuffer}      data  バイナリデータ
      *
      * @package
      */
@@ -1515,16 +1515,16 @@ class B3dCube {
 
 
 /**
- * @summary B3dTree のメッシュ情報
+ * @summary B3dScene のメッシュ情報
  *
- * @memberof mapray.B3dTree
+ * @memberof mapray.B3dScene
  * @private
  */
 class MeshNode {
 
     /**
-     * @param {mapray.B3dTree.B3dCube} owner      this を所有するノード
-     * @param {mapray.B3dTree.B3dCube} tile_cube  タイルを持つノード
+     * @param {mapray.B3dScene.B3dCube} owner      this を所有するノード
+     * @param {mapray.B3dScene.B3dCube} tile_cube  タイルを持つノード
      */
     constructor( owner,
                  tile_cube )
@@ -1626,8 +1626,8 @@ class MeshNode {
     /**
      * @summary 削減優先順位のための比較
      *
-     * @param  {mapray.B3dTree.MeshNode} other  比較対象
-     * @return {number}                         比較値
+     * @param  {mapray.B3dScene.MeshNode} other  比較対象
+     * @return {number}                          比較値
      */
     compareForReduce( other )
     {
@@ -1767,7 +1767,7 @@ class MeshNode {
     /**
      * @summary cube から A0CS への変換行列を取得
      *
-     * @param {mapray.B3dTree.B3dCube} cube
+     * @param {mapray.B3dScene.B3dCube} cube
      *
      * @return {mapray.Matrix}
      *
@@ -1797,7 +1797,7 @@ class MeshNode {
  *
  * todo: Globe.js と共通化
  *
- * @memberof mapray.B3dTree
+ * @memberof mapray.B3dScene
  * @private
  */
 class HistStats {
@@ -1920,11 +1920,11 @@ class HistStats {
 
 
 /**
- * @summary B3dTree 状態の列挙型
+ * @summary B3dScene 状態の列挙型
  * @enum {object}
- * @memberof mapray.B3dTree
+ * @memberof mapray.B3dScene
  * @constant
- * @see mapray.B3dTree#status
+ * @see mapray.B3dScene#status
  */
 var TreeState = {
 
@@ -1951,9 +1951,9 @@ var TreeState = {
 /**
  * @summary B3D タイルの状態の列挙型
  * @enum {object}
- * @memberof mapray.B3dTree.B3dCube
+ * @memberof mapray.B3dScene.B3dCube
  * @constant
- * @see mapray.B3dTree.B3dCube#status
+ * @see mapray.B3dScene.B3dCube#status
  */
 var B3dState = {
 
@@ -2048,25 +2048,25 @@ findCubeRayDistance( origin, size, ray, limit )
 }
 
 
-B3dTree.DEFAULT_LOD_FACTOR = 4.0;
+B3dScene.DEFAULT_LOD_FACTOR = 4.0;
 
-B3dTree.RADIUS_FACTOR = Math.sqrt( 3 );
+B3dScene.RADIUS_FACTOR = Math.sqrt( 3 );
 
 // LEVEL_INTERVAL が小さすぎるとタイルの分割が多くなり、
 // 大きすぎるとレベルの誤差が大きくなる
 // レベルの誤差は最大で (LEVEL_INTERVL + 1) / 2
-B3dTree.LEVEL_INTERVAL = 0.5;
+B3dScene.LEVEL_INTERVAL = 0.5;
 
-B3dTree.CUBE_REDUCE_THRESH = 1.5;  // B3dCube 削減閾値
-B3dTree.CUBE_REDUCE_FACTOR = 1.2;  // B3dCube 削減係数
+B3dScene.CUBE_REDUCE_THRESH = 1.5;  // B3dCube 削減閾値
+B3dScene.CUBE_REDUCE_FACTOR = 1.2;  // B3dCube 削減係数
 
-B3dTree.MESH_REDUCE_LOWER  = 300;  // この個数以下なら削減しない
-B3dTree.MESH_REDUCE_THRESH = 1.5;  // MeshNode 削減閾値
-B3dTree.MESH_REDUCE_FACTOR = 1.2;  // MeshNode 削減係数
+B3dScene.MESH_REDUCE_LOWER  = 300;  // この個数以下なら削減しない
+B3dScene.MESH_REDUCE_THRESH = 1.5;  // MeshNode 削減閾値
+B3dScene.MESH_REDUCE_FACTOR = 1.2;  // MeshNode 削減係数
 
-B3dTree.MAX_TILE_REQUESTEDS = 15;  // リクエスト中のリクエスト数の最大値
+B3dScene.MAX_TILE_REQUESTEDS = 15;  // リクエスト中のリクエスト数の最大値
 
 MeshNode.EMPTY_TILE_MESH = { id: "EMPTY_TILE_MESH" };
 
 
-export default B3dTree;
+export default B3dScene;

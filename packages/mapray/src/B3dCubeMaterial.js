@@ -27,9 +27,9 @@ class B3dCubeMaterial extends Material {
      * @desc
      * <p>事前に material.bindProgram() すること。</p>
      *
-     * @param {mapray.B3dTree.B3dStage} stage  レンダリングステージ
-     * @param {mapray.Matrix}         to_a0cs  メッシュの位置座標から A0CS への変換行列
-     * @param {mapray.Vector3}          color  表示色
+     * @param {mapray.B3dScene.B3dStage} stage  レンダリングステージ
+     * @param {mapray.Matrix}          to_a0cs  メッシュの位置座標から A0CS への変換行列
+     * @param {mapray.Vector3}           color  表示色
      */
     setParameters( stage, to_a0cs, color )
     {
