@@ -1,10 +1,10 @@
-import B3dTree from "./B3dTree";
+import B3dScene from "./B3dScene";
 import WasmTool from "./WasmTool";
 import b3dtile_base64 from "./wasm/b3dtile.wasm";
 
 
 /**
- * @summary B3dTree を管理
+ * @summary B3dScene を管理
  *
  * @memberof mapray
  * @private
@@ -13,7 +13,7 @@ class B3dCollection {
 
     constructor()
     {
-        this._tree_map = new Map();  // 辞書: B3dProvider -> B3dTree
+        this._tree_map = new Map();  // 辞書: B3dProvider -> B3dScene
 
         this._wa_module = null;
 
@@ -37,7 +37,7 @@ class B3dCollection {
     /**
      * @summary wasm モジュールを取得
      *
-     * B3dTree が必要とする wasm モジュールを返す。まだモジュールがロードされていない
+     * B3dScene が必要とする wasm モジュールを返す。まだモジュールがロードされていない
      * ときは null を返す。
      *
      * @return {?WebAssembly.Module}
@@ -54,7 +54,7 @@ class B3dCollection {
      *
      * モジュールの生成が完了したとき this._wa_module を設定する。
      *
-     * その後、各 B3dTree インスタンスに通知する。
+     * その後、各 B3dScene インスタンスに通知する。
      *
      * @private
      */
@@ -65,7 +65,7 @@ class B3dCollection {
                 // this に本来のオブジェクトを設定
                 this._wa_module = wa_module;
 
-                // wasm ロード中に追加された B3dTree インスタンスに wasm が
+                // wasm ロード中に追加された B3dScene インスタンスに wasm が
                 // ロードされたことを通知
                 for ( let tree of this._tree_map.values() ) {
                     tree.onLoadWasmModule();
@@ -78,7 +78,7 @@ class B3dCollection {
 
 
     /**
-     * @summary すべての B3dTree インスタンスを削除
+     * @summary すべての B3dScene インスタンスを削除
      */
     clear()
     {
@@ -89,9 +89,9 @@ class B3dCollection {
 
 
     /**
-     * @summary B3dTree インスタンスを追加
+     * @summary B3dScene インスタンスを追加
      *
-     * @param {mapray.B3dProvider} provider  B3dTree に対応するプロバイダ
+     * @param {mapray.B3dProvider} provider  B3dScene に対応するプロバイダ
      */
     add( provider )
     {
@@ -100,17 +100,17 @@ class B3dCollection {
             return;
         }
 
-        this._tree_map.set( provider, new B3dTree( this, provider ) );
+        this._tree_map.set( provider, new B3dScene( this, provider ) );
     }
 
 
     /**
-     * @summary B3dTree インスタンスを削除
+     * @summary B3dScene インスタンスを削除
      *
-     * provider に対応する B3dTree インスタンスを this からから削除する。
-     * そのとき B3dTree インスタンスに対して cancel() を呼び出す。
+     * provider に対応する B3dScene インスタンスを this からから削除する。
+     * そのとき B3dScene インスタンスに対して cancel() を呼び出す。
      *
-     * @param {mapray.B3dProvider} provider  B3dTree に対応するプロバイダ
+     * @param {mapray.B3dProvider} provider  B3dScene に対応するプロバイダ
      */
     remove( provider )
     {
