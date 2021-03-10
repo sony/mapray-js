@@ -21,6 +21,7 @@ import Scene from "./Scene";
 import SceneLoader from "./SceneLoader";
 import B3dProvider from "./B3dProvider";
 import B3dCollection from "./B3dCollection";
+import B3dScene from "./B3dScene";
 import EasyBindingBlock from "./animation/EasyBindingBlock";
 import BindingBlock from "./animation/BindingBlock";
 import Util from "./util/Util";
@@ -77,6 +78,8 @@ class Viewer {
 
     private _entity_visibility: boolean;
 
+    private _b3d_scene_visibility: boolean;
+
     private _render_mode: Viewer.RenderMode;
 
     private _debug_stats: DebugStats | null;
@@ -108,13 +111,6 @@ class Viewer {
     private _moonVisualizer?: MoonVisualizer;
 
     private _cloudVisualizer?: CloudVisualizer;
-
-    /** @internal */
-    public b3d_degug: {
-        render_mode: number,
-        lod_factor:  number,
-    };
-
 
     /** @internal */
     _render_cache?: any;
@@ -160,21 +156,17 @@ class Viewer {
         this._layers             = this._createLayerCollection( options );
         this._globe              = new Globe( this._glenv, this._dem_provider, options.north_pole, options.south_pole );
         this._tile_texture_cache = new TileTextureCache( this._glenv, this._image_provider );
-        this._b3d_collection     = new B3dCollection();
+        this._b3d_collection     = new B3dCollection( this );
         this._scene              = new Scene( this, this._glenv );
         this._ground_visibility  = Viewer._getBoolOption( options, "ground_visibility", true );
         this._entity_visibility  = Viewer._getBoolOption( options, "entity_visibility", true );
+        this._b3d_scene_visibility = Viewer._getBoolOption( options, "b3d_scene_visibility", true );
         this._render_mode        = options.render_mode || Viewer.RenderMode.SURFACE;
         this._debug_stats        = options.debug_stats || null;
         this._point_cloud_collection = this._createPointCloudCollection( options );
         this._render_callback    = this._createRenderCallback( options );
         this._sun                = new Sun();
         this._moon               = new Moon();
-
-        this.b3d_degug = {
-            render_mode: 0,
-            lod_factor:  2
-        };
 
         const atmosphere = options.atmosphere;
         if ( atmosphere ) {
@@ -260,7 +252,7 @@ class Viewer {
         this._layers.cancel();
 
         // すべての B3dScene インスタンスを削除
-        this._b3d_collection.clear();
+        this._b3d_collection.clearScenes();
 
         // 各 SceneLoader の読み込みを取り消す
         this._scene.cancelLoaders();
@@ -462,6 +454,12 @@ class Viewer {
 
 
     /**
+     * B3dScene 管理
+     */
+    get b3d_collection(): B3dCollection { return this._b3d_collection; }
+
+
+    /**
      * レンダリングコールバック
      */
     get render_callback(): RenderCallback { return this._render_callback; }
@@ -518,12 +516,6 @@ class Viewer {
 
 
     /**
-     * 内部的に実装で使用される B3dCollection インスタンス
-     */
-    get b3d_collection(): B3dCollection { return this._b3d_collection; }
-
-
-    /**
      *
      */
     get logo_controller(): LogoController { return this._logo_controller; }
@@ -568,7 +560,8 @@ class Viewer {
      * 可視性を設定
      *
      * target に属するオブジェクトを表示するかどうかを指定する。
-     * 可視性は Viewer の構築子の ground_visibility と entity_visibility オプションでも指定することができる。
+     * 可視性は Viewer の構築子の ground_visibility, entity_visibility,
+     *    b3d_scene_visibility オプションでも指定することができる。
      *
      * @param target      表示対象
      * @param visibility  表示するとき true, 表示しないとき false
@@ -582,6 +575,9 @@ class Viewer {
             break;
         case Viewer.Category.ENTITY:
             this._entity_visibility = visibility;
+            break;
+        case Viewer.Category.B3D_SCENE:
+            this._b3d_scene_visibility = visibility;
             break;
         default:
             throw new Error( "invalid target: " + target );
@@ -606,6 +602,8 @@ class Viewer {
             return this._ground_visibility;
         case Viewer.Category.ENTITY:
             return this._entity_visibility;
+        case Viewer.Category.B3D_SCENE:
+            return this._b3d_scene_visibility;
         default:
             throw new Error( "invalid target: " + target );
         }
@@ -727,69 +725,86 @@ class Viewer {
 
 
     /**
-     * レイと地表の交点を取得
+     * レイとの交点を取得
      *
-     * ray と地表の最も近い交点を取得する。ただし交点が存在しない場合は null を返す。
-     * @param  ray  レイ (GOCS)
-     * @return      交点または null
+     * ray と最も近いオブジェクトとの交点の情報を取得する。ただし交差が存在しない場合は
+     *    null を返す。
+     *
+     * options.extra_info が false のとき、交差があればその交点の位置 (GOCS) を返す。
+     *
+     * options.extra_info が true のとき、交差があれば次の形式のオブジェクトを返す。
+     *
+     * @param ray    レイ (GOCS)
+     * @param options  オプション
+     *
+     * @return 交点情報または null
      */
-    getRayIntersection( ray: Ray ): Vector3 | null
+    getRayIntersection( ray: Ray, opts: Viewer.RayIntersectionOption = {} ): Vector3 | Viewer.RayIntersectionInfo | null
     {
-        var globe = this._globe;
+        const limit      = (opts.limit      !== undefined) ? opts.limit      : Number.MAX_VALUE;
+        const extra_info = (opts.extra_info !== undefined) ? opts.extra_info : false;
 
-        if ( globe.status !== Globe.Status.READY ) {
-            // Globe の準備ができていない
-            return null;
-        }
+        let category;
+        let distance = limit;
 
-        let distance = Number.MAX_VALUE;
-
-        // B3dCollection
+        // B3D
         const b3d_info = this._b3d_collection.getRayIntersection( ray, distance );
 
         if ( b3d_info ) {
+            category = Viewer.Category.B3D_SCENE;
+            // @ts-ignore
             distance = b3d_info.distance;
         }
 
-        // Globe
-        distance = globe.findRayDistance( ray, distance );
-        if ( distance === Number.MAX_VALUE ) {
-            // 交点が見つからなかった
+        // 地表
+        if ( this._ground_visibility && (this._globe.status === Globe.Status.READY) ) {
+            const globe_dist = this._globe.findRayDistance( ray, distance );
+ 
+            if ( globe_dist !== distance ) {
+                // 地表と交差した
+                category = Viewer.Category.GROUND;
+                distance = globe_dist;
+            }
+        }
+
+        // 交差の有無を確認
+        if ( !category ) {
+            // 交差なし
             return null;
         }
 
-        // P = Q + distance V
-        var p = GeoMath.createVector3();
-        var q = ray.position;
-        var v = ray.direction;
+        // 位置 P = Q + distance V
+        const p = GeoMath.createVector3();
+        const q = ray.position;
+        const v = ray.direction;
 
-        p[0] = q[0] + distance * v[0];
-        p[1] = q[1] + distance * v[1];
-        p[2] = q[2] + distance * v[2];
+        for ( let i = 0; i < 3; ++i ) {
+            p[i] = q[i] + distance * v[i];
+        }
 
-        return p;
-    }
+        // 結果を返す
+        if ( extra_info ) {
+            // 位置以外の情報も返す
+            const ex_info: Viewer.RayIntersectionInfo = {
+                category,
+                distance,
+                position: p
+            };
 
+            // B3D 専用の情報を追加
+            if ( category === Viewer.Category.B3D_SCENE ) {
+                // @ts-ignore
+                ex_info.b3d_scene  = b3d_info!.b3d_scene;
+                // @ts-ignore
+                ex_info.feature_id = b3d_info!.feature_id;
+            }
 
-    /*
-     * B3dProvider インスタンスを追加
-     *
-     * 仕様未確定
-     */
-    private addB3dProvider( provider: B3dProvider )
-    {
-        this._b3d_collection.add( provider );
-    }
-
-
-    /**
-     * B3dProvider インスタンスを削除
-     *
-     * 仕様未確定
-     */
-    private removeB3dProvider( provider: B3dProvider )
-    {
-        this._b3d_collection.remove( provider );
+            return ex_info;
+        }
+        else {
+            // 位置のみを返す
+            return p;
+        }
     }
 
 
@@ -971,6 +986,9 @@ export interface Option {
     /** エンティティの可視性 */
     entity_visibility?: boolean;
 
+    /** B3D シーンの可視性 */
+    b3d_scene_visibility?: boolean;
+
     /** レンダリングコールバック */
     render_callback?: RenderCallback;
 
@@ -993,6 +1011,40 @@ export interface Option {
     moon_visualizer?: MoonVisualizer;
 
     cloud_visualizer?: CloudVisualizer;
+}
+
+
+
+export interface RayIntersectionOption {
+    /** 制限距離 (ray.direction の長さが単位) */
+    limit?: number;
+
+    /** 交点位置以外の情報も返すとき true */
+    extra_info?: boolean;
+}
+
+
+
+export interface RayIntersectionInfo {
+    /** 交差したオブジェクトの種類 */
+    category:   Viewer.Category,
+
+    /** 交点した位置 (GOCS) */
+    position:   Vector3,
+
+    /** 交点までの距離 (ray.direction の長さが単位) */
+    distance:   number,
+
+    /**
+     * 交差したオブジェクトのインスタンス
+     * (種類が Viewer.Category.B3D_SCENE のとき、追加されるプロパティ)
+     */
+    b3d_scene?:  B3dScene,
+
+    /** feature ID (uint32 は 0 から 2^32 - 1 の整数値)
+     * (種類が Viewer.Category.B3D_SCENE のとき、追加されるプロパティ)
+     */
+    feature_id?: [number, number],
 }
 
 
@@ -1043,6 +1095,13 @@ export enum Category {
      * エンティティ
      */
     ENTITY,
+
+
+
+    /**
+     * B3D シーン
+     */
+    B3D_SCENE,
 
 };
 

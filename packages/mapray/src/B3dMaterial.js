@@ -14,10 +14,14 @@ class B3dMaterial extends Material {
 
     /**
      * @param {mapray.GLEnv} glenv
+     * @param {object}       debug   詳細は B3dCollection#$debug 非公開プロパティ
      */
-    constructor( glenv )
+    constructor( glenv, debug )
     {
-        super( glenv, vs_code, fs_code );
+        const preamble = B3dMaterial._getPreamble( debug );
+        super( glenv, preamble + vs_code, preamble + fs_code );
+
+        this._clip_coloring = debug.clip_coloring;
     }
 
 
@@ -50,10 +54,33 @@ class B3dMaterial extends Material {
         // float u_ambient
         this.setFloat( "u_ambient", 0.5 );
 
-        // TEST
-        this.setVector3( "u_clip_color", stage._clip_flag ? [0, 0, 0.2] : [0, 0, 0] );
+        // クリップされたタイルを着色
+        if ( this._clip_coloring ) {
+            // TEST
+            this.setVector3( "u_clip_color", stage._clip_flag ? [0, 0, 0.2] : [0, 0, 0] );
+        }
     }
 
+
+    /**
+     * @summary シェーダの前文を取得
+     *
+     * @param {object} debug
+     *
+     * @private
+     */
+    static
+    _getPreamble( debug )
+    {
+        const lines = [];
+
+        if ( debug.clip_coloring ) {
+            lines.push( "#define CLIP_COLORING" );
+        }
+
+        // lines を文字列にして返す
+        return lines.join( "\n" ) + "\n\n";
+    }
 }
 
 

@@ -1,6 +1,7 @@
 import GeoMath from "./GeoMath";
 import Ray from "./Ray";
 import Mesh from "./Mesh";
+import Viewer from "./Viewer";
 import B3dNative from "./B3dNative";
 import B3dBinary from "./B3dBinary";
 import B3dMaterial from "./B3dMaterial";
@@ -10,30 +11,44 @@ import b3dtile_factory from "./wasm/b3dtile.js";
 
 
 /**
- * @summary B3dCube を管理
+ * @summary b3dtile シーン
+ *
+ * @classdesc
+ * <p>特定の {@link mapray.B3dProvider B3dProvider} インスタンスに対応するシーンデータを表示する。</p>
+ *
+ * <p>このクラスのインスタンスは {@link mapray.B3dCollection#createScene createScene()}
+ *    メソッドにより生成する。</p>
+ *
+ * <p>{@link mapray.B3dScene#visibility visibility} プロパティが false のときは、this
+ *    のシーンは表示せず、交差は判定されない。</p>
+ *
+ * @see {@link mapray.B3dProvider}
+ * @see {@link mapray.B3dCollection#createScene}
  *
  * @memberof mapray
- * @private
+ * @hideconstructor
+ * @public
  */
 class B3dScene {
 
     /**
      * @param {mapray.B3dCollection}  owner  this の所有者
-     * @param {mapray.B3dProvider} provider  B3D プロバイダ
+     * @param {mapray.B3dProvider} provider  B3D データプロバイダ
      */
     constructor( owner, provider )
     {
-        this._owner     = owner;
-        this._provider  = provider;
-        this._status    = TreeState.NOT_READY;
-        this._native    = null;
-        this._root_cube = null;
+        this._owner      = owner;
+        this._provider   = provider;
+        this._status     = TreeState.NOT_READY;
+        this._native     = null;
+        this._root_cube  = null;
+        this._visibility = true;
 
         // 幾何計算関連
         this._rho          = undefined;
         this._a0cs_to_gocs = undefined;
         this._gocs_to_a0cs = undefined;
-        this._lod_factor   = B3dScene.DEFAULT_LOD_FACTOR;  // TODO: パラメータ化により外部から指定
+        this._lod_factor   = B3dScene.DEFAULT_LOD_FACTOR;
 
         // キャッシュ処理関連
         this._frame_counter   = 0;  // 現行フレーム番号
@@ -57,6 +72,70 @@ class B3dScene {
 
 
     /**
+     * @summary B3D データプロバイダ
+     *
+     * @type {mapray.B3dProvider}
+     * @readonly
+     */
+    get provider() { return this._provider; }
+
+
+    /**
+     * @summary 可視性フラグを取得
+     *
+     * @type {boolean}
+     * @default true
+     * @readonly
+     *
+     * @see {@link mapray.B3dScene#setVisibility}
+     */
+    get visibility() { return this._visibility; }
+
+
+    /**
+     * @summary 表示詳細度のためのパラメータ
+     *
+     * @type {number}
+     * @default 2.0
+     * @readonly
+     *
+     * @see {@link mapray.B3dScene#setLodFactor}
+     */
+    get lod_factor() { return this._lod_factor; }
+
+
+    /**
+     * @summary 可視性フラグを設定
+     *
+     * @param {boolean} visibility  可視性フラグ
+     *
+     * @see {@link mapray.B3dScene#visibility}
+     */
+    setVisibility( visibility )
+    {
+        this._visibility = visibility;
+    }
+
+
+    /**
+     * @summary 表示詳細度のためのパラメータを設定
+     *
+     * @desc
+     * <p>このパラメータの値は、小さいと表示の詳細度が高くなり、大きいと低くなる。</p>
+     *
+     * <p>注意: 現在は実験的なパラメータである。</p>
+     *
+     * @param {number} lod_factor  パラメータ値
+     *
+     * @see {@link mapray.B3dScene#lod_factor}
+     */
+    setLodFactor( lod_factor )
+    {
+        this._lod_factor = lod_factor;
+    }
+
+
+    /**
      * @summary wasm モジュールがロードされたことを通知
      *
      * this._owner の wasm モジュールがロードされたときに呼び出される。
@@ -75,6 +154,8 @@ class B3dScene {
 
     /**
      * @summary リクエストの取り消しを試みる
+     *
+     * @package
      */
     cancel()
     {
@@ -102,11 +183,18 @@ class B3dScene {
      * @summary 描画処理
      *
      * @param {mapray.RenderStage} stage
+     *
+     * @package
      */
     draw( stage )
     {
         if ( this._status !== TreeState.READY ) {
             // 描画できる状態ではない
+            return;
+        }
+
+        if ( !this._visibility || !this._owner.viewer.getVisibility( Viewer.Category.B3D_SCENE ) ) {
+            // 可視性が false のときは表示しない
             return;
         }
 
@@ -116,17 +204,22 @@ class B3dScene {
 
     /**
      * @summary フレーム終了処理
+     *
+     * @package
      */
     endFrame()
     {
-        if ( this._status !== TreeState.READY ) {
-            // 描画できる状態ではない
+        if ( this._num_touch_cubes == 0 ) {
+            // 描画時にトラバースされなかった、理由は以下のどれか
+            //
+            // - B3dScene の状態が TreeState.READY でない
+            // - B3dScene の可視性が無効
+            // - Viewer の B3D_SCENE の可視性が無効
             return;
         }
 
         console.assert( this._num_tree_cubes >= this._num_touch_cubes );
         console.assert( this._num_tree_meshes >= this._num_touch_meshes );
-        console.assert( this._num_touch_cubes >= 1 );
 
         this._reduceCubesIfNecessary();
         this._reduceMeshesIfNecessary();
@@ -163,11 +256,18 @@ class B3dScene {
      * @param {number}   limit  制限距離 (ray.direction の長さを単位)
      *
      * @return {?object}  交点の情報
+     *
+     * @package
      */
     getRayIntersection( ray, limit )
     {
         if ( this._status !== TreeState.READY ) {
             // 準備ができていないときは見つけられない
+            return null;
+        }
+
+        if ( !this._visibility ) {
+            // 可視性が false のときは交差しない仕様
             return null;
         }
 
@@ -366,11 +466,8 @@ class B3dStage {
         this._provider = tree._provider;
         this._glenv    = pstage._glenv;
         this._native   = tree._native;
+        this._debug    = tree._owner.$debug;
         this._shader_cache = tree._owner.shader_cache;
-
-        let viewer = pstage._viewer;
-        let lod_factor = viewer.b3d_degug.lod_factor;
-        this._render_mode = viewer.b3d_degug.render_mode;
 
         // 変換行列
         this._a0cs_to_view = GeoMath.mul_AA( pstage._gocs_to_view, tree._a0cs_to_gocs, GeoMath.createMatrix() );
@@ -393,6 +490,7 @@ class B3dStage {
         // level = -log2(lod_factor * pixel_step * depth) - rho
         //       = lod_offset - log2(depth)
         //
+        const lod_factor = Math.max( tree.lod_factor, B3dScene.MIN_LOD_FACTOR );
         this._lod_offset = -Math.log2( lod_factor * pstage._pixel_step ) - tree._rho;
 
         // トラバース用の情報
@@ -599,7 +697,8 @@ class B3dStage {
             mesh.draw( material );
         }
 
-        if ( this._render_mode == 1 ) {
+        if ( this._debug.render_mode == 1 ) {
+            // 立方体空間の表示
             let cube_mtl = this._getCubeMaterial();
             cube_mtl.bindProgram();
 
@@ -623,7 +722,7 @@ class B3dStage {
         let cache = this._shader_cache;
 
         if ( cache._B3dMaterial === undefined ) {
-            cache._B3dMaterial = new B3dMaterial( this._glenv );
+            cache._B3dMaterial = new B3dMaterial( this._glenv, this._debug );
         }
 
         return cache._B3dMaterial;
@@ -676,7 +775,7 @@ class B3dCube {
          *
          *  ※ 誤差なしの厳密値を想定している。
          *
-         *  @member mapray.B3dScene.B3dCube
+         *  @member mapray.B3dScene.B3dCube#area_origin
          *  @type {number[]}
          */
         this.area_origin = undefined;
@@ -686,7 +785,7 @@ class B3dCube {
          *
          *  ※ 誤差なしの厳密値を想定している。
          *
-         *  @member mapray.B3dScene.B3dCube
+         *  @member mapray.B3dScene.B3dCube#area_size
          *  @type {number}
          */
         this.area_size = undefined;
@@ -699,7 +798,7 @@ class B3dCube {
          *  実際には -log2( this.area_size ) と同じだが、
          *  利便性のためにプロパティとしている。
          *
-         *  @member mapray.B3dScene.B3dCube
+         *  @member mapray.B3dScene.B3dCube#level
          *  @type {number}
          */
         this.level = undefined;
@@ -1925,6 +2024,7 @@ class HistStats {
  * @memberof mapray.B3dScene
  * @constant
  * @see mapray.B3dScene#status
+ * @private
  */
 var TreeState = {
 
@@ -2048,7 +2148,8 @@ findCubeRayDistance( origin, size, ray, limit )
 }
 
 
-B3dScene.DEFAULT_LOD_FACTOR = 4.0;
+B3dScene.DEFAULT_LOD_FACTOR = 2.0;
+B3dScene.MIN_LOD_FACTOR     = 0.5;
 
 B3dScene.RADIUS_FACTOR = Math.sqrt( 3 );
 

@@ -57,6 +57,8 @@ export * from "./MaprayApiResource";
 // B3d
 export { default as B3dProvider } from "./B3dProvider";
 export { default as StandardB3dProvider } from "./StandardB3dProvider";
+export { default as B3dCollection } from "./B3dCollection";
+export { default as B3dScene } from "./B3dScene";
 
 // PointCloud
 export { default as PointCloud } from "./PointCloud";
