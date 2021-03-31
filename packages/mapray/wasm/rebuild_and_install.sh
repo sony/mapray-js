@@ -6,9 +6,9 @@ rebuild() {
     emcmake cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
     cmake --build . --target install
     popd
-    /bin/rm --force --recursive "$1/build.tmp/"
+    /bin/rm -f -r "$1/build.tmp/"
 }
 
 cd $(dirname $0)
-/bin/rm --force --recursive "../src/wasm/"
+/bin/rm -f -r "../src/wasm/"
 rebuild "b3dtile"
