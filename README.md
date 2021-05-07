@@ -20,7 +20,7 @@ npm install --save @mapray/mapray-js
 ## Usage
 World Terrain data hosted by Mapray Cloud platform. Access Token is required to access to Mapray Cloud, it is under Beta Test and you can join beta test for free if you meet the our requirements. 
 The service web site of Mapray Cloud is [here](https://cloud.mapray.com).
-Mapray Cloud managed by [Sony Corporation.](https://www.sony.com/) If you have any questions about the access token of mapray cloud or the services of mapray cloud, please contact us from the [contact page](https://mapray.com/contact.html).
+Mapray Cloud managed by [Sony Group Corporation.](https://www.sony.com/) If you have any questions about the access token of mapray cloud or the services of mapray cloud, please contact us from the [contact page](https://mapray.com/contact.html).
 ```html
 <!DOCTYPE html>
 <html>
@@ -88,8 +88,8 @@ Mapray Cloud managed by [Sony Corporation.](https://www.sony.com/) If you have a
 - [Sample App](/apps)
 
 ## Documentation
-- [Getting started with maprayJS (Japanese)](/doc/developer-guide/GettingStarted.md)
-- [Developer Guide (Japanese)](/doc/developer-guide/MaprayDeveloperGuideMod.md)
+- [Getting started with maprayJS (Japanese)](/doc/developer-guide/GettingStarted/index.md)
+- [Developer Guide (Japanese)](/doc/developer-guide/MaprayDevelopingGuideMod/index.md)
 - [Contribution Guide (English)](/CONTRIBUTING.md)
 
 Documentation on Mapray official [website](https://mapray.com/documents/overview/gettingstarted/index.html)
