@@ -15,13 +15,14 @@ import ImageProvider from "./ImageProvider";
 class LayerCollection {
 
     /**
-     * @param {mapray.GLEnv} glenv   WebGL 環境
-     * @param {array}      layers  初期化プロパティ配列
+     * @param {mapray.Viewer} viewer  Viewer
+     * @param {array}         layers  初期化プロパティ配列
      * @package
      */
-    constructor( glenv, layers )
+    constructor( viewer, layers )
     {
-        this._glenv       = glenv;
+        this._viewer      = viewer;
+        this._glenv       = viewer._glenv;
         this._layers      = [];
         this._draw_layers = null;
 
@@ -31,6 +32,14 @@ class LayerCollection {
         }
     }
 
+
+    /**
+     * @summary Viewerを取得
+     * @type {mapray.Viewer}
+     * @readonly
+     * @package
+     */
+    get viewer() { return this._viewer; }
 
     /**
      * @summary WebGL 環境を取得

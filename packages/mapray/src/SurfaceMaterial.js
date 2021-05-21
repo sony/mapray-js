@@ -5,6 +5,7 @@ import surface_vs_code from "./shader/surface.vert";
 import surface_fs_code from "./shader/surface.frag";
 import rid_fs_code from "./shader/rid.frag";
 import { RenderTarget } from "./RenderStage";
+import Layer from "./Layer";
 
 
 /**
@@ -20,18 +21,49 @@ class SurfaceMaterial extends FlakeMaterial {
      */
     constructor( viewer, options = {} )
     {
-        super( viewer, surface_vs_code, options.ridMaterial ? rid_fs_code : surface_fs_code );
+        const preamble = SurfaceMaterial._getPreamble( options );
+
+        super( viewer,
+               preamble + surface_vs_code,
+               preamble + ( options.ridMaterial ? rid_fs_code : surface_fs_code ) );
 
         this.bindProgram();
         this.setInteger( "u_image_hi", SurfaceMaterial.TEXUNIT_IMAGE_HI );
         this.setInteger( "u_image_lo", SurfaceMaterial.TEXUNIT_IMAGE_LO );
 
+        this._viewer             = viewer;
         this._tile_texture_cache = viewer.tile_texture_cache;
         this._layers             = viewer.layers;
         this._dummy_tile_texture = this._createDummyTileTexture( viewer.glenv );
         this._image_zbias = 0;
+
+        this._identity_matrix = GeoMath.setIdentity( GeoMath.createMatrix() );
+        this._flake_to_gocs = GeoMath.createMatrixf();
     }
 
+    /**
+     * @summary シェーダの前文を取得
+     *
+     * @param {object}  options  オプション指定
+     * @param {boolean} [options.nightMaterial=false]  夜用マテリアルの場合 true
+     *
+     * @private
+     */
+    static
+    _getPreamble( options )
+    {
+        const is_night = options.nightMaterial === true;
+
+        const lines = [];
+
+        // マクロの定義
+        if ( is_night ) {
+            lines.push( "#define NIGHTIMAGE" );
+        }
+
+        // lines を文字列にして返す
+        return lines.join( "\n" ) + "\n\n";
+    }
 
     /**
      * @override
@@ -52,6 +84,8 @@ class SurfaceMaterial extends FlakeMaterial {
         var param = this._getMaterialParamater( rflake, index );
 
         if ( param !== null ) {
+            const layer = this._layers.getDrawingLayer( index - 1 );
+
             this.setVector4( "u_corner_lod", param.corner_lod );
 
             this.setVector4( "u_texcoord_rect_hi", param.image_hi.texcoord_rect );
@@ -61,7 +95,13 @@ class SurfaceMaterial extends FlakeMaterial {
                                                (param.image_hi.lod == param.image_lo.lod) ?
                                                0 : 1 / (param.image_hi.lod - param.image_lo.lod)] );
 
-            this.setFloat( "u_opacity", (index == 0) ? 1.0 : this._layers.getDrawingLayer( index - 1 ).opacity );
+            this.setFloat( "u_opacity", (index == 0) ? 1.0 : layer.opacity );
+
+            if ( index > 0 && layer.type === Layer.LayerType.NIGHT ) {
+                this.setVector3( "u_sun_direction", this._viewer.sun_direction );
+                mesh.mul_flake_to_gocs( this._identity_matrix, this._flake_to_gocs );
+                this.setMatrix( "u_obj_to_gocs", this._flake_to_gocs );
+            }
 
             this.bindTexture2D( SurfaceMaterial.TEXUNIT_IMAGE_HI, param.image_hi.texture );
             this.bindTexture2D( SurfaceMaterial.TEXUNIT_IMAGE_LO, param.image_lo.texture );
