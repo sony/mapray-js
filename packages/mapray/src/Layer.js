@@ -1,5 +1,7 @@
 import ImageProvider from "./ImageProvider";
 import TileTextureCache from "./TileTextureCache";
+import SurfaceMaterial from "./SurfaceMaterial";
+import WireframeMaterial from "./WireframeMaterial";
 
 
 /**
@@ -19,18 +21,36 @@ class Layer {
      * @param {mapray.ImageProvider} init.image_provider  画像プロバイダ
      * @param {boolean}              [init.visibility]    可視性フラグ
      * @param {number}               [init.opacity]       不透明度
+     * @param {Layer.LayerType}      [init.type]          レイヤータイプ
      */
     constructor( owner, init )
     {
         this._owner = owner;
         this._glenv = owner.glenv;
+        this._viewer = owner.viewer;
 
         var props = (init instanceof ImageProvider) ? { image_provider: init } : init;
         this._image_provider = props.image_provider;
         this._visibility     = props.visibility || true;
         this._opacity        = props.opacity    || 1.0;
+        this._type = props.type === Layer.LayerType.NIGHT ? Layer.LayerType.NIGHT : Layer.LayerType.NORMAL;
+        this._material = null;
 
         this._tile_cache = new TileTextureCache( this._glenv, this._image_provider );
+
+        const render_cache = this._viewer._render_cache || (this._viewer._render_cache = {});
+        if ( this._type === Layer.LayerType.NIGHT ) {
+            if ( !render_cache.surface_night_material ) {
+                render_cache.surface_night_material = new SurfaceMaterial( this._viewer, { nightMaterial: true } );
+            }
+            this._material = render_cache.surface_night_material;
+        } else {
+            if ( !render_cache.surface_material ) {
+                render_cache.surface_material = new SurfaceMaterial( this._viewer );
+                render_cache.wireframe_material = new WireframeMaterial( this._viewer );
+            }
+            this._material = render_cache.surface_material;
+        }
 
         // プロバイダの状態が変化したら描画レイヤーを更新
         this._image_provider.status( (status) => { owner.dirtyDrawingLayers(); } );
@@ -59,6 +79,14 @@ class Layer {
      * @readonly
      */
     get opacity() { return this._opacity; }
+
+
+    /**
+     * @summary タイプを取得
+     * @type {LayerType}
+     * @readonly
+     */
+    get type() { return this._type; }
 
 
     /**
@@ -117,7 +145,42 @@ class Layer {
         this._opacity = opacity;
     }
 
+
+    /**
+     * @summary マテリアルを取得
+     *
+     * @return {mapray.SurfaceMaterial} マテリアル
+     * @package
+     */
+    getMateral()
+    {
+        return this._material;
+    }
 }
 
+
+/**
+ * @summary レイヤータイプ
+ * @enum {object}
+ * @memberof mapray.Layer
+ * @constant
+ */
+const LayerType = {
+
+
+    /**
+     * 通常のレイヤー
+     */
+    NORMAL: { id: "NORMAL" },
+
+
+    /**
+     * 夜部分のみ描画するレイヤー
+     */
+    NIGHT: { id: "NIGHT" }
+
+};
+
+Layer.LayerType = LayerType;
 
 export default Layer;

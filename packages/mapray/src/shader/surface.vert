@@ -7,9 +7,24 @@ uniform vec4  u_texcoord_rect_hi;  // 高レベル画像 左下座標: (x, y), �
 uniform vec4  u_texcoord_rect_lo;  // 低レベル画像 左下座標: (x, y), 座標サイズ: (z, w)
 uniform vec4  u_corner_lod;        // uv = (0,0), (1,0), (0,1), (1,1) の LOD
 
+#ifdef NIGHTIMAGE
+uniform mat4  u_obj_to_gocs;       // 地表断片座標系からGOCS座標系への変換
+uniform float u_opacity;           // 不透明度
+uniform vec3  u_sun_direction;     // 太陽方向
+
+varying float v_opacity;           // 不透明度(太陽方向による処理)
+#endif
+
 varying vec2  v_texcoord_hi;       // 高レベル画像のテクスチャ座標
 varying vec2  v_texcoord_lo;       // 低レベル画像のテクスチャ座標
 varying float v_lod;               // 補間された LOD
+
+#ifdef NIGHTIMAGE
+float sigmoid( float a, float x )
+{
+  return 1.0 / ( 1.0 + exp( -( a * x )) );
+}
+#endif
 
 void main()
 {
@@ -33,4 +48,11 @@ void main()
     float lod_uv = mix( lod_u0, lod_u1, v );  // uv = (u, v) の LOD
 
     v_lod = lod_uv;
+
+#ifdef NIGHTIMAGE
+    vec3 ground_vector = normalize( vec3( u_obj_to_gocs * a_position ) );
+    float dir = dot( ground_vector, u_sun_direction );
+    float sun_opacity = 1.0 - sigmoid( 12.0, dir );
+    v_opacity = sun_opacity * u_opacity;  // 不透明度を適用
+#endif
 }
