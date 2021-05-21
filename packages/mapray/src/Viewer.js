@@ -75,6 +75,7 @@ class Viewer {
         this._frame_req_id       = 0;
         this._previous_time      = undefined;
         this._is_destroyed       = false;
+        this._postProcesses      = [];
 
         // マウス・Attribution開発
         this._logo_controller = ( options && options.logo_controller ) || new LogoController( this._container_element );
@@ -633,6 +634,30 @@ class Viewer {
 
 
     /**
+     * @summary Canvas画面のキャプチャ
+     *
+     * @param  {object}  options  オプション
+     * @return {blob}             データ
+     */
+    async capture( options = { type: 'jpeg' } )
+    {
+       if ( !this._canvas_element ) {
+         throw new Error('Canvas is null.');
+       }
+
+       const mimeType = options.type === 'png' ? 'image/png' : 'image/jpeg';
+
+       return await new Promise( resolve => {
+         this._postProcesses.push( () => {
+           this._canvas_element.toBlob( resolve,  mimeType );
+           return false;
+         });
+       });
+    }
+
+
+
+    /**
      * 次のフレーム更新を要求する。
      * @private
      */
@@ -662,6 +687,8 @@ class Viewer {
 
         var stage = new RenderStage( this );
         stage.render();
+
+        this._postProcess();
 
         this._finishDebugStats();
     }
@@ -709,6 +736,25 @@ class Viewer {
         if ( canvas.height != canvas.clientHeight ) {
             canvas.height = canvas.clientHeight;
         }
+    }
+
+
+    /**
+     * @summary ポストプロセスを実行
+     * @private
+     */
+    _postProcess()
+    {
+        if ( this._postProcesses.length === 0 ) {
+            return;
+        }
+        const nextProcesses = [];
+        this._postProcesses.forEach( item => {
+                if ( item() ) {
+                    nextProcesses.push( item );
+                }
+        });
+        this._postProcesses = nextProcesses;
     }
 
 
