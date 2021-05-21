@@ -97,8 +97,10 @@ class AbstractRenderStage {
         const render_cache = viewer._render_cache || (viewer._render_cache = {});
         if ( !render_cache.surface_material ) {
             render_cache.surface_material = new SurfaceMaterial( viewer );
-            render_cache.surface_pick_material = new SurfaceMaterial( viewer, { ridMaterial: true } );
             render_cache.wireframe_material = new WireframeMaterial( viewer );
+        }
+        if ( !render_cache.surface_pick_material ) {
+            render_cache.surface_pick_material = new SurfaceMaterial( viewer, { ridMaterial: true } );
         }
 
         // デバッグ統計
@@ -248,7 +250,7 @@ class AbstractRenderStage {
     _draw_flake_base( rflake, mesh )
     {
         const gl = this._glenv.context;
-        const material = this._flake_material;
+        let material = this._flake_material;
 
         material.bindProgram();
 
@@ -261,8 +263,13 @@ class AbstractRenderStage {
             mesh.draw( material );
         }
 
-        // レイヤーの地表 (半透明の可能背あり)
-        for ( var i = 1; i < num_drawings; ++i ) {
+        // レイヤーの地表 (半透明の可能性あり)
+        for ( let i = 1; i < num_drawings; ++i ) {
+            const mat = this._viewer.layers.getDrawingLayer( i - 1 ).getMateral();
+            if ( material !== mat ) {
+              material = mat;
+              material.bindProgram();
+            }
             if ( material.setFlakeParameter( this, rflake, mesh, i ) ) {
                 if ( this.getRenderTarget() === RenderTarget.SCENE ) {
                     gl.enable( gl.BLEND );

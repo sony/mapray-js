@@ -75,6 +75,8 @@ class Viewer {
         this._frame_req_id       = 0;
         this._previous_time      = undefined;
         this._is_destroyed       = false;
+        this._sun_direction      = GeoMath.createVector3( [ 0, 0, 1 ] );
+
         this._postProcesses      = [];
 
         // マウス・Attribution開発
@@ -218,7 +220,7 @@ class Viewer {
     _createLayerCollection( options )
     {
         var layers = (options && options.layers) ? options.layers : {};
-        return new LayerCollection( this._glenv, layers );
+        return new LayerCollection( this, layers );
     }
 
 
@@ -432,7 +434,18 @@ class Viewer {
      * @readonly
      * @memberof Viewer
      */
-    get attribution_controller() { return this._attribution_controller; }    
+    get attribution_controller() { return this._attribution_controller; }
+
+
+    /**
+     * @summary 太陽ベクトル。非公開とする。APIでは、メモリー破壊が起こらない Viewer#getSunDirection を公開する。
+     * @type {Vector3}
+     * @private
+     * @readonly
+     * @memberof Viewer
+     */
+    get sun_direction() { return this._sun_direction; }
+
 
     /**
      * @summary 可視性を設定
@@ -789,6 +802,26 @@ class Viewer {
         this._scene.animation.unbindAllRecursively();
     }
 
+
+    /**
+     * 太陽ベクトルの情報を設定します
+     * @param {Vector3} direction 方向（GOCS  正規化されていること）
+     */
+    setSunDirection( direction )
+    {
+        GeoMath.copyVector3( direction, this._sun_direction );
+    }
+
+
+    /**
+     * 太陽ベクトルの情報のコピーを取得します
+     * @param {Vector3} dst 方向（GOCS  正規化されていること）
+     * @return {Vector3} ベクトルのコピー（GOCS）
+     */
+    getSunDirection( dst )
+    {
+        return GeoMath.copyVector3( this._sun_direction, dst );
+    }
 }
 
 
