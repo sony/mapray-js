@@ -16,8 +16,7 @@ class LayerCollection {
 
     /**
      * @param {mapray.GLEnv} glenv   WebGL 環境
-     * @param {array}      layers  初期化プロパティ配列
-     * @package
+     * @param {array}        layers  初期化プロパティ配列
      */
     constructor( glenv, layers )
     {
