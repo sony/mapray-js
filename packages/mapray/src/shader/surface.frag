@@ -30,4 +30,5 @@ void main()
 
     gl_FragColor = mix( color_lo, color_hi, ratio );
     gl_FragColor.a *= u_opacity;  // 不透明度を適用
+    gl_FragColor.rgb *= vec3( gl_FragColor.a );
 }
