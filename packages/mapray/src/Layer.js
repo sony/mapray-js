@@ -19,7 +19,6 @@ class Layer {
      * @param {mapray.ImageProvider} init.image_provider  画像プロバイダ
      * @param {boolean}              [init.visibility]    可視性フラグ
      * @param {number}               [init.opacity]       不透明度
-     * @package
      */
     constructor( owner, init )
     {
