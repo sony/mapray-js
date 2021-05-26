@@ -52,7 +52,7 @@ void main()
 #ifdef NIGHTIMAGE
     vec3 ground_vector = normalize( vec3( u_obj_to_gocs * a_position ) );
     float dir = dot( ground_vector, u_sun_direction );
-    float sun_opacity = 1.0 - sigmoid( 12.0, dir );
+    float sun_opacity = 1.0 - sigmoid( 5.0, dir );
     v_opacity = sun_opacity * u_opacity;  // 不透明度を適用
 #endif
 }
