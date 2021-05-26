@@ -40,5 +40,4 @@ void main()
 #else
     gl_FragColor.a *= u_opacity;
 #endif
-    gl_FragColor.rgb *= vec3( gl_FragColor.a );
 }
