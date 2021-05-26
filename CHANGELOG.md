@@ -1,4 +1,18 @@
 # Change Log
+## 0.8.6
+### Added
+- Night imagey layer [#193](https://github.com/sony/mapray-js/issues/193), [#194](https://github.com/sony/mapray-js/pull/194)
+- Capturing image buffer [#192](https://github.com/sony/mapray-js/issues/192), [#194](https://github.com/sony/mapray-js/pull/194)
+
+### Improved
+- Modified shader code in the surface [#196](https://github.com/sony/mapray-js/issues/196)
+
+### Bug fix
+- Fixed incorrect package name issues [#172](https://github.com/sony/mapray-js/issues/172), [#173](https://github.com/sony/mapray-js/issues/173), [#174](https://github.com/sony/mapray-js/pull/174)
+- Fixed incorrect link in documents [#175](https://github.com/sony/mapray-js/issues/175), [#176](https://github.com/sony/mapray-js/pull/176)
+- Fixed build error when generating API documents [#178](https://github.com/sony/mapray-js/issues/178), [#179](https://github.com/sony/mapray-js/pull/179)
+- Fixed CI build error in loal build [183](https://github.com/sony/mapray-js/issues/183)
+  
 ## 0.8.5
 ### Added
 - Implement bounding box from entities [#166](https://github.com/sony/mapray-js/issues/166), [#167](https://github.com/sony/mapray-js/pull/167)
