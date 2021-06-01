@@ -30,7 +30,7 @@ class ModelEntity extends Entity {
         super( scene, opts );
 
         this._position = new GeoPoint( 0, 0, 0 );
-        this._rotation = GeoMath.setIdentity( GeoMath.createMatrix() );
+        this._matrix = GeoMath.setIdentity( GeoMath.createMatrix() );
         this._scale    = GeoMath.createVector3( [1, 1, 1] );
 
         this._primitive_producer = new PrimitiveProducer( this );
@@ -39,6 +39,8 @@ class ModelEntity extends Entity {
 
         // アンカーモード
         this._anchor_mode = false;
+
+        this._transform_mode = TransformMode.POSITION_MLOCS_SCALE_ORIENTATION;
 
         if ( opts && opts.json ) {
             var json = opts.json;
@@ -66,6 +68,60 @@ class ModelEntity extends Entity {
       this._anchor_mode = anchor_mode;
     }
 
+
+    /**
+     * @private
+     */
+    get transform_mode() { return this._transform_mode; }
+
+    /**
+     * @private
+     */
+    setTransformMode( transform_mode )
+    {
+      if ( this._transform_mode !== transform_mode ) {
+        if ( this._transform_mode === TransformMode.POSITION_MLOCS_SCALE_ORIENTATION ) {
+          if ( transform_mode === TransformMode.GOCS_MATRIX ) {
+            // POSITION_MLOCS_SCALE_ORIENTATION => GOCS_MATRIX
+            this._primitive_producer.getMatrix( this._matrix );
+          }
+        }
+        else {
+          if ( transform_mode === TransformMode.POSITION_MLOCS_SCALE_ORIENTATION ) {
+            // GOCS_MATRIX => POSITION_MLOCS_SCALE_ORIENTATION
+            const gPos = GeoMath.createVector3([
+                this._matrix[ 12 ],
+                this._matrix[ 13 ],
+                this._matrix[ 14 ]
+            ]);
+            this._position.setFromGocs( gPos );
+            const mat = this._position.getMlocsToGocsMatrix( GeoMath.createMatrix() );
+            GeoMath.inverse_A( mat, mat );
+            GeoMath.mul_AA( mat, this._matrix, mat );
+
+            // restore scale from mat
+            for ( let j=0; j<3; ++j ) {
+              let tmp = 0;
+              for ( let i=0; i<3; ++i ) {
+                const v = mat[ j * 4 + i ];
+                tmp += v * v;
+              }
+              if ( tmp < 1.0 || 1.0 < tmp ) {
+                tmp = Math.sqrt( tmp );
+                for ( let i=0; i<3; ++i ) {
+                  mat[ j * 4 + i ] /= tmp;
+                }
+                this._scale[ j ] = tmp;
+              }
+            }
+
+            GeoMath.copyMatrix( mat, this._matrix );
+          }
+        }
+        this._transform_mode = transform_mode;
+        this._primitive_producer.onChangePosition();
+      }
+    }
 
 
     /**
@@ -185,6 +241,11 @@ class ModelEntity extends Entity {
     {
         let tr = json.transform;  // <TRANSFORM>
 
+        // transform mode
+        if ( this.transform_mode !== TransformMode.POSITION_MLOCS_SCALE_ORIENTATION ) {
+            this.setTransformMode( TransformMode.POSITION_MLOCS_SCALE_ORIENTATION )
+        }
+
         // position
         this.setPosition( new GeoPoint().setFromArray( tr.position ) );
 
@@ -226,6 +287,10 @@ class ModelEntity extends Entity {
      */
     setPosition( value )
     {
+        if ( this.transform_mode === TransformMode.GOCS_MATRIX ) {
+            console.log("Warning: invalid transform mode: " + this.transform_mode.id);
+            return;
+        }
         let op = this._position;  // 変更前の位置
 
         if ( value.longitude != op.longitude ||
@@ -245,7 +310,11 @@ class ModelEntity extends Entity {
      */
     setOrientation( value )
     {
-        value.getTransformMatrix( sameScaleVector3, this._rotation );
+        if ( this.transform_mode === TransformMode.GOCS_MATRIX ) {
+            console.log("Warning: invalid transform mode: " + this.transform_mode.id);
+            return;
+        }
+        value.getTransformMatrix( sameScaleVector3, this._matrix );
     }
 
 
@@ -256,6 +325,10 @@ class ModelEntity extends Entity {
      */
     setScale( value )
     {
+        if ( this.transform_mode === TransformMode.GOCS_MATRIX ) {
+            console.log("Warning: invalid transform mode: " + this.transform_mode.id);
+            return;
+        }
         GeoMath.copyVector3( value, this._scale );
     }
 
@@ -272,7 +345,24 @@ class ModelEntity extends Entity {
      */
     _setRotation( value )
     {
-        GeoMath.copyMatrix( value, this._rotation );
+        if ( this.transform_mode === TransformMode.GOCS_MATRIX ) {
+            console.log("Warning: invalid transform mode: " + this.transform_mode.id);
+            return;
+        }
+        GeoMath.copyMatrix( value, this._matrix );
+    }
+
+    /**
+     * @summary モデルの行列を直接設定
+     * @private
+     */
+    setMatrix( value )
+    {
+        if ( this.transform_mode === TransformMode.POSITION_MLOCS_SCALE_ORIENTATION ) {
+            console.log("Warning: invalid transform mode: " + this.transform_mode.id);
+            return;
+        }
+        GeoMath.copyMatrix( value, this._matrix );
     }
 
 
@@ -365,14 +455,7 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
      */
     getPrimitives( stage )
     {
-        let entity = this.entity;
-
-        // this._abs_position を更新
-        this._updateAbsPosition();
-
-        var  mlocs_to_gocs  = this._abs_position.getMlocsToGocsMatrix( GeoMath.createMatrix() );
-        var entity_to_mlocs = mul_RS( entity._rotation, entity._scale, GeoMath.createMatrix() );
-        var entity_to_gocs  = GeoMath.mul_AA( mlocs_to_gocs, entity_to_mlocs, GeoMath.createMatrix() );
+        const entity_to_gocs = this.getMatrix( GeoMath.createMatrix() );
 
         // Primitive#transform を設定
         var primitives = stage.getRenderTarget() === RenderTarget.SCENE ? this._primitives : this._pickPrimitives;
@@ -394,14 +477,7 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
      */
     getBounds()
     {
-        const entity = this.entity;
-
-        // this._abs_position を更新
-        this._updateAbsPosition();
-
-        const mlocs_to_gocs   = this._abs_position.getMlocsToGocsMatrix( GeoMath.createMatrix() );
-        const entity_to_mlocs = mul_RS( entity._rotation, entity._scale, GeoMath.createMatrix() );
-        const entity_to_gocs  = GeoMath.mul_AA( mlocs_to_gocs, entity_to_mlocs, GeoMath.createMatrix() );
+        const entity_to_gocs = this.getMatrix( GeoMath.createMatrix() );
 
         // Primitive#transform を設定
         const primitives = this._primitives;
@@ -491,6 +567,29 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
 
     /**
+     * @private
+     */
+    getMatrix( dst )
+    {
+        const entity = this.entity;
+
+        switch ( entity.transform_mode ) {
+            case TransformMode.GOCS_MATRIX: {
+                return GeoMath.copyMatrix(entity._matrix, dst);
+            }
+            case TransformMode.POSITION_MLOCS_SCALE_ORIENTATION: {
+                this._updateAbsPosition();
+
+                const mlocs_to_gocs = this._abs_position.getMlocsToGocsMatrix( GeoMath.createMatrix() );
+                const entity_to_mlocs = mul_RS( entity._matrix, entity._scale, GeoMath.createMatrix() );
+                return GeoMath.mul_AA( mlocs_to_gocs, entity_to_mlocs, dst );
+            }
+            default: throw new Error( "Unsupported transform mode: " + entity._transform_mode );
+        }
+    }
+
+
+    /**
      * @summary 絶対高度位置を更新
      *
      * 出力: this._abs_position
@@ -523,6 +622,62 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
     }
 
 }
+
+
+
+/**
+ * @summary 座標変換モードの列挙型
+ *
+ * <h5>モードによってパラメータや関数が無効になる。</h5>
+ * <ul>
+ * <li>(a) POSITION_MLOCS_SCALE_ORIENTATION
+ * <li>(b) GOCS_MATRIX
+ * </ul>
+ * <table class="props">
+ * <thead>
+ * <tr><th><th>(a)<th>(b)</tr>
+ * </thead>
+ * <tbody>
+ * <tr><th>_position, setPosition()<td>有効<td>無効</tr>
+ * <tr><th>_scale, setScale()<td>有効<td>無効</tr>
+ * <tr><th>setOrientation()<td>有効<td>無効</tr>
+ * <tr><th>setMatrix()<td>無効<td>有効</tr>
+ * <tr><th>_matrix<td>有効（回転部分のみ）<td>有効</tr>
+ * <tr><th>altitude_mode<td>無効<td>有効</tr>
+ * </tbody>
+ * </table>
+ * 
+ * <h5>モード変更時の位置・姿勢の変化</h5>
+ * <table class="props">
+ * <thead>
+ * <tr><th>遷移<th>位置・姿勢の変化</tr>
+ * </thead>
+ * <tbody>
+ * <tr><th>(a) &rarr; (b)<td>姿勢が維持され、見かけ上位置・姿勢に変化がない</tr>
+ * <tr><th>(b) &rarr; (a)<td>できるだけ姿勢を維持する</tr>
+ * </tbody>
+ * </table>
+ * 
+ * @enum {object}
+ * @memberof mapray.ModelEntity
+ * @constant
+ * @private
+ */
+const TransformMode = {
+
+    /**
+     * Position位置を原点としたMLocsにおいて Scale、Orientation を適用する。デフォルトの座標変換モード。
+     */
+    POSITION_MLOCS_SCALE_ORIENTATION: { id: "POSITION_MLOCS_SCALE_ORIENTATION" },
+
+    /**
+     * Gocs 座標系において、直接変換行列を適用する。
+     * Position, Scale, Orientationによって指定された値は無視されます。
+     */
+    GOCS_MATRIX: { id: "GOCS_MATRIX" },
+
+};
+
 
 
 // 等倍を表すベクトル
@@ -569,6 +724,9 @@ mul_RS( rmat, svec, dst )
     
     return dst;
 }
+
+
+ModelEntity.TransformMode = TransformMode;
 
 
 export default ModelEntity;
