@@ -26,7 +26,7 @@ weight: 2032
     <head>
         <meta charset="utf-8">
         <title>CreateDeleteLayerChangeOpacitySample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.8.6/mapray.min.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.8.7/mapray.min.js"></script>
         <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <script src="CreateDeleteLayerChangeOpacity.js"></script>
         <style>
@@ -251,7 +251,7 @@ htmlのサンプルコードの詳細を以下で解説します。
 
 <!--@ 6 -->
 ```HTML
-<script src="https://resource.mapray.com/mapray-js/v0.8.6/mapray.min.js"></script>
+<script src="https://resource.mapray.com/mapray-js/v0.8.7/mapray.min.js"></script>
 <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
 <script src="CreateDeleteLayerChangeOpacity.js"></script>
 ```
