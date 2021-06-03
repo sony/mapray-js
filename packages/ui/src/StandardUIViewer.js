@@ -20,6 +20,8 @@ class StandardUIViewer extends mapray.RenderCallback
      * @param {mapray.ImageProvider}        options.image_provider                  画像プロバイダ
      * @param {array}                       options.layers                          地図レイヤー配列
      * @param {mapray.Viewer.RenderMode}    options.render_mode                     レンダリングモード
+     * @param {boolean}                     options.ground_visibility=true          地表の可視性
+     * @param {boolean}                     options.entity_visibility=true          エンティティの可視性
      * @param {mapray.DebugStats}           options.debug_stats                     デバッグ統計オブジェクト
      * @param {mapray.Attributionontroller} options.attribution_controller          著作権表示の表示制御
      * @param {object}                      options.camera_position                 カメラ位置
@@ -114,6 +116,8 @@ class StandardUIViewer extends mapray.RenderCallback
      * @param {mapray.ImageProvider}        options.image_provider                  画像プロバイダ
      * @param {array}                       options.layers                          地図レイヤー配列
      * @param {mapray.Viewer.RenderMode}    options.render_mode                     レンダリングモード
+     * @param {boolean}                     options.ground_visibility=true          地表の可視性
+     * @param {boolean}                     options.entity_visibility=true          エンティティの可視性
      * @param {mapray.DebugStats}           options.debug_stats                     デバッグ統計オブジェクト
      * @param {mapray.Attributionontroller} options.attribution_controller          著作権表示の表示制御
      */
@@ -129,6 +133,8 @@ class StandardUIViewer extends mapray.RenderCallback
             image_provider: this._createImageProvider( options ),
             layers: ( options && options.layers ) || null,
             render_callback: this,
+            ground_visibility: ( options && (options.ground_visibility !== undefined)) ? options.ground_visibility : true,
+            entity_visibility: ( options && (options.entity_visibility !== undefined)) ? options.entity_visibility : true,
             render_mode: ( options && options.render_mode ) || mapray.Viewer.RenderMode.SURFACE,
             debug_stats: ( options && options.debug_stats ) || null,
             attribution_controller: ( options && options.attribution_controller ) || null
