@@ -1,4 +1,8 @@
 # Change Log
+## 0.8.8
+### Bug fix
+- Exported FlatDemProvider [#207](https://github.com/sony/mapray-js/issues/207), [#210](https://github.com/sony/mapray-js/pull/210)
+
 ## 0.8.7
 ### Added
 - Flat terrain at zero altitude [#202](https://github.com/sony/mapray-js/issues/202), [#203](https://github.com/sony/mapray-js/pull/203)

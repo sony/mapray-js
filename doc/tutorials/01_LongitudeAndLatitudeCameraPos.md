@@ -25,7 +25,7 @@ Mapray.Viewerクラスのカメラ位置を緯度・経度で指定する**Longi
     <head>
         <meta charset="UTF-8">
         <title>LongitudeAndLatitudeCameraPosSample</title>
-        <script src="https://resource.mapray.com/mapray-js/v0.8.7/mapray.min.js"></script>
+        <script src="https://resource.mapray.com/mapray-js/v0.8.8/mapray.min.js"></script>
         <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
         <style>
             html, body {
@@ -108,7 +108,7 @@ Mapray.Viewerクラスのカメラ位置を緯度・経度で指定する**Longi
 
 <!--@ 6 -->
 ```HTML
-<script src="https://resource.mapray.com/mapray-js/v0.8.7/mapray.min.js"></script>
+<script src="https://resource.mapray.com/mapray-js/v0.8.8/mapray.min.js"></script>
 <link rel="stylesheet" href="https://resource.mapray.com/styles/v1/mapray.css">
 ```
 
