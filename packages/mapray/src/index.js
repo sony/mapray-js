@@ -13,6 +13,7 @@ import LayerCollection from "./LayerCollection";
 import DemProvider from "./DemProvider";
 import StandardDemProvider from "./StandardDemProvider";
 import CloudDemProvider from "./CloudDemProvider";
+import FlatDemProvider from "./FlatDemProvider";
 import ImageProvider from "./ImageProvider";
 import RenderCallback from "./RenderCallback";
 import StandardImageProvider from "./StandardImageProvider";
@@ -57,6 +58,7 @@ var mapray = {
     DemProvider,
     StandardDemProvider,
     CloudDemProvider,
+    FlatDemProvider,
     ImageProvider,
     RenderCallback,
     StandardImageProvider,
