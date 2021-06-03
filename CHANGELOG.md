@@ -1,4 +1,10 @@
 # Change Log
+## 0.8.7
+### Added
+- Flat terrain at zero altitude [#202](https://github.com/sony/mapray-js/issues/202), [#203](https://github.com/sony/mapray-js/pull/203)
+- Change visibility of entity and ground in UI Package [#205](https://github.com/sony/mapray-js/issues/205), [#206](https://github.com/sony/mapray-js/pull/206)
+- Add GOCS_MATRIX transform mode to ModelEntity [#201](https://github.com/sony/mapray-js/pull/201)
+
 ## 0.8.6
 ### Added
 - Night imagey layer [#193](https://github.com/sony/mapray-js/issues/193), [#194](https://github.com/sony/mapray-js/pull/194)
