@@ -19,8 +19,6 @@ class FlatDemProvider extends DemProvider {
      */
     requestTile( z, x, y, callback )
     {
-        var actrl = new AbortController();
-
         this._buffer = new ArrayBuffer( FlatDemProvider.BUFFERSIZE );
         this._setZeroData( this._buffer );
         new Promise( resolve => { resolve(); } )
@@ -31,16 +29,14 @@ class FlatDemProvider extends DemProvider {
                 callback( null );
             } );
 
-        return actrl;
+        return null;
     }
 
     /**
      * @override
      */
-    cancelRequest( id )
+    cancelRequest()
     {
-        var actrl = id;  // 要求 ID を AbortController に変換
-        actrl.abort();   // 取り消したので要求を中止
     }
 
     _setZeroData( buffer )
@@ -94,6 +90,6 @@ FlatDemProvider.OFFSET_HMAX      = 8;
 FlatDemProvider.OFFSET_ω        = 12;
 FlatDemProvider.BUFFERSIZE = 264292;
 FlatDemProvider.OMEGA_VALUE = -99.0;
-FlatDemProvider.PIXEL_SIZE = Math.pow((1 << 8) + 1, 2);
+FlatDemProvider.PIXEL_SIZE = Math.round(Math.pow((1 << 8) + 1, 2));
 
 export default FlatDemProvider;
