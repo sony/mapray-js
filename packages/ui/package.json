@@ -16,6 +16,7 @@
   "main": "dist/umd/maprayui.js",
   "unpkg": "dist/umd/maprayui.min.js",
   "module": "dist/es/maprayui.js",
+  "types": "dist/es/@type/index.d.ts",
   "directories": {
     "doc": "doc"
   },
