@@ -14,6 +14,8 @@
   "main": "dist/umd/mapray.js",
   "unpkg": "dist/umd/mapray.min.js",
   "module": "dist/es/mapray.js",
+  "types": "dist/es/@type/index.d.ts",
+  "sideEffects": false,
   "directories": {
     "doc": "doc"
   },

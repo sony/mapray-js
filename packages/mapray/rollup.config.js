@@ -1,9 +1,8 @@
 import { terser } from 'rollup-plugin-terser'
-import babel from 'rollup-plugin-babel'
 import { string } from 'rollup-plugin-string'
 import resolve from 'rollup-plugin-node-resolve'
-import commonjs from 'rollup-plugin-commonjs'
 import strip from '@rollup/plugin-strip';
+import typescript from '@rollup/plugin-typescript'
 
 const extensions = ['**/*.vert', '**/*.frag', '**/*.glsl']
 var outdir = "dist/"
@@ -27,7 +26,7 @@ const strip_option = (
 export default [  
   // ES
   {
-    input: 'src/index.js',
+    input: 'src/index.ts',
     output: { 
       file: outdir+'es/mapray.js', 
       format: 'es', 
@@ -35,39 +34,48 @@ export default [
       sourcemap: true
     },
     plugins: [
-      commonjs(),
       resolve(),
       strip(strip_option),
       string({
         include: extensions
       }),
-      babel({
-        exclude: 'node_modules/**'
-      })
-    ]
-  },
-  
-  // ES for Browsers
-  {
-    input: 'src/index.js',
-    output: { file: outdir+'es/mapray.mjs', format: 'es', indent: false },
-    plugins: [
-      commonjs(),
-      resolve(),
-      strip(strip_option),
-      string({
-        include: extensions
-      }),
-      babel({
-        exclude: 'node_modules/**'
+      typescript({
+        tsconfig: './tsconfig.json',
+        outDir: outdir+'es/',
+        sourceMap: true,
+        declaration: true,
+        declarationDir: '@type',
+        declarationMap: true,
       }),
       terser()
     ]
   },
   
+  // ES for Browsers
+  {
+    input: 'src/index.ts',
+    output: {
+      file: outdir+'es/mapray.mjs',
+      format: 'es',
+      indent: false,
+    },
+    plugins: [
+      resolve(),
+      strip(strip_option),
+      string({
+        include: extensions
+      }),
+      typescript({
+        tsconfig: './tsconfig.json',
+        outDir: outdir+'es/',
+      }),
+      terser()
+    ]
+  },
+
   // UMD Development
   {
-    input: 'src/index.js',
+    input: 'src/index.ts',
     output: {
       file: outdir+'umd/mapray.js',
       format: 'umd',
@@ -76,21 +84,25 @@ export default [
       sourcemap: true
     },
     plugins: [
-      commonjs(),
       resolve(),
       strip(strip_option),
       string({
         include: extensions
       }),
-      babel({
-        exclude: 'node_modules/**'
+      typescript({
+        tsconfig: './tsconfig.json',
+        outDir: outdir+'umd/',
+        sourceMap: true,
+        declaration: true,
+        declarationDir: '@type',
+        declarationMap: true,
       })
     ]
   },
-  
+
   // UMD Production
   {
-    input: 'src/index.js',
+    input: 'src/index.ts',
     output: {
       file: outdir+'umd/mapray.min.js',
       format: 'umd',
@@ -98,14 +110,14 @@ export default [
       indent: false
     },
     plugins: [
-      commonjs(),
       resolve(),
       strip(strip_option),
       string({
         include: extensions
       }),
-      babel({
-        exclude: 'node_modules/**'
+      typescript({
+        tsconfig: './tsconfig.json',
+        outDir: outdir+'umd/',
       }),
       terser()
     ]

@@ -91,10 +91,15 @@ var mapray = {
      * @return {number} requestID
      * @see https://developer.mozilla.org/ja/docs/Web/API/Window/requestAnimationFrame
      */
+    // @ts-ignore
     window.maprayRequestAnimationFrame =
+        // @ts-ignore
         window.requestAnimationFrame ||
+        // @ts-ignore
         window.webkitRequestAnimationFrame ||
+        // @ts-ignore
         window.mozRequestAnimationFrame ||
+        // @ts-ignore
         window.oRequestAnimationFrame;
 
 
@@ -102,10 +107,15 @@ var mapray = {
      * @param {number} requestID
      * @see https://developer.mozilla.org/ja/docs/Web/API/window/cancelAnimationFrame
      */
+    // @ts-ignore
     window.maprayCancelAnimationFrame =
+        // @ts-ignore
         window.cancelAnimationFrame ||
+        // @ts-ignore
         window.webkitCancelAnimationFrame ||
+        // @ts-ignore
         window.mozCancelAnimationFrame ||
+        // @ts-ignore
         window.oCancelAnimationFrame;
 
     /* Performance.now 互換関数
@@ -113,14 +123,17 @@ var mapray = {
      * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now
      */
     var perf = window.performance;
+    // @ts-ignore
     var now  = perf && (perf.now || perf.mozNow || perf.msNow || perf.oNow || perf.webkitNow);
     var date = new Date();
+    // @ts-ignore
     window.maprayNow = now ? (function () { return now.call( perf ); }) : (function () { return date.getTime(); });
 
     /* Math.log2 互換関数
      * @function Math.maprayLog2
      * @see https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Math/log2
      */
+    // @ts-ignore
     Math.maprayLog2 = Math.log2 || function( x ) { return 1.4426950408889634074 * Math.log( x ); };
 }
 
