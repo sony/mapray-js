@@ -2,6 +2,7 @@ import { terser } from 'rollup-plugin-terser'
 import babel from 'rollup-plugin-babel'
 import resolve from 'rollup-plugin-node-resolve'
 import commonjs from 'rollup-plugin-commonjs'
+import typescript from '@rollup/plugin-typescript';
 
 import pkg from './package.json'
 
@@ -18,7 +19,7 @@ const makeExternalPredicate = externalArr => {
 export default [  
   // ES
   {
-    input: 'src/index.js',
+    input: 'src/index.ts',
     output: { 
       file: outdir+'es/maprayui.js', 
       format: 'es', 
@@ -30,24 +31,34 @@ export default [
       ...Object.keys(pkg.peerDependencies || {})
     ]),
     plugins: [
-      commonjs(),
       resolve(),
-      babel()
+      typescript({
+        tsconfig: './tsconfig.json',
+        outDir: outdir+'es/',
+        sourceMap: true,
+        declaration: true,
+        declarationDir: '@type',
+        declarationMap: true,
+      }),
     ]
   },
   
   // ES for Browsers
   {
-    input: 'src/index.js',
-    output: { file: outdir+'es/maprayui.mjs', format: 'es', indent: false },
+    input: 'src/index.ts',
+    output: {
+      file: outdir+'es/maprayui.mjs',
+      format: 'es',
+      indent: false
+    },
     external: makeExternalPredicate([
       ...Object.keys(pkg.peerDependencies || {})
     ]),
     plugins: [
-      commonjs(),
       resolve(),
-      babel({
-        exclude: 'node_modules/**'
+      typescript({
+        tsconfig: './tsconfig.json',
+        outDir: outdir+'es/',
       }),
       terser()
     ]
@@ -55,7 +66,7 @@ export default [
   
   // UMD Development
   {
-    input: 'src/index.js',
+    input: 'src/index.ts',
     output: {
       file: outdir+'umd/maprayui.js',
       format: 'umd',
@@ -68,17 +79,21 @@ export default [
     },
     external: ['@mapray/mapray-js'],
     plugins: [
-      commonjs(),
       resolve(),
-      babel({
-        exclude: 'node_modules/**'
+      typescript({
+        tsconfig: './tsconfig.json',
+        outDir: outdir+'umd/',
+        sourceMap: true,
+        declaration: true,
+        declarationDir: '@type',
+        declarationMap: true,
       })
     ]
   },
   
   // UMD Production
   {
-    input: 'src/index.js',
+    input: 'src/index.ts',
     output: {
       file: outdir+'umd/maprayui.min.js',
       format: 'umd',
@@ -90,10 +105,10 @@ export default [
     },
     external: ['@mapray/mapray-js'],
     plugins: [
-      commonjs(),
       resolve(),
-      babel({
-        exclude: 'node_modules/**'
+      typescript({
+        tsconfig: './tsconfig.json',
+        outDir: outdir+'umd/',
       }),
       terser()
     ]
