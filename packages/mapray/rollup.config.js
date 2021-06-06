@@ -23,16 +23,18 @@ const strip_option = (
     }
 );
 
-export default [  
+export default [
   // ES
   {
-    input: 'src/index.ts',
-    output: { 
-      file: outdir+'es/mapray.js', 
-      format: 'es', 
-      indent: false, 
-      sourcemap: true
+    input: 'src/mapray.ts',
+    preserveModules: true,
+    output: {
+      dir: outdir + 'es/',
+      format: 'es',
+      indent: false,
+      sourcemap: false,
     },
+    external: ['tslib'],
     plugins: [
       resolve(),
       strip(strip_option),
@@ -41,19 +43,18 @@ export default [
       }),
       typescript({
         tsconfig: './tsconfig.json',
-        outDir: outdir+'es/',
-        sourceMap: true,
+        outDir: outdir + 'es/',
+        sourceMap: false,
         declaration: true,
-        declarationDir: '@type',
+        declarationDir: outdir + 'es/@type',
         declarationMap: true,
       }),
-      terser()
     ]
   },
-  
+
   // ES for Browsers
   {
-    input: 'src/index.ts',
+    input: 'src/mapray.ts',
     output: {
       file: outdir+'es/mapray.mjs',
       format: 'es',
@@ -75,7 +76,7 @@ export default [
 
   // UMD Development
   {
-    input: 'src/index.ts',
+    input: 'src/mapray.ts',
     output: {
       file: outdir+'umd/mapray.js',
       format: 'umd',
@@ -102,7 +103,7 @@ export default [
 
   // UMD Production
   {
-    input: 'src/index.ts',
+    input: 'src/mapray.ts',
     output: {
       file: outdir+'umd/mapray.min.js',
       format: 'umd',

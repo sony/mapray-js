@@ -1,15 +1,13 @@
 {
   "compilerOptions": {
-    "target": "es6",
+    "target": "es5",
     "lib": [ "es6", "dom" ],
     "module": "esnext",
     "moduleResolution": "node",
     "esModuleInterop": true,
 
     "allowJs": true,
-    "importHelpers": true,
-    "stripInternal": true,
-    "removeComments": false,
+    "removeComments": true,
     "downlevelIteration": true,
 
     "strict": true,
@@ -21,23 +19,35 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
 
-    "rootDir": "src",
-    "baseUrl": "src/",
+    "rootDir": "./",
+    "baseUrl": "./",
     "outDir": "out",
+
+    "paths": {
+      "@mapray/mapray-js": ["./packages/mapray/src/mapray"],
+      "@mapray/ui": ["packages/ui/src/"],
+    },
   },
   "typedocOptions": {
-    "entryPoints": [ "src/mapray.ts" ],
-    "out": "docs",
-    "theme": "default",
+    "name": "@mapray",
+    "entryPoints": [
+      "meta-info.ts",
+      // "packages/mapray/src/mapray.ts",
+      // "packages/ui/src/index.ts",
+    ],
+    "out": "doc/typedoc",
     "hideGenerator": true,
-    "gitRevision": "master",
     "excludeInternal": true,
+    "listInvalidSymbolLinks": true,
   },
   "include": [
-    "src/**/*"
+    "./meta-info.ts",
+    "packages/mapray/src/**/*",
+    "packages/ui/src/**/*",
   ],
   "exclude": [
-    "node_modules/**/*",
-    "dist/**/*"
+    "**/node_modules/**/*",
+    "**/dist/**/*",
+    "**/debug/**/*",
   ]
 }
