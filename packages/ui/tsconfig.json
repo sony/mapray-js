@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es6",
     "lib": [ "es6", "dom" ],
     "module": "esnext",
     "moduleResolution": "node",
@@ -15,7 +15,7 @@
     "noImplicitThis": true,
     "noImplicitAny": true,
     "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
 
     "rootDir": "src",
@@ -23,8 +23,11 @@
     "outDir": "out",
   },
   "typedocOptions": {
-    "entryPoints": ["src/index.ts"],
-    "out": "docs"
+    "entryPoints": [ "src/maprayui.ts" ],
+    "out": "docs",
+    "theme": "default",
+    "hideGenerator": true,
+    "gitRevision": "master",
   },
   "include": [
     "src/**/*"

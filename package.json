@@ -11,7 +11,7 @@
     "globe"
   ],
   "scripts": {
-    "build": "run-p mapray ui css jsdoc",
+    "build": "run-p mapray ui css typedoc",
     "mapray": "yarn workspace @mapray/mapray-js build",
     "mapray-watch": "yarn workspace @mapray/mapray-js build-watch",
     "ui": "yarn workspace @mapray/ui build",
@@ -19,6 +19,10 @@
     "css": "yarn workspace @mapray/ui css",
     "jsdoc": "yarn workspace @mapray/mapray-js jsdoc",
     "jsdoc-devel": "yarn workspace @mapray/mapray-js jsdoc-devel",
+    "typedoc": "typedoc --tsconfig tsconfig.json",
+    "typedoc-watch": "typedoc --tsconfig tsconfig.json --watch",
+    "typedoc-devel": "typedoc --tsconfig tsconfig-devel.json",
+    "typedoc-devel-watch": "typedoc --tsconfig tsconfig-devel.json --watch",
     "test": "yarn workspace @mapray/mapray-js test"
   },
   "contributors": [

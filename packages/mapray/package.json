@@ -28,6 +28,8 @@
     "build-watch": "rollup -c -w",
     "jsdoc": "jsdoc --recurse --destination ./../../doc/jsdoc --package ./package.json --readme ./../../doc/config/reference_top.md --access undefined,public,protected  --configure ./../../doc/config/jsdoc.json ./src/",
     "jsdoc-devel": "jsdoc --recurse --destination ./../../doc/jsdoc --package ./package.json --readme ./../../doc/config/reference_top.md --private  --configure ./../../doc/config/jsdoc.json ./src/",
+    "typedoc": "typedoc --tsconfig tsconfig.json",
+    "typedoc-devel": "typedoc --tsconfig tsconfig-devel.json",
     "tests-devel": "cross-env webpack --watch --mode=development --env.NODE_ENV=tests",
     "test": "jest"
   },
@@ -71,6 +73,7 @@
     "rollup-plugin-string": "^3.0.0",
     "rollup-plugin-terser": "^5.2.0",
     "tslib": "^2.2.0",
+    "typedoc": "0.21.0-beta.3",
     "typescript": "4.3.2"
   },
   "dependencies": {},
