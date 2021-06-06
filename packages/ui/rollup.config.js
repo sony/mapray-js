@@ -19,7 +19,7 @@ const makeExternalPredicate = externalArr => {
 export default [  
   // ES
   {
-    input: 'src/index.ts',
+    input: 'src/maprayui.ts',
     output: { 
       file: outdir+'es/maprayui.js', 
       format: 'es', 
@@ -45,7 +45,7 @@ export default [
   
   // ES for Browsers
   {
-    input: 'src/index.ts',
+    input: 'src/maprayui.ts',
     output: {
       file: outdir+'es/maprayui.mjs',
       format: 'es',
@@ -66,7 +66,7 @@ export default [
   
   // UMD Development
   {
-    input: 'src/index.ts',
+    input: 'src/maprayui.ts',
     output: {
       file: outdir+'umd/maprayui.js',
       format: 'umd',
@@ -93,7 +93,7 @@ export default [
   
   // UMD Production
   {
-    input: 'src/index.ts',
+    input: 'src/maprayui.ts',
     output: {
       file: outdir+'umd/maprayui.min.js',
       format: 'umd',
