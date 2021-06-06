@@ -1,87 +1,43 @@
-import animation from "./animation/index";
-import Viewer from "./Viewer";
-import Camera from "./Camera";
-import GeoMath from "./GeoMath";
-import GeoPoint from "./GeoPoint";
-import GeoRegion from "./GeoRegion";
-import Orientation from "./Orientation";
-import Ray from "./Ray";
-import AltitudeMode from "./AltitudeMode";
-import CredentialMode from "./CredentialMode";
-import Layer from "./Layer";
-import LayerCollection from "./LayerCollection";
-import DemProvider from "./DemProvider";
-import StandardDemProvider from "./StandardDemProvider";
-import CloudDemProvider from "./CloudDemProvider";
-import FlatDemProvider from "./FlatDemProvider";
-import ImageProvider from "./ImageProvider";
-import RenderCallback from "./RenderCallback";
-import StandardImageProvider from "./StandardImageProvider";
-import Scene from "./Scene";
-import Entity from "./Entity";
-import MarkerLineEntity from "./MarkerLineEntity";
-import PathEntity from "./PathEntity";
-import TextEntity from "./TextEntity";
-import ModelEntity from "./ModelEntity";
-import PolygonEntity from "./PolygonEntity";
-import PinEntity from "./PinEntity";
-import ImageIconEntity from "./ImageIconEntity"
-import SceneLoader from "./SceneLoader";
-import GeoJSONLoader from "./GeoJSONLoader";
-import DebugStats from "./DebugStats";
-import MaprayApi from "./MaprayApi";
-import PointCloud from "./PointCloud";
-import RawPointCloudProvider from "./RawPointCloudProvider";
-import Resource, { URLResource } from "./Resource";
+export * as animation from "./animation/";
+
+export { default as Viewer } from "./Viewer";
+export { default as Camera } from "./Camera";
+export { default as GeoMath } from "./GeoMath";
+export { default as GeoPoint } from "./GeoPoint";
+export { default as GeoRegion } from "./GeoRegion";
+export { default as Orientation } from "./Orientation";
+export { default as Ray } from "./Ray";
+export { default as AltitudeMode } from "./AltitudeMode";
+export { default as CredentialMode } from "./CredentialMode";
+export { default as Layer } from "./Layer";
+export { default as LayerCollection } from "./LayerCollection";
+export { default as DemProvider } from "./DemProvider";
+export { default as StandardDemProvider } from "./StandardDemProvider";
+export { default as CloudDemProvider } from "./CloudDemProvider";
+export { default as ImageProvider } from "./ImageProvider";
+export { default as RenderCallback } from "./RenderCallback";
+export { default as StandardImageProvider } from "./StandardImageProvider";
+export { default as Scene } from "./Scene";
+export { default as Entity } from "./Entity";
+export { default as MarkerLineEntity } from "./MarkerLineEntity";
+export { default as PathEntity } from "./PathEntity";
+export { default as TextEntity } from "./TextEntity";
+export { default as ModelEntity } from "./ModelEntity";
+export { default as PolygonEntity } from "./PolygonEntity";
+export { default as PinEntity } from "./PinEntity";
+export { default as ImageIconEntity } from "./ImageIconEntity"
+export { default as SceneLoader } from "./SceneLoader";
+export { default as GeoJSONLoader } from "./GeoJSONLoader";
+export { default as DebugStats } from "./DebugStats";
+export { default as MaprayApi } from "./MaprayApi";
+export { default as PointCloud } from "./PointCloud";
+export { default as RawPointCloudProvider } from "./RawPointCloudProvider";
+export { default as Resource, URLResource } from "./Resource";
 
 // マウス・Attribution開発
-import LogoController from "./LogoController";
-import AttributionController from "./AttributionController";
+export { default as  LogoController } from "./LogoController";
+export { default as  AttributionController } from "./AttributionController";
 
-/**
- * Mapray 関連の機能全体が含まれる名前空間
- * @namespace mapray
- */
-var mapray = {
-    animation,
-    Viewer,
-    Camera,
-    GeoMath,
-    GeoPoint,
-    GeoRegion,
-    Orientation,
-    Ray,
-    AltitudeMode,
-    CredentialMode,
-    Layer,
-    LayerCollection,
-    DemProvider,
-    StandardDemProvider,
-    CloudDemProvider,
-    FlatDemProvider,
-    ImageProvider,
-    RenderCallback,
-    StandardImageProvider,
-    Scene,
-    Entity,
-    MarkerLineEntity,
-    PathEntity,
-    TextEntity,
-    ModelEntity,
-    PolygonEntity,
-    PinEntity,
-    ImageIconEntity,
-    SceneLoader,
-    GeoJSONLoader,
-    Resource,
-    URLResource,
-    MaprayApi,
-    DebugStats,
-    PointCloud,
-    RawPointCloudProvider,
-    LogoController,          // マウス・Attribution開発
-    AttributionController    // マウス・Attribution開発
-};
 
 
 // 互換関数を登録
@@ -136,6 +92,3 @@ var mapray = {
     // @ts-ignore
     Math.maprayLog2 = Math.log2 || function( x ) { return 1.4426950408889634074 * Math.log( x ); };
 }
-
-
-export default mapray;

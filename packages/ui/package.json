@@ -28,7 +28,8 @@
     "build": "rollup -c",
     "build-watch": "rollup -c -w",
     "css": "postcss -c ./postcss.config.js -o dist/mapray.css src/css/mapray.css",
-    "css-dev": "postcss --watch -c ./postcss.config.js -o dist/mapray.css src/css/mapray.css"
+    "css-dev": "postcss --watch -c ./postcss.config.js -o dist/mapray.css src/css/mapray.css",
+    "typedoc": "typedoc --tsconfig tsconfig.json"
   },
   "contributors": [
     {
@@ -69,6 +70,7 @@
     "webpack": "^4.41.6",
     "webpack-cli": "^3.3.11",
     "tslib": "^2.2.0",
+    "typedoc": "0.21.0-beta.3",
     "typescript": "4.3.2"
   },
   "dependencies": {},

@@ -26,7 +26,7 @@ const strip_option = (
 export default [  
   // ES
   {
-    input: 'src/index.ts',
+    input: 'src/mapray.ts',
     output: { 
       file: outdir+'es/mapray.js', 
       format: 'es', 
@@ -53,7 +53,7 @@ export default [
   
   // ES for Browsers
   {
-    input: 'src/index.ts',
+    input: 'src/mapray.ts',
     output: {
       file: outdir+'es/mapray.mjs',
       format: 'es',
@@ -75,7 +75,7 @@ export default [
 
   // UMD Development
   {
-    input: 'src/index.ts',
+    input: 'src/mapray.ts',
     output: {
       file: outdir+'umd/mapray.js',
       format: 'umd',
@@ -102,7 +102,7 @@ export default [
 
   // UMD Production
   {
-    input: 'src/index.ts',
+    input: 'src/mapray.ts',
     output: {
       file: outdir+'umd/mapray.min.js',
       format: 'umd',

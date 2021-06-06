@@ -1,43 +1,15 @@
-import AnimationError from "./AnimationError";
-import Time from "./Time";
-import Interval from "./Interval";
-import Invariance from "./Invariance";
-import Type from "./Type";
-import Curve from "./Curve";
-import Updater from "./Updater";
-import Binder from "./Binder";
-import TypeMismatchError from "./TypeMismatchError";
-import BindingBlock from  "./BindingBlock";
-import EasyBindingBlock from  "./EasyBindingBlock";
-import ConstantCurve from "./ConstantCurve";
-import KFLinearCurve from "./KFLinearCurve";
-import KFStepCurve from "./KFStepCurve";
-import ComboVectorCurve from "./ComboVectorCurve";
-
-
-/**
- * アニメーション関連の機能全体が含まれる名前空間
- *
- * @namespace animation
- * @memberof mapray
- */
-let animation = {
-    AnimationError,
-    Time,
-    Interval,
-    Invariance,
-    Type,
-    Curve,
-    Updater,
-    Binder,
-    TypeMismatchError,
-    BindingBlock,
-    EasyBindingBlock,
-    ConstantCurve,
-    KFLinearCurve,
-    KFStepCurve,
-    ComboVectorCurve
-};
-
-
-export default animation;
+export { default as AnimationError } from "./AnimationError";
+export { default as Time } from "./Time";
+export { default as Interval } from "./Interval";
+export { default as Invariance } from "./Invariance";
+export { default as Type } from "./Type";
+export { default as Curve } from "./Curve";
+export { default as Updater } from "./Updater";
+export { default as Binder } from "./Binder";
+export { default as TypeMismatchError } from "./TypeMismatchError";
+export { default as BindingBlock } from  "./BindingBlock";
+export { default as EasyBindingBlock } from  "./EasyBindingBlock";
+export { default as ConstantCurve } from "./ConstantCurve";
+export { default as KFLinearCurve } from "./KFLinearCurve";
+export { default as KFStepCurve } from "./KFStepCurve";
+export { default as ComboVectorCurve } from "./ComboVectorCurve";

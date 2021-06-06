@@ -23,8 +23,11 @@
     "outDir": "out",
   },
   "typedocOptions": {
-    "entryPoints": ["src/index.ts"],
-    "out": "docs"
+    "entryPoints": [ "src/maprayui.ts" ],
+    "out": "docs",
+    "theme": "default",
+    "hideGenerator": true,
+    "gitRevision": "master",
   },
   "include": [
     "src/**/*"
