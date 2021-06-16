@@ -5,36 +5,40 @@ const ABSOLUTE_URL_PATTERN = new RegExp("^https?://");
 
 
 /**
- * @summary Utility Class for DOM
- * @private
- * @memberof mapray
+ * Utility for DOM
+ * @internal
  */
-class Dom {
+namespace Dom {
+
 
     /**
-     * @param  {number}  width
-     * @param  {number}  height
-     * @return {CanvasRenderingContext2D}
+     * キャンバスコンテキストを生成します。
+     * @param width 幅
+     * @param height 高さ
      */
-    static createCanvasContext( width, height )
+    export function createCanvasContext( width: number, height: number ): CanvasRenderingContext2D
     {
         var canvas = document.createElement( "canvas" );
         canvas.width  = width;
         canvas.height = height;
-        return canvas.getContext( "2d" );
+        const context = canvas.getContext( "2d" );
+        if ( !context ) {
+            throw new Error("Cannot get context of canvas");
+        }
+        return context;
     }
 
+
     /**
-     * @summary 画像を読み込みます。
-     * @param  {string|Blob}  src
-     * @Param  {object}  options
-     * @param  {mapray.CredentialMode}  [options.credentials=mapray.CredentialMode.SAME_ORIGIN]
+     * 画像を読み込みます。
+     * @param src
+     * @Param options
      */
-    static async loadImage( src, options={} )
+    export async function loadImage( src: string | Blob, options: Dom.ImageLoadOption={} ): Promise<HTMLImageElement>
     {
         return await new Promise( (resolve, reject) => {
                 const image = new Image();
-                image.onload  = event => resolve( event.target );
+                image.onload  = event => resolve( image );
                 image.onerror = event => reject( new Error("Failed to load image") );
                 if ( options.credentials !== CredentialMode.OMIT ) {
                     image.crossOrigin = (
@@ -45,21 +49,22 @@ class Dom {
         } );
     }
 
+
     /**
-     * @summary 画像が読み込まれるまで待ちます。
-     * @param  {HTMLImageElement}  image
+     * 画像が読み込まれるまで待ちます。
+     * @param image
      */
-    static async waitForLoad( image )
+    export async function waitForLoad( image: HTMLImageElement ): Promise<HTMLImageElement>
     {
         if ( !image.src ) throw new Error( "src was not set" );
         if ( image.complete ) return image;
 
         return await new Promise( (resolve, reject) => {
-                const prevOnLoad  = image.onload;
+                const prevOnLoad: (((event: Event) => void) | null)  = image.onload;
                 const prevOnError = image.onerror;
                 image.onload = event => {
-                    if ( prevOnLoad ) prevOnLoad( event );
-                    resolve( event.target );
+                    if ( typeof prevOnLoad === "function" ) prevOnLoad( event );
+                    resolve( image );
                 };
                 image.onerror = event => {
                     if ( prevOnError ) prevOnError( event );
@@ -68,7 +73,50 @@ class Dom {
         } );
     }
 
-    static resolveUrl( baseUrl, url ) {
+
+    /**
+     * 各種画像データを Base64 へ変換します。
+     * @param src 変換元データ
+     */
+    export function toBase64String( src: HTMLImageElement | HTMLCanvasElement ): string {
+        return (
+            src instanceof HTMLImageElement ? convertImageToBase64String( src ) :
+            convertCanvasToBase64String( src )
+        );
+    }
+
+
+    /**
+     * 画像の内容を Base64 へ変換します。
+     * @param image 画像
+     */
+    export function convertImageToBase64String( image: HTMLImageElement ): string {
+        const w = image.naturalWidth;
+        const h = image.naturalHeight;
+        const ctx = createCanvasContext( w, h );
+        ctx.drawImage( image, 0, 0, w, h );
+        return ctx.canvas.toDataURL();
+    }
+
+
+    /**
+     * キャンバスの内容を Base64 へ変換します。
+     * @param canvas キャンバス
+     */
+    export function convertCanvasToBase64String( canvas: HTMLCanvasElement ): string
+    {
+        return canvas.toDataURL();
+    }
+
+
+    /**
+     * 相対URL、絶対URLを解決します。
+     * `url` が絶対URLの場合はそのまま返却し、 `url` が相対URLの場合は baseUrl からの相対URLとして絶対URLを返します。
+     * @param baseUrl ベースとなるurl
+     * @param url     baseUrlからの相対url か 絶対url
+     */
+    export function resolveUrl( baseUrl: string, url: string ): string
+    {
         if ( DATA_URL_PATTERN.test( url ) || ABSOLUTE_URL_PATTERN.test( url ) ) {
             // url がデータ url または絶対 url のときは
             // そのまま url をリクエスト
@@ -81,10 +129,15 @@ class Dom {
         }
     }
 
+
+    export const SYSTEM_FONT_FAMILY = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'";
+
+
+    export interface ImageLoadOption {
+        credentials?: CredentialMode;
+    }
+
 }
-
-
-Dom.SYSTEM_FONT_FAMILY = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'";
 
 
 export default Dom;
