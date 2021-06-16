@@ -1,64 +1,87 @@
+import GLEnv from "./GLEnv";
 import Entity from "./Entity";
+import Scene from "./Scene";
 import Primitive from "./Primitive";
 import Mesh from "./Mesh";
 import Texture from "./Texture";
 import PinMaterial from "./PinMaterial";
-import GeoMath from "./GeoMath";
+import GeoMath, { Vector2, Vector3 } from "./GeoMath";
 import GeoPoint from "./GeoPoint";
-import { RenderTarget } from "./RenderStage";
+import RenderStage from "./RenderStage";
 import AltitudeMode from "./AltitudeMode";
 import EntityRegion from "./EntityRegion";
-import IconLoader, { URLTemplateIconLoader, TextIconLoader } from "./IconLoader";
+import IconLoader, { URLTemplateIconLoader, TextIconLoader, IconLoaderItem } from "./IconLoader";
 import Dom from "./util/Dom";
 import EasyBindingBlock from "./animation/EasyBindingBlock";
+import BindingBlock from "./animation/BindingBlock";
 import Type from "./animation/Type";
+import Curve from "./animation/Curve";
 import AnimUtil from "./animation/AnimUtil";
 import AbstractPointEntity from "./AbstractPointEntity";
 
 /**
- * @summary ピンエンティティ
- * @memberof mapray
- * @extends mapray.Entity
+ * ピンエンティティ
  *
  * @example
+ * ```ts
  * var pin = new mapray.PinEntity(viewer.scene);
- * pin.addTextPin( "32", new mapray.GeoPoint(139.768, 35.635) );
- * pin.addTextPin( "A", new mapray.GeoPoint(139.768, 35.636), { fg_color: [0.0, 0.0, 1.0], bg_color: [1.0, 0.0, 0.0] } );
- * pin.addTextPin( "始", new mapray.GeoPoint(139.768, 35.637), { size: 50 } );
- * pin.addTextPin( "終", new mapray.GeoPoint(139.768, 35.639), { size: 50, font_family: "Georgia" } );
- * pin.addPin( new mapray.GeoPoint(139.766, 35.6361) );
- * pin.addMakiIconPin( "ferry-15", new mapray.GeoPoint(139.764, 35.6361), { size: 150, fg_color: [0.2, 0.2, 0.2], bg_color: [1.0, 1.0, 1.0] } );
- * pin.addMakiIconPin( "car-15",   new mapray.GeoPoint(139.762, 35.6361), { size: 60, fg_color: [1.0, 1.0, 1.0], bg_color: [0.2, 0.2, 0.2] } );
- * pin.addMakiIconPin( "bus-15",   new mapray.GeoPoint(139.760, 35.6361), { size: 40, fg_color: [1.0, 0.3, 0.1], bg_color: [0.1, 0.3, 1.0] } );
- * pin.addMakiIconPin( "bus-15",   new mapray.GeoPoint(139.759, 35.6361) );
- * pin.addMakiIconPin( "car-15",   new mapray.GeoPoint(139.758, 35.6361) );
- * viewer.scene.addEntity(pin);
  *
+ *
+ * // Normal Pin
+ * pin.addPin( new mapray.GeoPoint(139.766, 35.6361) );
+ *
+ *
+ * // Text Pin
+ * pin.addTextPin( "32", new mapray.GeoPoint(139.768, 35.635) );
+ *
+ * pin.addTextPin( "A", new mapray.GeoPoint(139.768, 35.636),
+ *     { fg_color: [0.0, 0.0, 1.0], bg_color: [1.0, 0.0, 0.0] } );
+ *
+ * pin.addTextPin( "S", new mapray.GeoPoint(139.768, 35.637),
+ *     { size: 50 } );
+ *
+ * pin.addTextPin( "E", new mapray.GeoPoint(139.768, 35.639),
+ *     { size: 50, font_family: "Georgia" } );
+ *
+ *
+ * // Maki Icon Pin
+ * pin.addMakiIconPin( "ferry-15", new mapray.GeoPoint(139.764, 35.6361),
+ *     { size: 150, fg_color: [0.2, 0.2, 0.2], bg_color: [1.0, 1.0, 1.0] } );
+ *
+ * pin.addMakiIconPin( "car-15",   new mapray.GeoPoint(139.762, 35.6361),
+ *     { size: 60, fg_color: [1.0, 1.0, 1.0], bg_color: [0.2, 0.2, 0.2] } );
+ *
+ * pin.addMakiIconPin( "bus-15",   new mapray.GeoPoint(139.760, 35.6361),
+ *     { size: 40, fg_color: [1.0, 0.3, 0.1], bg_color: [0.1, 0.3, 1.0] } );
+ *
+ * pin.addMakiIconPin( "bus-15",   new mapray.GeoPoint(139.759, 35.6361) );
+ *
+ *
+ * viewer.scene.addEntity(pin);
+ * ```
  */
-class PinEntity extends AbstractPointEntity {
+class PinEntity extends AbstractPointEntity<PinEntity.TextPinEntry | PinEntity.MakiIconPinEntry> {
+
+    // Entity.PrimitiveProducer インスタンス
+    private _primitive_producer: PinEntity.PrimitiveProducer;
+
+    // 親プロパティ
+    private _parent_props: PinEntity.ParentPinEntryProps = {};
+
 
     /**
-     * @param {mapray.Scene} scene        所属可能シーン
-     * @param {object}       [opts]       オプション集合
-     * @param {object}       [opts.json]  生成情報
-     * @param {object}       [opts.refs]  参照辞書
+     * @param scene      所属可能シーン
+     * @param opts       オプション集合
      */
-    constructor( scene, opts )
+    constructor( scene: Scene, opts?: PinEntity.Option )
     {
         super( scene, opts );
 
-        // 親プロパティ
-        this._parent_props = {
-            fg_color: null,
-            bg_color: null,
-            size: null,
-            font_family: null,
-        };
+        this._primitive_producer = new PinEntity.PrimitiveProducer( this );
 
-        // Entity.PrimitiveProducer インスタンス
-        this._primitive_producer = new PrimitiveProducer( this );
-
-        this._animation.addDescendantUnbinder( () => { this._unbindDescendantAnimations(); } );
+        // @ts-ignore
+        const block = this._animation as EasyBindingBlock;
+        block.addDescendantUnbinder( () => { this._unbindDescendantAnimations(); } );
         this._setupAnimationBindingBlock();
 
         // 生成情報から設定
@@ -80,7 +103,7 @@ class PinEntity extends AbstractPointEntity {
     /**
      * @override
      */
-    onChangeAltitudeMode( prev_mode )
+    protected override onChangeAltitudeMode( prev_mode: AltitudeMode )
     {
         this._primitive_producer.onChangeAltitudeMode();
     }
@@ -88,24 +111,20 @@ class PinEntity extends AbstractPointEntity {
 
     /**
      * EasyBindingBlock.DescendantUnbinder 処理
-     *
-     * @private
      */
-    _unbindDescendantAnimations()
+    private _unbindDescendantAnimations()
     {
         // すべてのエントリーを解除
         for ( let entry of this._entries ) {
-            entry.animation.unbindAllRecursively();
+            entry.getAnimation().unbindAllRecursively();
         }
     }
 
 
     /**
      * アニメーションの BindingBlock を初期化
-     *
-     * @private
      */
-    _setupAnimationBindingBlock()
+    private _setupAnimationBindingBlock()
     {
         const block = this.animation;  // 実体は EasyBindingBlock
 
@@ -116,14 +135,14 @@ class PinEntity extends AbstractPointEntity {
         // パラメータ名: fg_color
         // パラメータ型: vector3
         //   アイコンの色
-        block.addEntry( "fg_color", [vector3], null, value => {
+        block.addEntry( "fg_color", [vector3], null, (value: Vector3) => {
             this.setFGColor( value );
         } );
         
         // パラメータ名: bg_color
         // パラメータ型: vector3
         //   アイコン背景の色
-        block.addEntry( "bg_color", [vector3], null, value => {
+        block.addEntry( "bg_color", [vector3], null, (value: Vector3) => {
             this.setBGColor( value );
         } );
 
@@ -132,20 +151,20 @@ class PinEntity extends AbstractPointEntity {
         //   型が vector2 のとき アイコンのピクセルサイズX, Y 順であると解釈
         //   型が number のとき アイコンのピクセルサイズX, Y は同値
         const size_temp = GeoMath.createVector2();
-        let   size_type;
+        let   size_type: Type | null;
 
-        let size_tsolver = curve => {
+        let size_tsolver = (curve: Curve) => {
             size_type = AnimUtil.findFirstTypeSupported( curve, [vector2, number] );
             return size_type;
         };
 
-        block.addEntry( "size", [vector2, number], size_tsolver, value => {
-            if ( size_type === vector2 ) {
-                this.setSize( value );
+        block.addEntry( "size", [vector2, number], size_tsolver, (value: Vector2 | number) => {
+            if ( size_type === vector2 ) { // value must be Vector2
+                this.setSize( value as Vector2 );
             }
-            else { // size_type === number
-                size_temp[0] = value;
-                size_temp[1] = value;
+            else { // size_type === number (value must be number)
+                size_temp[0] = value as number;
+                size_temp[1] = value as number;
                 this.setSize( size_temp );
             }
         } );
@@ -153,40 +172,40 @@ class PinEntity extends AbstractPointEntity {
 
 
     /**
-     * @summary アイコンのピクセルサイズを指定
-     * @param {mapray.Vector3} size  アイコンのピクセルサイズ
+     * アイコンのピクセルサイズを指定
+     * @param size  アイコンのピクセルサイズ
      */
-    setSize( size )
+    setSize( size: Vector2 )
     {
         this._setVector2Property( "size", size );
     }
 
 
     /**
-     * @summary アイコンの色を設定
-     * @param {mapray.Vector3} color  アイコンの色
+     * アイコンの色を設定
+     * @param color  アイコンの色
      */
-    setFGColor( color )
+    setFGColor( color: Vector3 )
     {
         this._setVector3Property( "fg_color", color );
     }
 
 
     /**
-     * @summary アイコン背景の色を設定
-     * @param {mapray.Vector3} color  アイコン背景の色
+     * アイコン背景の色を設定
+     * @param color  アイコン背景の色
      */
-    setBGColor( color )
+    setBGColor( color: Vector3 )
     {
         this._setVector3Property( "bg_color", color );
     }
 
 
     /**
-     * @summary テキストアイコンのフォントを設定
-     * @param {string} font_family  フォントファミリー
+     * テキストアイコンのフォントを設定
+     * @param font_family  フォントファミリー
      */
-    setFontFamily( font_family )
+    setFontFamily( font_family: string )
     {
         this._setValueProperty( "font_family", font_family );
     }
@@ -194,33 +213,25 @@ class PinEntity extends AbstractPointEntity {
 
     /**
      * Add Pin
-     * @param {mapray.GeoPoint} position         位置
-     * @param {object}          [props]          プロパティ
-     * @param {float}           [props.size]     アイコンサイズ
-     * @param {mapray.Vector3}  [props.fg_color] アイコン色
-     * @param {mapray.Vector3}  [props.bg_color] 背景色
-     * @param {string}          [props.id]       Entryを識別するID
-     * @return {mapray.PinEntity.TextPinEntry}   追加したEntry
+     * @param position  位置
+     * @param props     プロパティ
+     * @return          追加したEntry
      */
-    addPin( position, props )
+    addPin( position: GeoPoint, props?: PinEntity.AbstractPinEntryOption ): PinEntity.TextPinEntry
     {
         return this.addTextPin( "", position, props );
     }
 
     /**
      * Add Maki Icon Pin
-     * @param {string}          id      　          ID of Maki Icon
-     * @param {mapray.GeoPoint} position            位置
-     * @param {object}          [props]             プロパティ
-     * @param {float}           [props.size]        アイコンサイズ
-     * @param {mapray.Vector3}  [props.fg_color]    アイコン色
-     * @param {mapray.Vector3}  [props.bg_color]    背景色
-     * @param {string}          [props.id]          Entryを識別するID
-     * @return {mapray.PinEntity.MakiIconPinEntry}  追加したEntry
+     * @param id       ID of Maki Icon
+     * @param position 位置
+     * @param props    プロパティ
+     * @return 追加したEntry
      */
-    addMakiIconPin( id, position, props )
+    addMakiIconPin( id: string, position: GeoPoint, props?: PinEntity.MakiIconPinEntryOption ): PinEntity.MakiIconPinEntry
     {
-        var entry = new MakiIconPinEntry( this, id, position, props );
+        var entry = new PinEntity.MakiIconPinEntry( this, id, position, props );
         this._entries.push( entry );
         this._primitive_producer.onAddEntry();
         return entry;
@@ -228,19 +239,14 @@ class PinEntity extends AbstractPointEntity {
 
     /**
      * Add Text Pin
-     * @param {string}          text    　          ピンに表示されるテキスト
-     * @param {mapray.GeoPoint} position            位置
-     * @param {object}          [props]             プロパティ
-     * @param {float}           [props.size]        アイコンサイズ
-     * @param {mapray.Vector3}  [props.fg_color]    アイコン色
-     * @param {mapray.Vector3}  [props.bg_color]    背景色
-     * @param {string}          [props.font_family] フォントファミリー
-     * @param {string}          [props.id]          Entryを識別するID
-     * @return {mapray.PinEntity.TextPinEntry}      追加したEntry
+     * @param text     ピンに表示されるテキスト
+     * @param position 位置
+     * @param props    プロパティ
+     * @return         追加したEntry
      */
-    addTextPin( text, position, props )
+    addTextPin( text: string, position: GeoPoint, props?: PinEntity.TextPinEntryOption ): PinEntity.TextPinEntry
     {
-        var entry = new TextPinEntry( this, text, position, props );
+        var entry = new PinEntity.TextPinEntry( this, text, position, props );
         this._entries.push( entry );
         this._primitive_producer.onAddEntry();
         return entry;
@@ -248,36 +254,40 @@ class PinEntity extends AbstractPointEntity {
 
 
     /**
-     * @summary 専用マテリアルを取得
-     * @private
+     * 専用マテリアルを取得
      */
-    _getMaterial( render_target )
+    private _getMaterial( render_target: RenderStage.RenderTarget )
     {
         var scene = this.scene;
-        if ( render_target === RenderTarget.SCENE ) {
+        if ( render_target === RenderStage.RenderTarget.SCENE ) {
             if ( !scene._PinEntity_pin_material ) {
                 // scene にマテリアルをキャッシュ
                 scene._PinEntity_pin_material = new PinMaterial( scene.glenv );
             }
             return scene._PinEntity_pin_material;
         }
-        else if (render_target === RenderTarget.RID) {
+        else if (render_target === RenderStage.RenderTarget.RID) {
             if ( !scene._PinEntity_pin_material_pick ) {
                 // scene にマテリアルをキャッシュ
                 scene._PinEntity_pin_material_pick = new PinMaterial( scene.glenv, { ridMaterial: true } );
             }
             return scene._PinEntity_pin_material_pick;
         }
+        else {
+            throw new Error("unknown render target: " + render_target);
+        }
     }
 
 
     /**
-     * @private
+     * プロパティを設定
      */
-    _setValueProperty( name, value )
+    private _setValueProperty( name: string, value: string )
     {
         var props = this._parent_props;
+        // @ts-ignore
         if ( props[name] != value ) {
+            // @ts-ignore
             props[name] = value;
             this._primitive_producer.onChangeParentProperty();
         }
@@ -285,12 +295,14 @@ class PinEntity extends AbstractPointEntity {
 
 
     /**
-     * @private
+     * Vector3プロパティを設定
      */
-    _setVector3Property( name, value )
+    private _setVector3Property( name: string, value: Vector3 )
     {
+        // @ts-ignore
         var dst = this._parent_props[name];
         if ( !dst ) {
+            // @ts-ignore
             dst = this._parent_props[name] = GeoMath.createVector3f( value );
             this._primitive_producer.onChangeParentProperty();
         }
@@ -302,12 +314,14 @@ class PinEntity extends AbstractPointEntity {
 
 
     /**
-     * @private
+     * Vector2プロパティを設定
      */
-    _setVector2Property( name, value )
+    private _setVector2Property( name: string, value: Vector2 )
     {
+        // @ts-ignore
         var dst = this._parent_props[name];
         if ( !dst ) {
+            // @ts-ignore
             this._parent_props[name] = GeoMath.createVector2f( value );
             this._primitive_producer.onChangeParentProperty();
         }
@@ -319,9 +333,9 @@ class PinEntity extends AbstractPointEntity {
 
 
     /**
-     * @private
+     * @param json Json
      */
-    _setupByJson( json )
+    private _setupByJson( json: PinEntity.Json )
     {
         var position = new GeoPoint();
 
@@ -333,35 +347,117 @@ class PinEntity extends AbstractPointEntity {
         if ( json.size )     this.setSize( json.size );
         if ( json.fg_color ) this.setFGColor( json.fg_color );
         if ( json.bg_color ) this.setBGColor( json.bg_color );
-        if ( json.font_family ) this.setBGColor( json.font_family );
+        if ( json.font_family ) this.setFontFamily( json.font_family );
     }
 
-    
+
     /**
-     * @summary IDでEntryを取得
-     * @param {string}  id  ID
-     * @return {mapray.PinEntity.MakiIconPinEntry|mapray.PinEntity.TextPinEntry}  IDが一致するEntry（無ければundefined）
+     * IDでEntryを取得
+     * @param  id  ID
+     * @return IDが一致するEntry（なければ `undefined` を返す）。
      */
-    getEntry( id )
+    getEntry( id: string ): PinEntity.TextPinEntry | PinEntity.MakiIconPinEntry | undefined
     {
         return this._entries.find((entry) => entry.id === id);
     }
+
+
+    // クラス定数の定義
+    static readonly SAFETY_PIXEL_MARGIN = 1;
+    static MAX_IMAGE_WIDTH     = 4096;
+    static CIRCLE_SEP_LENGTH   = 32;
+    static DEFAULT_SIZE        = GeoMath.createVector2f( [30, 30] );
+    static DEFAULT_FONT_FAMILY = "sans-serif";
+    static DEFAULT_FG_COLOR    = GeoMath.createVector3f( [1.0, 1.0, 1.0] );
+    static DEFAULT_BG_COLOR    = GeoMath.createVector3f( [0.35, 0.61, 0.81] );
+
 }
 
 
-// クラス定数の定義
-{
-    PinEntity.SAFETY_PIXEL_MARGIN = 1;
-    PinEntity.MAX_IMAGE_WIDTH     = 4096;
-    PinEntity.CIRCLE_SEP_LENGTH   = 32;
-    PinEntity.DEFAULT_SIZE        = GeoMath.createVector2f( [30, 30] );
-    PinEntity.DEFAULT_FONT_FAMILY = "sans-serif";
-    PinEntity.DEFAULT_FG_COLOR    = GeoMath.createVector3f( [1.0, 1.0, 1.0] );
-    PinEntity.DEFAULT_BG_COLOR    = GeoMath.createVector3f( [0.35, 0.61, 0.81] );
 
-    PinEntity.SAFETY_PIXEL_MARGIN = 1;
-    PinEntity.MAX_IMAGE_WIDTH     = 4096;
+namespace PinEntity {
+
+
+/** オプション */
+export interface Option extends Entity.Option {
+    /** 生成情報 */
+    json: Json;
 }
+
+
+export interface PinPositionJson {
+    position: [ x: number, y: number, z: number ]
+}
+
+
+export interface Json extends Entity.Json {
+    entries: (PinPositionJson & ParentPinEntryOption)[];
+    size?: Vector2;
+    fg_color?: Vector3;
+    bg_color?: Vector3;
+    font_family?: string;
+}
+
+
+export interface AbstractPinEntryOption {
+    /** アイコンサイズ */
+    size?: number | Vector2;
+
+    /** アイコン色 */
+    fg_color?: Vector3;
+
+    /** アイコン背景色 */
+    bg_color?: Vector3;
+
+    /** Entryを識別するID */
+    id?: string;
+}
+
+
+export interface MakiIconPinEntryOption extends AbstractPinEntryOption {
+}
+
+
+export interface TextPinEntryOption extends AbstractPinEntryOption {
+    /** フォントファミリー */
+    font_family?: string;
+}
+
+
+export type ParentPinEntryOption = MakiIconPinEntryOption & TextPinEntryOption;
+
+
+/** @internal */
+export interface AbstractPinEntryProps {
+    /** アイコンサイズ */
+    size?: Vector2;
+
+    /** アイコン色 */
+    fg_color?: Vector3;
+
+    /** アイコン背景色色 */
+    bg_color?: Vector3;
+
+    /** Entryを識別するID */
+    id?: string;
+}
+
+
+/** @internal */
+export interface MakiIconPinEntryProps extends AbstractPinEntryProps {
+}
+
+
+/** @internal */
+export interface TextPinEntryProps extends AbstractPinEntryProps {
+    /** フォントファミリー */
+    font_family?: string;
+}
+
+
+/** @internal */
+export type ParentPinEntryProps = MakiIconPinEntryProps & TextPinEntryProps;
+
 
 
 
@@ -373,37 +469,52 @@ class PinEntity extends AbstractPointEntity {
  *
  * @private
  */
-class PrimitiveProducer extends Entity.PrimitiveProducer {
+export class PrimitiveProducer extends Entity.PrimitiveProducer {
+
+    private _glenv: GLEnv;
+
+    private _dirty = true;
+
+    private _transform  = GeoMath.setIdentity( GeoMath.createMatrix() );
+
+    /** プリミティブの要素 */
+    private _properties: {
+        /** 画像 */
+        image?: Texture;
+
+        /** マスク画像 */
+        image_mask?: Texture;
+    } = {};
+
+    private _primitive: Primitive;
+
+    private _pickPrimitive: Primitive;
+
+    /** プリミティブ配列 */
+    private _primitives: Primitive[] = [];
+
+    /** プリミティブ配列 */
+    private _pickPrimitives: Primitive[] = [];
 
     /**
-     * @param {mapray.PinEntity} entity
+     * @param entity
      */
-    constructor( entity )
+    constructor( entity: PinEntity )
     {
         super( entity );
 
         this._glenv = entity.scene.glenv;
-        this._dirty = true;
-
-        // プリミティブの要素
-        this._transform  = GeoMath.setIdentity( GeoMath.createMatrix() );
-        this._properties = {
-            image: null,       // 画像
-            image_mask: null,  // マスク画像
-        };
 
         // プリミティブ
-        var primitive = new Primitive( this._glenv, null, entity._getMaterial( RenderTarget.SCENE ), this._transform );
+        // @ts-ignore
+        var primitive = new Primitive( this._glenv, null, entity._getMaterial( RenderStage.RenderTarget.SCENE ), this._transform );
         primitive.properties = this._properties;
         this._primitive = primitive;
 
-        var pickPrimitive = new Primitive( this._glenv, null, entity._getMaterial( RenderTarget.RID ), this._transform );
+        // @ts-ignore
+        var pickPrimitive = new Primitive( this._glenv, null, entity._getMaterial( RenderStage.RenderTarget.RID ), this._transform );
         pickPrimitive.properties = this._properties;
         this._pickPrimitive = pickPrimitive;
-
-        // プリミティブ配列
-        this._primitives = [];
-        this._pickPrimitives = [];
     }
 
 
@@ -414,7 +525,8 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
     {
         const region = new EntityRegion();
 
-        for ( let {position} of this.entity._entries ) {
+        // @ts-ignore
+        for ( let {position} of this.getEntity()._entries ) {
             region.addPoint( position );
         }
 
@@ -425,7 +537,7 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
     /**
      * @override
      */
-    onChangeElevation( regions )
+    onChangeElevation( regions: EntityRegion[] )
     {
         this._dirty = true;
     }
@@ -434,10 +546,10 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
     /**
      * @override
      */
-    getPrimitives( stage )
+    getPrimitives( stage: RenderStage )
     {
         this._updatePrimitive( stage );
-        return stage.getRenderTarget() === RenderTarget.SCENE ? this._primitives : this._pickPrimitives;
+        return stage.getRenderTarget() === RenderStage.RenderTarget.SCENE ? this._primitives : this._pickPrimitives;
     }
 
 
@@ -497,14 +609,15 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
      *
      * @private
      */
-    _updatePrimitive()
+    _updatePrimitive( stage: RenderStage )
     {
         if ( !this._dirty ) {
             // 更新する必要はない
             return;
         }
 
-        if ( this.entity._entries.length == 0 ) {
+        // @ts-ignore
+        if ( this.getEntity()._entries.length == 0 ) {
             this._primitives = [];
             this._pickPrimitives = [];
             this._dirty = false;
@@ -575,7 +688,7 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
 
     /**
-     * @summary プリミティブの更新
+     * プリミティブの更新
      *
      * @desc
      * 条件:
@@ -585,13 +698,12 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
      * 出力:
      *   this._transform
      *
-     * @param {number[]} gocs_array  GOCS 平坦化配列
-     *
-     * @private
+     * @param gocs_array  GOCS 平坦化配列
      */
-    _updateTransform( gocs_array )
+    private _updateTransform( gocs_array: Float64Array )
     {
-        var num_entries = this.entity._entries.length;
+        // @ts-ignore
+        var num_entries = this.getEntity()._entries.length;
         var        xsum = 0;
         var        ysum = 0;
         var        zsum = 0;
@@ -612,16 +724,16 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
 
     /**
-     * @summary GOCS 平坦化配列を取得
+     * GOCS 平坦化配列を取得
      *
      * 入力: this.entity._entries
      *
-     * @return {number[]}  GOCS 平坦化配列
-     * @private
+     * @return GOCS 平坦化配列
      */
-    _createFlatGocsArray()
+    private _createFlatGocsArray(): Float64Array
     {
-        const num_points = this.entity._entries.length;
+        // @ts-ignore
+        const num_points = this.getEntity()._entries.length;
         return GeoPoint.toGocsArray( this._getFlatGeoPoints_with_Absolute(), num_points,
                                      new Float64Array( 3 * num_points ) );
     }
@@ -637,7 +749,8 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
      */
     _getFlatGeoPoints_with_Absolute()
     {
-        const owner      = this.entity;
+        const owner      = this.getEntity();
+        // @ts-ignore
         const entries    = owner._entries;
         const num_points = entries.length;
         const flat_array = new Float64Array( 3 * num_points );
@@ -685,17 +798,28 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
  * @public
  * @abstract
  */
-class AbstractPinEntry {
+export class AbstractPinEntry<T extends AbstractPinEntryProps> extends AbstractPointEntity.Entry {
 
-    constructor( owner, position, props ) {
+    protected _owner: PinEntity;
+
+    private _position: GeoPoint;
+
+    private _animation: BindingBlock;
+
+    protected _props: T;
+
+    protected _icon?: IconLoaderItem;
+
+    constructor( owner: PinEntity, position: GeoPoint, props: AbstractPinEntryOption ) {
+        super();
         this._owner = owner;
         this._position = position.clone();
 
-        // animation.BindingBlock
+        // @ts-ignore
         this._animation = new EasyBindingBlock();
-        
         this._setupAnimationBindingBlock();
 
+        // @ts-ignore
         this._props = Object.assign( {}, props );  // props の複製
         this._copyPropertyVector3f( "fg_color" );  // deep copy
         this._copyPropertyVector3f( "bg_color" );  // deep copy
@@ -707,35 +831,29 @@ class AbstractPinEntry {
     }
 
     /**
-     * @summary 位置
-     * @type {mapray.GeoPoint}
-     * @readonly
-     * @package
+     * 位置
      */
-    get position()
+    get position(): GeoPoint
     {
         return this._position;
     }
 
     /**
-     * @summary ID
-     * @type {string}
-     * @readonly
+     * ID
      */
-    get id()
+    get id(): string
     {
+        // @ts-ignore
         return this._props.hasOwnProperty( "id" ) ? this._props.id : "";
     }
 
     /**
-     * @summary アイコンサイズ (Pixels)
-     * @type {mapray.Vector2}
-     * @readonly
-     * @package
+     * アイコンサイズ (Pixels)
      */
-    get size()
+    get size(): Vector2
     {
         const props = this._props;
+        // @ts-ignore
         const parent = this._owner._parent_props;
         return (
             props.size || parent.size ||
@@ -747,47 +865,40 @@ class AbstractPinEntry {
     }
 
     /**
-     * @summary アイコン色
-     * @type {mapray.Vector3}
-     * @readonly
-     * @package
+     * アイコン色
      */
-    get fg_color()
+    get fg_color(): Vector3
     {
         const props  = this._props;
+        /** @ts-ignore */
         const parent = this._owner._parent_props;
         return props.fg_color || parent.fg_color || PinEntity.DEFAULT_FG_COLOR;
     }
 
     /**
-     * @summary アイコン背景色
-     * @type {mapray.Vector3}
-     * @readonly
-     * @package
+     * アイコン背景色
      */
-    get bg_color()
+    get bg_color(): Vector3
     {
         const props  = this._props;
+        /** @ts-ignore */
         const parent = this._owner._parent_props;
         return props.bg_color || parent.bg_color || PinEntity.DEFAULT_BG_COLOR;
     }
 
     /**
-     * @summary アニメーションパラメータ設定
-     *
-     * @type {mapray.animation.BindingBlock}
-     * @readonly
      */
-    get animation() { return this._animation; }
+    override getAnimation(): BindingBlock {
+        return this._animation;
+    }
 
     /**
      * アニメーションの BindingBlock を初期化
-     *
-     * @private
      */
-    _setupAnimationBindingBlock()
+    private _setupAnimationBindingBlock()
     {
-        const block = this.animation;  // 実体は EasyBindingBlock
+        // @ts-ignore
+        const block = this.getAnimation() as EasyBindingBlock;  // 実体は EasyBindingBlock
 
         const number = Type.find( "number" );
         const vector2 = Type.find( "vector2" );
@@ -798,7 +909,7 @@ class AbstractPinEntry {
         //   ベクトルの要素が longitude, latitude, altitude 順であると解釈
         const position_temp = new GeoPoint();
 
-        block.addEntry( "position", [vector3], null, value => {
+        block.addEntry( "position", [vector3], null, (value: Vector3) => {
             position_temp.setFromArray( value );  // Vector3 -> GeoPoint
             this.setPosition( position_temp );
         } );
@@ -806,14 +917,14 @@ class AbstractPinEntry {
         // パラメータ名: fg_color
         // パラメータ型: vector3
         //   アイコンの色
-        block.addEntry( "fg_color", [vector3], null, value => {
+        block.addEntry( "fg_color", [vector3], null, (value: Vector3) => {
             this.setFGColor( value );
         } );
         
         // パラメータ名: bg_color
         // パラメータ型: vector3
         //   アイコン背景の色
-        block.addEntry( "bg_color", [vector3], null, value => {
+        block.addEntry( "bg_color", [vector3], null, (value: Vector3) => {
             this.setBGColor( value );
         } );
 
@@ -822,31 +933,31 @@ class AbstractPinEntry {
         //   型が vector2 のとき アイコンのピクセルサイズX, Y 順であると解釈
         //   型が number のとき アイコンのピクセルサイズX, Y は同値
         const size_temp = GeoMath.createVector2();
-        let   size_type;
+        let   size_type: Type | null;
 
-        let size_tsolver = curve => {
+        let size_tsolver = (curve: Curve) => {
             size_type = AnimUtil.findFirstTypeSupported( curve, [vector2, number] );
             return size_type;
         };
 
-        block.addEntry( "size", [vector2, number], size_tsolver, value => {
-            if ( size_type === vector2 ) {
-                this.setSize( value );
+        block.addEntry( "size", [vector2, number], size_tsolver, (value: Vector2 | number) => {
+            if ( size_type === vector2 ) { // value must be Vector2
+                this.setSize( value as Vector2 );
             }
-            else { // size_type === number
-                size_temp[0] = value;
-                size_temp[1] = value;
+            else { // size_type === number (value must be number)
+                size_temp[0] = value as number;
+                size_temp[1] = value as number;
                 this.setSize( size_temp );
             }
         } );
     }
 
     /**
-     * @summary モデル原点位置を設定
+     * モデル原点位置を設定
      *
-     * @param {mapray.GeoPoint} position  モデル原点の位置
+     * @param position  モデル原点の位置
      */
-    setPosition( position )
+    setPosition( position: GeoPoint )
     {
         if ( this._position.longitude !== position.longitude ||
              this._position.latitude  !== position.latitude  ||
@@ -858,68 +969,75 @@ class AbstractPinEntry {
     }
 
     /**
-     * @summary アイコンのピクセルサイズを指定
-     * @param {mapray.Vector3} size  アイコンのピクセルサイズ
+     * アイコンのピクセルサイズを指定
+     * @param size  アイコンのピクセルサイズ
      */
-    setSize( size )
+    setSize( size: Vector2 )
     {
         this._setVector2Property( "size", size );
     }
 
 
     /**
-     * @summary アイコンの色を設定
-     * @param {mapray.Vector3} color  アイコンの色
+     * アイコンの色を設定
+     * @param アイコンの色
      */
-    setFGColor( color )
+    setFGColor( color: Vector3 )
     {
         this._setVector3Property( "fg_color", color );
     }
 
 
     /**
-     * @summary アイコン背景の色を設定
-     * @param {mapray.Vector3} color  アイコン背景の色
+     * アイコン背景の色を設定
+     * @param color  アイコン背景の色
      */
-    setBGColor( color )
+    setBGColor( color: Vector3 )
     {
         this._setVector3Property( "bg_color", color );
     }
 
     /**
-     * @private
+     * Vector3fプロパティのコピー
      */
-    _copyPropertyVector3f( name )
+    private _copyPropertyVector3f( name: string )
     {
         var props = this._props;
         if ( props.hasOwnProperty( name ) ) {
+            // @ts-ignore
             props[name] = GeoMath.createVector3f( props[name] );
         }
     }
 
     /**
-     * @private
+     * Vector2fプロパティのコピー
      */
-    _copyPropertyVector2f( name )
+    private _copyPropertyVector2f( name: string )
     {
         var props = this._props;
         if ( props.hasOwnProperty( name ) ) {
-            if ( typeof( props[name] ) === 'number' ) {
-                props[name] = GeoMath.createVector2f( [ props[name], props[name] ] );
+            // @ts-ignore
+            const value = props[name] as number | Vector2;
+            if ( typeof( value ) === 'number' ) {
+                // @ts-ignore
+                props[name] = GeoMath.createVector2f( [ value, value ] );
             }
             else {
-                props[name] = GeoMath.createVector2f( props[name] );
+                // @ts-ignore
+                props[name] = GeoMath.createVector2f( value );
             }
         }
     }
     
     /**
-     * @private
+     * Vector3プロパティの設定
      */
-    _setVector3Property( name, value )
+    private _setVector3Property( name: string, value: Vector3 )
     {
+        // @ts-ignore
         var dst = this._props[name];
         if ( !dst ) {
+            // @ts-ignore
             dst = this._props[name] = GeoMath.createVector3f( value );
             this._owner.getPrimitiveProducer().onChangeChildProperty();
         }
@@ -930,12 +1048,14 @@ class AbstractPinEntry {
     }
 
     /**
-     * @private
+     * Vector2プロパティの設定
      */
-    _setVector2Property( name, value )
+    private _setVector2Property( name: string, value: Vector2 )
     {
+        // @ts-ignore
         var dst = this._props[name];
         if ( !dst ) {
+            // @ts-ignore
             this._props[name] = GeoMath.createVector2f( value );
             this._owner.getPrimitiveProducer().onChangeChildProperty();
         }
@@ -946,19 +1066,20 @@ class AbstractPinEntry {
     }
 
     isLoaded() {
-        return this._icon.isLoaded();
+        return this._icon && this._icon.isLoaded();
     }
 
-    get icon() {
+    get icon(): IconLoaderItem | undefined {
         return this._icon;
     }
 
-    draw( context, x, y, width, height ) {
-        this._icon.draw( context, x, y, width, height );
+    draw( context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number ) {
+        if ( this._icon ) {
+            this._icon.draw( context, x, y, width, height );
+        }
     }
 }
 
-PinEntity.AbstractPinEntry = AbstractPinEntry;
 
 
 /**
@@ -968,19 +1089,17 @@ PinEntity.AbstractPinEntry = AbstractPinEntry;
  * @extends mapray.PinEntity.AbstractPinEntry
  * @public
  */
-class MakiIconPinEntry extends AbstractPinEntry {
+export class MakiIconPinEntry extends AbstractPinEntry<MakiIconPinEntryProps> {
+
+    private _maki_id?: string;
 
     /**
-     * @param {mapray.PinEntity}    owner               所有者
-     * @param {string}              id                  MakiアイコンのID
-     * @param {mapray.GeoPoint}     position            位置
-     * @param {object}              [props]             プロパティ
-     * @param {float}               [props.size]        アイコンサイズ
-     * @param {mapray.Vector3}      [props.fg_color]    アイコン色
-     * @param {mapray.Vector3}      [props.bg_color]    背景色
-     * @param {string}              [props.id]          Entryを識別するID
+     * @param owner     所有者
+     * @param id        MakiアイコンのID
+     * @param position  位置
+     * @param props     プロパティ
      */
-    constructor( owner, id, position, props )
+    constructor( owner: PinEntity, id: string, position: GeoPoint, props: PinEntity.MakiIconPinEntryOption = {} )
     {
         super( owner, position, props );
         
@@ -991,46 +1110,43 @@ class MakiIconPinEntry extends AbstractPinEntry {
 
     /**
      * アニメーションの BindingBlock を初期化
-     *
-     * @private
      */
-    _setupMakiIconPinAnimationBindingBlock()
+    private _setupMakiIconPinAnimationBindingBlock()
     {
-        const block = this.animation;  // 実体は EasyBindingBlock
+        // @ts-ignore
+        const block = this.getAnimation() as EasyBindingBlock;  // 実体は EasyBindingBlock
 
         const string = Type.find( "string" );
 
         // パラメータ名: id
         // パラメータ型: string
         //   アイコンのID
-        block.addEntry( "id", [string], null, value => {
+        block.addEntry( "id", [string], null, (value: string) => {
             this.setId( value );
-        } );        
+        } );
     }
 
     /**
-     * @summary アイコンのIDを設定
-     * @param {string} maki_id  アイコンのID
+     * アイコンのIDを設定
+     * @param maki_id  アイコンのID
      */
-    setId( maki_id )
+    setId( maki_id: string )
     {
         if ( this._maki_id !== maki_id ) {
             // アイコンのIDが変更された
             this._maki_id = maki_id;
             this._icon = MakiIconPinEntry.makiIconLoader.load( maki_id );
-            this._icon.onEnd(item => {
+            this._icon.onEnd(( item: IconLoaderItem ) => {
+                    // @ts-ignore
                     this._owner.getPrimitiveProducer()._dirty = true;
             });
         }
     }
+
+    static makiIconLoader = new URLTemplateIconLoader( "https://resource.mapray.com/styles/v1/icons/maki/", ".svg" );
 }
 
-PinEntity.MakiIconPinEntry = MakiIconPinEntry;
-
-
-{
-    MakiIconPinEntry.makiIconLoader = new URLTemplateIconLoader( "https://resource.mapray.com/styles/v1/icons/maki/", ".svg" );
-}
+// PinEntity.MakiIconPinEntry = MakiIconPinEntry;
 
 
 
@@ -1042,24 +1158,22 @@ PinEntity.MakiIconPinEntry = MakiIconPinEntry;
  * @extends mapray.PinEntity.AbstractPinEntry
  * @public
  */
-class TextPinEntry extends AbstractPinEntry {
+export class TextPinEntry extends AbstractPinEntry<TextPinEntryProps> {
+
+    private _text: string;
 
     /**
-     * @param {mapray.PinEntity}  owner                所有者
-     * @param {string}            text                 テキスト
-     * @param {mapray.GeoPoint}   position             位置
-     * @param {object}            [props]              プロパティ
-     * @param {float}             [props.size]         アイコンピクセルサイズ
-     * @param {mapray.Vector3}    [props.fg_color]     アイコン色
-     * @param {mapray.Vector3}    [props.bg_color]     背景色
-     * @param {string}            [props.font_family]  フォントファミリー
-     * @param {string}            [props.id]           Entryを識別するID
+     * @param owner     所有者
+     * @param text      テキスト
+     * @param position  位置
+     * @param props     プロパティ
      */
-    constructor( owner, text, position, props )
+    constructor( owner: PinEntity, text: string, position: GeoPoint, props: PinEntity.TextPinEntryOption = {} )
     {
         super( owner, position, props );
         
-        this.setText( text );
+        this._text = text;
+        this._renderIcon();
         
         this._setupTextPinAnimationBindingBlock();
     }
@@ -1074,59 +1188,61 @@ class TextPinEntry extends AbstractPinEntry {
     get font_family()
     {
         const props  = this._props;
+        // @ts-ignore
         const parent = this._owner._parent_props;
         return props.font_family || parent.font_family || PinEntity.DEFAULT_FONT_FAMILY;
     }
 
     /**
      * アニメーションの BindingBlock を初期化
-     *
-     * @private
      */
-    _setupTextPinAnimationBindingBlock()
+    private _setupTextPinAnimationBindingBlock()
     {
-        const block = this.animation;  // 実体は EasyBindingBlock
+        // @ts-ignore
+        const block = this.getAnimation() as EasyBindingBlock;  // 実体は EasyBindingBlock
 
         const string = Type.find( "string" );
 
         // パラメータ名: text
         // パラメータ型: string
         //   テキスト
-        block.addEntry( "text", [string], null, value => {
+        block.addEntry( "text", [string], null, (value: string) => {
             this.setText( value );
-        } );        
+        } );
     }
 
     /**
-     * @summary テキストを設定
-     * @param {string} text  テキスト
+     * テキストを設定
+     * @param text  テキスト
      */
-    setText( text )
+    setText( text: string )
     {
         if ( this._text !== text ) {
             // テキストが変更された
             this._text = text;
-            this._icon = TextPinEntry.textIconLoader.load( {
-                    text:  this._text,
-                    props: {
-                        size: this.size,
-                        font_family: this.font_family,
-                    }
-            } );
-            this._icon.onEnd(item => {
-                    this._owner.getPrimitiveProducer()._dirty = true;
-            });
+            this._renderIcon();
         }
     }
+
+    /**
+     * アイコンを生成します
+     */
+    private _renderIcon() {
+        const icon = this._icon = TextPinEntry.textIconLoader.load( {
+                text:  this._text,
+                props: {
+                    size: this.size,
+                    font_family: this.font_family,
+                }
+        } ) as IconLoaderItem;
+        icon.onEnd((item: IconLoaderItem) => {
+                // @ts-ignore
+                this._owner.getPrimitiveProducer()._dirty = true;
+        });
+    }
+
+    static textIconLoader = new TextIconLoader();
 }
-
-PinEntity.TextPinEntry = TextPinEntry;
-
-
-{
-    TextPinEntry.textIconLoader = new TextIconLoader();
-}
-
 
 
 
@@ -1136,7 +1252,21 @@ PinEntity.TextPinEntry = TextPinEntry;
  * @memberof mapray.PinEntity
  * @private
  */
-class Layout {
+export class Layout {
+
+    private _owner: PrimitiveProducer;
+
+    private _is_valid: boolean;
+
+    private _vertices: number[];
+
+    private _items: LItem[];
+
+    private _indices: number[];
+
+    private _texture?: Texture;
+
+    private _texture_mask?: Texture;
 
     /**
      * @desc
@@ -1148,7 +1278,7 @@ class Layout {
      * @param {PrimitiveProducer} owner       所有者
      * @param {number[]}          gocs_array  GOCS 平坦化配列
      */
-    constructor( owner, gocs_array )
+    constructor( owner: PrimitiveProducer, gocs_array: Float64Array )
     {
         this._owner = owner;
         this._items = this._createItemList();
@@ -1158,6 +1288,8 @@ class Layout {
         if ( row_layouts.length == 0 ) {
             // 有効なテキストが1つも無い
             this._is_valid = false;
+            this._vertices = [];
+            this._indices = [];
             return;
         }
 
@@ -1172,61 +1304,53 @@ class Layout {
 
 
     /**
-     * @summary 有効なオブジェクトか？
-     * @desc
-     * <p>無効のとき、他のメソッドは呼び出せない。</p>
-     * @return {boolean}  有効のとき true, 無効のとき false
+     * 有効なオブジェクトか？
+     * 
+     * 無効のとき、他のメソッドは呼び出せない。
+     * @return 有効のとき true, 無効のとき false
      */
-    isValid()
+    isValid(): boolean
     {
         return this._is_valid;
     }
 
 
     /**
-     * @summary テクスチャ
-     * @type {mapray.Texture}
-     * @readonly
+     * テクスチャ
      */
-    get texture()
+    get texture(): Texture | undefined
     {
         return this._texture;
     }
 
     /**
-     * @summary テクスチャマスク
-     * @type {mapray.Texture}
-     * @readonly
+     * テクスチャマスク
      */
-    get texture_mask()
+    get texture_mask(): Texture | undefined
     {
         return this._texture_mask;
     }
 
 
     /**
-     * @summary 頂点配列
-     * @desc
+     * 頂点配列
+     *
      * 条件:
      *   this._entries.length > 0
      * 入力:
      *   this._entries
      *   this._transform
-     * @type {Float32Array}
-     * @readonly
      */
-    get vertices()
+    get vertices(): number[]
     {
         return this._vertices;
     }
 
 
     /**
-     * @summary インデックス配列
-     * @type {Uint32Array}
-     * @readonly
+     * インデックス配列
      */
-    get indices()
+    get indices(): number[]
     {
         return this._indices;
     }
@@ -1243,7 +1367,8 @@ class Layout {
 
         const items = [];
         let counter = 0;
-        for ( let entry of this._owner.entity._entries ) {
+        // @ts-ignore
+        for ( let entry of this._owner.getEntity()._entries ) {
             if ( entry.isLoaded() ) {
                 let item = map.get( entry.icon );
                 if ( !item ) {
@@ -1265,7 +1390,7 @@ class Layout {
     _createRowLayouts()
     {
         // アイテムリストの複製
-        var items = [].concat( this._items );
+        var items = [ ...this._items ];
 
         // RowLayout 内であまり高さに差が出ないように、アイテムリストを高さで整列
         items.sort( function( a, b ) { return a.height_pixel - b.height_pixel; } );
@@ -1284,13 +1409,12 @@ class Layout {
 
 
     /**
-     * @summary テクスチャを生成
-     * @param  {number} width    横幅
-     * @param  {number} height   高さ
-     * @return {mapray.Texture}  テキストテクスチャ
-     * @private
+     * テクスチャを生成
+     * @param  width    横幅
+     * @param  height   高さ
+     * @return テキストテクスチャ
      */
-    _createTexture( width, height )
+    private _createTexture( width: number, height: number ): Texture
     {
         var context = Dom.createCanvasContext( width, height );
 
@@ -1301,6 +1425,7 @@ class Layout {
             item.draw( context );
         }
 
+        // @ts-ignore
         var glenv = this._owner._glenv;
         var opts = {
             usage: Texture.Usage.ICON
@@ -1308,10 +1433,11 @@ class Layout {
         return new Texture( glenv, context.canvas, opts );
     }
 
-    _createTextureMask()
+    private _createTextureMask()
     {
         var context = Dom.createCanvasContext( 3, 3 );
         context.fillRect( 1, 1, 1, 1 );
+        // @ts-ignore
         var glenv = this._owner._glenv;
         var opts = {
             usage: Texture.Usage.ICON,
@@ -1321,20 +1447,19 @@ class Layout {
     }
 
     /**
-     * @summary 頂点配列を生成
+     * 頂点配列を生成
      *
-     * @param  {number}   width       横幅
-     * @param  {number}   height      高さ
-     * @param  {number[]} gocs_array  GOCS 平坦化配列
-     * @return {array.<number>}  頂点配列 [左下0, 右下0, 左上0, 右上0, ...]
-     *
-     * @private
+     * @param  width       横幅
+     * @param  height      高さ
+     * @param  gocs_array  GOCS 平坦化配列
+     * @return 頂点配列 [左下0, 右下0, 左上0, 右上0, ...]
      */
-    _createVertices( width, height, gocs_array )
+    private _createVertices( width: number, height: number, gocs_array: Float64Array ): number[]
     {
         var vertices = [];
 
         // テキスト集合の原点 (GOCS)
+        // @ts-ignore
         var transform = this._owner._transform;
         var xo = transform[12];
         var yo = transform[13];
@@ -1397,7 +1522,7 @@ class Layout {
                 var xsize = item.width;
                 var ysize = item.height;
 
-                var vertices_push_texture = ( px, py ) => {
+                var vertices_push_texture = ( px: number, py: number ) => {
                     vertices.push( (xc + xsize * px) * xn, 1 - (yc + ysize * py) * yn );
                 };
 
@@ -1460,11 +1585,10 @@ class Layout {
 
 
     /**
-     * @summary インデックス配列を生成
-     * @return {array.<number>}  インデックス配列 []
-     * @private
+     * インデックス配列を生成
+     * @return  インデックス配列 []
      */
-    _createIndices()
+    private _createIndices(): number[]
     {
         var indices = [];
 
@@ -1504,7 +1628,7 @@ class Layout {
      * @return {object}                              キャンバスサイズ
      * @private
      */
-    _setupLocation( row_layouts )
+    _setupLocation( row_layouts: RowLayout[] )
     {
         var width  = 0;
         var height = 0;
@@ -1533,29 +1657,34 @@ class Layout {
  * @memberof mapray.PinEntity
  * @private
  */
-class LItem {
+export class LItem {
+
+    entries: {
+        index: number;
+        entry: AbstractPinEntry<any>;
+    }[] = [];
+
+    // テキストの基点
+    private _pos_x: number = 0;  // 左端
+    private _pos_y: number = 0;  // ベースライン位置
+
+    private _height: number = -1;
+    private _width: number = -1;
+
+    private _is_canceled: boolean = false;
 
     /**
      * @param {mapray.PinEntity.Layout} layout   所有者
      * @param {mapray.PinEntity.Entry}  entry    PinEntityのエントリ
      */
-    constructor( layout )
+    constructor( layout: Layout )
     {
-        this.entries = [];
-
-        // テキストの基点
-        this._pos_x = 0;  // 左端
-        this._pos_y = 0;  // ベースライン位置
-
-        this._height = this._width = null;
-
-        this._is_canceled = false;
     }
 
-    add( index, entry ) {
+    add( index: number, entry: AbstractPinEntry<any> ) {
         var size = entry.size;
-        if ( this._width === null || this._width < size[0] ) this._width = size[0];
-        if ( this._height === null || this._height < size[1] ) this._height = size[1];
+        if ( this.width  === -1 || this.width  < size[0] ) this._width  = size[0];
+        if ( this.height === -1 || this.height < size[1] ) this._height = size[1];
         this.entries.push( { index, entry } );
     }
 
@@ -1637,18 +1766,17 @@ class LItem {
 
 
     /**
-     * @summary 配置を決定
-     * @param {number} x  テキスト矩形左辺の X 座標 (キャンバス座標系)
-     * @param {number} y  テキスト矩形上辺の Y 座標 (キャンバス座標系)
+     * 配置を決定
+     * @param x  テキスト矩形左辺の X 座標 (キャンバス座標系)
+     * @param y  テキスト矩形上辺の Y 座標 (キャンバス座標系)
      */
-    locate( x, y )
+    locate( x: number, y: number )
     {
         this._pos_x = x;
         this._pos_y = y;
     }
 
-    draw( context ) {
-
+    draw( context: CanvasRenderingContext2D ) {
         this.entries[0].entry.draw( context, this._pos_x, this.pos_y, this.width, this.height );
 
         var RENDER_BOUNDS = false;
@@ -1671,7 +1799,13 @@ class LItem {
  * @memberof mapray.PinEntity
  * @private
  */
-class RowLayout {
+export class RowLayout {
+
+    private _items: LItem[];
+
+    private _width_assumed: number;
+
+    private _height_pixel: number;
 
     /**
      * @desc
@@ -1679,7 +1813,7 @@ class RowLayout {
      * <p>レイアウトに失敗したアイテムは取り消し (is_canceled) になる。</p>
      * @param {array.<mapray.PinEntity.LItem>} src_items  アイテムリスト
      */
-    constructor( src_items )
+    constructor( src_items: LItem[] )
     {
         var width_assumed_total = 0;
         var height_pixel_max    = 0;
@@ -1687,8 +1821,8 @@ class RowLayout {
 
         width_assumed_total += PinEntity.SAFETY_PIXEL_MARGIN;  // 左マージン
 
-        while ( src_items.length > 0 ) {
-            var item          = src_items.shift();
+        let item: LItem | undefined;
+        while ( item = src_items.shift() ) {
             var width_assumed = item.width_pixel + PinEntity.SAFETY_PIXEL_MARGIN;  // テキスト幅 + 右マージン
 
             if ( width_assumed_total + width_assumed <= PinEntity.MAX_IMAGE_WIDTH ) {
@@ -1762,10 +1896,10 @@ class RowLayout {
 
 
     /**
-     * @summary レイアウトの配置を決定
-     * @param {number} y  テキスト矩形上辺の Y 座標 (キャンバス座標系)
+     * レイアウトの配置を決定
+     * @param y  テキスト矩形上辺の Y 座標 (キャンバス座標系)
      */
-    locate( y )
+    locate( y: number )
     {
         var items = this._items;
         var x = 0;
@@ -1780,6 +1914,10 @@ class RowLayout {
     }
 
 }
+
+
+
+} // namespace PinEntity
 
 
 
