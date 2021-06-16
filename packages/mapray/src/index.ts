@@ -1,4 +1,5 @@
 export * as animation from "./animation/";
+export { default as Dom } from "./util/Dom";
 
 export { default as GeoMath, Vector2, Vector3, Vector4, Matrix, GeoPointData } from "./GeoMath";
 export { default as GeoPoint } from "./GeoPoint";
