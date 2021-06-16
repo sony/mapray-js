@@ -19,10 +19,10 @@ class AttributionController extends ContainerController
      * @param {string}                                  options.attributions.link       リンク
      * @memberof AttributionController
      */
-    constructor( container, options )
+    constructor( container, options = {} )
     {
         super( container, options );
-        this._position = ( options && options.position ) || ContainerController.ContainerPosition.BOTTOM_RIGHT;
+        this._position = ( options.position ) || ContainerController.ContainerPosition.BOTTOM_RIGHT;
         this._attributions = [];
         if ( options && options.attributions ) {
             this.copyAttributions(options.attributions);

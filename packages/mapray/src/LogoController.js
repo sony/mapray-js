@@ -16,11 +16,11 @@ class LogoController extends ContainerController
      * @param {ContainerController.ContainerPosition}       options.position    表示位置
      * @memberof LogoController
      */
-    constructor( container, options )
+    constructor( container, options = {} )
     {
         super( container, options );
         
-        this._position = ( options && options.position ) || ContainerController.ContainerPosition.BOTTOM_LEFT;
+        this._position = ( options.position ) || ContainerController.ContainerPosition.BOTTOM_LEFT;
     }
 
     /**
