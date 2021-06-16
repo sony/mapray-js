@@ -1,17 +1,26 @@
 import Camera from "./Camera";
 import GLEnv from "./GLEnv";
+import Ray from "./Ray";
+import Entity from "./Entity";
+import DebugStats from "./DebugStats";
+import RenderCallback from "./RenderCallback";
+import NullRenderCallback from "./NullRenderCallback";
 import RenderStage, { PickStage } from "./RenderStage";
 import StandardImageProvider from "./StandardImageProvider";
 import StandardDemProvider from "./StandardDemProvider";
+import Layer from "./Layer";
 import LayerCollection from "./LayerCollection";
 import Globe from "./Globe";
+import DemProvider from "./DemProvider";
+import ImageProvider from "./ImageProvider";
 import PointCloudCollection from "./PointCloudCollection";
 import TileTextureCache from "./TileTextureCache";
-import NullRenderCallback from "./NullRenderCallback";
-import GeoMath from "./GeoMath";
+import GeoMath, { Vector2, Vector3 } from "./GeoMath";
+import GeoPoint from "./GeoPoint";
 import Scene from "./Scene";
 import SceneLoader from "./SceneLoader";
 import EasyBindingBlock from "./animation/EasyBindingBlock";
+import BindingBlock from "./animation/BindingBlock";
 
 // マウス・Attribution開発
 import LogoController from "./LogoController";
@@ -19,37 +28,85 @@ import AttributionController from "./AttributionController";
 import ContainerController from "./ContainerController";
 
 /**
- * @summary 表示管理
- * @classdesc
- * <p>mapray の表示を管理するクラスである。</p>
- * @memberof mapray
+ * 表示管理
+ *
+ * mapray の表示を管理するクラスである。
  */
 class Viewer {
 
+    private _container_element: HTMLElement;
+
+    private _canvas_element: HTMLCanvasElement;
+
+    private _glenv: GLEnv;
+
+    private _camera: Camera;
+
+    private _animation: BindingBlock;
+
+    private _dem_provider: DemProvider;
+
+    private _image_provider: ImageProvider;
+
+    private _layers: LayerCollection;
+
+    private _globe: Globe;
+
+    private _tile_texture_cache: TileTextureCache;
+
+    private _scene: Scene;
+
+    private _ground_visibility: boolean;
+
+    private _entity_visibility: boolean;
+
+    private _render_mode: Viewer.RenderMode;
+
+    private _debug_stats: DebugStats | null;
+
+    private _point_cloud_collection: PointCloudCollection;
+
+    private _render_callback: RenderCallback;
+
+    private _frame_req_id: number = 0;
+
+    private _previous_time?: number;
+
+    private _is_destroyed: boolean = false;
+
+    private _sun_direction: Vector3 = GeoMath.createVector3( [ 0, 0, 1 ] );
+
+    private _postProcesses: Viewer.PostProcess[] = [];
+
+    private _logo_controller: LogoController;
+
+    private _attribution_controller: AttributionController;
+
+
+
     /**
-     * @param {string|Element}                  container                           コンテナ (ID または要素)
-     * @param {object}                          [options]                           生成オプション
-     * @param {mapray.DemProvider}              [options.dem_provider]              DEM プロバイダ
-     * @param {mapray.ImageProvider}            [options.image_provider]            画像プロバイダ
-     * @param {array}                           [options.layers]                    地図レイヤー情報の配列
-     * @param {boolean}                         [options.ground_visibility=true]    地表の可視性
-     * @param {boolean}                         [options.entity_visibility=true]    エンティティの可視性
-     * @param {mapray.RenderCallback}           [options.render_callback]           レンダリングコールバック
-     * @param {mapray.Viewer.RenderMode}        [options.render_mode]               レンダリングモード
-     * @param {mapray.DebugStats}               [options.debug_stats]               デバッグ統計オブジェクト
-     * @param {mapray.LogoController}           [options.logo_controller]           ロゴ表示制御オブジェクト
-     * @param {mapray.AttributionController}    [options.attribution_controller]    著作権表示制御オブジェクト
+     * container コンテナ (ID または要素)
+     * options   生成オプション
      */
-    constructor( container, options )
+    constructor( container: string | HTMLElement, options: Viewer.Option = {} )
     {
-        var container_element;
-        if ( typeof container == "string" ) {
+        var container_element: HTMLElement;
+        if ( typeof container === "string" ) {
             // コンテナを ID 指定したとき
-            container_element = document.getElementById( container );
+            const tmp = document.getElementById( container );
+            if ( tmp ) {
+                container_element = tmp;
+            }
+            else {
+                throw new Error( "element couldn't be found: " + container );
+            }
         }
-        else {
+        else if ( container instanceof HTMLElement ) {
             // コンテナを直接要素で指定のとき
             container_element = container;
+        }
+        else {
+            throw new Error( "unsupported type: " + container );
         }
 
         var canvas = this._createCanvas( container_element );
@@ -68,16 +125,11 @@ class Viewer {
         this._scene              = new Scene( this, this._glenv );
         this._ground_visibility  = Viewer._getBoolOption( options, "ground_visibility", true );
         this._entity_visibility  = Viewer._getBoolOption( options, "entity_visibility", true );
-        this._render_mode        = (options && options.render_mode) || RenderMode.SURFACE;
-        this._debug_stats        = (options && options.debug_stats) || null;
+        this._render_mode        = options.render_mode || Viewer.RenderMode.SURFACE;
+        this._debug_stats        = options.debug_stats || null;
         this._point_cloud_collection = this._createPointCloudCollection( options );
         this._render_callback    = this._createRenderCallback( options );
-        this._frame_req_id       = 0;
-        this._previous_time      = undefined;
-        this._is_destroyed       = false;
         this._sun_direction      = GeoMath.createVector3( [ 0, 0, 1 ] );
-
-        this._postProcesses      = [];
 
         // マウス・Attribution開発
         this._logo_controller = ( options && options.logo_controller ) || new LogoController( this._container_element );
@@ -96,22 +148,18 @@ class Viewer {
 
 
     /**
-     * @summary インスタンスを破棄
+     * インスタンスを破棄
      *
-     * @desc
-     * <p>次の順番で処理を行い、インスタンスを破棄する。</p>
+     * 次の順番で処理を行い、インスタンスを破棄する。
      *
-     * <ol>
-     *   <li>アニメーションフレームを止める。(this.{@link mapray.Viewer#render_callback render_callback} の {@link mapray.RenderCallback#onUpdateFrame onUpdateFrame()} が呼び出されなくなる)</li>
-     *   <li>this.{@link mapray.Viewer#render_callback render_callback} の {@link mapray.RenderCallback#onStop onStop()} を呼び出す。({@link mapray.RenderCallback#onStart onStart()} がすでに呼び出されている場合)</li>
-     *   <li>{@link mapray.RenderCallback} インスタンスを this から切り離す。({@link mapray.RenderCallback#viewer} プロパティは null を返すようになる)</li>
-     *   <li>this.{@link mapray.Viewer#canvas_element canvas_element} を this.{@link mapray.Viewer#container_element container_element} から取り外す。(キャンバスは表示されなくなる)</li>
-     *   <li>データプロバイダのリクエスト、シーンデータのロードの取り消しを試みる。</li>
-     * </ol>
+     * 1. アニメーションフレームを止める。(this.[[render_callback]] の [[RenderCallback.onUpdateFrame onUpdateFrame()]] が呼び出されなくなる)
+     * 2. this.[[render_callback]] の [[RenderCallback.onStop onStop()]] を呼び出す。([[RenderCallback.onStart onStart()]] がすでに呼び出されている場合)
+     * 3. [[RenderCallback]] インスタンスを this から切り離す。([[RenderCallback.viewer]] プロパティは null を返すようになる)
+     * 4. [[canvas_element]] を [[container_element]] から取り外す。(キャンバスは表示されなくなる)
+     * 5. データプロバイダのリクエスト、シーンデータのロードの取り消しを試みる。
      *
-     * <p>このメソッドを呼び出した後は this に直接的または間接的にアクセスすることはできない。ただし {@link mapray.Viewer#destroy destroy()} の呼び出しは除く。</p>
-     *
-     * <p>このメソッドは {@link mapray.RenderCallback} のメソッドから呼び出してはならない。</p>
+     * このメソッドを呼び出した後は this に直接的または間接的にアクセスすることはできない。ただし [[destroy destroy()]] の呼び出しは除く。
+     * このメソッドは [[RenderCallback]] のメソッドから呼び出してはならない。
      */
     destroy()
     {
@@ -122,13 +170,14 @@ class Viewer {
 
         // フレームを止める
         if ( this._frame_req_id != 0 ) {
+            // @ts-ignore
             window.maprayCancelAnimationFrame( this._frame_req_id );
             this._frame_req_id = 0;
         }
 
         // RenderCallback の取り外し
         this._render_callback.detach();
-        this._render_callback = this._createRenderCallback();  // NullRenderCallback
+        this._render_callback = this._createRenderCallback( {} );  // NullRenderCallback
 
         // キャンバスをコンテナから外す
         this._container_element.removeChild( this._canvas_element );
@@ -146,8 +195,11 @@ class Viewer {
         this._scene.cancelLoaders();
 
         // マウス・Attribution開発
+        // @ts-ignore
         this._logo_controller._destroy();
+        // @ts-ignore
         this._attribution_controller._destroy();
+        // @ts-ignore
         this._attribution_controller = null;
 
         // ロゴ・著作権用コンテナの削除
@@ -160,11 +212,9 @@ class Viewer {
 
     /**
      * キャンバス要素を生成
-     * @param  {Element}           container
-     * @return {HTMLCanvasElement}
-     * @private
+     * @param  container
      */
-    _createCanvas( container )
+    private _createCanvas( container: Element ): HTMLCanvasElement
     {
         var canvas = document.createElement( "canvas" );
         canvas.className = "mapray-canvas";
@@ -177,68 +227,67 @@ class Viewer {
 
     /**
      * DemProvider を生成
-     * @private
      */
-    _createDemProvider( options )
+    private _createDemProvider( options: Viewer.Option ): DemProvider
     {
-        if ( options && options.dem_provider )
+        if ( options.dem_provider )
             return options.dem_provider;
         else
+            // @ts-ignore
             return new StandardDemProvider( "/dem/", ".bin" );
     }
 
 
     /**
      * animation.BindingBlock を生成
-     * @private
      */
-    _createAnimationBindingBlock()
+    private _createAnimationBindingBlock(): BindingBlock
     {
         let abb = new EasyBindingBlock();
         abb.addDescendantUnbinder( () => { this._unbindDescendantAnimations(); } );
+        // @ts-ignore
         return abb;
     }
 
 
     /**
      * ImageProvider を生成
-     * @private
      */
-    _createImageProvider( options )
+    private _createImageProvider( options: Viewer.Option ): ImageProvider
     {
-        if ( options && options.image_provider )
+        if ( options.image_provider )
             return options.image_provider;
-        else
+        else {
+            // @ts-ignore
             return new StandardImageProvider( "http://cyberjapandata.gsi.go.jp/xyz/std/", ".png", 256, 0, 18 );
+        }
     }
 
 
     /**
      * LayerCollection を生成
-     * @private
      */
-    _createLayerCollection( options )
+    private _createLayerCollection( options: Viewer.Option )
     {
-        var layers = (options && options.layers) ? options.layers : {};
+        var layers = (options.layers) ? options.layers : {};
         return new LayerCollection( this, layers );
     }
 
 
     /**
      * PointCloudCollection を生成
-     * @private
      */
-    _createPointCloudCollection( options )
+    private _createPointCloudCollection( options: Viewer.Option )
     {
-        const point_cloud_providers = (options && options.point_cloud_providers) ? options.point_cloud_providers : {};
-        return new PointCloudCollection( this._scene, point_cloud_providers );
+        // const point_cloud_providers = (options.point_cloud_providers) ? options.point_cloud_providers : {};
+        return new PointCloudCollection( this._scene );
     }
+
 
     /**
      * RenderCallback を生成
-     * @private
      */
-    _createRenderCallback( options )
+    private _createRenderCallback( options: Viewer.Option )
     {
         var callback;
         if ( options && options.render_callback )
@@ -251,12 +300,11 @@ class Viewer {
         return callback;
     }
 
+
     /**
-     * @summary ロゴ・著作権表示用コンテナの作成
-     *
-     * @memberof Viewer
+     * ロゴ・著作権表示用コンテナの作成
      */
-    _createLogoAttributionContainer()
+    private _createLogoAttributionContainer()
     {
         for ( var position of Viewer._positions )
         {
@@ -266,205 +314,164 @@ class Viewer {
         }
     }
 
+
     /**
-     * @summary ロゴ・著作権表示用コンテナの削除
-     *
-     * @memberof Viewer
+     * ロゴ・著作権表示用コンテナの削除
      */
-    _deleteLogoAttributionContainer()
+    private _deleteLogoAttributionContainer()
     {
         for ( var position of Viewer._positions )
         {
             var container = document.getElementById( position );
 
-            if ( container ) { this._container_element.removeChild( position ); }
+            if ( container ) { this._container_element.removeChild( container ); }
         }
     }
 
+
     /**
      * ブール値のオプションを取得
-     * @private
      */
-    static
-    _getBoolOption( options, name, defaultValue )
+    private static _getBoolOption( options: Viewer.Option, name: string, defaultValue: boolean ): boolean
     {
-        return (options && (options[name] !== undefined)) ? options[name] : defaultValue;
+        // @ts-ignore
+        const value = options[name] as boolean | undefined;
+        return (value !== undefined) ? value : defaultValue;
     }
 
 
     /**
-     * @summary コンテナ要素 (キャンバス要素を保有する)
-     * @type {Element}
-     * @readonly
+     * コンテナ要素 (キャンバス要素を保有する)
      */
-    get container_element() { return this._container_element; }
+    get container_element(): HTMLElement { return this._container_element; }
 
 
     /**
-     * @summary キャンバス要素
-     * @type {Element}
-     * @readonly
+     * キャンバス要素
      */
-    get canvas_element() { return this._canvas_element; }
+    get canvas_element(): HTMLCanvasElement { return this._canvas_element; }
 
 
     /**
-     * @summary アニメーションパラメータ設定
-     * @type {mapray.animation.BindingBlock}
-     * @readonly
+     * アニメーションパラメータ設定
      */
-    get animation() { return this._animation; }
+    get animation(): BindingBlock { return this._animation; }
 
 
     /**
      * DEM データプロバイダ
-     * @type {mapray.DemProvider}
-     * @readonly
      */
-    get dem_provider() { return this._dem_provider; }
+    get dem_provider(): DemProvider { return this._dem_provider; }
 
 
     /**
-     * @summary 画像プロバイダ
-     * @type {mapray.ImageProvider}
-     * @readonly
+     * 画像プロバイダ
      */
-    get image_provider() { return this._image_provider; }
+    get image_provider(): ImageProvider { return this._image_provider; }
 
 
     /**
-     * @summary 地図レイヤー管理
-     * @type {mapray.LayerCollection}
-     * @readonly
+     * 地図レイヤー管理
      */
-    get layers() { return this._layers; }
+    get layers(): LayerCollection { return this._layers; }
 
 
     /**
-     * @summary 点群管理
-     * @type {mapray.PointCloudCollection}
-     * @readonly
+     * 点群管理
      */
-    get point_cloud_collection() { return this._point_cloud_collection; }
+    get point_cloud_collection(): PointCloudCollection { return this._point_cloud_collection; }
 
 
     /**
-     * @summary レンダリングコールバック
-     * @type {mapray.RenderCallback}
-     * @readonly
+     * レンダリングコールバック
      */
-    get render_callback() { return this._render_callback; }
+    get render_callback(): RenderCallback { return this._render_callback; }
 
 
     /**
-     * @summary レンダリングモード
-     * @type {mapray.RenderMode}
-     * @readonly
+     * レンダリングモード
      */
-    get render_mode() { return this._render_mode; }
+    get render_mode(): Viewer.RenderMode { return this._render_mode; }
 
 
     /**
-     * @summary レンダリングモードを設定
-     * @type {mapray.RenderMode}
+     * レンダリングモードを設定
      */
-    set render_mode( val ) { this._render_mode = val; }
+    set render_mode( val: Viewer.RenderMode ) { this._render_mode = val; }
 
 
     /**
-     * @summary デバッグ統計オブジェクト
-     * @type {?mapray.DebugStats}
-     * @readonly
+     * デバッグ統計オブジェクト
      */
-    get debug_stats() { return this._debug_stats; }
+    get debug_stats(): DebugStats | null { return this._debug_stats; }
 
 
     /**
-     * @summary カメラ
-     * @type {mapray.Camera}
-     * @readonly
+     * カメラ
      */
-    get camera() { return this._camera; }
+    get camera(): Camera { return this._camera; }
 
 
     /**
-     * @summary モデルシーン
-     * @type {mapray.Scene}
-     * @readonly
+     * モデルシーン
      */
-    get scene() { return this._scene; }
+    get scene(): Scene { return this._scene; }
 
 
     /**
      * 内部的に実装で使用される WebGL レンダリングコンテキスト情報
-     * @type {mapray.GLEnv}
-     * @readonly
-     * @package
+     * @internal
      */
-    get glenv() { return this._glenv; }
+    get glenv(): GLEnv { return this._glenv; }
 
 
     /**
-     * @type {mapray.Globe}
-     * @readonly
-     * @package
+     * @internal
      */
-    get globe() { return this._globe; }
+    get globe(): Globe { return this._globe; }
 
 
     /**
      * 内部的に実装で使用される地図画像タイル管理
-     * @type {mapray.TileTextureCache}
-     * @readonly
-     * @package
+     * @internal
      */
-    get tile_texture_cache() { return this._tile_texture_cache; }
+    get tile_texture_cache(): TileTextureCache { return this._tile_texture_cache; }
 
     /**
      *
-     * @type {mapray.LogoController}
-     * @readonly
-     * @memberof Viewer
      */
-    get logo_controller() { return this._logo_controller; }
+    get logo_controller(): LogoController { return this._logo_controller; }
 
     /**
      *
-     * @type {mapray.AttributionController}
-     * @readonly
-     * @memberof Viewer
      */
-    get attribution_controller() { return this._attribution_controller; }
+    get attribution_controller(): AttributionController { return this._attribution_controller; }
 
 
     /**
-     * @summary 太陽ベクトル。非公開とする。APIでは、メモリー破壊が起こらない Viewer#getSunDirection を公開する。
-     * @type {Vector3}
-     * @private
-     * @readonly
-     * @memberof Viewer
+     * 太陽ベクトル。非公開とする。APIでは、メモリー破壊が起こらない Viewer.getSunDirection を公開する。
+     * @internal
      */
-    get sun_direction() { return this._sun_direction; }
+    get sun_direction(): Vector3 { return this._sun_direction; }
 
 
     /**
-     * @summary 可視性を設定
-     * @desc
-     * <p>target に属するオブジェクトを表示するかどうかを指定する。</p>
-     * <p>可視性は Viewer の構築子の ground_visibility と entity_visibility オプションでも指定することができる。</p>
+     * 可視性を設定
      *
-     * @param {mapray.Viewer.Category} target      表示対象
-     * @param {boolean}                visibility  表示するとき true, 表示しないとき false
+     * target に属するオブジェクトを表示するかどうかを指定する。
+     * 可視性は Viewer の構築子の ground_visibility と entity_visibility オプションでも指定することができる。
      *
-     * @see {@link mapray.Viewer#getVisibility}
+     * @param target      表示対象
+     * @param visibility  表示するとき true, 表示しないとき false
+     * @see [[getVisibility]]
      */
-    setVisibility( target, visibility )
+    setVisibility( target: Viewer.Category, visibility: boolean )
     {
         switch ( target ) {
-        case Category.GROUND:
+        case Viewer.Category.GROUND:
             this._ground_visibility = visibility;
             break;
-        case Category.ENTITY:
+        case Viewer.Category.ENTITY:
             this._entity_visibility = visibility;
             break;
         default:
@@ -474,21 +481,21 @@ class Viewer {
 
 
     /**
-     * @summary 可視性を取得
-     * @desc
-     * <p>target に属するオブジェクトを表示するかどうかを取得する。</p>
+     * 可視性を取得
      *
-     * @param  {mapray.Viewer.Category} target  表示対象
-     * @return {boolean}  表示するとき true, 表示しないとき false
+     * target に属するオブジェクトを表示するかどうかを取得する。
      *
-     * @see {@link mapray.Viewer#setVisibility}
+     * @param  target  表示対象
+     * @return 表示するとき true, 表示しないとき false
+     *
+     * @see [[setVisibility]]
      */
-    getVisibility( target, visibility )
+    getVisibility( target: Viewer.Category ): boolean
     {
         switch ( target ) {
-        case Category.GROUND:
+        case Viewer.Category.GROUND:
             return this._ground_visibility;
-        case Category.ENTITY:
+        case Viewer.Category.ENTITY:
             return this._entity_visibility;
         default:
             throw new Error( "invalid target: " + target );
@@ -497,16 +504,16 @@ class Viewer {
 
 
     /**
-     * @summary 指定位置の標高を取得
-     * @desc
-     * <p>緯度 lat, 経度 lon が示す場所の標高を返す。</p>
-     * <p>現在メモリに存在する DEM データの中で最も正確度が高いデータから標高を計算する。</p>
-     * <p>さらに正確度が高い DEM データがサーバーに存在すれば、それを非同期に読み込む。そのため時間を置いてこのメソッドを呼び出すと、さらに正確な値が取得できることがある。</p>
-     * @param  {number} lat  緯度 (Degrees)
-     * @param  {number} lon  経度 (Degrees)
-     * @return {number}      標高 (Meters)
+     * 指定位置の標高を取得
+     *
+     * 緯度 lat, 経度 lon が示す場所の標高を返す。
+     * 現在メモリに存在する DEM データの中で最も正確度が高いデータから標高を計算する。
+     * さらに正確度が高い DEM データがサーバーに存在すれば、それを非同期に読み込む。そのため時間を置いてこのメソッドを呼び出すと、さらに正確な値が取得できることがある。
+     * @param  lat  緯度 (Degrees)
+     * @param  lon  経度 (Degrees)
+     * @return      標高 (Meters)
      */
-    getElevation( lat, lon )
+    getElevation( lat: number, lon: number ): number
     {
         // 正規化緯経度 (Degrees)
         var _lon = lon + 180 * Math.floor( (90 - lat) / 360 + Math.floor( (90 + lat) / 360 ) );
@@ -558,22 +565,21 @@ class Viewer {
 
 
     /**
-     * @summary 現行の標高を取得
+     * 現行の標高を取得
      *
-     * @desc
-     * <p>現在メモリーにある最高精度の標高値を取得する。</p>
-     * <p>まだ DEM データが存在しない、または経度, 緯度が範囲外の場所は標高を 0 とする。</p>
+     * 現在メモリーにある最高精度の標高値を取得する。
+     * まだ DEM データが存在しない、または経度, 緯度が範囲外の場所は標高を 0 とする。
      *
-     * <p>このメソッドは DEM のリクエストは発生しない。また DEM のキャッシュには影響を与えない。</p>
+     * このメソッドは DEM のリクエストは発生しない。また DEM のキャッシュには影響を与えない。
      *
-     * <p>一般的に画面に表示されていない場所は標高の精度が低い。</p>
+     * 一般的に画面に表示されていない場所は標高の精度が低い。
      *
-     * @param  {mapray.GeoPoint} position  位置 (高度は無視される)
-     * @return {number}                    標高
+     * @param position  位置 (高度は無視される)
+     * @return          標高
      *
-     * @see mapray.Viewer#getExistingElevations
+     * @see [[getExistingElevations]]
      */
-    getExistingElevation( position )
+    getExistingElevation( position: GeoPoint ): number
     {
         const array = [position.longitude, position.latitude, 0];
 
@@ -584,41 +590,40 @@ class Viewer {
 
 
     /**
-     * @summary 現行の標高 (複数) を取得
+     * 現行の標高 (複数) を取得
      *
-     * @desc
-     * <p>現在メモリーにある最高精度の標高値を一括で取得する。</p>
-     * <p>まだ DEM データが存在しない、または経度, 緯度が範囲外の場所は標高を 0 とする。</p>
+     * 現在メモリーにある最高精度の標高値を一括で取得する。
+     * まだ DEM データが存在しない、または経度, 緯度が範囲外の場所は標高を 0 とする。
      *
-     * <p>このメソッドは DEM のリクエストは発生しない。また DEM のキャッシュには影響を与えない。</p>
+     * このメソッドは DEM のリクエストは発生しない。また DEM のキャッシュには影響を与えない。
      *
-     * <p>一般的に画面に表示されていない場所は標高の精度が低い。</p>
+     * 一般的に画面に表示されていない場所は標高の精度が低い。
      *
-     * @param  {number}   num_points  入出力データ数
-     * @param  {number[]} src_array   入力配列 (経度, 緯度, ...)
-     * @param  {number}   src_offset  入力データの先頭インデックス
-     * @param  {number}   src_stride  入力データのストライド
-     * @param  {number[]} dst_array   出力配列 (標高, ...)
-     * @param  {number}   dst_offset  出力データの先頭インデックス
-     * @param  {number}   dst_stride  出力データのストライド
-     * @return {number[]}             dst_array
+     * @param  num_points  入出力データ数
+     * @param  src_array   入力配列 (経度, 緯度, ...)
+     * @param  src_offset  入力データの先頭インデックス
+     * @param  src_stride  入力データのストライド
+     * @param  dst_array   出力配列 (標高, ...)
+     * @param  dst_offset  出力データの先頭インデックス
+     * @param  dst_stride  出力データのストライド
+     * @return             dst_array
      *
-     * @see mapray.Viewer#getExistingElevation
+     * @see [[getExistingElevation]]
      */
-    getExistingElevations( num_points, src_array, src_offset, src_stride, dst_array, dst_offset, dst_stride )
+    getExistingElevations( num_points: number, src_array: number[], src_offset: number, src_stride: number, dst_array: number[], dst_offset: number, dst_stride: number ): number[]
     {
         return this._globe.getExistingElevations( num_points, src_array, src_offset, src_stride, dst_array, dst_offset, dst_stride );
     }
 
 
     /**
-     * @summary レイと地表の交点を取得
-     * @desc
-     * <p>ray と地表の最も近い交点を取得する。ただし交点が存在しない場合は null を返す。</p>
-     * @param  {mapray.Ray}      ray  レイ (GOCS)
-     * @return {?mapray.Vector3}      交点または null
+     * レイと地表の交点を取得
+     *
+     * ray と地表の最も近い交点を取得する。ただし交点が存在しない場合は null を返す。
+     * @param  ray  レイ (GOCS)
+     * @return      交点または null
      */
-    getRayIntersection( ray )
+    getRayIntersection( ray: Ray ): Vector3 | null
     {
         var globe = this._globe;
 
@@ -647,7 +652,7 @@ class Viewer {
 
 
     /**
-     * @summary Canvas画面のキャプチャ
+     * Canvas画面のキャプチャ
      *
      * @param  {object}  options  オプション
      * @return {blob}             データ
@@ -672,20 +677,19 @@ class Viewer {
 
     /**
      * 次のフレーム更新を要求する。
-     * @private
      */
-    _requestNextFrame()
+    private _requestNextFrame()
     {
+        // @ts-ignore
         this._frame_req_id = window.maprayRequestAnimationFrame( () => this._updateFrame() );
     }
 
 
     /**
      * フレーム更新のときに呼び出される。
-     * @private
-     * @see mapray.RenderStage
+     * @see [[RenderStage]]
      */
-    _updateFrame()
+    private _updateFrame()
     {
         var delta_time = this._updateTime();
         this._requestNextFrame();
@@ -709,10 +713,10 @@ class Viewer {
 
     /**
      * 現在のビューにおいて指定されたスクリーン位置の情報を取得します
-     * @param {Vector2} screen_position スクリーン位置（キャンバス左上を原点としたピクセル座標）
-     * @return {mapray.Viewer.PickResult} ピック結果
+     * @param screen_position スクリーン位置（キャンバス左上を原点としたピクセル座標）
+     * @return ピック結果
      */
-    pick(screen_position) {
+    pick( screen_position: Vector2 ): Viewer.PickResult {
         const stage = new PickStage( this, screen_position );
         stage.render();
         return stage.pick_result;
@@ -720,12 +724,12 @@ class Viewer {
 
 
     /**
-     * @summary 時間の更新
-     * @return {number}  前フレームからの経過時間 (秒)
-     * @private
+     * 時間の更新
+     * @return 前フレームからの経過時間 (秒)
      */
-    _updateTime()
+    private _updateTime(): number
     {
+        // @ts-ignore
         var   now_time = window.maprayNow();
         var delta_time = (this._previous_time !== undefined) ? (now_time - this._previous_time) / 1000 : 0;
         this._previous_time = now_time;
@@ -735,10 +739,9 @@ class Viewer {
 
 
     /**
-     * @summary Canvas サイズを更新
-     * @private
+     * Canvas サイズを更新
      */
-    _updateCanvasSize()
+    private _updateCanvasSize()
     {
         var canvas = this._canvas_element;
 
@@ -753,15 +756,14 @@ class Viewer {
 
 
     /**
-     * @summary ポストプロセスを実行
-     * @private
+     * ポストプロセスを実行
      */
-    _postProcess()
+    private _postProcess()
     {
         if ( this._postProcesses.length === 0 ) {
             return;
         }
-        const nextProcesses = [];
+        const nextProcesses: Viewer.PostProcess[] = [];
         this._postProcesses.forEach( item => {
                 if ( item() ) {
                     nextProcesses.push( item );
@@ -772,10 +774,9 @@ class Viewer {
 
 
     /**
-     * @summary デバッグ統計の最終処理
-     * @private
+     * デバッグ統計の最終処理
      */
-    _finishDebugStats()
+    private _finishDebugStats()
     {
         var stats = this._debug_stats;
         if ( stats === null ) {
@@ -794,10 +795,8 @@ class Viewer {
 
     /**
      * EasyBindingBlock.DescendantUnbinder 処理
-     *
-     * @private
      */
-    _unbindDescendantAnimations()
+    private _unbindDescendantAnimations()
     {
         this._scene.animation.unbindAllRecursively();
     }
@@ -805,9 +804,9 @@ class Viewer {
 
     /**
      * 太陽ベクトルの情報を設定します
-     * @param {Vector3} direction 方向（GOCS  正規化されていること）
+     * @param direction 方向（GOCS  正規化されていること）
      */
-    setSunDirection( direction )
+    setSunDirection( direction: Vector3 )
     {
         GeoMath.copyVector3( direction, this._sun_direction );
     }
@@ -815,85 +814,129 @@ class Viewer {
 
     /**
      * 太陽ベクトルの情報のコピーを取得します
-     * @param {Vector3} dst 方向（GOCS  正規化されていること）
-     * @return {Vector3} ベクトルのコピー（GOCS）
+     * @param dst 方向（GOCS  正規化されていること）
+     * @return ベクトルのコピー（GOCS）
      */
-    getSunDirection( dst )
+    getSunDirection( dst: Vector3 ): Vector3
     {
         return GeoMath.copyVector3( this._sun_direction, dst );
     }
 }
 
 
-/**
- * @summary ピック結果
- * @typedef {object} PickResult
- * @desc
- * <p>関数型 {@link mapray.Viewer.pick} の戻り値のオブジェクト構造である。</p>
- * @property {mapray.Vector3} [point] ピックした3次元位置
- * @property {mapray.Entity} [entity|undefined] ピックしたエンティティ（ピック位置にエンティティがない場合はundefined）
- * @memberof mapray.Viewer
- */
+
+namespace Viewer {
 
 
+
+export interface Option {
+     /** DEMプロバイダ */
+    dem_provider?: DemProvider;
+
+    /** 画像プロバイダ */
+    image_provider?: ImageProvider;
+
+    /** 地図レイヤー情報の配列 */
+    layers?: object | ImageProvider;
+
+    /** 地表の可視性 */
+    ground_visibility?: boolean;
+
+    /** エンティティの可視性 */
+    entity_visibility?: boolean;
+
+    /** レンダリングコールバック */
+    render_callback?: RenderCallback;
+
+    /** レンダリングモード */
+    render_mode?: RenderMode;
+
+    /** デバッグ統計オブジェクト */
+    debug_stats?: DebugStats;
+
+    /** ロゴ表示制御オブジェクト */
+    logo_controller?: LogoController;
+
+    /** 著作権表示制御オブジェクト */
+    attribution_controller?: AttributionController;
+}
+
+
+
 /**
- * @summary 表示対象の列挙型
- * @desc
- * <p>{@link mapray.Viewer#setVisibility} と {@link mapray.Viewer#getVisibility} メソッドの target 引数に指定する値の型である。</p>
- * @enum {object}
- * @memberof mapray.Viewer
- * @constant
+ * レンダリング直後に実行する処理を表現する型です。
+ * 戻り値により、処理を完了するか次のフレームでも実行するかを制御します。
+ * @return 処理を引き続き実行する場合 `true` を返却する
+ * @internal
  */
-var Category = {
+export type PostProcess = () => boolean;
+
+
+
+/**
+ * ピック結果
+ * 関数型 {@link mapray.Viewer.pick} の戻り値のオブジェクト構造である。
+ * @property point ピックした3次元位置。ピックした画面上位置と、地形やエンティティと交差した位置です。空をピックした場合は `undefined` になります。
+ * @property entity ピックしたエンティティ。ピック位置にエンティティがない場合は `undefined` になります。
+ */
+export interface PickResult {
+    point?: Vector3,
+    entity?: Entity,
+}
+
+
+
+/**
+ * 表示対象の列挙型
+ *
+ * {@link mapray.Viewer.setVisibility} と {@link mapray.Viewer.getVisibility} メソッドの target 引数に指定する値の型である。
+ */
+export enum Category {
 
     /**
      * 地表 (レイヤーも含む)
      */
-    GROUND: { id: "GROUND" },
+    GROUND,
 
 
     /**
      * エンティティ
      */
-    ENTITY: { id: "ENTITY" }
+    ENTITY,
 
 };
 
 
 /**
- * @summary レンダリングモードの列挙型
- * @desc
- * {@link mapray.Viewer} の構築子の options.render_mode パラメータ、または {@link mapray.Viewer#render_mode} プロパティに指定する値の型である。
- * @enum {object}
- * @memberof mapray.Viewer
- * @constant
+ * レンダリングモードの列挙型
+ *
+ * {@link mapray.Viewer} の構築子の options.render_mode パラメータ、または {@link mapray.Viewer.render_mode} プロパティに指定する値の型である。
  */
-var RenderMode = {
+export enum RenderMode {
 
     /**
      * ポリゴン面 (既定値)
      */
-    SURFACE: { id: "SURFACE" },
+    SURFACE,
 
 
     /**
      * ワイヤーフレーム
      */
-    WIREFRAME: { id: "WIREFRAME" }
+    WIREFRAME,
 
-};
-
-// クラス定数の定義
-{
-    Viewer.Category   = Category;
-    Viewer.RenderMode = RenderMode;
-
-    // マウス・Attribution開発
-    Viewer.ContainerPosition = ContainerController.ContainerPosition;
-
-    // ロゴ・著作権表示用コンテナ名称
-    Viewer._positions = ["control-top-left", "control-top-right", "control-bottom-left", "control-bottom-right"];
 }
+
+
+/** マウス・Attribution開発 */
+export const ContainerPosition = ContainerController.ContainerPosition;
+
+/** ロゴ・著作権表示用コンテナ名称 */
+export const _positions = ["control-top-left", "control-top-right", "control-bottom-left", "control-bottom-right"];
+
+
+} // namespace Viewer
+
 
 
 export default Viewer;
