@@ -1,32 +1,33 @@
+import Viewer from "./Viewer";
+
 /**
- * @summary レンダリングコールバック
- * @classdesc
- * <p>レンダリングループでの各箇所で呼び出されるコールバック関数を実装するための抽象クラスである。</p>
- * <p>サブクラスでは以下のメソッドをオーバーライドすることができる。オーバーライドしないメソッドは何もしない。</p>
- * <ul>
- *   <li>[onStart()]{@link mapray.RenderCallback#onStart}</li>
- *   <li>[onUpdateFrame()]{@link mapray.RenderCallback#onUpdateFrame}</li>
- *   <li>[onStop()]{@link mapray.RenderCallback#onStop}</li>
- * </ul>
- * @memberof mapray
- * @protected
- * @abstract
- * @see mapray.Viewer
+ * レンダリングコールバック
+ *
+ * レンダリングループでの各箇所で呼び出されるコールバック関数を実装するための抽象クラスである。
+ * サブクラスでは以下のメソッドをオーバーライドすることができる。オーバーライドしないメソッドは何もしない。
+ * - [[onStart]]
+ * - [[onUpdateFrame]]
+ * - [[onStop]]
+ *
+ * @see [[Viewer]]
  */
-class RenderCallback {
+abstract class RenderCallback {
+
+    protected _viewer?: Viewer;
+
+    private _is_started_: boolean = false;
+
 
     constructor()
     {
-        this._viewer      = null;
-        this._is_started_ = false;
     }
 
 
     /**
      * View に取り付ける
-     * @package
+     * @internal
      */
-    attach( viewer )
+    attach( viewer: Viewer )
     {
         if ( this._viewer ) {
             throw new Error( "RenderCallback instance is already attached" );
@@ -40,7 +41,7 @@ class RenderCallback {
     /**
      * View から切り離す
      * すでに onStart() を呼び出してい場合、onStop() を呼び出す。
-     * @package
+     * @internal
      */
     detach()
     {
@@ -48,16 +49,16 @@ class RenderCallback {
             this.onStop();
             this._is_started_ = false;
         }
-        this._viewer = null;
+        this._viewer = undefined;
     }
 
 
     /**
      * フレーム onUpdateFrame() の呼び出し
      * 取り付けてから最初のフレームのときは onStart() を呼び出す。
-     * @package
+     * @internal
      */
-    onUpdateFrameInner( delta_time )
+    onUpdateFrameInner( delta_time: number )
     {
         if ( !this._is_started_ ) {
             this.onStart();
@@ -68,34 +69,29 @@ class RenderCallback {
 
 
     /**
-     * @summary 保有者 Viewer
-     * @desc
-     * <p>この RenderCallback インスタンスが設定されている Viewer インスタンスを示す。</p>
-     * <p>ただし RenderCallback インスタンスがどの Viewer インスタンスにも設定されていない状態では null となる。</p>
-     * @type {?mapray.Viewer}
-     * @readonly
+     * 保有者 Viewer
+     *
+     * この RenderCallback インスタンスが設定されている Viewer インスタンスを示す。
+     * ただし RenderCallback インスタンスがどの Viewer インスタンスにも設定されていない状態では null となる。
      */
-    get viewer() { return this._viewer; }
+    get viewer(): Viewer | undefined { return this._viewer; }
 
 
     /**
-     * @summary レンダリングループ開始の処理
-     * @abstract
+     * レンダリングループ開始の処理
      */
     onStart() {}
 
 
     /**
-     * @summary フレームレンダリング前の処理
-     * @param {number} delta_time  前フレームからの経過時間 (秒)
-     * @abstract
+     * フレームレンダリング前の処理
+     * @param delta_time  前フレームからの経過時間 (秒)
      */
-    onUpdateFrame( delta_time ) {}
+    onUpdateFrame( delta_time: number ) {}
 
 
     /**
-     * @summary レンダリングループ終了の処理
-     * @abstract
+     * レンダリングループ終了の処理
      */
     onStop() {}
 
