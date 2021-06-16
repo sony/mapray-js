@@ -42,6 +42,7 @@ export { default as ImageIconEntity } from "./ImageIconEntity"
 // Loader
 export { default as SceneLoader } from "./SceneLoader";
 export { default as GeoJSONLoader } from "./GeoJSONLoader";
+export { default as GeoJSON } from "./GeoJSON";
 
 export { default as MaprayApi } from "./MaprayApi";
 export * from "./MaprayApiModel";
