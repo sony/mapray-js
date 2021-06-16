@@ -48,6 +48,8 @@ export { default as SceneLoader } from "./SceneLoader";
 export { default as GeoJSONLoader } from "./GeoJSONLoader";
 
 export { default as MaprayApi } from "./MaprayApi";
+export * from "./MaprayApiModel";
+export * from "./MaprayApiResource";
 
 // PointCloud
 export { default as PointCloud } from "./PointCloud";
