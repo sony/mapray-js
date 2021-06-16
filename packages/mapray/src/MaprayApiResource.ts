@@ -1,71 +1,75 @@
 import HTTP from "./HTTP";
 import Dom from "./util/Dom";
-import Resource, { ResourceType } from "./Resource";
+import Resource from "./Resource";
+import MaprayApi from "./MaprayApi";
+import { PointCloudDataset } from "./MaprayApiModel";
 
 
 
 /**
- * @summary Mapray Cloudに登録されたデータにおいて、URLアクセスを要するリソースを表現する。
- * <dl>
- * <dt> index.htmlのように基準となるファイルを指定し、そのファイルからの相対パスでサブリソースへアクセスする。
- * <dd>
+ * @internal
+ * Mapray Cloudに登録されたデータにおいて、URLアクセスを要するリソースを表現する。
+ *
+ * - index.htmlのように基準となるファイルを指定し、そのファイルからの相対パスでサブリソースへアクセスする。<br>
  *    コンストラクタで基準となるファイルを指定し、load()はこのファイルを読み込む。
  *    loadSubResource( sub_url )は、sub_urlが相対パスの場合は基準となるファイルからの相対パスとして解釈される。
- * <dt> ルートパスを指定し配下のリソースへアクセスする。
- * <dd>
+ *
+ * - ルートパスを指定し配下のリソースへアクセスする。<br>
  *    コンストラクタで基準となるURLを指定する。この時、URLは必ず/で終了する必要があり、load()は動作が定義されない。
  *    loadSubResource( sub_url )は、sub_urlが相対パスの場合は基準となるURLからの相対パスとして解釈される。
- * </dl>
- * @private
+ *
  */
 class ApiUrlResource extends Resource {
 
+    private _api: MaprayApi;
+
+    private _url: string;
+
+    private _base_url: string;
+
     /**
-     * @param {MaprayApi} api
-     * @param {string} url
+     * @param api
+     * @param url
      */
-    constructor( api, url ) {
+    constructor( api: MaprayApi, url: string ) {
         const index = url.lastIndexOf( "/" );
         if ( index === -1 ) throw new Error( "invalid url" );
         //super( api, url.substr( 0, index + 1 ) );
         super();
         this._api = api;
         this._url = url;
-        this._base_url = url.substr( 0, index + 1 )
+        this._base_url = url.substr( 0, index + 1 );
     }
 
     /**
      * @param {object} options
-     * @override
      */
-    async load( options={} ) {
+    override async load( options: Resource.Option = {} ) {
+        // @ts-ignore
         const response = await this._api.fetch( HTTP.METHOD.GET, this._url );
         return (
-          options.type === ResourceType.JSON ? await response.json():
+          options.type === Resource.Type.JSON ? await response.json():
           response
         );
     }
 
-    /**
-     * @override
-     */
-    loadSubResourceSupported() {
+    override loadSubResourceSupported() {
         return true;
     }
 
     /**
-     * @summary リソースにアクセスする。sub_urlは相対・絶対の両方に対応。
-     * @override
+     * リソースにアクセスする。sub_urlは相対・絶対の両方に対応。
      * @param {string} sub_url
      * @return {Resource}
      */
-    async loadSubResource( sub_url, options={} ) {
+    override async loadSubResource( sub_url: string, options: Resource.Option = {} ) {
         const url = Dom.resolveUrl( this._base_url, sub_url );
+        // @ts-ignore
         const response = await this._api.fetch( HTTP.METHOD.GET, url );
         if ( !response.ok ) throw new Error( response.statusText );
         return (
-            options.type === ResourceType.BINARY ? await response.arrayBuffer():
-            options.type === ResourceType.IMAGE ? await Dom.loadImage( await response.blob() ):
+            options.type === Resource.Type.BINARY ? await response.arrayBuffer():
+            options.type === Resource.Type.IMAGE  ? await Dom.loadImage( await response.blob() ):
             response
         );
     }
@@ -74,10 +78,16 @@ class ApiUrlResource extends Resource {
 
 
 /**
+ * @internal
  * Mapray Cloudに登録されたDatasetを表現するリソース。
  */
 export class DatasetResource extends Resource {
-    constructor( api, datasetId ) {
+
+    private _api: MaprayApi;
+
+    private _datasetId: string;
+
+    constructor( api: MaprayApi, datasetId: string ) {
         super();
         this._api = api;
         this._datasetId = datasetId;
@@ -86,7 +96,7 @@ export class DatasetResource extends Resource {
     /**
      * @return {Promise(object)} データ(geojson)
      */
-    async load() {
+    override async load() {
         return await this._api.getFeatures( this._datasetId );
     }
 }
@@ -94,40 +104,38 @@ export class DatasetResource extends Resource {
 
 
 /**
+ * @internal
  * Mapray Cloudに登録された3DDatasetのモデルを表現するリソース。
  */
 export class Dataset3DSceneResource extends Resource {
+
+    private _api: MaprayApi;
+
+    private _datasetIds: string[];
 
     /**
      * @param {MaprayApi} api
      * @param {string|string[]} datasetIds データセットのid。複数指定する場合は配列を指定する。
      */
-    constructor( api, datasetIds ) {
+    constructor( api: MaprayApi, datasetIds: string | string[] ) {
         super();
         this._api = api;
         this._datasetIds = Array.isArray( datasetIds ) ? datasetIds : [ datasetIds ];
     }
 
-    /**
-     * @return {Promise(object)} シーンファイル(json)
-     */
-    async load() {
+    override async load() {
         return await this._api.get3DDatasetScene( this._datasetIds );
     }
 
-    /**
-     * @protected
-     */
-    resolveResourceSupported() {
+    override resolveResourceSupported() {
       return true;
     }
 
     /**
-     * @summary シーンファイルに含まれるモデル及びモデルに関連づけられたリソースへアクセス際に利用されるResource。
-     * @param {string} sub_url モデルURL
-     * @return {Resource} 
+     * シーンファイルに含まれるモデル及びモデルに関連づけられたリソースへアクセス際に利用されるResource。
+     * @param sub_url モデルURL
      */
-    resolveResource( sub_url ) {
+    override resolveResource( sub_url: string ): Resource {
         return new ApiUrlResource( this._api, sub_url );
     }
 }
@@ -135,39 +143,38 @@ export class Dataset3DSceneResource extends Resource {
 
 
 /**
+ * @internal
  * Mapray Cloudに登録されたPoint Cloud Datasetを表現するリソース。
  */
 export class PointCloudDatasetResource extends Resource {
 
+    private _api: MaprayApi;
+
+    private _datasetId: string;
+
     /**
-     * @param {MaprayApi} api
-     * @param {string} datasetId データセットのid
+     * @param api
+     * @param datasetId データセットのid
      */
-    constructor( api, datasetId ) {
+    constructor( api: MaprayApi, datasetId: string ) {
         super();
         this._api = api;
         this._datasetId = datasetId;
     }
 
-    /**
-     * @return {Promise<object>} 点群定義(json)
-     */
-    async load() {
+    override async load(): Promise<PointCloudDataset.Json> {
         return await this._api.getPointCloudDataset( this._datasetId );
     }
 
-    /**
-     * @protected
-     */
-    resolveResourceSupported() {
+    override resolveResourceSupported(): boolean {
       return true;
     }
 
     /**
      * @param {string} sub_url 点群が公開されているURLへアクセスするためのResource。
-     * @return {Resource} 点群ファイルリソース
+     * @return 点群ファイルリソース
      */
-    resolveResource( sub_url ) {
+    override resolveResource( sub_url: string ): Resource {
         return new ApiUrlResource( this._api, sub_url );
     }
 }
