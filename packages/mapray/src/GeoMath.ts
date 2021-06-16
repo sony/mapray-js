@@ -1,124 +1,125 @@
 /**
- * @summary 数学ユーティリティー
+ * 数学ユーティリティー
  *
- * @classdesc
- * <p>数学関連の関数または定数を定義するユーティリティークラスである。</p>
- * <p>このクラスは static メンバーしか持たない。</p>
- *
- * @hideconstructor
- * @memberof mapray
- * @see mapray.Matrix
+ * 数学関連の関数または定数を定義するユーティリティークラスである。
+ * このクラスは static メンバーしか持たない。
  */
 class GeoMath {
 
     /**
-     * @summary 行列オブジェクトを作成
-     * @desc
-     * <p>mat を複製する。ただし mat を省略したときは、すべての要素が 0 の行列を生成する。</p>
+     * @ignore
+     */
+    constructor() {}
+
+    /**
+     * 行列オブジェクトを作成
      *
-     * @param  {mapray.Matrix} [mat]  入力行列
-     * @return {mapray.Matrix}        新しい行列
+     * mat を複製する。ただし mat を省略したときは、すべての要素が 0 の行列を生成する。
+     *
+     * @param  mat  入力行列
+     * @return      新しい行列
      */
-    static createMatrix( mat )
+    static createMatrix( mat?: Matrix ): Matrix
     {
-        return new Float64Array( mat || 16 );
+        return mat ? new Float64Array( mat ) : new Float64Array( 16 );
     }
 
 
     /**
-     * @summary 行列 (単精度) オブジェクトを作成
-     * @param  {mapray.Matrix} [mat]  入力行列
-     * @return {mapray.Matrix}        新しい行列
-     * @package
+     * 行列 (単精度) オブジェクトを作成
+     *
+     * @param  mat  入力行列
+     * @return      新しい行列
+     * @hidden
      */
-    static createMatrixf( mat )
+    static createMatrixf( mat?: Matrix ): Matrix
     {
-        return new Float32Array( mat || 16 );
+        return mat ? new Float32Array( mat ) : new Float32Array( 16 );
     }
 
 
     /**
-     * @summary 4 次ベクトルの生成
-     * @desc
-     * <p>vec を複製して 4 次ベクトルを生成する。ただし vec を省略したときは、すべての要素が 0 のベクトルを生成する。</p>
-     * @param  {mapray.Vector4} [vec]  入力ベクトル
-     * @return {mapray.Vector4}        新しいベクトル
+     * 4 次ベクトルの生成
+     *
+     * vec を複製して 4 次ベクトルを生成する。ただし vec を省略したときは、すべての要素が 0 のベクトルを生成する。
+     * @param  vec  入力ベクトル
+     * @return      新しいベクトル
      */
-    static createVector4( vec )
+    static createVector4( vec?: Vector4 ): Vector4
     {
-        return new Float64Array( vec || 4 );
+        return vec ? new Float64Array( vec ) : new Float64Array( 4 );
     }
 
 
     /**
-     * @summary 4 次ベクトル (単精度) の生成
-     * @param  {mapray.Vector4} [vec]  入力ベクトル
-     * @return {mapray.Vector4}        新しいベクトル
-     * @package
+     * 4 次ベクトル (単精度) の生成
+     * @param  vec  入力ベクトル
+     * @return      新しいベクトル
+     * @hidden
      */
-    static createVector4f( vec )
+    static createVector4f( vec?: Vector4 ): Vector4
     {
-        return new Float32Array( vec || 4 );
+        return vec ? new Float32Array( vec ) : new Float32Array( 4 );
     }
 
 
     /**
-     * @summary 3 次ベクトルの生成
-     * <p>vec を複製して 3 次ベクトルを生成する。ただし vec を省略したときは、すべての要素が 0 のベクトルを生成する。</p>
-     * @param  {mapray.Vector3} [vec]  入力ベクトル
-     * @return {mapray.Vector3}        新しいベクトル
+     * 3 次ベクトルの生成
+     * vec を複製して 3 次ベクトルを生成する。ただし vec を省略したときは、すべての要素が 0 のベクトルを生成する。
+     * @param  vec  入力ベクトル
+     * @return      新しいベクトル
      */
-    static createVector3( vec )
+    static createVector3( vec?: Vector3 ): Vector3
     {
-        return new Float64Array( vec || 3 );
+        return vec ? new Float64Array( vec ) : new Float64Array( 3 );
     }
 
 
     /**
-     * @summary 3 次ベクトル (単精度) の生成
-     * @param  {mapray.Vector3} [vec]  入力ベクトル
-     * @return {mapray.Vector3}        新しいベクトル
-     * @package
+     * 3 次ベクトル (単精度) の生成
+     * @param  vec  入力ベクトル
+     * @return      新しいベクトル
+     * @hidden
      */
-    static createVector3f( vec )
+    static createVector3f( vec?: Vector3 ): Vector3
     {
-        return new Float32Array( vec || 3 );
+        return vec ? new Float32Array( vec ) : new Float32Array( 3 );
     }
 
 
     /**
-     * @summary 2 次ベクトルの生成
-     * <p>vec を複製して 2 次ベクトルを生成する。ただし vec を省略したときは、すべての要素が 0 のベクトルを生成する。</p>
-     * @param  {mapray.Vector2} [vec]  入力ベクトル
-     * @return {mapray.Vector2}        新しいベクトル
+     * 2 次ベクトルの生成
+     * vec を複製して 2 次ベクトルを生成する。ただし vec を省略したときは、すべての要素が 0 のベクトルを生成する。
+     * @param  vec  入力ベクトル
+     * @return      新しいベクトル
      */
-    static createVector2( vec )
+    static createVector2( vec?: Vector2 ): Vector2
     {
-        return new Float64Array( vec || 2 );
+        return vec ? new Float64Array( vec ) : new Float64Array( 2 );
     }
 
 
     /**
-     * @summary 2 次ベクトル (単精度) の生成
-     * @param  {mapray.Vector2} [vec]  入力ベクトル
-     * @return {mapray.Vector2}        新しいベクトル
-     * @package
+     * 2 次ベクトル (単精度) の生成
+     * @param  vec  入力ベクトル
+     * @return      新しいベクトル
+     * @hidden
      */
-    static createVector2f( vec )
+    static createVector2f( vec?: Vector2 ): Vector2
     {
-        return new Float32Array( vec || 2 );
+        return vec ? new Float32Array( vec ) : new Float32Array( 2 );
     }
 
 
     /**
-     * @summary 行列を代入
-     * @desc
-     * <p>src を dst に代入する。</p>
-     * @param  {mapray.Matrix} src  代入元
-     * @param  {mapray.Matrix} dst  代入先
-     * @return {mapray.Matrix}      dst
+     * 行列を代入
+     *
+     * src を dst に代入する。
+     * @param  src  代入元
+     * @param  dst  代入先
+     * @return      dst
      */
-    static copyMatrix( src, dst )
+    static copyMatrix( src: Matrix, dst: Matrix ): Matrix
     {
         for ( var i = 0; i < 16; ++i ) {
             dst[i] = src[i];
@@ -128,14 +129,14 @@ class GeoMath {
 
 
     /**
-     * @summary 4 次ベクトルを代入
-     * @desc
-     * <p>src を dst に代入する。</p>
-     * @param  {mapray.Vector4} src  代入元
-     * @param  {mapray.Vector4} dst  代入先
-     * @return {mapray.Vector4}      dst
+     * 4 次ベクトルを代入
+     *
+     * src を dst に代入する。
+     * @param  src  代入元
+     * @param  dst  代入先
+     * @return      dst
      */
-    static copyVector4( src, dst )
+    static copyVector4( src: Vector4, dst: Vector4 ): Vector4
     {
         for ( var i = 0; i < 4; ++i ) {
             dst[i] = src[i];
@@ -145,14 +146,14 @@ class GeoMath {
 
 
     /**
-     * @summary 3 次ベクトルを代入
-     * @desc
-     * <p>src を dst に代入する。</p>
-     * @param  {mapray.Vector3} src  代入元
-     * @param  {mapray.Vector3} dst  代入先
-     * @return {mapray.Vector3}      dst
+     * 3 次ベクトルを代入
+     *
+     * src を dst に代入する。
+     * @param  src  代入元
+     * @param  dst  代入先
+     * @return      dst
      */
-    static copyVector3( src, dst )
+    static copyVector3( src: Vector3, dst: Vector3 ): Vector3
     {
         for ( var i = 0; i < 3; ++i ) {
             dst[i] = src[i];
@@ -162,14 +163,14 @@ class GeoMath {
 
 
     /**
-     * @summary 2 次ベクトルを代入
-     * @desc
-     * <p>src を dst に代入する。</p>
-     * @param  {mapray.Vector2} src  代入元
-     * @param  {mapray.Vector2} dst  代入先
-     * @return {mapray.Vector2}      dst
+     * 2 次ベクトルを代入
+     *
+     * src を dst に代入する。
+     * @param  src  代入元
+     * @param  dst  代入先
+     * @return      dst
      */
-    static copyVector2( src, dst )
+    static copyVector2( src: Vector2, dst: Vector2 ): Vector2
     {
         dst[0] = src[0];
         dst[1] = src[1];
@@ -178,11 +179,11 @@ class GeoMath {
 
 
     /**
-     * @summary 恒等行列を設定
-     * @param  {mapray.Matrix} dst  結果を代入する行列
-     * @return {mapray.Matrix}      dst
+     * 恒等行列を設定
+     * @param  dst  結果を代入する行列
+     * @return      dst
      */
-    static setIdentity( dst )
+    static setIdentity( dst: Matrix ): Matrix
     {
         dst[ 0] = 1;
         dst[ 1] = 0;
@@ -205,25 +206,25 @@ class GeoMath {
 
 
     /**
-     * @summary 3 次ベクトルの内積を計算
-     * @param  {mapray.Vector3} a  左のベクトル
-     * @param  {mapray.Vector3} b  右のベクトル
-     * @return {number}            a と b の内積
+     * 3 次ベクトルの内積を計算
+     * @param  a  左のベクトル
+     * @param  b  右のベクトル
+     * @return    a と b の内積
      */
-    static dot3( a, b )
+    static dot3( a: Vector3, b: Vector3 ): number
     {
         return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
     }
 
 
     /**
-     * @summary 3次ベクトルの外積を計算
-     * @param  {mapray.Vector3} a    左のベクトル
-     * @param  {mapray.Vector3} b    右のベクトル
-     * @param  {mapray.Vector3} dst  a と b の外積を代入するベクトル
-     * @return {mapray.Vector3}      dst
+     * 3次ベクトルの外積を計算
+     * @param  a    左のベクトル
+     * @param  b    右のベクトル
+     * @param  dst  a と b の外積を代入するベクトル
+     * @return      dst
      */
-    static cross3( a, b, dst )
+    static cross3( a: Vector3, b: Vector3, dst: Vector3 ): Vector3
     {
         var x = a[1]*b[2] - a[2]*b[1];
         var y = a[2]*b[0] - a[0]*b[2];
@@ -236,12 +237,12 @@ class GeoMath {
 
 
     /**
-     * @summary 3次ベクトルの正規化を計算
-     * @param  {mapray.Vector3} vec  ベクトル
-     * @param  {mapray.Vector3} dst  正規化された値を代入するベクトル
-     * @return {mapray.Vector3}      dst
+     * 3次ベクトルの正規化を計算
+     * @param   vec  ベクトル
+     * @param   dst  正規化された値を代入するベクトル
+     * @return       dst
      */
-    static normalize3( vec, dst )
+    static normalize3( vec: Vector3, dst: Vector3 ): Vector3
     {
         var x = vec[0];
         var y = vec[1];
@@ -254,8 +255,14 @@ class GeoMath {
     }
 
 
-
-    static scale3( a, vec, dst )
+    /**
+     * 3次ベクトルのスカラ倍を計算
+     * @param   a    スカラ
+     * @param   vec  ベクトル
+     * @param   dst  計算結果を代入するベクトル
+     * @return       dst
+     */
+    static scale3( a: number, vec: Vector3, dst: Vector3 ): Vector3
     {
         dst[0] = a * vec[0];
         dst[1] = a * vec[1];
@@ -264,15 +271,14 @@ class GeoMath {
     }
 
 
-
     /**
-     * @summary 行列の積を計算 (アフィン変換 x アフィン変換)
-     * @param  {mapray.Matrix}  a    左の行列
-     * @param  {mapray.Matrix}  b    右の行列
-     * @param  {mapray.Matrix}  dst  結果を代入する行列
-     * @return {mapray.Matrix}       dst
+     * 行列の積を計算 (アフィン変換 x アフィン変換)
+     * @param  a    左の行列
+     * @param  b    右の行列
+     * @param  dst  結果を代入する行列
+     * @return      dst
      */
-    static mul_AA( a, b, dst )
+    static mul_AA( a: Matrix, b: Matrix, dst: Matrix ): Matrix
     {
         var a00 = a[ 0], a01 = a[ 4], a02 = a[ 8], a03 = a[12],
             a10 = a[ 1], a11 = a[ 5], a12 = a[ 9], a13 = a[13],
@@ -307,13 +313,13 @@ class GeoMath {
 
 
     /**
-     * @summary 行列の積を計算 (一般変換 x アフィン変換)
-     * @param  {mapray.Matrix}  a    左の行列
-     * @param  {mapray.Matrix}  b    右の行列
-     * @param  {mapray.Matrix}  dst  結果を代入する行列
-     * @return {mapray.Matrix}       dst
+     * 行列の積を計算 (一般変換 x アフィン変換)
+     * @param  a    左の行列
+     * @param  b    右の行列
+     * @param  dst  結果を代入する行列
+     * @return      dst
      */
-    static mul_GA( a, b, dst )
+    static mul_GA( a: Matrix, b: Matrix, dst: Matrix ): Matrix
     {
         var a00 = a[ 0], a01 = a[ 4], a02 = a[ 8], a03 = a[12],
             a10 = a[ 1], a11 = a[ 5], a12 = a[ 9], a13 = a[13],
@@ -349,13 +355,13 @@ class GeoMath {
 
 
     /**
-     * @summary 行列の積を計算 (投影変換 x アフィン変換)
-     * @param  {mapray.Matrix}  a    左の行列
-     * @param  {mapray.Matrix}  b    右の行列
-     * @param  {mapray.Matrix}  dst  結果を代入する行列
-     * @return {mapray.Matrix}       dst
+     * 行列の積を計算 (投影変換 x アフィン変換)
+     * @param  a    左の行列
+     * @param  b    右の行列
+     * @param  dst  結果を代入する行列
+     * @return      dst
      */
-    static mul_PzA( a, b, dst )
+    static mul_PzA( a: Matrix, b: Matrix, dst: Matrix ): Matrix
     {
         var a00 = a[ 0],              a02 = a[ 8], a03 = a[12];
         var              a11 = a[ 5], a12 = a[ 9], a13 = a[13];
@@ -391,12 +397,12 @@ class GeoMath {
 
 
     /**
-     * @summary 逆行列を計算 (アフィン変換)
-     * @param  {mapray.Matrix}  mat  行列
-     * @param  {mapray.Matrix}  dst  結果を代入する行列
-     * @return {mapray.Matrix}       dst
+     * 逆行列を計算 (アフィン変換)
+     * @param  mat  行列
+     * @param  dst  結果を代入する行列
+     * @return      dst
      */
-    static inverse_A( mat, dst )
+    static inverse_A( mat: Matrix, dst: Matrix ): Matrix
     {
         var a00 = mat[ 0], a01 = mat[ 4], a02 = mat[ 8], a03 = mat[12],
             a10 = mat[ 1], a11 = mat[ 5], a12 = mat[ 9], a13 = mat[13],
@@ -448,19 +454,18 @@ class GeoMath {
 
 
     /**
-     * @summary 平面ベクトルを変換 (アフィン変換)
-     * @desc
-     * <p>mat には平面ベクトルを変換する行列を指定する。
-     * 位置ベクトルを変換する行列が M なら、平面ベクトルを変換する行列は M<sup>-1</sup> を指定する。</p>
+     * 平面ベクトルを変換 (アフィン変換)
+     * mat には平面ベクトルを変換する行列を指定する。
+     * 位置ベクトルを変換する行列が M なら、平面ベクトルを変換する行列は M<sup>-1</sup> を指定する。
      *
-     * <p>dst には plane * mat が代入される。</p>
+     * dst には plane * mat が代入される。
      *
-     * @param  mat   {mapray.Matrix}   変換行列
-     * @param  plane {mapray.Vector4}  平面ベクトル
-     * @param  dst   {mapray.Vector4}  結果を代入するベクトル
-     * @return       {mapray.Vector4}  dst
+     * @param  mat   変換行列
+     * @param  plane 平面ベクトル
+     * @param  dst   結果を代入するベクトル
+     * @return       dst
      */
-    static transformPlane_A( mat, plane, dst )
+    static transformPlane_A( mat: Matrix, plane: Vector4, dst: Vector4 ): Vector4
     {
         var m = mat;
         var x = plane[0];
@@ -478,21 +483,18 @@ class GeoMath {
 
 
     /**
-     * @summary 座標変換行列を計算 (Inou 球面座標系 → 地心直交座標系)
-     * @desc
-     * <p>原点が position の直交座標系 (LOCS) から地心直交座標系 (GOCS) に変換する行列を計算する。</p>
-     * <p>position.height + GeoMath.EARTH_RADIUS > 0 かつ position.latitude == 0 のとき、LOCS の Z 軸は上方向、Y 軸は北方向、X 軸は東方向となる。</p>
+     * 座標変換行列を計算 (Inou 球面座標系 → 地心直交座標系)
      *
-     * @param  {object}         position             位置 (Inou 球面座標系)
-     * @param  {number}         position.latitude    緯度 (Degrees)
-     * @param  {number}         position.longitude   経度 (Degrees)
-     * @param  {number}         position.height      高度 (Meters)
-     * @param  {mapray.Matrix}  dst                  結果を代入する行列
-     * @return {mapray.Matrix}                       dst
+     * 原点が position の直交座標系 (LOCS) から地心直交座標系 (GOCS) に変換する行列を計算する。
+     * position.height + GeoMath.EARTH_RADIUS > 0 かつ position.latitude == 0 のとき、LOCS の Z 軸は上方向、Y 軸は北方向、X 軸は東方向となる。
      *
-     * @deprecated {@link mapray.GeoPoint#getMlocsToGocsMatrix} の使用を推奨
+     * @param  position  位置 (Inou 球面座標系)
+     * @param  dst       結果を代入する行列
+     * @return           dst
+     *
+     * @deprecated {@link mapray.GeoPoint.getMlocsToGocsMatrix} の使用を推奨
      */
-    static iscs_to_gocs_matrix( position, dst )
+    static iscs_to_gocs_matrix( position:GeoPointData, dst: Matrix ): Matrix
     {
         var    λ = position.longitude * GeoMath.DEGREE;
         var    φ = position.latitude  * GeoMath.DEGREE;
@@ -531,18 +533,15 @@ class GeoMath {
 
 
     /**
-     * @summary 地心直交座標を Inou 球面座標に変換
+     * 地心直交座標を Inou 球面座標に変換
      *
-     * @param  {mapray.Vector3} src            入力 GOCS 座標 (Meters)
-     * @param  {object}         dst            出力 ISCS 座標
-     * @param  {number}         dst.latitude   緯度 (Degrees)
-     * @param  {number}         dst.longitude  経度 (Degrees)
-     * @param  {number}         dst.height     高度 (Meters)
-     * @return {object}                        dst
+     * @param  src   入力 GOCS 座標 (Meters)
+     * @param  dst   出力 ISCS 座標
+     * @return       dst
      *
-     * @deprecated {@link mapray.GeoPoint#setFromGocs} の使用を推奨
+     * @deprecated {@link mapray.GeoPoint.setFromGocs} の使用を推奨
      */
-    static gocs_to_iscs( src, dst )
+    static gocs_to_iscs( src: Vector3, dst:GeoPointData ):GeoPointData
     {
         var x = src[0];
         var y = src[1];
@@ -577,19 +576,19 @@ class GeoMath {
 
 
     /**
-     * @summary 座標変換行列を計算 (視点座標系 → クリップ同次座標系)
-     * @param  {number}        left
-     * @param  {number}        right
-     * @param  {number}        bottom
-     * @param  {number}        top
-     * @param  {number}        nearVal
-     * @param  {number}        farVal
-     * @param  {mapray.Matrix} dst     結果を代入する行列
-     * @return {mapray.Matrix}         dst
+     * 座標変換行列を計算 (視点座標系 → クリップ同次座標系)
+     * @param  left
+     * @param  right
+     * @param  bottom
+     * @param  top
+     * @param  nearVal
+     * @param  farVal
+     * @param  dst     結果を代入する行列
+     * @return         dst
      *
      * @see https://www.opengl.org/sdk/docs/man2/xhtml/glFrustum.xml
      */
-    static frustum_matrix( left, right, bottom, top, nearVal, farVal, dst )
+    static frustum_matrix( left: number, right: number, bottom: number, top: number, nearVal: number, farVal: number, dst: Matrix ): Matrix
     {
         dst[ 0] = 2 * nearVal / (right - left);
         dst[ 1] = 0;
@@ -616,15 +615,15 @@ class GeoMath {
 
 
     /**
-     * @summary 座標変換行列を計算 (右手座標系 → 視点座標系)
+     * 座標変換行列を計算 (右手座標系 → 視点座標系)
      *
-     * @param  {mapray.Vector3}  eye     視点の位置
-     * @param  {mapray.Vector3}  center  注視点の位置
-     * @param  {mapray.Vector3}  up      上方向ベクトル
-     * @param  {mapray.Matrix}   dst     結果を代入する行列
-     * @return {mapray.Matrix}           dst
+     * @param  eye     視点の位置
+     * @param  center  注視点の位置
+     * @param  up      上方向ベクトル
+     * @param  dst     結果を代入する行列
+     * @return         dst
      */
-    static lookat_matrix( eye, center, up, dst )
+    static lookat_matrix( eye: Vector3, center: Vector3, up: Vector3, dst: Matrix ): Matrix
     {
         var xaxis = GeoMath._xaxis;
         var yaxis = GeoMath._yaxis;
@@ -665,15 +664,15 @@ class GeoMath {
 
 
     /**
-     * @summary 任意軸回りの回転行列
-     * @desc
-     * <p>axis を Z 軸方向とすると、X 軸から Y 軸の方向に angle 度回転させる変換行列を返す。</p>
-     * @param  {mapray.Vector3} axis   回転軸 (単位ベクトル)
-     * @param  {number}         angle  回転角 (Degrees)
-     * @param  {mapray.Matrix}  dst    結果を代入する行列
-     * @return {mapray.Matrix}         dst
+     * 任意軸回りの回転行列
+     *
+     * axis を Z 軸方向とすると、X 軸から Y 軸の方向に angle 度回転させる変換行列を返す。
+     * @param  axis   回転軸 (単位ベクトル)
+     * @param  angle  回転角 (Degrees)
+     * @param  dst    結果を代入する行列
+     * @return        dst
      */
-    static rotation_matrix( axis, angle, dst )
+    static rotation_matrix( axis: Vector3, angle: number, dst: Matrix ): Matrix
     {
         var    θ = angle * GeoMath.DEGREE;
         var sinθ = Math.sin( θ );
@@ -708,24 +707,23 @@ class GeoMath {
 
 
     /**
-     * @summary KML 互換のモデル変換行列
+     * KML 互換のモデル変換行列
      *
-     * @desc
-     * <p>変換は scale -> roll -> tilt -> heading の順に行われる。</p>
+     * 変換は scale -> roll -> tilt -> heading の順に行われる。
      *
-     * @param  {number}         heading  Z 軸を中心に Y 軸から X 軸の方向の回転角 (Degrees)
-     * @param  {number}         tilt     X 軸を中心に Z 軸から Y 軸の方向の回転角 (Degrees)
-     * @param  {number}         roll     Y 軸を中心に X 軸から Z 軸の方向の回転角 (Degrees)
-     * @param  {mapray.Vector3} scale    スケール
-     * @param  {mapray.Matrix}  dst      結果を代入する行列
-     * @return {mapray.Matrix}           dst
+     * @param  heading  Z 軸を中心に Y 軸から X 軸の方向の回転角 (Degrees)
+     * @param  tilt     X 軸を中心に Z 軸から Y 軸の方向の回転角 (Degrees)
+     * @param  roll     Y 軸を中心に X 軸から Z 軸の方向の回転角 (Degrees)
+     * @param  scale    スケール
+     * @param  dst      結果を代入する行列
+     * @return          dst
      *
      * @package
      * @see https://developers.google.com/kml/documentation/kmlreference#model
      *
      * @deprecated [[mapray.Orientation.getTransformMatrix]] の使用を推奨
      */
-    static kml_model_matrix( heading, tilt, roll, scale, dst )
+    static kml_model_matrix( heading: number, tilt: number, roll: number, scale: Vector3, dst: Matrix ): Matrix
     {
         var h = heading * GeoMath.DEGREE;
         var t =    tilt * GeoMath.DEGREE;
@@ -767,187 +765,211 @@ class GeoMath {
 
 
     /**
-     * @summary グーデルマン関数
-     * @param  {number}  x   数値
-     * @return {number}      gd( x )
+     * グーデルマン関数
+     * @param  x   数値
+     * @return     gd( x )
      */
-    static gudermannian( x )
+    static gudermannian( x: number ): number
     {
         return 2 * Math.atan( Math.exp( x ) ) - Math.PI / 2;
     }
 
 
     /** 
-     * @summary 逆グーデルマン関数
-     * @param  {number}  x   数値
-     * @return {number}      gd<sup>-1</sup>( x )
+     * 逆グーデルマン関数
+     * @param  x   数値
+     * @return     gd<sup>-1</sup>( x )
      */
-    static invGudermannian( x )
+    static invGudermannian( x: number ): number
     {
         return Math.log( Math.tan( x / 2 + Math.PI / 4 ) );
     }
 
 
     /**
-     * @summary 値を指定区間内に制限
-     * @param  {number}  x    値
-     * @param  {number}  min  最小値
-     * @param  {number}  max  最大値
-     * @return {number}       min <= x <= max のとき x, x < min のとき min, x > max のとき max
+     * 値を指定区間内に制限
+     * @param  x    値
+     * @param  min  最小値
+     * @param  max  最大値
+     * @return      min <= x <= max のとき x, x < min のとき min, x > max のとき max
      */
-    static clamp( x, min, max )
+    static clamp( x: number, min: number, max: number ): number
     {
         return Math.min( Math.max( x, min ), max );
     }
 
+
+    /**
+     * 地球の半径
+     *
+     * Inou 球面座標系で定義された、地球の半径 (Meters) である。
+     */
+    static readonly EARTH_RADIUS: number = 6378137;
+
+
+    /**
+     * 1度に対応するラジアンの数値
+     *
+     * この数値は `π / 180` である。
+     * 度数を DEGREE で掛け合せることによってラジアンに変換することができる。
+     */
+     static readonly DEGREE: number = 0.017453292519943295769;
+
+
+     /**
+      * log2(π)
+      */
+     static readonly LOG2PI: number = 1.6514961294723187980;
+
+
+     // GeoMath の内部テンポラリ変数を生成
+     private static _xaxis: Vector3 = GeoMath.createVector3();
+
+
+     // GeoMath の内部テンポラリ変数を生成
+     private static _yaxis: Vector3 = GeoMath.createVector3();
+
+
+     // GeoMath の内部テンポラリ変数を生成
+     private static _zaxis: Vector3 = GeoMath.createVector3();
+
+
+     /**
+      * 2次ベクトルであるかを判定
+      */
+     static isVector2( vec: Vector2 | Vector3 | Vector4 ): vec is Vector2
+     {
+         return vec.length === 2;
+     }
+
+
+     /**
+      * 3次ベクトルであるかを判定
+      */
+     static isVector3( vec: Vector2 | Vector3 | Vector4 ): vec is Vector3
+     {
+         return vec.length === 3;
+     }
+
+
+     /**
+      * 4次ベクトルであるかを判定
+      */
+     static isVector4( vec: Vector2 | Vector3 | Vector4 ): vec is Vector4
+     {
+         return vec.length === 4;
+     }
+
 }
 
 
+
 /**
- * @summary 地球の半径
- * @desc
- * <p>Inou 球面座標系で定義された、地球の半径 (Meters) である。</p>
- * @type {number}
- * @constant
+ * 地理的位置を表現するJSON形式。
  */
-GeoMath.EARTH_RADIUS = 6378137;
+type GeoPointData = {
+    longitude: number;
+    latitude: number;
+    height: number;
+};
 
 
 /**
- * @summary 1度に対応するラジアンの数値
- * @desc
- * <p>この数値は π / 180 である。</p>
- * <p>度数を DEGREE で掛け合せることによってラジアンに変換することができる。</p>
- * @type {number}
- * @constant
- */
-GeoMath.DEGREE = 0.017453292519943295769;
-
-
-/**
- * @summary log2(π)
- * @type {number}
- * @constant
- */
-GeoMath.LOG2PI = 1.6514961294723187980;
-
-
-/**
- * @summary 4行4列の行列を表現
- * @desc
- * <p>このクラスは実在しない便宜的なものであり、Array や TypedArray 等の 16 要素の配列に置き換えることができる。
- * この配列の数値の並びは列優先である。</p>
+ * 4行4列の行列
  *
- * @class mapray.Matrix
- * @see mapray.GeoMath
+ * このクラスは実在しない便宜的なものであり、Array や TypedArray 等の 16 要素の配列に置き換えることができる。
+ * この配列の数値の並びは列優先である。
  */
+type Matrix = Float64Array | Float32Array | [
+    m00: number, m01: number, m02: number, m03: number,
+    m10: number, m11: number, m12: number, m13: number,
+    m20: number, m21: number, m22: number, m23: number,
+    m30: number, m31: number, m32: number, m33: number,
+];
 
 
 /**
- * @summary 2次ベクトルを表現
- * @desc
- * <p>このクラスは実在しない便宜的なものであり、Array や TypedArray 等の 2 要素の配列に置き換えることができる。</p>
+ * 2次ベクトル
  *
- * @class mapray.Vector2
- * @see mapray.GeoMath
+ * このクラスは実在しない便宜的なものであり、Array や TypedArray 等の 2 要素の配列に置き換えることができる。
  */
+type Vector2 = Float64Array | Float32Array | [ x: number, y: number ];
 
 
 /**
- * @summary 3次ベクトルを表現
- * @desc
- * <p>このクラスは実在しない便宜的なものであり、Array や TypedArray 等の 3 要素の配列に置き換えることができる。</p>
+ * 3次ベクトル
  *
- * @class mapray.Vector3
- * @see mapray.GeoMath
+ * このクラスは実在しない便宜的なものであり、Array や TypedArray 等の 3 要素の配列に置き換えることができる。
  */
+type Vector3 = Float64Array | Float32Array | [ x: number, y: number, z: number ];
 
 
 /**
- * @summary 4次ベクトルを表現
- * @desc
- * <p>このクラスは実在しない便宜的なものであり、Array や TypedArray 等の 4 要素の配列に置き換えることができる。</p>
+ * 4次ベクトル
  *
- * @class mapray.Vector4
- * @see mapray.GeoMath
+ * このクラスは実在しない便宜的なものであり、Array や TypedArray 等の 4 要素の配列に置き換えることができる。
  */
+type Vector4 = Float64Array | Float32Array | [ x: number, y: number, z: number, w: number ];
 
-
-// GeoMath の内部テンポラリ変数を生成
-{
-    GeoMath._xaxis = GeoMath.createVector3();
-    GeoMath._yaxis = GeoMath.createVector3();
-    GeoMath._zaxis = GeoMath.createVector3();
-}
 
 
 /**
- * @summary 球面座標
- *
- * @classdesc
- * <p>経度、緯度、高度により位置を表現する。</p>
- *
- * @memberof mapray
+ * 経度、緯度、高度により位置を表現する。
  */
 class GeoPoint {
 
     /**
-     * @desc
-     * <p>経度、緯度、高度を与えてインスタンスを生成する。</p>
-     *
-     * @param {number} [longitude=0]  経度 (Degrees)
-     * @param {number} [latitude=0]   緯度 (Degrees)
-     * @param {number} [altitude=0]   高度 (Meters)
+     *  経度 (Degrees)
      */
-    constructor( longitude, latitude, altitude )
+    longitude: number;
+
+    /**
+     *  緯度 (Degrees)
+     */
+    latitude: number;
+
+    /**
+     *  高度 (Meters)
+     */
+    altitude: number;
+
+    /**
+     * 経度、緯度、高度を与えてインスタンスを生成する。
+     *
+     * @param longitude 経度 (Degrees)
+     * @param latitude  緯度 (Degrees)
+     * @param altitude  高度 (Meters)
+     */
+    constructor( longitude: number = 0, latitude: number = 0, altitude: number = 0 )
     {
-        /**
-         *  @summary 経度 (Degrees)
-         *  @member mapray.GeoPoint#longitude
-         *  @type {number}
-         */
-        this.longitude = (longitude !== undefined) ? longitude : 0;
-
-        /**
-         *  @summary 緯度 (Degrees)
-         *  @member mapray.GeoPoint#latitude
-         *  @type {number}
-         */
-        this.latitude = (latitude !== undefined) ? latitude : 0;
-
-        /**
-         *  @summary 高度 (Meters)
-         *  @member mapray.GeoPoint#altitude
-         *  @type {number}
-         */
-        this.altitude = (altitude !== undefined) ? altitude : 0;
+        this.longitude = longitude;
+        this.latitude = latitude;
+        this.altitude = altitude;
     }
 
 
     /**
-     * @summary インスタンスを複製
+     * インスタンスを複製
      *
-     * @desc
-     * <p>this の複製を生成して返す。</p>
+     * this の複製を生成して返す。
      *
-     * @return {mapray.GeoPoint}  this の複製
+     * @return this の複製
      */
-    clone()
+    clone(): GeoPoint
     {
         return new GeoPoint( this.longitude, this.latitude, this.altitude );
     }
 
 
     /**
-     * @summary インスタンスを代入
+     * インスタンスを代入
      *
-     * @desc
-     * <p>src を this に代入する。</p>
+     * src を this に代入する。
      *
-     * @param  {mapray.GeoPoint} src  代入元
-     * @return {mapray.GeoPoint}      this
+     * @param  src  代入元
+     * @return      this
      */
-    assign( src )
+    assign( src: GeoPoint ): GeoPoint
     {
         this.longitude = src.longitude;
         this.latitude  = src.latitude;
@@ -958,35 +980,33 @@ class GeoPoint {
 
 
     /**
-     * @summary 配列からの設定
+     * 配列からの設定
      *
-     * @desc
-     * <p>longitude, latitude, altitude の順序で格納されている配列 position によりプロパティを設定する。</p>
-     * <p>position の長さは 2 または 3 で、長さが 2 なら altitude は 0 に設定される。</p>
+     * longitude, latitude, altitude の順序で格納されている配列 position によりプロパティを設定する。
+     * position の長さは 2 または 3 で、長さが 2 なら altitude は 0 に設定される。
      *
-     * @param  {number[]} position  [longitude, latitude, altitude] または [longitude, latitude]
-     * @return {mapray.GeoPoint} this
+     * @param  position `[longitude, latitude, altitude]` または `[longitude, latitude]`
+     * @return          this
      */
-    setFromArray( position )
+    setFromArray( position: Vector2 | Vector3 ): GeoPoint
     {
         this.longitude = position[0];
         this.latitude  = position[1];
-        this.altitude  = (position.length > 2) ? position[2] : 0;
+        this.altitude  = (position.length > 2) ? (position as Vector3)[2] : 0;
 
         return this;
     }
 
 
     /**
-     * @summary 地心直交座標からの設定
+     * 地心直交座標からの設定
      *
-     * @desc
-     * <p>地心直交座標 position を球面座標に変換して this に設定する。</p>
+     * 地心直交座標 position を球面座標に変換して this に設定する。
      *
-     * @param  {mapray.Vector3} position  入力 GOCS 座標 (Meters)
-     * @return {mapray.GeoPoint}  this
+     * @param  position 入力 GOCS 座標 (Meters)
+     * @return          this
      */
-    setFromGocs( position )
+    setFromGocs( position: Vector3 ): GeoPoint
     {
         var x = position[0];
         var y = position[1];
@@ -1021,12 +1041,12 @@ class GeoPoint {
 
 
     /**
-     * @summary 地心直交座標として取得
+     * 地心直交座標として取得
      *
-     * @param  {mapray.Vector3} dst  結果を格納するオブジェクト
-     * @return {mapray.Vector3}      dst
+     * @param  dst 結果を格納するオブジェクト
+     * @return     dst
      */
-    getAsGocs( dst )
+    getAsGocs( dst: Vector3 ): Vector3
     {
         var λ = this.longitude * GeoMath.DEGREE;
         var φ = this.latitude  * GeoMath.DEGREE;
@@ -1042,14 +1062,14 @@ class GeoPoint {
 
 
     /**
-     * @summary 座標変換行列を計算 (MLOCS → GOCS)
-     * @desc
-     * <p>原点が this の Mapray ローカル直交座標系 (MLOCS) から地心直交座標系 (GOCS) に変換する行列を計算する。</p>
+     * 座標変換行列を計算 (MLOCS → GOCS)
+     * 
+     * 原点が this の Mapray ローカル直交座標系 (MLOCS) から地心直交座標系 (GOCS) に変換する行列を計算する。
      *
-     * @param  {mapray.Matrix} dst  結果を代入する行列
-     * @return {mapray.Matrix}      dst
+     * @param  dst  結果を代入する行列
+     * @return      dst
      */
-    getMlocsToGocsMatrix( dst )
+    getMlocsToGocsMatrix( dst: Matrix ): Matrix
     {
         var    λ = this.longitude * GeoMath.DEGREE;
         var    φ = this.latitude  * GeoMath.DEGREE;
@@ -1088,12 +1108,12 @@ class GeoPoint {
 
 
     /**
-     * @summary 鉛直上方向のベクトルを計算
+     * 鉛直上方向のベクトルを計算
      *
-     * @param  {mapray.Vector3} dst  結果を代入するオブジェクト
-     * @return {mapray.Vector3}      dst
+     * @param  dst  結果を代入するオブジェクト
+     * @return      dst
      */
-    getUpwardVector( dst )
+    getUpwardVector( dst: Vector3 ): Vector3
     {
       var λ = this.longitude * GeoMath.DEGREE;
       var φ = this.latitude  * GeoMath.DEGREE;
@@ -1107,14 +1127,14 @@ class GeoPoint {
 
 
     /**
-     * @summary 地表面(高度0)での2地点間の距離を算出
-     * @desc
-     * <p> GeoMath.DEGREE を半径とする真球として計算する。</p>
-     *
-     * @param  {mapray.GeoPoint} to
-     * @return {number}   arc 距離(m)
+     * 地表面(高度0)での2地点間の距離を算出
+     * 
+     * GeoMath.DEGREE を半径とする真球として計算する。
+     * @param  to
+     * @return arc 距離(m)
      */
-    getGeographicalDistance( to ) {
+    getGeographicalDistance( to: GeoPoint ): number
+    {
         var from_vec = this.getAsGocs( GeoMath.createVector3() );
         var   to_vec = to.getAsGocs( GeoMath.createVector3() );
         var cross = GeoMath.cross3( from_vec, to_vec, GeoMath.createVector3() );
@@ -1126,17 +1146,16 @@ class GeoPoint {
 
 
     /**
-     * @summary 球面座標を地心直交座標に変換
+     * 球面座標を地心直交座標に変換
      *
-     * @param  {number[]} points      [lon_0, lat_0, alt_0, ...]
-     * @param  {number}   num_points  点の数
-     * @param  {number[]} dst         [x0, y0, z0, ...] (結果を格納する配列)
-     * @return {number[]} dst
+     * @param  points      `[lon_0, lat_0, alt_0, ...]`
+     * @param  num_points  点の数
+     * @param  dst         `[x0, y0, z0, ...]` (結果を格納する配列)
+     * @return dst
      *
      * @see {@link mapray.GeoPoint.getAsGocs}
      */
-    static
-    toGocsArray( points, num_points, dst )
+    static toGocsArray<T extends Float64Array | Float32Array | number[]>( points: Float64Array | Float32Array | number[], num_points: number, dst: T ): T
     {
         var degree = GeoMath.DEGREE;
         var radius = GeoMath.EARTH_RADIUS;
@@ -1161,73 +1180,68 @@ class GeoPoint {
 
 
 /**
- * @summary 方向表現
+ * 方向表現。
+ * heading (機首方位)、tilt (前後の傾き)、roll (左右の傾き) により方向を表現する。
  *
- * @classdesc
- * <p>heading (機首方位)、tilt (前後の傾き)、roll (左右の傾き) により方向を表現する。</p>
- *
- * @memberof mapray
- * @see https://developers.google.com/kml/documentation/kmlreference#model
+ * [KML仕様](https://developers.google.com/kml/documentation/kmlreference#model)
  */
 class Orientation {
 
     /**
-     * @desc
-     * <p>heading, tilt, roll に角度を与えてインスタンスを生成する。</p>
-     *
-     * @param {number} [heading=0]  機首方位 (Degrees)
-     * @param {number} [tilt=0]     前後の傾き (Degrees)
-     * @param {number} [roll=0]     左右の傾き (Degrees)
+     *  機首方位 (Degrees)
+     *  @type {number}
      */
-    constructor( heading, tilt, roll )
+    heading: number;
+
+    /**
+     *  前後の傾き (Degrees)
+     *  @type {number}
+     */
+    tilt: number;
+
+    /**
+     *  左右の傾き (Degrees)
+     *  @type {number}
+     */
+    roll: number;
+
+    /**
+     * heading, tilt, roll に角度を与えてインスタンスを生成する。
+     *
+     * @param heading 機首方位 (Degrees)
+     * @param tilt    前後の傾き (Degrees)
+     * @param roll    左右の傾き (Degrees)
+     */
+    constructor( heading: number = 0, tilt: number = 0, roll: number = 0 )
     {
-        /**
-         *  @summary 機首方位 (Degrees)
-         *  @member mapray.Orientation#heading
-         *  @type {number}
-         */
-        this.heading = (heading !== undefined) ? heading : 0;
-
-        /**
-         *  @summary 前後の傾き (Degrees)
-         *  @member mapray.Orientation#tilt
-         *  @type {number}
-         */
-        this.tilt = (tilt !== undefined) ? tilt : 0;
-
-        /**
-         *  @summary 左右の傾き (Degrees)
-         *  @member mapray.Orientation#roll
-         *  @type {number}
-         */
-        this.roll = (roll !== undefined) ? roll : 0;
+        this.heading = heading;
+        this.tilt = tilt;
+        this.roll = roll;
     }
 
 
     /**
-     * @summary インスタンスを複製
+     * インスタンスを複製
      *
-     * @desc
-     * <p>this の複製を生成して返す。</p>
+     * this の複製を生成して返す。
      *
-     * @return {mapray.Orientation}  this の複製
+     * @return this の複製
      */
-    clone()
+    clone(): Orientation
     {
         return new Orientation( this.heading, this.tilt, this.roll );
     }
 
 
     /**
-     * @summary インスタンスを代入
+     * インスタンスを代入
      *
-     * @desc
-     * <p>src を this に代入する。</p>
+     * src を this に代入する。
      *
-     * @param  {mapray.Orientation} src  代入元
-     * @return {mapray.Orientation}      this
+     * @param  src  代入元
+     * @return      this
      */
-    assign( src )
+    assign( src: Orientation ): Orientation
     {
         this.heading = src.heading;
         this.tilt    = src.tilt;
@@ -1238,16 +1252,15 @@ class Orientation {
 
 
     /**
-     * @summary 変換行列を取得
+     * 変換行列を取得
      *
-     * @desc
-     * <p>変換は scale -> roll -> tilt -> heading の順に行われる。</p>
+     * 変換は scale -> roll -> tilt -> heading の順に行われる。
      *
-     * @param  {mapray.Vector3} scale  スケール
-     * @param  {mapray.Matrix}  dst    結果を代入する行列
-     * @return {mapray.Matrix}  dst
+     * @param  scale  スケール
+     * @param  dst    結果を代入する行列
+     * @return dst
      */
-    getTransformMatrix( scale, dst )
+    getTransformMatrix( scale: Vector3, dst: Matrix ): Matrix
     {
         var h = this.heading * GeoMath.DEGREE;
         var t = this.tilt    * GeoMath.DEGREE;
@@ -1291,7 +1304,8 @@ class Orientation {
 
 
 export default GeoMath;
-export { GeoPoint, Orientation };  // 下を参照
+export { Vector2, Vector3, Vector4, Matrix, GeoPointData };
+export { GeoPoint, Orientation, };  // 下を参照
 
 
 /*
