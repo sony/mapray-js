@@ -1,6 +1,6 @@
 import PointCloudProvider from "./PointCloudProvider";
 import GeoMath from "./GeoMath";
-import Resource, { URLResource, ResourceType } from "./Resource";
+import Resource, { URLResource } from "./Resource";
 
 
 let idMax = 1;
@@ -42,7 +42,7 @@ class RawPointCloudProvider extends PointCloudProvider {
      * @override
      */
     async doInit() {
-        const info = await this._info_resource.load( { type: ResourceType.JSON } );
+        const info = await this._info_resource.load( { type: Resource.Type.JSON } );
         if ( info.url ) {
             this._resource = this._info_resource.resolveResource( info.url );
         }
@@ -71,7 +71,7 @@ class RawPointCloudProvider extends PointCloudProvider {
             this._taskMap.set(id, { id, abortController });
             const path = this._createPath( level, x, y, z );
             const buffer = await this._resource.loadSubResource( path, {
-                    type: ResourceType.BINARY,
+                    type: Resource.Type.BINARY,
                     signal: abortController.signal
             } );
 
