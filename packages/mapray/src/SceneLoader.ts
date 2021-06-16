@@ -1,41 +1,48 @@
 import Loader from "./Loader"
-import GeoMath from "./GeoMath";
+import GeoMath, { Matrix, Vector3 } from "./GeoMath";
+import Scene from "./Scene";
 import Orientation from "./Orientation";
 import CredentialMode from "./CredentialMode";
 import ModelContainer from "./ModelContainer";
+import Entity from "./Entity";
+import AltitudeMode from "./AltitudeMode";
 import MarkerLineEntity from "./MarkerLineEntity";
 import PathEntity from "./PathEntity";
 import TextEntity from "./TextEntity";
 import ModelEntity from "./ModelEntity";
 import PolygonEntity from "./PolygonEntity";
+import GLEnv from "./GLEnv";
 import GltfTool from "./gltf/Tool";
-import Resource, { URLResource, ResourceType } from "./Resource";
+import Resource, { URLResource } from "./Resource";
 
 /**
- * @summary シーンの読み込み
- * @memberof mapray
+ * シーンの読み込み
  */
 class SceneLoader extends Loader {
 
+    private _glenv: GLEnv;
+
+    private _finished: boolean;
+
+    private _references: Entity.ReferenceMap;
+
     /**
-     * @desc
-     * <p>url で指定したシーンデータの読み込みを開始し、scene にエンティティを構築する。</p>
-     * <p>読み込みが終了したとき options.callback を呼び出す。</p>
-     * @param {mapray.Scene} scene      読み込み先のシーン
-     * @param {string}       resource        シーンリソース
-     * @param {object}       [options]  オプション集合
-     * @param {mapray.Loader.TransformCallback} [options.transform]  リソース要求変換関数
-     * @param {mapray.Loader.EntityCallback}         [options.onEntity]   エンティティコールバック
-     * @param {mapray.SceneLoader.FinishCallback}    [options.callback]   終了コールバック関数
+     * url で指定したシーンデータの読み込みを開始し、scene にエンティティを構築する。
+     * 読み込みが終了したとき options.callback を呼び出す。
+     * @param scene      読み込み先のシーン
+     * @param resource   シーンリソース
+     * @param options    オプション集合
      */
-    constructor( scene, resource, options={} )
+    constructor( scene: Scene, resource: string | Resource, options: SceneLoader.Option = {} )
     {
+        let actualResource: Resource;
         if ( resource instanceof Resource ) {
-            // OK
+            actualResource = resource;
         }
         else if ( typeof resource === "string" ) {
-            resource = new URLResource(resource, {
-                    type: "json",
+            // @ts-ignore
+            actualResource = new URLResource(resource, {
+                    type: Resource.Type.JSON,
                     transform: options.transform
             });
         }
@@ -43,26 +50,26 @@ class SceneLoader extends Loader {
             throw new Error( "Unsupported Resource: " + resource );
         }
 
-        super( scene, resource, {
+        super( scene, actualResource, {
                 onEntity: options.onEntity,
                 onLoad: options.callback
         } );
 
         this._glenv      = scene.glenv;
         this._references = {};
-        this._finished   = false;
+        this._finished = false;
     }
 
 
 
     /**
-     * @summary オブジェクト参照を取得
-     * @desc
-     * <p>注意: シーンの読み込みが終了したことを確認してからこのメソッドを呼び出すこと。</p>
-     * @param  {string}                                   id  識別子
-     * @return {?(mapray.ModelContainer|mapray.Entity)}  オブジェクト
+     * オブジェクト参照を取得
+     *
+     * 注意: シーンの読み込みが終了したことを確認してからこのメソッドを呼び出すこと。
+     * @param  id  識別子
+     * @return オブジェクト
      */
-    getReference( id )
+    getReference( id: string ): ModelContainer | Entity | null
     {
         var ref = this._references[id];
         return (ref !== undefined) ? ref : null;
@@ -70,14 +77,13 @@ class SceneLoader extends Loader {
 
 
     /**
-     * @summary オブジェクト参照を設定
-     * @desc
-     * <p>オブジェクト item を識別子 id で参照できるように this に設定する。</p>
-     * @param {string}                                   id    識別子
-     * @param {mapray.ModelContainer|mapray.Entity} item  オブジェクト
-     * @private
+     * オブジェクト参照を設定
+     *
+     * オブジェクト item を識別子 id で参照できるように this に設定する。
+     * @param id    識別子
+     * @param item  オブジェクト
      */
-    _setReference( id, item )
+    private _setReference( id: string, item: ModelContainer | Entity )
     {
         // 参照を設定
         this._references[id] = item;
@@ -85,16 +91,16 @@ class SceneLoader extends Loader {
 
 
     /**
-     * @summary 読み込み処理の実態。継承クラスによって実装される。
-     * @private
+     * 読み込み処理の実態。継承クラスによって実装される。
      */
-    _load()
+    protected _load(): Promise<void>
     {
         return (
-            this._resource.load( { type: ResourceType.JSON } )
-            .then( oscene => {
+            this._resource.load( { type: Resource.Type.JSON } )
+            .then( ( oscene: any ) => {
                     // JSON データの取得に成功
                     this._check_cancel();
+                    // @ts-ignore
                     return this._load_object( oscene );
             } )
         );
@@ -103,9 +109,8 @@ class SceneLoader extends Loader {
 
     /**
      * JSON シーンオブジェクトを解析
-     * @private
      */
-    _load_object( oscene )
+    private _load_object( oscene: SceneLoader.SceneJson ): Promise<void>
     {
         return (
             Promise.resolve()
@@ -121,9 +126,8 @@ class SceneLoader extends Loader {
 
     /**
      * 残りのオブジェクトを読み込む
-     * @private
      */
-    _postload_object( oscene )
+    private _postload_object( oscene: SceneLoader.SceneJson )
     {
         if ( this.status !== Loader.Status.LOADING ) return;
         this._load_entity_list( oscene );
@@ -131,11 +135,11 @@ class SceneLoader extends Loader {
 
 
     /**
-     * @private
+     *
      */
-    _load_model_register( oscene )
+    private _load_model_register( oscene: SceneLoader.SceneJson )
     {
-        var model_register = oscene["model_register"];
+        var model_register = oscene.model_register;
         if ( !model_register ) return;
 
         var keys = Object.keys( model_register );
@@ -150,30 +154,35 @@ class SceneLoader extends Loader {
 
 
     /**
-     * @private
+     *
      */
-    _load_model_container( oscene, id, model )
+    private _load_model_container( oscene: SceneLoader.SceneJson, id: string, model: ModelContainer )
     {
+        // @ts-ignore
         var url = model.link;
         if ( !this._resource.resolveResourceSupported() ) return Promise.reject(new Error("Sub Resource is not supported"));
         const gltf_resource = this._resource.resolveResource( url );
-        return (
-            gltf_resource.load( { type: ResourceType.JSON } )
-            .then( json => {
+        return (// @ts-ignore
+            gltf_resource.load( { type: Resource.Type.JSON } )
+            .then( ( json: any ) => {
                     // モデルデータの取得に成功
                     this._check_cancel();
                     // データを解析して gltf.Content を構築
+                    // @ts-ignore
                     return GltfTool.load( json, {
                             base_resource: gltf_resource,
-                              binary_type: ResourceType.BINARY,
-                               image_type: ResourceType.IMAGE,
+                              binary_type: Resource.Type.BINARY,
+                               image_type: Resource.Type.IMAGE,
+                     // @ts-ignore
                      supported_extensions: ModelContainer.getSupportedExtensions_glTF()
                     } );
             } )
-            .then( content => {
+            .then( ( content: any ) => {
                     // モデルデータの構築に成功
                     var container = new ModelContainer( this._scene, content );
+                    // @ts-ignore
                     if ( model.offset_transform ) {
+                        // @ts-ignore
                         var matrix = SceneLoader.parseOffsetTransform( model.offset_transform );
                         container.setOffsetTransform( matrix );
                     }
@@ -184,11 +193,11 @@ class SceneLoader extends Loader {
 
 
     /**
-     * @private
+     *
      */
-    _load_entity_list( oscene )
+    private _load_entity_list( oscene: SceneLoader.SceneJson )
     {
-        var entity_list = oscene["entity_list"];
+        var entity_list = oscene.entity_list;
         if ( !entity_list ) return;
 
         var scene = this._scene;
@@ -198,31 +207,41 @@ class SceneLoader extends Loader {
             var   type = item.type;
             var entity = null;
 
-            switch ( type ) {
-            case "markerline":
-                entity = new MarkerLineEntity( scene, { json: item, refs: this._references } );
-                break;
-            case "path":
-                entity = new PathEntity( scene, { json: item, refs: this._references } );
-                break;
-            case "text":
+            if ( TextEntity.isTextEntityJson( item ) ) {
                 entity = new TextEntity( scene, { json: item, refs: this._references } );
-                break;
-            case "model":
-                entity = new ModelEntity( scene, { json: item, refs: this._references } );
-                break;
-            case "polygon":
-                entity = new PolygonEntity( scene, { json: item, refs: this._references } );
-                break;
-            default:
-                console.error( "mapray: unknown entity type: " + type );
-                break;
+            }
+            else {
+                switch ( type ) {
+                case "markerline":
+                    entity = new MarkerLineEntity( scene, { json: item, refs: this._references } );
+                    break;
+                case "path":
+                    entity = new PathEntity( scene, { json: item, refs: this._references } );
+                    break;
+                /*
+                case "text":
+                    entity = new TextEntity( scene, { json: item, refs: this._references } );
+                    break;
+                */
+                case "model":
+                    // @ts-ignore
+                    entity = new ModelEntity( scene, { json: item, refs: this._references } as ModelEntity.Option );
+                    break;
+                case "polygon":
+                    entity = new PolygonEntity( scene, { json: item, refs: this._references } );
+                    break;
+                default:
+                    console.error( "mapray: unknown entity type: " + type );
+                    break;
+                }
             }
 
             if ( entity ) {
+                // @ts-ignore
                 this._onEntity( this, entity, item );
                 var id = item.id;
                 if ( id ) {
+                    // @ts-ignore
                     this._setReference( id, entity );
                 }
             }
@@ -234,23 +253,23 @@ class SceneLoader extends Loader {
     /**
      * スキーマ <OFFSET-TRANSFORM> のオブジェクトを解析
      *
-     * @param  {object} offset_transform  <OFFSET-TRANSFORM> オブジェクト
-     * @return {mapray.Matrix}            オフセット変換行列
-     * @package
+     * @param   offset_transform  <OFFSET-TRANSFORM> オブジェクト
+     * @return  オフセット変換行列
+     * @internal
      */
-    static
-    parseOffsetTransform( offset_transform )
+    static parseOffsetTransform( offset_transform: SceneLoader.OffsetTransformJson ): Matrix
     {
         var ot = offset_transform;
 
         // <OFFSET-TRANSFORM-PARAMS>
         var   translate = ot.translate || [0, 0, 0];
         var orientation = new Orientation( ot.heading, ot.tilt, ot.roll );
-        var       scale = (ot.scale !== undefined) ? ot.scale : [1, 1, 1];  // <PARAM-SCALE3>
-        if ( typeof scale == 'number' ) {
-            // スケールをベクトルに正規化
-            scale = [scale, scale, scale];
-        }
+        var           s = ot.scale; // <PARAM-SCALE3>
+        const scale = (
+            s === undefined ? [1, 1, 1]:
+            typeof s == 'number' ? [s, s, s]: // スケールをベクトルに正規化
+            s
+        ) as Vector3;
 
         // scale -> orientation -> translate 順の変換
         var matrix = GeoMath.createMatrix();
@@ -266,20 +285,53 @@ class SceneLoader extends Loader {
 }
 
 
-/**
- * @summary 終了コールバック
- * @callback FinishCallback
- * @desc
- * <p>シーンの読み込みが終了したときに呼び出される関数の型である。</p>
- * @param {mapray.SceneLoader} loader     読み込みを実行したローダー
- * @param {boolean}            isSuccess  成功したとき true, 失敗したとき false
- * @memberof mapray.SceneLoader
- */
+
+namespace SceneLoader {
+
+
+
+export interface Option {
+    /** リソース要求変換関数 */
+    transform?: Resource.TransformCallback;
+
+    /** エンティティコールバック */
+    onEntity?: Loader.EntityCallback;
+
+    /** 終了コールバック関数 */
+    callback?: Loader.FinishCallback;
+}
+
+
+
+export interface SceneJson {
+    model_register: ModelRegisterJson;
+    entity_list: Entity.Json[];
+}
+
+
+
+export interface ModelRegisterJson {
+    [ id: string ]: ModelContainer;
+}
+
+
+
+export interface OffsetTransformJson {
+    translate: [ x: number, y: number, z: number ];
+    scale?: [ x: number, y: number, z: number ];
+    heading: number;
+    tilt: number;
+    roll: number;
+}
 
 
 
 
-SceneLoader._defaultHeaders = {};
+export const _defaultHeaders = {};
+
+
+
+} // namespace SceneLoader
 
 
 
