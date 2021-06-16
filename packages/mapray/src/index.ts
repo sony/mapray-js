@@ -30,6 +30,7 @@ export { default as PinEntity } from "./PinEntity";
 export { default as ImageIconEntity } from "./ImageIconEntity"
 export { default as SceneLoader } from "./SceneLoader";
 export { default as GeoJSONLoader } from "./GeoJSONLoader";
+export { default as GeoJSON } from "./GeoJSON";
 export { default as DebugStats } from "./DebugStats";
 export { default as MaprayApi } from "./MaprayApi";
 export * from "./MaprayApiModel";
