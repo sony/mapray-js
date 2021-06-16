@@ -388,5 +388,5 @@ class ImageIconLoaderItem extends IconLoaderItem {
 
 
 
-export { URLTemplateIconLoader, TextIconLoader, ImageIconLoader };
+export { URLTemplateIconLoader, TextIconLoader, ImageIconLoader, IconLoaderItem, ImageIconLoaderItem };
 export default IconLoader;

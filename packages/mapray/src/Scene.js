@@ -29,6 +29,18 @@ class Scene {
         // animation.BindingBlock
         this._animation = new EasyBindingBlock();
         this._animation.addDescendantUnbinder( () => { this._unbindDescendantAnimations(); } );
+
+        this._PinEntity_pin_material = null;
+        this._PinEntity_pin_material_pick = null;
+
+        this._TextEntity_text_material = null;
+        this._TextEntity_text_material_pick = null;
+
+        this._SimpleTextEntity_text_material = null;
+        this._SimpleTextEntity_text_material_pick = null;
+
+        this._ImageEntity_image_material = null;
+        this._ImageEntity_image_material_pick = null;
     }
 
 
@@ -380,6 +392,17 @@ class Scene {
         }
     }
 
+    /**
+     * PinEntityマテリアルのキャッシュ
+     * @internal
+     */
+    // _PinEntity_pin_material?: any;
+
+    /**
+     * PinEntityマテリアルのキャッシュ
+     * @internal
+     */
+    // _PinEntity_pin_material_pick?: any;
 }
 
 
