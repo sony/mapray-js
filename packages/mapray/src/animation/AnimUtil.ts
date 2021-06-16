@@ -1,30 +1,26 @@
 import Type from "./Type";
+import Time from "./Time";
+import Curve from "./Curve";
 
 
 /**
- * @summary アニメーション実装者用のユーティリティ
- *
- * @hideconstructor
- * @memberof mapray.animation
- *
- * @private
+ * アニメーション実装者用のユーティリティ
+ * @internal
  */
 class AnimUtil
 {
 
     /**
-     * @summary type の次元を取得
+     * type の次元を取得
      *
-     * @desc
-     * <p>type が number のとき 1, vector2, vector3, vector4
-     *    のときはベクトルの次数を返す。それ以外の型のときは 0 を返す。<p>
+     * type が number のとき 1, vector2, vector3, vector4
+     * のときはベクトルの次数を返す。それ以外の型のときは 0 を返す。
      *
-     * @param {mapray.animation.Type} type
+     * @param type
      *
-     * @return {number}  type の次元、type が非対応のときは 0
+     * @return type の次元、type が非対応のときは 0
      */
-    static
-    getDimension( type )
+    static getDimension( type: Type ): number
     {
         if ( Type.find( "number" ) === type ) {
             // スカラーは 1
@@ -47,32 +43,30 @@ class AnimUtil
 
 
     /**
-     * @summary キーフレームのインデックスを検索
+     * キーフレームのインデックスを検索
      *
-     * @desc
-     * <p>key_times の [lower, upper) の範囲に time より後の時刻が存在すれば、その中で最小のインデックスを返す。
-     *    そのような時刻が存在しなければ upper を返す。</p>
+     * key_times の [lower, upper) の範囲に time より後の時刻が存在すれば、その中で最小のインデックスを返す。
+     * そのような時刻が存在しなければ upper を返す。
      *
-     * <p>返された値を i, key_times を k とすると time の位置は次のように解釈できる。</p>
-     * <pre>
+     * 返された値を i, key_times を k とすると time の位置は次のように解釈できる。
+     * ```ts
      *   i == lower のとき: time < k[i]
      *   i == upper のとき: k[i-1] <= time
      *   それ以外のとき: k[i-1] <= time < k[i]
-     * </pre>
+     * ```
      *
-     * <p>事前条件: upper - lower >= 1</p>
+     * 事前条件: `upper - lower >= 1`
      *
-     * <p>計算量: upper - lower を n とするとき、O(log n)</p>
+     * 計算量: `upper - lower` を n とするとき、O(log n)
      *
-     * @param {mapray.animation.Time}   time       検索キー
-     * @param {mapray.animation.Time[]} key_times  検索対象配列
-     * @param {number}                  lower      下限インデックス
-     * @param {number}                  upper      上限インデックス
+     * @param time       検索キー
+     * @param key_times  検索対象配列
+     * @param lower      下限インデックス
+     * @param upper      上限インデックス
      *
-     * @return {number}  検索されたインデックス
+     * @return 検索されたインデックス
      */
-    static
-    findKeyFrameIndex( time, key_times, lower, upper )
+    static findKeyFrameIndex( time: Time, key_times: Time[], lower: number, upper: number ): number
     {
         let l_idx = lower;
         let u_idx = upper;
@@ -107,19 +101,16 @@ class AnimUtil
 
 
     /**
-     * @summary 最初にサポートする型を検索
+     * 最初にサポートする型を検索
      *
-     * @desc
-     * <p>types の中で curve がサポートする最初の型を返す。</p>
-     * <p>types に curve がサポートする型が存在しなければ null を返す。</p>
+     * types の中で curve がサポートする最初の型を返す。
+     * types に curve がサポートする型が存在しなければ null を返す。
      *
-     * @param {mapray.animation.Curve}           curve
-     * @param {iterable.<mapray.animation.Type>} types
-     *
-     * @return {?mapray.animation.Type}
+     * @param curve
+     * @param types
+     * @return サポートする型
      */
-    static
-    findFirstTypeSupported( curve, types )
+    static findFirstTypeSupported( curve: Curve, types: Iterable<Type> ): Type | null
     {
         for ( let type of types ) {
             if ( curve.isTypeSupported( type ) ) {
