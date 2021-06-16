@@ -1,70 +1,85 @@
+import MaprayApi from "./MaprayApi";
 import GeoPoint from "./GeoPoint";
 
+
 /**
- * @summary データセットを表現する抽象クラス
+ * データセットを表現する抽象クラス
  */
-export class AbstractDataset {
+class AbstractDataset {
+
+    private _api: MaprayApi;
+
+    // @ts-ignore
+    private _id: string;
+
+    // @ts-ignore
+    private _owner_id: string;
+
+    // @ts-ignore
+    private _name: string;
+
+    // @ts-ignore
+    private _description: string;
+
+    // @ts-ignore
+    private _created_at: Date;
+
+    // @ts-ignore
+    private _updated_at: Date;
 
     /**
-     * @param {MaprayApi} api
+     * @param api
      */
-    constructor( api ) {
-        this._aip = api;
+    constructor( api: MaprayApi ) {
+        this._api = api;
     }
 
     /**
-     * @summary データセットのidを取得
-     * @return {string}
+     * データセットのidを取得
      */
-    getId() {
+    getId(): string {
         return this._id;
     }
 
     /**
-     * @summary オーナーのidを取得
-     * @return {string}
+     * オーナーのidを取得
      */
-    getOwnerId() {
+    getOwnerId(): string {
         return this._owner_id;
     }
 
     /**
-     * @summary 名前を取得
-     * @return {string}
+     * 名前を取得
      */
-    getName() {
+    getName(): string {
         return this._name;
     }
 
     /**
-     * @summary 説明を取得
-     * @return {string}
+     * 説明を取得
      */
-    getDescription() {
+    getDescription(): string {
         return this._description;
     }
 
     /**
-     * @summary 作成日時を取得
-     * @return {Date}
+     * 作成日時を取得
      */
-    getCreatedAt() {
+    getCreatedAt(): Date {
         return this._created_at;
     }
 
     /**
-     * @summary 更新日時を取得
-     * @return {Date}
+     * 更新日時を取得
      */
-    getUpdatedAt() {
+    getUpdatedAt(): Date {
         return this._updated_at;
     }
 
     /**
-     * @private
-     * @param {json} サーバから返却されたjson
+     * @param json サーバから返却されたjson
      */
-    _restoreFromJson( json ) {
+    protected _restoreFromJson( json: AbstractDataset.Json ) {
         this._id = json.id;
         this._owner_id = json.owner_id;
         this._name = json.name;
@@ -76,33 +91,44 @@ export class AbstractDataset {
 
 
 
+namespace AbstractDataset {
+
+
+export interface Json {
+    id: string;
+    owner_id: string;
+    name: string;
+    description: string;
+    created_at: Date;
+    updated_at: Date;
+}
+
+} // namespace AbstractDataset
+
+
+
 /**
- * @summary データセットを表現するクラス
+ * データセットを表現するクラス
  */
-export class Dataset extends AbstractDataset {
+class Dataset extends AbstractDataset {
 
     /**
-     * @param {MaprayApi} api
+     * @param api
      */
-    constructor( api ) {
+    private constructor( api: MaprayApi ) {
         super( api );
     }
 
-    /**
-     * @private
-     * @param {json} サーバから返却されたjson
-     */
-    _restoreFromJson( json ) {
+    protected override _restoreFromJson( json: Dataset.Json ) {
         super._restoreFromJson( json );
     }
 
     /**
-     * @private
-     * @param {MaprayApi} api
-     * @param {json} サーバから返却されたjson
-     * @return {Dataset}
+     * @internal
+     * @param api
+     * @param サーバから返却されたjson
      */
-    static createFromJson( api, json ) {
+    static createFromJson( api: MaprayApi, json: Dataset.Json ): Dataset {
         const dataset = new Dataset( api );
         dataset._restoreFromJson( json );
         return dataset;
@@ -111,75 +137,90 @@ export class Dataset extends AbstractDataset {
 
 
 
+namespace Dataset {
+
+
+export interface Json extends AbstractDataset.Json {
+}
+
+
+} // namespace Dataset
+
+
+
 /**
- * @summary 3Dデータセットを表現するクラス
+ * 3Dデータセットを表現するクラス
  */
-export class Dataset3D extends AbstractDataset {
+class Dataset3D extends AbstractDataset {
+
+    // @ts-ignore
+    private _url: string;
+
+    // @ts-ignore
+    private _scene_id: string;
+
+    // @ts-ignore
+    private _path: string;
+
+    // @ts-ignore
+    private _format: string;
+
+    // @ts-ignore
+    private _srid: string;
+
+    // @ts-ignore
+    private _origin: GeoPoint;
 
     /**
-     * @param {MaprayApi} api
+     * @param api
      */
-    constructor( api ) {
+    private constructor( api: MaprayApi ) {
         super( api );
     }
 
     /**
-     * @summary 原点位置
-     * @return {mapray.GeoPoint}
+     * 原点位置
      */
-    getOrigin() {
+    getOrigin(): GeoPoint {
         return this._origin;
     }
 
     /**
-     * @summary モデルが公開されているURL
-     * @return {string}
+     * モデルが公開されているURL
      */
-    getUrl() {
+    getUrl(): string {
         return this._url;
     }
 
     /**
-     * @summary フォーマット
-     * @private
-     * @return {string}
+     * フォーマット
      */
-    getFormat() {
+    getFormat(): string {
         return this._format;
     }
 
     /**
-     * @summary シーンID
-     * @private
-     * @return {string}
+     * シーンID
      */
-    getSceneId() {
+    getSceneId(): string {
         return this._scene_id;
     }
 
     /**
-     * @summary Path
-     * @private
-     * @return {string}
+     * Path
      */
-    getPath() {
+    getPath(): string {
         return this._path;
     }
 
     /**
-     * @summary SRID
-     * @private
-     * @return {string}
+     * SRID
      */
-    getSRID() {
+    getSRID(): string {
         return this._srid;
     }
 
-    /**
-     * @private
-     * @param {json} サーバから返却されたjson
-     */
-    _restoreFromJson( json ) {
+    protected override _restoreFromJson( json: Dataset3D.Json ) {
         /* missing options
         "x": 137.715,
         "y": 34.71111,
@@ -211,12 +252,12 @@ export class Dataset3D extends AbstractDataset {
     }
 
     /**
-     * @private
+     * @internal
      * @param {MaprayApi} api
      * @param {json} サーバから返却されたjson
      * @return {Dataset3D}
      */
-    static createFromJson( api, json ) {
+    static createFromJson( api: MaprayApi, json: Dataset3D.Json ) {
         const dataset = new Dataset3D( api );
         dataset._restoreFromJson( json );
         return dataset;
@@ -225,71 +266,183 @@ export class Dataset3D extends AbstractDataset {
 
 
 
-/**
- * @summary 点群データセットを表現するクラス
- */
-export class PointCloudDataset extends AbstractDataset {
+namespace Dataset3D {
+
+
+export interface RequestJson extends AbstractDataset.Json {
+    /**
+     * glTFファイルのパスを指定します（アップロードする際はディレクトリを指定するため、ディレクトリルートからのglTFファイルへのパスを指定します）
+     */
+    path: string;
 
     /**
-     * @param {MaprayApi} api
+     * "glTF"を指定します
      */
-    constructor( api ) {
+    format: string;
+
+    /**
+     * 現在は4326（WGS 84）を指定します
+     */
+    srid: string;
+
+    /**
+     * 経度
+     */
+    x: number;
+
+    /**
+     * 緯度
+     */
+    y: number;
+
+    /**
+     * 高さ
+     */
+    z: number;
+}
+
+
+export interface Json extends RequestJson {
+    /**
+     * データのURL
+     */
+    url: string;
+
+    /**
+     * シーンID
+     */
+    scene_id: string;
+}
+
+
+
+} // namespace Dataset3D
+
+
+
+/**
+ * 点群データセットを表現するクラス
+ */
+class PointCloudDataset extends AbstractDataset {
+
+    // @ts-ignore
+    private _url?: string;
+
+    // @ts-ignore
+    private _bounding_box: GeoJson.BBox3d;
+
+    // @ts-ignore
+    private _content_root: string;
+
+    // @ts-ignore
+    private _format: string;
+
+    /**
+     * @param api
+     */
+    constructor( api: MaprayApi ) {
         super( api );
     }
 
     /**
-     * @summary 点群ファイルが公開されているURLを取得
+     * 点群ファイルが公開されているURLを取得
      */
     getUrl() {
         return this._url;
     }
 
     /**
-     * @summary 点群のバウンディングボックスを取得
+     * 点群のバウンディングボックスを取得
      */
     getBoundingBox() {
         return this._bounding_box;
     }
 
     /**
-     * @summary 1レベルに1ボックスしか存在しないボックスの中で最も高いレベルのボックス。
+     * 1レベルに1ボックスしか存在しないボックスの中で最も高いレベルのボックス。
      * （点群に含まれる全ての点を包含するボックスの中で最も高いレベルのボックス）
-     * @return string
      */
-    getContentRoot() {
+    getContentRoot(): string {
         return this._content_root;
     }
 
     /**
-     * @summary フォーマット（現在はrawのみ対応）
-     * @return string
+     * フォーマット（現在はrawのみ対応）
      */
-    getFormat() {
+    getFormat(): string {
         return this._format;
     }
 
     /**
-     * @private
-     * @param {json} サーバから返却されたjson
+     * @param json サーバから返却されたJson
      */
-    _restoreFromJson( json ) {
+    protected override _restoreFromJson( json: PointCloudDataset.Json ) {
         super._restoreFromJson( json );
         // this._srid = json.srid;
         this._url = json.url;
-        this._bounding_box = json.bbox;
+        const bbox = json.bbox;
+        this._bounding_box = (
+            GeoJson.isBBox3d(bbox) ? bbox:
+            [ bbox[0], bbox[1], 0, bbox[2], bbox[3], 0, ]
+        );
         this._content_root = Array.isArray(json.content_root) ? json.content_root.join("/") : json.content_root;
         this._format = json.format;
     }
 
     /**
-     * @private
-     * @param {MaprayApi} api
-     * @param {json} サーバから返却されたjson
-     * @return {PointCloudDataset}
+     * @internal
+     * @param api
+     * @param サーバから返却されたjson
      */
-    static createFromJson( api, json ) {
+    static createFromJson( api: MaprayApi, json: PointCloudDataset.Json ): PointCloudDataset {
         const dataset = new PointCloudDataset( api );
         dataset._restoreFromJson( json );
         return dataset;
     }
 }
+
+
+
+namespace PointCloudDataset {
+
+
+export interface Json extends AbstractDataset.Json {
+    url?: string;
+    bbox: GeoJson.BBox;
+    content_root: [ level: number, x: number, y: number, z: number ];
+    format: string;
+}
+
+
+} // namespace PointCloudDataset
+
+
+
+namespace GeoJson {
+
+
+export function isBBox3d(arg: any): arg is BBox3d {
+    return arg.length === 6;
+}
+
+export type BBox2d = [
+    minLng: number, minLat: number,
+    maxLng: number, maxLat: number,
+];
+
+
+export type BBox3d = [
+    minLng: number, minLat: number, minAlt: number,
+    maxLng: number, maxLat: number, maxAlt: number,
+];
+
+
+export type BBox = BBox2d | BBox3d;
+
+
+
+} // namespace GeoJson
+
+
+
+export { AbstractDataset, Dataset, Dataset3D, PointCloudDataset };

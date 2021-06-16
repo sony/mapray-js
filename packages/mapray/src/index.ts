@@ -32,6 +32,8 @@ export { default as SceneLoader } from "./SceneLoader";
 export { default as GeoJSONLoader } from "./GeoJSONLoader";
 export { default as DebugStats } from "./DebugStats";
 export { default as MaprayApi } from "./MaprayApi";
+export * from "./MaprayApiModel";
+export * from "./MaprayApiResource";
 export { default as PointCloud } from "./PointCloud";
 export { default as RawPointCloudProvider } from "./RawPointCloudProvider";
 export { default as Resource, URLResource } from "./Resource";
