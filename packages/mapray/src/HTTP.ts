@@ -3,29 +3,29 @@
  */
 class HTTP {
 
-    static async get( url, query, option={} )
+    static async get( url: string, query?: HTTP.Query, option = {} )
     {
-        return await this.fetch( HTTP.METHOD.GET, url, query, null, option );
+        return await this.fetch( HTTP.METHOD.GET, url, query, undefined, option );
     }
 
-    static async post( url, query, body, option={} )
+    static async post( url: string, query?: HTTP.Query, body?: HTTP.Body, option = {} )
     {
         return await this.fetch( HTTP.METHOD.POST, url, query, body, option );
     }
 
-    static async patch( url, query, body, option={} )
+    static async patch( url: string, query?: HTTP.Query, body?: HTTP.Body, option = {} )
     {
         return await this.fetch( HTTP.METHOD.PATCH, url, query, body, option );
     }
 
-    static async put( url, query, body, option={} )
+    static async put( url: string, query?: HTTP.Query, body?: HTTP.Body, option = {} )
     {
         return await this.fetch( HTTP.METHOD.PUT, url, query, body, option );
     }
 
-    static async delete( url, query, option={} )
+    static async delete( url: string, query?: HTTP.Query, option = {} )
     {
-        return await this.fetch( HTTP.METHOD.DELETE, url, query, null, option );
+        return await this.fetch( HTTP.METHOD.DELETE, url, query, undefined, option );
     }
 
     /**
@@ -41,13 +41,13 @@ class HTTP {
      * window.fetch();
      *
      * @private
-     * @param {string} method
-     * @param {string} url
+     * @param method
+     * @param url
      * @param {object} query
      * @param {object|string} body
      * @param {object} [option] second argument of window.fetch(url, [init]).
      */
-    static async fetch( method, url, query, body, option={} )
+    static async fetch( method: string, url: string, query?: HTTP.Query, body?: HTTP.Body, option: RequestInit = {} )
     {
         const queryText = !query ? "" : "?" + Object.keys( query ).map( k => k + "=" + query[k] ).join("&");
         option.method = method;
@@ -55,18 +55,18 @@ class HTTP {
 
         let response;
         try {
-            response = await fetch( url + queryText, option );
+            response = await fetch( url + queryText, option);
         }
         catch( error ) {
-            throw new FetchError( "Failed to fetch", url, null, error );
+            throw new HTTP.FetchError( "Failed to fetch", url, undefined, error );
         }
         if ( !response.ok ) {
-            throw new FetchError( "Failed to fetch: " + response.statusText, url, response );
+            throw new HTTP.FetchError( "Failed to fetch: " + response.statusText, url, response );
         }
         return response;
     }
 
-    static isJson( mimeType ) {
+    static isJson( mimeType: string ) {
         return (
             mimeType.startsWith( "application/json" ) ||
             mimeType === "model/gltf+json"
@@ -74,26 +74,50 @@ class HTTP {
     }
 }
 
-HTTP.METHOD = {
-    GET: "GET",
-    POST: "POST",
-    PATCH: "PATCH",
-    PUT: "PUT",
-    DELETE: "DELETE",
+
+namespace HTTP {
+
+
+export interface Query {
+    [key: string]: string | number;
+}
+
+export type Body = object | string;
+
+
+export enum METHOD {
+    GET = "GET",
+    POST = "POST",
+    PATCH = "PATCH",
+    PUT = "PUT",
+    DELETE = "DELETE",
 };
 
-HTTP.CONTENT_TYPE = "Content-Type";
+export const CONTENT_TYPE = "Content-Type";
 
-HTTP.RESPONSE_STATUS = {
-    NO_CONTENT: 204
+export enum RESPONSE_STATUS {
+    NO_CONTENT = 204,
 };
 
 
 /**
  * @private
  */
-class FetchError extends Error {
-    constructor( message, url, response, cause )
+export class FetchError extends Error {
+
+    name: string;
+
+    url: string;
+
+    response?: Response;
+
+    cause?: Error;
+
+    stack?: string;
+
+    is_aborted: boolean;
+
+    constructor( message: string, url: string, response?: Response, cause?: Error )
     {
         super( message + " " + url );
         if ( Error.captureStackTrace ) {
@@ -112,5 +136,9 @@ class FetchError extends Error {
     }
 }
 
-export { FetchError };
+
+
+} // namespace HTTP
+
+
 export default HTTP;
