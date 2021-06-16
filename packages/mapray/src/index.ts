@@ -1,4 +1,5 @@
 export * as animation from "./animation/";
+export { default as Dom } from "./util/Dom";
 
 export { default as Viewer } from "./Viewer";
 export { default as Camera } from "./Camera";
