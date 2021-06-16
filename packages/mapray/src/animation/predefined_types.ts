@@ -3,27 +3,23 @@ import GeoMath from "../GeoMath";
 
 
 /**
- * @summary 真理値型
+ * 真理値型
  *
- * @classdesc
- * <p>登録名: "boolean"</p>
- * <p>実装型: boolean</p>
- * <p>次の型へ変換可能: {@link mapray.animation.NumberType}</p>
- *
- * @memberof mapray.animation
- * @extends mapray.animation.Type
- * @hideconstructor
+ * - 登録名: "boolean"
+ * - 実装型: boolean
+ * 次の型へ変換可能: {@link mapray.animation.NumberType}
  */
 class BooleanType extends Type
 {
+
+    private _number_type?: Type;
+    private _convertibles: Set<Type> = new Set( [this] );
 
     /**
      */
     constructor()
     {
         super( "boolean" );
-        this._number_type  = null;
-        this._convertibles = new Set( [this] );
     }
 
 
@@ -40,7 +36,7 @@ class BooleanType extends Type
     /**
      * @override
      */
-    isConvertible( from )
+    isConvertible( from: Type )
     {
         return this._convertibles.has( from );
     }
@@ -49,7 +45,7 @@ class BooleanType extends Type
     /**
      * @override
      */
-    convertValue( from, value )
+    convertValue( from: Type, value: any )
     {
         if ( from === this ) {
             // 同一型
@@ -74,7 +70,7 @@ class BooleanType extends Type
     /**
      * @override
      */
-    getCloneValue( value )
+    getCloneValue( value: any )
     {
         return value;
     }
@@ -97,13 +93,14 @@ class BooleanType extends Type
 class NumberType extends Type
 {
 
+    private _boolean_type?: Type;
+    private _convertibles: Set<Type> = new Set( [this] );
+
     /**
      */
     constructor()
     {
         super( "number" );
-        this._boolean_type = null;
-        this._convertibles = new Set( [this] );
     }
 
 
@@ -120,7 +117,7 @@ class NumberType extends Type
     /**
      * @override
      */
-    isConvertible( from )
+    isConvertible( from: Type )
     {
         return this._convertibles.has( from );
     }
@@ -129,7 +126,7 @@ class NumberType extends Type
     /**
      * @override
      */
-    convertValue( from, value )
+    convertValue( from: Type, value: any )
     {
         if ( from === this ) {
             // 同一型
@@ -154,7 +151,7 @@ class NumberType extends Type
     /**
      * @override
      */
-    getCloneValue( value )
+    getCloneValue( value: any )
     {
         return value;
     }
@@ -195,7 +192,7 @@ class StringType extends Type
     /**
      * @override
      */
-    isConvertible( from )
+    isConvertible( from: Type ): boolean
     {
         return from === this;
     }
@@ -204,7 +201,7 @@ class StringType extends Type
     /**
      * @override
      */
-    convertValue( from, value )
+    convertValue( from: Type, value: any )
     {
         return value;
     }
@@ -222,7 +219,7 @@ class StringType extends Type
     /**
      * @override
      */
-    getCloneValue( value )
+    getCloneValue( value: any )
     {
         return value;
     }
@@ -263,7 +260,7 @@ class Vector2Type extends Type
     /**
      * @override
      */
-    isConvertible( from )
+    isConvertible( from: Type ): boolean
     {
         return from === this;
     }
@@ -272,7 +269,7 @@ class Vector2Type extends Type
     /**
      * @override
      */
-    convertValue( from, value )
+    convertValue( from: Type, value: any )
     {
         return value;
     }
@@ -290,7 +287,7 @@ class Vector2Type extends Type
     /**
      * @override
      */
-    getCloneValue( value )
+    getCloneValue( value: any )
     {
         return GeoMath.createVector2( value );
     }
@@ -331,7 +328,7 @@ class Vector3Type extends Type
     /**
      * @override
      */
-    isConvertible( from )
+    isConvertible( from: Type ): boolean
     {
         return from === this;
     }
@@ -340,7 +337,7 @@ class Vector3Type extends Type
     /**
      * @override
      */
-    convertValue( from, value )
+    convertValue( from: Type, value: any )
     {
         return value;
     }
@@ -358,7 +355,7 @@ class Vector3Type extends Type
     /**
      * @override
      */
-    getCloneValue( value )
+    getCloneValue( value: any )
     {
         return GeoMath.createVector3( value );
     }
@@ -399,7 +396,7 @@ class Vector4Type extends Type
     /**
      * @override
      */
-    isConvertible( from )
+    isConvertible( from: Type ): boolean
     {
         return from === this;
     }
@@ -408,7 +405,7 @@ class Vector4Type extends Type
     /**
      * @override
      */
-    convertValue( from, value )
+    convertValue( from: Type, value: any )
     {
         return value;
     }
@@ -426,7 +423,7 @@ class Vector4Type extends Type
     /**
      * @override
      */
-    getCloneValue( value )
+    getCloneValue( value: any )
     {
         return GeoMath.createVector4( value );
     }
@@ -467,7 +464,7 @@ class MatrixType extends Type
     /**
      * @override
      */
-    isConvertible( from )
+    isConvertible( from: Type ): boolean
     {
         return from === this;
     }
@@ -476,7 +473,7 @@ class MatrixType extends Type
     /**
      * @override
      */
-    convertValue( from, value )
+    convertValue( from: Type, value: any )
     {
         return value;
     }
@@ -494,7 +491,7 @@ class MatrixType extends Type
     /**
      * @override
      */
-    getCloneValue( value )
+    getCloneValue( value: any )
     {
         return GeoMath.createMatrix( value );
     }
