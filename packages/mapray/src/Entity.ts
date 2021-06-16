@@ -1,48 +1,61 @@
 import AltitudeMode from "./AltitudeMode";
 import EasyBindingBlock from "./animation/EasyBindingBlock";
+import BindingBlock from "./animation/BindingBlock";
+import Scene from "./Scene";
+import ModelContainer from "./ModelContainer";
+import RenderStage from "./RenderStage";
+import Mesh from "./Mesh";
+import GeoRegion from "./GeoRegion";
+import Primitive from "./Primitive";
+import EntityRegion from "./EntityRegion";
+import EntityMaterial from "./EntityMaterial";
+import AreaUtil from "./AreaUtil";
 
 
 /**
- * @summary シーン・エンティティ
- * @classdesc
- * <p>シーン・エンティティの基底クラスである。</p>
- * @memberof mapray
- * @see mapray.Scene
- * @protected
- * @abstract
+ * シーン・エンティティ
+ *
+ * シーン・エンティティの基底クラスである。
+ * @see {@link mapray.Scene}
  */
-class Entity {
+abstract class Entity {
 
     /**
-     * @desc
-     * <p>インスタンス生成後に、それを scene に追加することができる。</p>
-     *
-     * @param {mapray.Scene} scene  所属可能シーン
-     * @param {object} [opts]       オプション集合
-     * @param {object} [opts.json]  生成情報
-     * @param {object} [opts.refs]  参照辞書
+     * 所属可能シーン
      */
-    constructor( scene, opts )
+    readonly scene: Scene;
+
+    /**
+     * 高度モード
+     */
+    protected _altitude_mode: AltitudeMode = AltitudeMode.ABSOLUTE;
+
+    /**
+     * 再生成が必要であることを示すフラグ
+     */
+    protected _need_to_create_regions: boolean = false;
+
+    /**
+     * 今のところ Entity (基底クラス) 自体のアニメーション可能パラメータと
+     * 子孫は存在しないので animation には何も追加しない
+     */
+    protected _animation: any = new EasyBindingBlock();
+
+    /**
+     * 表示状態を示すフラグ
+     */
+    protected _visibility: boolean = true;
+
+
+    /**
+     * インスタンス生成後に、それを scene に追加することができる。
+     *
+     * @param scene  所属可能シーン
+     * @param opts   オプション集合
+     */
+    constructor( scene: Scene, opts?: Entity.Option )
     {
-        /**
-         * @summary 所属可能シーン
-         * @member mapray.Entity#scene
-         * @type {mapray.Scene}
-         * @readonly
-         */
         this.scene = scene;
-
-        // 高度モード
-        this._altitude_mode = AltitudeMode.ABSOLUTE;
-
-        this._need_to_create_regions = false;
-
-        // animation.BindingBlock
-        //   今のところ Entity (基底クラス) 自体のアニメーション可能パラメータと
-        //   子孫は存在しないので animation には何も追加しない
-        this._animation = new EasyBindingBlock();
-
-        this._visibility = true;
 
         // 生成情報から設定
         if ( opts && opts.json ) {
@@ -52,54 +65,45 @@ class Entity {
 
 
     /**
-     * @summary 可視性フラグを取得
-     * @type {boolean}
-     * @readonly
+     * 可視性フラグを取得
      */
-    get visibility() { return this._visibility; }
+    get visibility(): boolean { return this._visibility; }
 
 
     /**
-     * @summary 可視性フラグを設定
-     *
-     * @param {boolean} visibility  可視性フラグ
+     * 可視性フラグを設定
+     * @param visibility  可視性フラグ
      */
-    setVisibility( visibility )
+    setVisibility( visibility: boolean )
     {
         this._visibility = visibility;
     }
 
 
     /**
-     * @summary アンカーモード。
-     * <p>隠面処理により本来表示されない状況であっても、何らかの描画を行い位置や角度を確認でき、マウスピック可能となるようにする描画モード。
-     * 現在は、{@link mapray.ModelEntity}のみサポートされ、隠面処理により表示されない部分が半透明で描画される。</p>
-     * <p>このプロパティを有効にする場合は、下記の問題点に注意する必要があります。</p>
-     * <ul>
-     * <li>透明・半透明モデルに適用することは想定されていません。透明・半透明モデルに対してこのプロパティを有効にすると表示が乱れる可能性があります。</li>
-     * <li>アンカーモードのエンティティどうしの前後判定はzソートにより実装されており、ピクセル単位の前後判定は行われません。</li>
-     * </ul>
-     * @type {boolean}
-     * @private
-     * @readonly
-     */
-    get anchor_mode() { return false; }
-
-
-    /**
-     * @summary アニメーションパラメータ設定
+     * アンカーモード。
      *
-     * @type {mapray.animation.BindingBlock}
-     * @readonly
+     * 隠面処理により本来表示されない状況であっても、何らかの描画を行い位置や角度を確認でき、マウスピック可能となるようにする描画モード。
+     * 現在は、{@link mapray.ModelEntity}のみサポートされ、隠面処理により表示されない部分が半透明で描画される。
+     *
+     * このプロパティを有効にする場合は、下記の問題点に注意する必要があります。
+     * - 透明・半透明モデルに適用することは想定されていません。透明・半透明モデルに対してこのプロパティを有効にすると表示が乱れる可能性があります。
+     * - アンカーモードのエンティティどうしの前後判定はzソートにより実装されており、ピクセル単位の前後判定は行われません。
+     * @internal
      */
-    get animation() { return this._animation; }
+    get anchor_mode(): boolean { return false; }
 
 
     /**
-     * @summary 高度モード
-     * @type {mapray.AltitudeMode}
+     * アニメーションパラメータ設定
      */
-    set altitude_mode( value )
+    get animation(): any { return this._animation; } // BindingBlock
+
+
+    /**
+     * 高度モード設定
+     */
+    set altitude_mode( value: AltitudeMode )
     {
         if ( this._altitude_mode !== value ) {
             var prev_mode = this._altitude_mode;
@@ -109,86 +113,69 @@ class Entity {
     }
 
 
-    get altitude_mode()
+    /**
+     * 高度モード取得
+     */
+    get altitude_mode(): AltitudeMode
     {
         return this._altitude_mode;
     }
 
 
     /**
-     * @summary バウンディングボックスを算出
-     *
-     * @abstract
-     * @return {mapray.GeoRegion}  バウンディングボックス
+     * バウンディングボックスを算出
      */
-    getBounds()
-    {
-        throw new Error( "mapray.Entity#getBounds() method has not been overridden." );
-    }
+    abstract getBounds(): GeoRegion;
 
 
     /**
-     * @summary 高度モードが変更された後の通知
+     * 高度モードが変更された後の通知
      *
-     * @desc
-     * <p>this.altitude_mode が変更されたときに呼び出される。</p>
-     * <p>既定の実装は何もしない。</p>
+     * this.altitude_mode が変更されたときに呼び出される。
+     * 既定の実装は何もしない。
      *
-     * @param {mapray.AltitudeMode} prev_mode  直前のモード
-     *
-     * @abstract
-     * @private
+     * @param prev_mode  直前のモード
      */
-    onChangeAltitudeMode( prev_mode )
+    protected onChangeAltitudeMode( prev_mode: AltitudeMode )
     {
     }
 
 
     /**
-     * @summary PrimitiveProducer インタフェースを取得
+     * PrimitiveProducer インタフェースを取得
      *
-     * @desc
-     * <p>PrimitiveProducer インタフェースを取得するためにシーンレンダラーが呼び出す。
-     *    PrimitiveProducer インタフェースが実装されていなければ null を返す。</p>
-     * <p>既定の実装は null を返す。</p>
-     *
-     * @return {?mapray.Entity.PrimitiveProducer}  PrimitiveProducer インタフェース
-     *
-     * @abstract
-     * @package
+     * PrimitiveProducer インタフェースを取得するためにシーンレンダラーが呼び出す。
+     * PrimitiveProducer インタフェースが実装されていなければ undefined を返す。
+     * 既定の実装は undefined を返す。
+     * @return PrimitiveProducer インタフェース
      */
-    getPrimitiveProducer()
+    getPrimitiveProducer(): Entity.PrimitiveProducer | undefined
     {
-        return null;
+        return undefined;
     }
 
 
     /**
-     * @summary FlakePrimitiveProducer インタフェースを取得
+     * FlakePrimitiveProducer インタフェースを取得
      *
-     * @desc
-     * <p>FlakePrimitiveProducer インタフェースを取得するためにシーンレンダラーが呼び出す。
-     *    FlakePrimitiveProducer インタフェースが実装されていなければ null を返す。</p>
-     * <p>既定の実装は null を返す。</p>
+     * FlakePrimitiveProducer インタフェースを取得するためにシーンレンダラーが呼び出す。
+     * FlakePrimitiveProducer インタフェースが実装されていなければ undefined を返す。
      *
-     * @return {?mapray.Entity.FlakePrimitiveProducer}  FlakePrimitiveProducer インタフェース
+     * 既定の実装は undefined を返す。
      *
-     * @abstract
-     * @package
+     * @return FlakePrimitiveProducer インタフェース
      */
-    getFlakePrimitiveProducer()
+    getFlakePrimitiveProducer(): Entity.FlakePrimitiveProducer | undefined
     {
-        return null;
+        return undefined;
     }
 
 
     /**
      * JSON データによる Entity 共通の初期化
-     * @private
      */
-    _setupEntityByJson( json )
+    private _setupEntityByJson( json: Entity.Json )
     {
-        // 高度モード
         if ( json.altitude_mode ) {
             switch ( json.altitude_mode ) {
             case "absolute":
@@ -211,42 +198,81 @@ class Entity {
 }
 
 
+
+namespace Entity {
+
+
+
+/** Entity Option */
+export interface Option {
+    /**
+     * 生成情報
+     */
+    json?: Entity.Json;
+
+    /** 参照辞書 */
+    refs?: Entity.ReferenceMap;
+
+}
+
+
+
+/** Entity Json */
+export interface Json {
+
+    id?: string;
+
+    type: string;
+
+    /** 高度モード */
+    altitude_mode?: "absolute" | "relative" | "clamp";
+
+    /** 可視性 */
+    visibility?: boolean;
+
+}
+
+
+
+export interface ReferenceMap {
+    [key: string]: ModelContainer | Entity;
+}
+
+
+
 /**
- * @summary エンティティのプリミティブを生産
+ * エンティティのプリミティブを生成
  *
- * @classdesc
- * <p>シーンレンダラーにエンティティのプリミティブを与える。</p>
- *
- * @memberof mapray.Entity
- * @private
- * @abstract
+ * シーンレンダラーにエンティティのプリミティブを与える。
+ * @internal
  */
-class PrimitiveProducer {
+export abstract class PrimitiveProducer {
+
+    private _need_to_create_regions: boolean = false;
+
+    private _entity: Entity;
+
 
     /**
-     * @param {mapray.Entity} entity  PrimitiveProducer に対応するエンティティ
      */
-    constructor( entity )
+    constructor( entity: Entity )
     {
         this._entity = entity;
-        this._need_to_create_regions = false;
     }
 
 
     /**
-     * @summary エンティティ
-     *
-     * @type {mapray.Entity}
-     * @readonly
+     * エンティティ
      */
-    get entity() { return this._entity; }
+    getEntity(): Entity {
+        return this._entity;
+    }
 
 
     /**
-     * @summary 領域が更新されたとき呼び出す
+     * 領域が更新されたとき呼び出す
      *
-     * @desc
-     * <p>領域を変更したい場合に PrimitiveProducer の実装者が呼び出す必要がある。</p>
+     * 領域を変更したい場合に PrimitiveProducer の実装者が呼び出す必要がある。
      */
     needToCreateRegions()
     {
@@ -255,14 +281,13 @@ class PrimitiveProducer {
 
 
     /**
-     * @summary need_to_create_regions を取得
+     * need_to_create_regions を取得
      *
-     * @desc
-     * <p>エンティティの領域を変更する (createRegions() を呼び出す) 必要があるかどうかを確認するためにシーンレンダラーが呼び出す。</p>
+     * エンティティの領域を変更する (createRegions() を呼び出す) 必要があるかどうかを確認するためにシーンレンダラーが呼び出す。
      *
-     * @return {boolean}  領域を変更する必要があるとき true, それ以外のとき false
+     * @return 領域を変更する必要があるとき true, それ以外のとき false
      *
-     * @see needToCreateRegions()
+     * @see {@link mapray.EntityPrimitiveProducer.needToCreateRegions}
      */
     checkToCreateRegions()
     {
@@ -273,109 +298,91 @@ class PrimitiveProducer {
 
 
     /**
-     * @summary エンティティに標高値は必要か？
+     * エンティティに標高値は必要か？
      *
-     * @desc
-     * <p>エンティティが標高値を必要としているかどうかを確認するためレンダラーが呼び出す。<p>
-     * <p>既定の実装では entity.altitude_mode が AltitudeMode.ABSOLUTE なら false, それ以外なら true を返す。</p>
+     * エンティティが標高値を必要としているかどうかを確認するためレンダラーが呼び出す。
+     * 既定の実装では entity.altitude_mode が AltitudeMode.ABSOLUTE なら false, それ以外なら true を返す。
      *
-     * @return {boolean}  エンティティに標高値が必要なら true, それ以外なら false
-     *
-     * @abstract
+     * @return   エンティティに標高値が必要なら true, それ以外なら false
      */
     needsElevation()
     {
-        return (this._entity._altitude_mode !== AltitudeMode.ABSOLUTE);
+        return (this.getEntity().altitude_mode !== AltitudeMode.ABSOLUTE);
     }
 
 
     /**
-     * @summary エンティティ領域を生成
+     * エンティティ領域を生成
      *
-     * @desc
-     * <p>エンティティの領域を確認するためレンダラーが呼び出す。<p>
-     * <p>既定の実装では [] を返す。</p>
+     * エンティティの領域を確認するためレンダラーが呼び出す。
+     * 既定の実装では `[]` を返す。
      *
-     * @return {mapray.EntityRegion[]}  エンティティ領域の配列
-     *
-     * @abstract
+     * @return エンティティ領域の配列
      */
-    createRegions()
+    createRegions(): EntityRegion[]
     {
         return [];
     }
 
 
     /**
-     * @summary 更新されたエンティティ領域の通知
+     * 更新されたエンティティ領域の通知
      *
-     * @desc
-     * <p>エンティティの領域の標高が変化したことを通知するためレンダラーが呼び出す。regions は標高が更新されたエンティティ領域を含む配列である。</p>
-     * <p>既定の実装では何もしない。</p>
+     * エンティティの領域の標高が変化したことを通知するためレンダラーが呼び出す。regions は標高が更新されたエンティティ領域を含む配列である。
+     * 既定の実装では何もしない。
      *
-     * @param {mapray.EntityRegion[]} regions  エンティティ領域の配列
-     *
-     * @abstract
+     * @param regions  エンティティ領域の配列
      */
-    onChangeElevation( regions )
+    onChangeElevation( regions: EntityRegion[] )
     {
     }
 
 
     /**
-     * @summary プリミティブ配列を取得
+     * プリミティブ配列を取得
      *
-     * @desc
-     * <p>レンダリング時にこのエンティティを描画するための 0 個以上のプリミティブを含む配列を返す。</p>
-     * <p>このメソッドが呼び出されたフレームのレンダリングが終了するまで、返した配列とそれに含まれるプリミティブは変更してはならない。</p>
+     * レンダリング時にこのエンティティを描画するための 0 個以上のプリミティブを含む配列を返す。
+     * このメソッドが呼び出されたフレームのレンダリングが終了するまで、返した配列とそれに含まれるプリミティブは変更してはならない。
      *
-     * @param  {mapray.RenderStage} stage  レンダリングステージ
-     * @return {Array.<mapray.Primitive>}  プリミティブ配列
-     *
-     * @abstract
+     * @param   stage  レンダリングステージ
+     * @return         プリミティブ配列
      */
-    getPrimitives( stage )
-    {
-        throw new Error( "mapray.Entity.PrimitiveProducer#getPrimitives() method has not been overridden." );
-    }
-
+    abstract getPrimitives( stage: RenderStage ): Primitive[];
 }
 
 
+
 /**
- * @summary 地表断片エンティティのプリミティブを生産
+ * 地表断片エンティティのプリミティブを生産
  *
- * @classdesc
- * <p>シーンレンダラーに地表断片エンティティのプリミティブを与える。</p>
- *
- * @memberof mapray.Entity
- * @private
- * @abstract
+ * シーンレンダラーに地表断片エンティティのプリミティブを与える。
+ * @internal
  */
-class FlakePrimitiveProducer {
+export abstract class FlakePrimitiveProducer {
+
+    private _entity: Entity;
+
+    private _updated: boolean = false;
 
     /**
      * @param {mapray.Entity} entity  FlakePrimitiveProducer に対応するエンティティ
      */
-    constructor( entity )
+    constructor( entity: Entity )
     {
         this._entity  = entity;
-        this._updated = false;
     }
 
 
     /**
-     * @summary エンティティ
-     *
-     * @type {mapray.Entity}
-     * @readonly
+     * エンティティ
      */
-    get entity() { return this._entity; }
-
+    getEntity(): Entity {
+        return this._entity;
+    }
 
 
     /**
-     * @summary 位置や形状の変化を通知
+     * 位置や形状の変化を通知
      */
     notifyForUpdate()
     {
@@ -384,69 +391,51 @@ class FlakePrimitiveProducer {
 
 
     /**
-     * @summary 領域状態を取得
+     * 領域状態を取得
      *
-     * @desc
-     * <p>area が示す領域の状態を取得する。</p>
-     *
-     * @param {mapray.Area} area  確認する領域
-     *
-     * @return {mapray.Entity.AreaStatus}  領域の状態
-     *
-     * @abstract
+     * area が示す領域の状態を取得する。
+     * @param  area  確認する領域
+     * @return       領域の状態
      */
-    getAreaStatus( area )
+    getAreaStatus( area: AreaStatus )
     {
         return AreaStatus.EMPTY;
     }
 
 
     /**
-     * @summary メッシュを生成
+     * メッシュを生成
      *
-     * @desc
-     * <p>area の領域に対応するメッシュを取得する。</p>
-     * <p>area に形状がないときは null を返す。</p>
+     * area の領域に対応するメッシュを取得する。
+     * area に形状がないときは null を返す。
      *
-     * @param {mapray.Area}     area  メッシュの領域
-     * @param {number[]}       dpows  領域の分割指数
-     * @param {mapray.DemBinary} dem  DEM バイナリ
-     *
-     * @return {?mapray.Mesh}
-     *
-     * @abstract
+     * @param area  メッシュの領域
+     * @param dpows  領域の分割指数
+     * @param dem  DEM バイナリ
+     * @return
      */
-    createMesh( area, dpows, dem )
+    createMesh( area: AreaUtil.Area, dpows: number[], dem: any ): Mesh | null // DemBinary
     {
         return null;
     }
 
 
     /**
-     * @summary マテリアルとプロパティを取得
+     * マテリアルとプロパティを取得
      *
-     * @param {mapray.RenderStage} stage  レンダリングステージ
-     *
-     * @return {object}  { material: mapray.EntityMaterial, properties: mapray.PropSet }
-     *
-     * @abstract
+     * @param  stage  レンダリングステージ
+     * @return マテリアル及びプロパティ
      */
-    getMaterialAndProperties( stage )
-    {
-        throw new Error( "mapray.Entity.FlakePrimitiveProducer#getMaterialAndProperties() method has not been overridden." );
-    }
+    abstract getMaterialAndProperties( stage: RenderStage ): { material: any, properties: any }; // PropSet
 
 
     /**
-     * @summary 更新状態を確認
+     * 更新状態を確認
      *
-     * @desc
-     * <p>レンダラーが呼び出す。</p>
-     * <p>更新状態を返してから、更新なし状態に設定する。</p>
+     * レンダラーが呼び出す。
+     * 更新状態を返してから、更新なし状態に設定する。
      *
-     * @return {boolean}  更新ありのとき true, それ以外のとき false
-     *
-     * @package
+     * @return  更新ありのとき true, それ以外のとき false
      */
     checkForUpdate()
     {
@@ -460,39 +449,33 @@ class FlakePrimitiveProducer {
 }
 
 
+
 /**
- * @summary 領域状態の列挙型
- *
- * @enum {object}
- * @memberof mapray.Entity
- * @constant
- * @private
+ * 領域状態の列挙型
  */
-var AreaStatus = {
+export enum AreaStatus {
 
     /**
      * 何もない領域
      */
-    EMPTY: { id: "EMPTY" },
+    EMPTY,
 
 
     /**
      * 完全に満たされた領域
      */
-    FULL: { id: "FULL" },
+    FULL,
 
 
     /**
      * 部分領域または領域不明
      */
-    PARTIAL: { id: "PARTIAL" }
+    PARTIAL,
 
-};
+}
 
+} // namespace Entity
 
-Entity.PrimitiveProducer = PrimitiveProducer;
-Entity.FlakePrimitiveProducer = FlakePrimitiveProducer;
-Entity.AreaStatus = AreaStatus;
 
 
 export default Entity;
