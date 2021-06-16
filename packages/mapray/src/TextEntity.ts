@@ -1,35 +1,38 @@
 import Entity from "./Entity";
 import Primitive from "./Primitive";
+import GLEnv from "./GLEnv";
 import Mesh from "./Mesh";
+import Scene from "./Scene";
 import Texture from "./Texture";
 import TextMaterial from "./TextMaterial";
 import SimpleTextMaterial from "./SimpleTextMaterial";
-import GeoMath from "./GeoMath";
+import GeoMath, { Vector3, Matrix } from "./GeoMath";
 import GeoPoint from "./GeoPoint";
-import { RenderTarget } from "./RenderStage";
+import RenderStage from "./RenderStage";
 import AltitudeMode from "./AltitudeMode";
 import EntityRegion from "./EntityRegion";
 import Dom from "./util/Dom";
 import Color from "./util/Color";
+import BindingBlock from "./animation/BindingBlock";
 import EasyBindingBlock from "./animation/EasyBindingBlock";
 import Type from "./animation/Type";
 import AbstractPointEntity from "./AbstractPointEntity";
 
 /**
- * @summary テキストエンティティ
- *
- * @memberof mapray
- * @extends mapray.Entity
+ * テキストエンティティ
  */
-class TextEntity extends AbstractPointEntity {
+class TextEntity extends AbstractPointEntity<TextEntity.TextEntry> {
+
+    private _text_parent_props: TextEntity.ParentProps;
+
+    private _primitive_producer?: TextEntity.PrimitiveProducer;
+
 
     /**
-     * @param {mapray.Scene} scene        所属可能シーン
-     * @param {object}       [opts]       オプション集合
-     * @param {object}       [opts.json]  生成情報
-     * @param {object}       [opts.refs]  参照辞書
+     * @param scene        所属可能シーン
+     * @param opts       オプション集合
      */
-    constructor( scene, opts )
+    constructor( scene: Scene, opts: TextEntity.Option = {} )
     {
         super( scene, opts );
 
@@ -39,15 +42,17 @@ class TextEntity extends AbstractPointEntity {
             font_weight:  "normal",
             font_size:    TextEntity.DEFAULT_FONT_SIZE,
             font_family:  TextEntity.DEFAULT_FONT_FAMILY,
-            color:        Color.generateOpacityColor( TextEntity.DEFAULT_COLOR ),
-            stroke_color: Color.generateOpacityColor( TextEntity.DEFAULT_STROKE_COLOR ),
+            color:        Color.generateOpacityColor( TextEntity.DEFAULT_COLOR as Vector3 ),
+            stroke_color: Color.generateOpacityColor( TextEntity.DEFAULT_STROKE_COLOR as Vector3 ),
             stroke_width: TextEntity.DEFAULT_STROKE_WIDTH,
-            bg_color:     Color.generateOpacityColor( TextEntity.DEFAULT_BG_COLOR ),
+            bg_color:     Color.generateOpacityColor( TextEntity.DEFAULT_BG_COLOR as Vector3 ),
             enable_stroke: false,
             enable_bg: false
         };
 
-        this._animation.addDescendantUnbinder( () => { this._unbindDescendantAnimations(); } );
+        // @ts-ignore
+        const block = this._animation as EasyBindingBlock;
+        block.addDescendantUnbinder( () => { this._unbindDescendantAnimations(); } );
         this._setupAnimationBindingBlock();
 
         // 生成情報から設定
@@ -57,19 +62,13 @@ class TextEntity extends AbstractPointEntity {
     }
 
 
-    /**
-     * @override
-     */
-    getPrimitiveProducer()
+    override getPrimitiveProducer()
     {
         return this._primitive_producer;
     }
 
 
-    /**
-     * @override
-     */
-    onChangeAltitudeMode( prev_mode )
+    override onChangeAltitudeMode( prev_mode: AltitudeMode )
     {
         if ( this._primitive_producer ) {
           this._primitive_producer.onChangeAltitudeMode();
@@ -79,26 +78,22 @@ class TextEntity extends AbstractPointEntity {
 
     /**
      * EasyBindingBlock.DescendantUnbinder 処理
-     *
-     * @private
      */
-    _unbindDescendantAnimations()
+    private _unbindDescendantAnimations()
     {
         // すべてのエントリーを解除
         for ( let entry of this._entries ) {
-            entry.animation.unbindAllRecursively();
+            entry.getAnimation().unbindAllRecursively();
         }
     }
 
 
     /**
      * アニメーションの BindingBlock を初期化
-     *
-     * @private
      */
-    _setupAnimationBindingBlock()
+    private _setupAnimationBindingBlock()
     {
-        const block = this.animation;  // 実体は EasyBindingBlock
+        const block = this._animation;  // 実体は EasyBindingBlock
 
         const number  = Type.find( "number"  );
         const string  = Type.find( "string"  );
@@ -107,52 +102,52 @@ class TextEntity extends AbstractPointEntity {
         // パラメータ名: font_style
         // パラメータ型: string
         //   フォントスタイル
-        block.addEntry( "font_style", [string], null, value => {
+        block.addEntry( "font_style", [string], null, (value: TextEntity.FontStyle) => {
             this.setFontStyle( value );
         } );
         
         // パラメータ名: font_weight
         // パラメータ型: string
         //   フォントの太さ
-        block.addEntry( "font_weight", [string], null, value => {
+        block.addEntry( "font_weight", [string], null, (value: TextEntity.FontWeight) => {
             this.setFontWeight( value );
         } );
         
         // パラメータ名: font_size
         // パラメータ型: number
         //   フォントの大きさ
-        block.addEntry( "font_size", [number], null, value => {
+        block.addEntry( "font_size", [number], null, (value: number) => {
             this.setFontSize( value );
         } );
         
         // パラメータ名: color
         // パラメータ型: vector3
         //   テキストの色
-        block.addEntry( "color", [vector3], null, value => {
+        block.addEntry( "color", [vector3], null, (value: Vector3) => {
             this.setColor( value );
         } );
         
         // パラメータ名: stroke_color
         // パラメータ型: vector3
         //   縁の色
-        block.addEntry( "stroke_color", [vector3], null, value => {
+        block.addEntry( "stroke_color", [vector3], null, (value: Vector3) => {
             this.setStrokeColor( value );
         } );
         
         // パラメータ名: stroke_width
         // パラメータ型: number
         //   縁の線幅
-        block.addEntry( "stroke_width", [number], null, value => {
+        block.addEntry( "stroke_width", [number], null, (value: number) => {
             this.setStrokeLineWidth( value );
         } );
     }
 
 
     /**
-     * @summary フォントスタイルを設定
-     * @param {string} style  フォントスタイル ("normal" | "italic" | "oblique")
+     * フォントスタイルを設定
+     * @param style  フォントスタイル
      */
-    setFontStyle( style )
+    setFontStyle( style: TextEntity.FontStyle )
     {
         this._setValueProperty( "font_style", style );
     }
@@ -160,168 +155,159 @@ class TextEntity extends AbstractPointEntity {
 
     /**
      * @summary フォントの太さを設定
-     * @param {string} weight  フォントの太さ ("normal" | "bold")
+     * @param weight  フォントの太さ
      */
-    setFontWeight( weight )
+    setFontWeight( weight: TextEntity.FontWeight )
     {
         this._setValueProperty( "font_weight", weight );
     }
 
 
     /**
-     * @summary フォントの大きさを設定
-     * @param {number} size  フォントの大きさ (Pixels)
+     * フォントの大きさを設定
+     * @param size  フォントの大きさ (Pixels)
      */
-    setFontSize( size )
+    setFontSize( size: number )
     {
         this._setValueProperty( "font_size", size );
     }
 
 
     /**
-     * @summary フォントファミリーを設定
-     * @param {string} family  フォントファミリー
+     * フォントファミリーを設定
+     * @param family  フォントファミリー
      * @see https://developer.mozilla.org/ja/docs/Web/CSS/font-family
      */
-    setFontFamily( family )
+    setFontFamily( family: string )
     {
         this._setValueProperty( "font_family", family );
     }
 
 
     /**
-     * @summary テキストの色を設定
-     * @param {mapray.Vector3} color  テキストの色
+     * テキストの色を設定
+     * @param color  テキストの色
      */
-    setColor( color )
+    setColor( color: Vector3 )
     {
         this._setColorProperty( "color", color );
     }
 
     /**
-     * @summary テキスト縁の色を設定
-     * @param {mapray.Vector3} color  縁の色
+     * テキスト縁の色を設定
+     * @param color  縁の色
      */
-    setStrokeColor( color )
+    setStrokeColor( color: Vector3 )
     {
         this._setColorProperty( "stroke_color", color );
     }
 
     /**
-     * @summary テキスト縁の太さを設定
-     * @param {mapray.number} width  縁の線幅
+     * テキスト縁の太さを設定
+     * @param width  縁の線幅
      */
-    setStrokeLineWidth( width )
+    setStrokeLineWidth( width: number )
     {
         this._setValueProperty( "stroke_width", width );
     }
 
     /**
-     * @summary テキスト縁を有効にするかどうか
-     * @param {boolean} enable  trueなら有効
+     * テキスト縁を有効にするかどうか
+     * @param enable  trueなら有効
      */
-    setEnableStroke( enable )
+    setEnableStroke( enable: boolean )
     {
         this._setValueProperty( "enable_stroke", enable );
-        this._primitive_producer = new PrimitiveProducer( this );
+        this._primitive_producer = new TextEntity.PrimitiveProducer( this );
     }
 
     /**
-     * @summary テキスト背景の色を設定
-     * @param {mapray.Vector3} color  テキストの色
+     * テキスト背景の色を設定
+     * @param color  テキストの色
      */
-    setBackgroundColor( color )
+    setBackgroundColor( color: Vector3 )
     {
         this._setColorProperty( "bg_color", color );
     }
 
     /**
-     * @summary テキスト背景を有効にするかどうか
-     * @param {boolean} enable  trueなら有効
+     * テキスト背景を有効にするかどうか
+     * @param enable  trueなら有効
      */
-    setEnableBackground( enable )
+    setEnableBackground( enable: boolean )
     {
         this._setValueProperty( "enable_bg", enable );
-        this._primitive_producer = new PrimitiveProducer( this );
+        this._primitive_producer = new TextEntity.PrimitiveProducer( this );
     }
 
     /**
-     * @summary テキストを追加
-     * @param {string}          text      テキスト
-     * @param {mapray.GeoPoint} position  位置
-     * @param {object}          [props]   プロパティ
-     * @param {string}         [props.font_style]   フォントスタイル ("normal" | "italic" | "oblique")
-     * @param {string}         [props.font_weight]  フォントの太さ   ("normal" | "bold")
-     * @param {number}         [props.font_size]    フォントの大きさ (Pixels)
-     * @param {string}         [props.font_family]  フォントファミリー
-     * @param {mapray.Color}   [props.color]        テキストの色
-     * @param {mapray.Color}   [props.stroke_color] テキスト縁の色
-     * @param {number}         [props.stroke_width] テキスト縁の幅
-     * @param {mapray.Color}   [props.bg_color]     テキスト背景色
-     * @param {boolean}        [props.enable_stroke] テキストの縁取りを有効にするか
-     * @param {string}         [props.id]            Entryを識別するID
-     * @return {mapray.TextEntity.Entry}             追加したEntry
+     * テキストを追加
+     * @param text      テキスト
+     * @param position  位置
+     * @param props     プロパティ
+     * @return          追加したEntry
      */
-    addText( text, position, props )
+    addText( text: string, position: GeoPoint, props: TextEntity.EntryOption ): TextEntity.TextEntry
     {
-        var entry = new Entry( this, text, position, props );
+        var entry = new TextEntity.TextEntry( this, text, position, props );
         this._entries.push( entry );
-        this._primitive_producer = new PrimitiveProducer( this );
+        this._primitive_producer = new TextEntity.PrimitiveProducer( this );
         this._primitive_producer.onAddTextEntry();
         return entry;
     }
 
 
     /**
-     * @summary 専用マテリアルを取得
-     * @private
+     * 専用マテリアルを取得
      */
-    _getTextMaterial( render_target )
+    private _getTextMaterial( render_target: RenderStage.RenderTarget )
     {
         var scene = this.scene;
-        if ( render_target === RenderTarget.SCENE ) {
+        if ( render_target === RenderStage.RenderTarget.SCENE ) {
             if ( !scene._TextEntity_text_material ) {
                 // scene にマテリアルをキャッシュ
                 scene._TextEntity_text_material = new TextMaterial( scene.glenv );
             }
             return scene._TextEntity_text_material;
         }
-        else if (render_target === RenderTarget.RID) {
+        else if (render_target === RenderStage.RenderTarget.RID) {
             if ( !scene._TextEntity_text_material_pick ) {
                 // scene にマテリアルをキャッシュ
                 scene._TextEntity_text_material_pick = new TextMaterial( scene.glenv, { ridMaterial: true } );
             }
             return scene._TextEntity_text_material_pick;
         }
+        else {
+            throw new Error("unknown render target: " + render_target);
+        }
     }
 
     /**
-     * @summary テキストだけを描画する専用マテリアルを取得
-     * @private
+     * テキストだけを描画する専用マテリアルを取得
      */
-    _getSimpleTextMaterial( render_target )
+    private _getSimpleTextMaterial( render_target: RenderStage.RenderTarget )
     {
         var scene = this.scene;
-        if ( render_target === RenderTarget.SCENE ) {
+        if ( render_target === RenderStage.RenderTarget.SCENE ) {
             if ( !scene._SimpleTextEntity_text_material ) {
                 // scene にマテリアルをキャッシュ
                 scene._SimpleTextEntity_text_material = new SimpleTextMaterial( scene.glenv );
             }
             return scene._SimpleTextEntity_text_material;
         }
-        else if (render_target === RenderTarget.RID) {
+        else if (render_target === RenderStage.RenderTarget.RID) {
             if ( !scene._SimpleTextEntity_text_material_pick ) {
                 // scene にマテリアルをキャッシュ
                 scene._SimpleTextEntity_text_material_pick = new SimpleTextMaterial( scene.glenv, { ridMaterial: true } );
             }
             return scene._SimpleTextEntity_text_material_pick;
         }
+        else {
+            throw new Error("unknown render target: " + render_target);
+        }
     }
 
-    /**
-     * @private
-     */
-    _setValueProperty( name, value )
+    private _setValueProperty( name: string, value: any )
     {
         var props = this._text_parent_props;
         if ( props[name] != value ) {
@@ -333,12 +319,9 @@ class TextEntity extends AbstractPointEntity {
     }
 
 
-    /**
-     * @private
-     */
-    _setColorProperty( name, value )
+    private _setColorProperty( name: string, value: any )
     {
-        var dst = this._text_parent_props[name];
+        var dst = this._text_parent_props[name] as Color;
         if ( dst.r != value[0] || dst.g != value[1] || dst.b != value[2] ) {
             Color.setOpacityColor( value, dst );
             if ( this._primitive_producer ) {
@@ -348,10 +331,7 @@ class TextEntity extends AbstractPointEntity {
     }
 
 
-    /**
-     * @private
-     */
-    _setupByJson( json )
+    private _setupByJson( json: TextEntity.Json )
     {
         var position = new GeoPoint();
 
@@ -372,41 +352,110 @@ class TextEntity extends AbstractPointEntity {
         if ( json.enable_bg     !== undefined ) this.setEnableBackground ( json.enable_bg );
     }
 
-    /**
-     * @private
-     */
-    _enableStroke( )
+    private _enableStroke( )
     {
         return this._text_parent_props["enable_stroke"];
     }
 
     
     /**
-     * @summary IDでEntryを取得
-     * @param {string}  id  ID
-     * @return {mapray.TextEntity.Entry}  IDが一致するEntry（無ければundefined）
+     * IDでEntryを取得
+     * @param id  ID
+     * @return IDが一致するEntry（無ければundefined）
      */
-    getEntry( id )
+    getEntry( id: string ): TextEntity.TextEntry | undefined
     {
         return this._entries.find((entry) => entry.id === id);
     }
 }
 
 
-// クラス定数の定義
-{
-    TextEntity.DEFAULT_FONT_SIZE    = 16;
-    TextEntity.DEFAULT_FONT_FAMILY  = "sans-serif";
-    TextEntity.DEFAULT_COLOR        = [1, 1, 1];
-    TextEntity.DEFAULT_STROKE_COLOR = [0.0, 0.0, 0.0];
-    TextEntity.DEFAULT_STROKE_WIDTH = 0.48;
-    TextEntity.DEFAULT_BG_COLOR     = [0.3, 0.3, 0.3];
 
-    TextEntity.DEFAULT_TEXT_UPPER  = 1.1;
-    TextEntity.DEFAULT_TEXT_LOWER  = 0.38;
-    TextEntity.SAFETY_PIXEL_MARGIN = 1;
-    TextEntity.MAX_IMAGE_WIDTH     = 4096;
+namespace TextEntity {
+
+
+
+export interface Option extends Entity.Option {
+    /**
+     * 生成情報
+     */
+    json?: TextEntity.Json;
 }
+
+
+
+export interface Json extends Entity.Json {
+
+    entries: EntryJson[];
+
+    font_style?: FontStyle;
+
+    font_weight?: FontWeight;
+
+    font_size?: number;
+
+    font_family?: string;
+
+    stroke_color?: Vector3;
+
+    stroke_width?: number;
+
+    color?: Vector3;
+
+    bg_color?: Vector3;
+
+    enable_bg?: boolean;
+
+    enable_stroke?: boolean,
+
+}
+
+
+export function isTextEntityJson( entityJson: Entity.Json ): entityJson is TextEntity.Json {
+    return entityJson.type === "";
+}
+
+
+
+export interface EntryJson {
+    position: [ x: number, y: number, z: number ];
+    text: string;
+}
+
+
+
+export interface ParentProps {
+    font_style: FontStyle;
+    font_weight: FontWeight;
+    font_size: number;
+    font_family: string;
+    color: Color,
+    stroke_color: Color,
+    stroke_width: number,
+    bg_color: Color;
+    enable_stroke: boolean,
+    enable_bg: boolean,
+    [name: string]: any,
+}
+
+export type FontStyle = "normal" | "italic" | "oblique";
+
+export type FontWeight = "normal" | "bold";
+
+
+
+export const DEFAULT_FONT_SIZE    = 16;
+export const DEFAULT_FONT_FAMILY  = "sans-serif";
+export const DEFAULT_COLOR        = [1, 1, 1];
+export const DEFAULT_STROKE_COLOR = [0.0, 0.0, 0.0];
+export const DEFAULT_STROKE_WIDTH = 0.48;
+export const DEFAULT_BG_COLOR     = [0.3, 0.3, 0.3];
+
+export const DEFAULT_TEXT_UPPER  = 1.1;
+export const DEFAULT_TEXT_LOWER  = 0.38;
+export const SAFETY_PIXEL_MARGIN = 1;
+export const MAX_IMAGE_WIDTH     = 4096;
+
 
 
 /**
@@ -417,12 +466,31 @@ class TextEntity extends AbstractPointEntity {
  *
  * @private
  */
-class PrimitiveProducer extends Entity.PrimitiveProducer {
+export class PrimitiveProducer extends Entity.PrimitiveProducer {
+
+    private _glenv: GLEnv;
+
+    private _dirty: boolean;
+
+    private _transform: Matrix;
+
+    private _properties: {
+        enable_bg: boolean;
+        image?: Texture;
+    };
+
+    private _primitive: Primitive;
+
+    private _pickPrimitive: Primitive;
+
+    private _primitives: Primitive[];
+
+    private _pickPrimitives: Primitive[];
 
     /**
      * @param {mapray.TextEntity} entity
      */
-    constructor( entity )
+    constructor( entity: TextEntity )
     {
         super( entity );
 
@@ -433,17 +501,21 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         this._transform  = GeoMath.setIdentity( GeoMath.createMatrix() );
         this._properties = {
             enable_bg: false,
-            image: null  // テキスト画像
+            image: undefined  // テキスト画像
         };
 
         // プリミティブ
         var material = null, pickMaterial = null;
         if ( this._isSimpleText() ) {
-            material = entity._getSimpleTextMaterial( RenderTarget.SCENE );
-            pickMaterial = entity._getSimpleTextMaterial( RenderTarget.RID );
+            // @ts-ignore
+            material = entity._getSimpleTextMaterial( RenderStage.RenderTarget.SCENE );
+            // @ts-ignore
+            pickMaterial = entity._getSimpleTextMaterial( RenderStage.RenderTarget.RID );
         } else {
-            material = entity._getTextMaterial( RenderTarget.SCENE );
-            pickMaterial = entity._getTextMaterial( RenderTarget.RID );
+            // @ts-ignore
+            material = entity._getTextMaterial( RenderStage.RenderTarget.SCENE );
+            // @ts-ignore
+            pickMaterial = entity._getTextMaterial( RenderStage.RenderTarget.RID );
         }
         var primitive = new Primitive( this._glenv, null, material, this._transform );
         primitive.properties = this._properties;
@@ -459,13 +531,16 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
     }
 
 
-    /**
-     * @override
-     */
-    createRegions()
+    override getEntity(): TextEntity {
+        return super.getEntity() as TextEntity;
+    }
+
+
+    override createRegions()
     {
         const region = new EntityRegion();
 
+        // @ts-ignore
         for ( let {position} of this.entity._entries ) {
             region.addPoint( position );
         }
@@ -474,27 +549,21 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
     }
 
 
-    /**
-     * @override
-     */
-    onChangeElevation( regions )
+    override onChangeElevation( regions: EntityRegion[] )
     {
         this._dirty = true;
     }
 
 
-    /**
-     * @override
-     */
-    getPrimitives( stage )
+    override getPrimitives( stage: RenderStage )
     {
         this._updatePrimitive();
-        return stage.getRenderTarget() === RenderTarget.SCENE ? this._primitives : this._pickPrimitives;
+        return stage.getRenderTarget() === RenderStage.RenderTarget.SCENE ? this._primitives : this._pickPrimitives;
     }
 
 
     /**
-     * @summary 親プロパティが変更されたことを通知
+     * 親プロパティが変更されたことを通知
      */
     onChangeParentProperty()
     {
@@ -503,7 +572,7 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
 
     /**
-     * @summary 子プロパティが変更されたことを通知
+     * 子プロパティが変更されたことを通知
      */
     onChangeChildProperty()
     {
@@ -512,7 +581,7 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
 
     /**
-     * @summary 高度モードが変更されたことを通知
+     * 高度モードが変更されたことを通知
      */
     onChangeAltitudeMode()
     {
@@ -521,7 +590,7 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
 
     /**
-     * @summary テキストが追加されたことを通知
+     * テキストが追加されたことを通知
      */
     onAddTextEntry()
     {
@@ -531,8 +600,13 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
     }
 
 
+    get transform(): Matrix {
+        return this._transform;
+    }
+
+
     /**
-     * @summary プリミティブの更新
+     * プリミティブの更新
      *
      * @desc
      * 入力:
@@ -545,11 +619,9 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
      *   this._primitives
      *   this._dirty
      *
-     * @return {array.<mapray.Prmitive>}  this._primitives
-     *
-     * @private
+     * @return this._primitives
      */
-    _updatePrimitive()
+    private _updatePrimitive(): Primitive[] | undefined
     {
         if ( !this._dirty ) {
             // 更新する必要はない
@@ -557,7 +629,9 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         }
         this._updateProperties();
 
-        if ( this.entity._entries.length == 0 ) {
+        const entity = this.getEntity();
+        // @ts-ignore
+        if ( entity._entries.length == 0 ) {
             this._primitives = [];
             this._pickPrimitives = [];
             this._dirty = false;
@@ -627,6 +701,8 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         this._primitives = [primitive];
         this._pickPrimitives = [pickPrimitive];
         this._dirty = false;
+
+        return;
     }
 
     /**
@@ -644,17 +720,17 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
      */
     _updateProperties()
     {
-        let entity = this.entity;
+        let entity = this.getEntity();
         let props  = this._properties;
 
+        // @ts-ignore
         props.enable_bg = entity._text_parent_props.enable_bg;
     }
 
 
     /**
-     * @summary プリミティブの更新
+     * プリミティブの更新
      *
-     * @desc
      * 条件:
      *   this.entity._entries.length > 0
      * 入力:
@@ -662,13 +738,12 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
      * 出力:
      *   this._transform
      *
-     * @param {number[]} gocs_array  GOCS 平坦化配列
-     *
-     * @private
+     * @param gocs_array  GOCS 平坦化配列
      */
-    _updateTransform( gocs_array )
+    private _updateTransform( gocs_array: Float64Array )
     {
-        var num_entries = this.entity._entries.length;
+        // @ts-ignore
+        var num_entries = this.getEntity()._entries.length;
         var        xsum = 0;
         var        ysum = 0;
         var        zsum = 0;
@@ -689,16 +764,16 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
 
     /**
-     * @summary GOCS 平坦化配列を取得
+     * GOCS 平坦化配列を取得
      *
      * 入力: this.entity._entries
      *
-     * @return {number[]}  GOCS 平坦化配列
-     * @private
+     * @return  GOCS 平坦化配列
      */
-    _createFlatGocsArray()
+    private _createFlatGocsArray(): Float64Array
     {
-        const num_points = this.entity._entries.length;
+        // @ts-ignore
+        const num_points = this.getEntity()._entries.length;
         return GeoPoint.toGocsArray( this._getFlatGeoPoints_with_Absolute(), num_points,
                                      new Float64Array( 3 * num_points ) );
     }
@@ -714,7 +789,8 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
      */
     _getFlatGeoPoints_with_Absolute()
     {
-        const owner      = this.entity;
+        const owner      = this.getEntity();
+        // @ts-ignore
         const entries    = owner._entries;
         const num_points = entries.length;
         const flat_array = new Float64Array( 3 * num_points );
@@ -754,24 +830,26 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
      /**
      * @summary シンプルテキストモードかどうかを確認
      *
-     *
      * @return {boolean}  シンプルテキストモードならtrue.
      * @private
      */
     _isSimpleText() 
     {
-        let entity = this.entity;
+        let entity = this.getEntity();
 
         let enable = true;
         // check enable bg color or stroke;
+        // @ts-ignore
         if ( entity._text_parent_props.enable_bg || entity._text_parent_props.enable_stroke ) {
             enable = false;
         }
 
         // check enable stroke
         let i = 0;
-        while ( enable && entity._entries.length > i ) {
-            let entry = entity._entries[i];
+        // @ts-ignore
+        const entries = entity._entries;
+        while ( enable && entries.length > i ) {
+            let entry = entries[i] as TextEntry;
             enable = !entry.enable_stroke;
             i++;
         }
@@ -783,37 +861,36 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
 
 /**
- * @summary テキスト要素
- * @hideconstructor
- * @memberof mapray.TextEntity
- * @public
+ * テキスト要素
  */
-class Entry {
+export class TextEntry extends AbstractPointEntity.Entry {
+
+    private _owner: TextEntity;
+
+    private _text: string;
+
+    private _position: GeoPoint;
+
+    private _props: EntryOption;
+
+    private _animation: BindingBlock;
 
     /**
-     * @param {mapray.TextEntity} owner                所有者
-     * @param {string}            text                 テキスト
-     * @param {mapray.GeoPoint}   position             位置
-     * @param {object}            [props]              プロパティ
-     * @param {string}            [props.font_style]   フォントスタイル ("normal" | "italic" | "oblique")
-     * @param {string}            [props.font_weight]  フォントの太さ   ("normal" | "bold")
-     * @param {number}            [props.font_size]    フォントの大きさ (Pixels)
-     * @param {string}            [props.font_family]  フォントファミリー
-     * @param {mapray.Color}      [props.color]        テキストの色
-     * @param {mapray.Color}      [props.stroke_color] テキスト縁の色
-     * @param {number}            [props.stroke_width] テキスト縁の幅
-     * @param {number}            [props.enable_stroke] テキストの縁取りを有効にするか
-     * @param {string}            [props.id]            Entryを識別するID
+     * @param owner                所有者
+     * @param text                 テキスト
+     * @param position             位置
+     * @param props              プロパティ
      */
-    constructor( owner, text, position, props )
-    {
+    constructor( owner: TextEntity, text: string, position: GeoPoint, props: EntryOption ) {
+        super();
         this._owner    = owner;
         this._text     = text;
         this._position = position.clone();
 
         // animation.BindingBlock
+        // @ts-ignore
         this._animation = new EasyBindingBlock();
-        
+
         this._setupAnimationBindingBlock();
 
         this._props = Object.assign( {}, props );   // props の複製
@@ -822,7 +899,12 @@ class Entry {
         this._copyColorProperty( "bg_color" );      // deep copy
     }
 
-    
+
+    override getAnimation(): BindingBlock {
+        return this._animation;
+    }
+
+
     /**
      * @summary テキスト
      * @type {string}
@@ -836,66 +918,59 @@ class Entry {
 
 
     /**
-     * @summary 位置
-     * @type {mapray.GeoPoint}
-     * @readonly
-     * @package
+     * 位置
+     * @internal
      */
-    get position()
+    override get position(): GeoPoint
     {
         return this._position;
     }
 
-    
-    /**
-     * @summary ID
-     * @type {string}
-     * @readonly
-     */
-    get id()
-    {
-        return this._props.hasOwnProperty( "id" ) ? this._props.id : "";
-    }
-    
 
     /**
-     * @summary フォントサイズ (Pixels)
-     * @type {number}
-     * @readonly
-     * @package
+     * ID
      */
-    get size()
+    override get id(): string
+    {
+        return this._props.hasOwnProperty( "id" ) ? this._props.id as string : "";
+    }
+
+
+    /**
+     * フォントサイズ (Pixels)
+     * @internal
+     */
+    get size(): number
     {
         var props  = this._props;
+        // @ts-ignore
         var parent = this._owner._text_parent_props;
         return props.font_size || parent.font_size;
     }
 
 
     /**
-     * @summary テキストの色
-     * @type {mapray.Vector3}
-     * @readonly
-     * @package
+     * テキストの色
+     * @internal
      */
-    get color()
+    get color(): Color
     {
         var props  = this._props;
+        // @ts-ignore
         var parent = this._owner._text_parent_props;
         return props.color || parent.color;
     }
 
 
     /**
-     * @summary フォント
-     * @type {string}
-     * @readonly
-     * @package
+     * フォント
+     * @internal
      * @see https://developer.mozilla.org/ja/docs/Web/CSS/font
      */
-    get font()
+    get font(): string
     {
         var props  = this._props;
+        // @ts-ignore
         var parent = this._owner._text_parent_props;
 
         var   style = props.font_style  || parent.font_style;
@@ -907,27 +982,25 @@ class Entry {
     }
 
     /**
-     * @summary テキスト縁の色
-     * @type {mapray.Color}
-     * @readonly
-     * @package
+     * テキスト縁の色
+     * @internal
      */
-    get stroke_color()
+    get stroke_color(): Color
     {
         var props  = this._props;
+        // @ts-ignore
         var parent = this._owner._text_parent_props;
         return props.stroke_color || parent.stroke_color;
     }
 
     /**
-     * @summary 縁の幅 (Pixels)
-     * @type {number}
-     * @readonly
-     * @package
+     * 縁の幅 (Pixels)
+     * @internal
      */
-    get stroke_width()
+    get stroke_width(): number
     {
         var props  = this._props;
+        // @ts-ignore
         var parent = this._owner._text_parent_props;
         return props.stroke_width || parent.stroke_width;
     }
@@ -938,9 +1011,10 @@ class Entry {
      * @readonly
      * @package
      */
-    get enable_stroke()
+    get enable_stroke(): boolean
     {
         var props  = this._props;
+        // @ts-ignore
         var parent = this._owner._text_parent_props;
         return props.enable_stroke || parent.enable_stroke;
     }
@@ -951,9 +1025,10 @@ class Entry {
      * @readonly
      * @package
      */
-    get bg_color()
+    get bg_color(): Color
     {
         var props  = this._props;
+        // @ts-ignore
         var parent = this._owner._text_parent_props;
         return props.bg_color || parent.bg_color;
     }
@@ -964,23 +1039,15 @@ class Entry {
      * @readonly
      * @package
      */
-    get enable_background()
+    get enable_background(): boolean
     {
         // Enable or Disable background can be set by parent.
+        // @ts-ignore
         var parent = this._owner._text_parent_props;
         return parent.enable_bg;
     }
 
-    
-    /**
-     * @summary アニメーションパラメータ設定
-     *
-     * @type {mapray.animation.BindingBlock}
-     * @readonly
-     */
-    get animation() { return this._animation; }
-    
-    
+
     /**
      * アニメーションの BindingBlock を初期化
      *
@@ -988,7 +1055,8 @@ class Entry {
      */
     _setupAnimationBindingBlock()
     {
-        const block = this.animation;  // 実体は EasyBindingBlock
+        // @ts-ignore
+        const block = this.getAnimation() as EasyBindingBlock;  // 実体は EasyBindingBlock
 
         const number  = Type.find( "number"  );
         const string  = Type.find( "string"  );
@@ -999,7 +1067,7 @@ class Entry {
         //   ベクトルの要素が longitude, latitude, altitude 順であると解釈
         const position_temp = new GeoPoint();
 
-        block.addEntry( "position", [vector3], null, value => {
+        block.addEntry( "position", [vector3], null, (value: Vector3) => {
             position_temp.setFromArray( value );  // Vector3 -> GeoPoint
             this.setPosition( position_temp );
         } );
@@ -1007,159 +1075,163 @@ class Entry {
         // パラメータ名: font_style
         // パラメータ型: string
         //   フォントスタイル
-        block.addEntry( "font_style", [string], null, value => {
+        block.addEntry( "font_style", [string], null, (value: FontStyle) => {
             this.setFontStyle( value );
         } );
         
         // パラメータ名: font_weight
         // パラメータ型: string
         //   フォントの太さ
-        block.addEntry( "font_weight", [string], null, value => {
+        block.addEntry( "font_weight", [string], null, (value: FontWeight) => {
             this.setFontWeight( value );
         } );
         
         // パラメータ名: font_size
         // パラメータ型: number
         //   フォントの大きさ
-        block.addEntry( "font_size", [number], null, value => {
+        block.addEntry( "font_size", [number], null, (value: number) => {
             this.setFontSize( value );
         } );
         
         // パラメータ名: color
         // パラメータ型: vector3
         //   テキストの色
-        block.addEntry( "color", [vector3], null, value => {
+        block.addEntry( "color", [vector3], null, (value: Vector3) => {
             this.setColor( value );
         } );
         
         // パラメータ名: stroke_color
         // パラメータ型: vector3
         //   縁の色
-        block.addEntry( "stroke_color", [vector3], null, value => {
+        block.addEntry( "stroke_color", [vector3], null, (value: Vector3) => {
             this.setStrokeColor( value );
         } );
         
         // パラメータ名: stroke_width
         // パラメータ型: number
         //   縁の線幅
-        block.addEntry( "stroke_width", [number], null, value => {
+        block.addEntry( "stroke_width", [number], null, (value: number) => {
             this.setStrokeLineWidth( value );
         } );
 
         // パラメータ名: text
         // パラメータ型: string
         //   テキスト
-        block.addEntry( "text", [string], null, value => {
+        block.addEntry( "text", [string], null, (value: string) => {
             this.setText( value );
         } );        
     }
 
 
     /**
-     * @summary テキスト原点位置を設定
+     * テキスト原点位置を設定
      *
-     * @param {mapray.GeoPoint} position  テキスト原点の位置
+     * @param position  テキスト原点の位置
      */
-    setPosition( position )
+    setPosition( position: GeoPoint )
     {
         if ( this._position.longitude !== position.longitude ||
              this._position.latitude  !== position.latitude  ||
              this._position.altitude  !== position.altitude ) {
             // 位置が変更された
             this._position.assign( position );
-            this._owner.getPrimitiveProducer().onChangeChildProperty();
+            const primitiveProducer = this._owner.getPrimitiveProducer();
+            if ( primitiveProducer ) {
+                primitiveProducer.onChangeChildProperty();
+            }
         }
     }
 
 
     /**
-     * @summary フォントスタイルを設定
-     * @param {string} style  フォントスタイル ("normal" | "italic" | "oblique")
+     * フォントスタイルを設定
+     * @param style  フォントスタイル
      */
-    setFontStyle( style )
+    setFontStyle( style: FontStyle )
     {
         this._setValueProperty( "font_style", style );
     }
 
 
     /**
-     * @summary フォントの太さを設定
-     * @param {string} weight  フォントの太さ ("normal" | "bold")
+     * フォントの太さを設定
+     * @param weight  フォントの太さ
      */
-    setFontWeight( weight )
+    setFontWeight( weight: FontWeight )
     {
         this._setValueProperty( "font_weight", weight );
     }
 
 
     /**
-     * @summary フォントの大きさを設定
-     * @param {number} size  フォントの大きさ (Pixels)
+     * フォントの大きさを設定
+     * @param size  フォントの大きさ (Pixels)
      */
-    setFontSize( size )
+    setFontSize( size: number )
     {
         this._setValueProperty( "font_size", size );
     }
 
 
     /**
-     * @summary テキストの色を設定
-     * @param {mapray.Vector3} color  テキストの色
+     * テキストの色を設定
+     * @param color  テキストの色
      */
-    setColor( color )
+    setColor( color: Vector3 )
     {
         this._setColorProperty( "color", color );
     }
 
 
     /**
-     * @summary テキスト縁の色を設定
-     * @param {mapray.Vector3} color  縁の色
+     * テキスト縁の色を設定
+     * @param color  縁の色
      */
-    setStrokeColor( color )
+    setStrokeColor( color: Vector3 )
     {
         this._setColorProperty( "stroke_color", color );
     }
 
 
     /**
-     * @summary テキスト縁の太さを設定
-     * @param {mapray.number} width  縁の線幅
+     * テキスト縁の太さを設定
+     * @param width  縁の線幅
      */
-    setStrokeLineWidth( width )
+    setStrokeLineWidth( width: number )
     {
         this._setValueProperty( "stroke_width", width );
     }
 
 
     /**
-     * @summary テキスト縁を有効にするかどうか
-     * @param {boolean} enable  trueなら有効
+     * テキスト縁を有効にするかどうか
+     * @param enable  trueなら有効
      */
-    setEnableStroke( enable )
+    setEnableStroke( enable: boolean )
     {
         this._setValueProperty( "enable_stroke", enable );
+        // @ts-ignore
         this._owner._primitive_producer = new PrimitiveProducer( this._owner );
     }
 
 
     /**
-     * @summary テキストを設定
-     * @param {string} text  テキスト
+     * テキストを設定
+     * @param text  テキスト
      */
-    setText( text )
+    setText( text: string )
     {
         if ( this._text !== text ) {
             this._text = text;
-            this._owner.getPrimitiveProducer().onChangeChildProperty();
+            const primitiveProducer = this._owner.getPrimitiveProducer();
+            if ( primitiveProducer ) {
+                primitiveProducer.onChangeChildProperty();
+            }
         }
     }
-    
 
-    /**
-     * @private
-     */
-    _copyColorProperty( name )
+
+    private _copyColorProperty( name: string )
     {
         var props = this._props;
         if ( props.hasOwnProperty( name ) ) {
@@ -1168,41 +1240,85 @@ class Entry {
     }
 
 
-    /**
-     * @private
-     */
-    _setValueProperty( name, value )
+    private _setValueProperty( name: string, value: any )
     {
         var props = this._props;
         if ( props[name] != value ) {
             props[name] = value;
-            this._owner.getPrimitiveProducer().onChangeChildProperty();
+            const primitiveProducer = this._owner.getPrimitiveProducer();
+            if ( primitiveProducer ) {
+                primitiveProducer.onChangeChildProperty();
+            }
         }
     }
 
 
-    /**
-     * @private
-     */
-    _setColorProperty( name, value )
+    private _setColorProperty( name: string, value: Vector3 )
     {
         var dst = this._props[name];
         if ( dst )
         {
             if ( dst.r != value[0] || dst.g != value[1] || dst.b != value[2] ) {
                 Color.setOpacityColor( value, dst );
-                this._owner.getPrimitiveProducer().onChangeChildProperty();
+                const primitiveProducer = this._owner.getPrimitiveProducer()
+                if ( primitiveProducer ) {
+                    primitiveProducer.onChangeChildProperty();
+                }
             }
         }
         else
         {
             this._props[name] = Color.generateOpacityColor( value );
-            this._owner.getPrimitiveProducer().onChangeChildProperty();
+            const primitiveProducer = this._owner.getPrimitiveProducer()
+            if ( primitiveProducer ) {
+                primitiveProducer.onChangeChildProperty();
+            }
         }
     }
 }
 
-TextEntity.Entry = Entry;
+
+
+export interface EntryOption {
+    /** フォントスタイル */
+    font_style?: FontStyle;
+
+    /** フォントの太さ */
+    font_weight?: FontWeight;
+
+    /** フォントの大きさ (Pixels) */
+    font_size?: number;
+
+    /** フォントファミリー */
+    font_family?: string;
+
+    /** テキストの色 */
+    color?: Color;
+
+    /** テキスト縁の色 */
+    stroke_color?: Color;
+
+    /** 背景色 */
+    bg_color?: Color;
+
+    /** テキスト縁の幅 */
+    stroke_width?: number;
+
+    /** テキストの縁取りを有効にするか */
+    enable_stroke?: boolean;
+
+    /** Entryを識別するID */
+    id?: string;
+
+    [name: string]: any;
+}
+
+
+export interface EntryProps {
+    
+}
+
+
 
 
 /**
@@ -1213,6 +1329,18 @@ TextEntity.Entry = Entry;
  */
 class Layout {
 
+    private _owner: PrimitiveProducer;
+
+    private _items: LItem[];
+
+    private _is_valid: boolean;
+
+    private _texture?: Texture;
+
+    private _vertices: number[];
+
+    private _indices?: number[];
+
     /**
      * @desc
      * 入力:
@@ -1220,10 +1348,10 @@ class Layout {
      *   owner.entity._entries
      *   owner._transform
      *
-     * @param {PrimitiveProducer} owner       所有者
-     * @param {number[]}          gocs_array  GOCS 平坦化配列
+     * @param owner       所有者
+     * @param gocs_array  GOCS 平坦化配列
      */
-    constructor( owner, gocs_array )
+    constructor( owner: PrimitiveProducer, gocs_array: Float64Array )
     {
         this._owner = owner;
         this._items = this._createItemList();
@@ -1233,6 +1361,7 @@ class Layout {
         if ( row_layouts.length == 0 ) {
             // 有効なテキストが1つも無い
             this._is_valid = false;
+            this._vertices = [];
             return;
         }
 
@@ -1251,40 +1380,36 @@ class Layout {
 
 
     /**
-     * @summary 有効なオブジェクトか？
-     * @desc
-     * <p>無効のとき、他のメソッドは呼び出せない。</p>
-     * @return {boolean}  有効のとき true, 無効のとき false
+     * 有効なオブジェクトか？
+     *
+     * 無効のとき、他のメソッドは呼び出せない。
+     * @return 有効のとき true, 無効のとき false
      */
-    isValid()
+    isValid(): boolean
     {
         return this._is_valid;
     }
 
 
     /**
-     * @summary テクスチャ
-     * @type {mapray.Texture}
-     * @readonly
+     * テクスチャ
      */
-    get texture()
+    get texture(): Texture
     {
-        return this._texture;
+        return this._texture as Texture;
     }
 
 
     /**
-     * @summary 頂点配列
-     * @desc
+     * 頂点配列
+     *
      * 条件:
      *   this._entries.length > 0
      * 入力:
      *   this._entries
      *   this._transform
-     * @type {Float32Array}
-     * @readonly
      */
-    get vertices()
+    get vertices(): number[]
     {
         return this._vertices;
     }
@@ -1302,17 +1427,15 @@ class Layout {
 
 
     /**
-     * @summary レイアウトアイテムのリストを生成
-     * @return {array.<mapray.TextEntity.LItem>}
-     * @private
+     * レイアウトアイテムのリストを生成
      */
-    _createItemList()
+    private _createItemList(): LItem[]
     {
         var context = Dom.createCanvasContext( 1, 1 );
 
         var items = [];
-        for ( let entry of this._owner.entity._entries ) {
-            items.push( new LItem( this, entry, context ) );
+        for ( let entry of this._owner.getEntity().entries ) {
+            items.push( new LItem( this, entry as TextEntry, context ) );
         }
 
         return items;
@@ -1320,14 +1443,12 @@ class Layout {
 
 
     /**
-     * @summary RowLayout のリストを生成
-     * @return {array.<mapray.TextEntity.RowLayout>}
-     * @private
+     * RowLayout のリストを生成
      */
-    _createRowLayouts()
+    private _createRowLayouts(): RowLayout[]
     {
         // アイテムリストの複製
-        var items = [].concat( this._items );
+        var items = this._items.slice();
 
         // RowLayout 内であまり高さに差が出ないように、アイテムリストを高さで整列
         items.sort( function( a, b ) { return a.height_pixel - b.height_pixel; } );
@@ -1346,13 +1467,12 @@ class Layout {
 
 
     /**
-     * @summary テクスチャを生成
-     * @param  {number} width    横幅
-     * @param  {number} height   高さ
-     * @return {mapray.Texture}  テキストテクスチャ
-     * @private
+     * テクスチャを生成
+     * @param width    横幅
+     * @param height   高さ
+     * @return テキストテクスチャ
      */
-    _createTexture( width, height )
+    private _createTexture( width: number, height: number ): Texture
     {
         var context = Dom.createCanvasContext( width, height );
 
@@ -1363,17 +1483,18 @@ class Layout {
         var items = this._items;
         for ( var i = 0; i < items.length; ++i ) {
             var item = items[i];
+            var entry = item.entry;
             if ( item.is_canceled ) continue;
-            if ( item._entry.enable_background ) {
+            if ( entry.enable_background ) {
                 item.drawRect( context );
             }
-            if ( item._entry.enable_stroke ) {
+            if ( entry.enable_stroke ) {
                 item.drawStrokeText( context );
             }
             item.drawText( context );
         }
 
-        var glenv = this._owner._glenv;
+        var glenv = this._owner.getEntity().scene.glenv;
         var  opts = {
             usage: Texture.Usage.TEXT
         };
@@ -1384,19 +1505,17 @@ class Layout {
     /**
      * @summary 頂点配列を生成
      *
-     * @param  {number}   width       横幅
-     * @param  {number}   height      高さ
-     * @param  {number[]} gocs_array  GOCS 平坦化配列
-     * @return {array.<number>}  頂点配列 [左下0, 右下0, 左上0, 右上0, ...]
-     *
-     * @private
+     * @param width       横幅
+     * @param height      高さ
+     * @param gocs_array  GOCS 平坦化配列
+     * @return 頂点配列 [左下0, 右下0, 左上0, 右上0, ...]
      */
-    _createVertices( width, height, gocs_array )
+    private _createVertices( width: number, height: number, gocs_array: Float64Array ): number[]
     {
         var vertices = [];
 
         // テキスト集合の原点 (GOCS)
-        var transform = this._owner._transform;
+        var transform = this._owner.transform;
         var xo = transform[12];
         var yo = transform[13];
         var zo = transform[14];
@@ -1448,13 +1567,12 @@ class Layout {
 
 
     /**
-     * @summary 単純テキスト用テクスチャを生成
-     * @param  {number} width    横幅
-     * @param  {number} height   高さ
-     * @return {mapray.Texture}  テキストテクスチャ
-     * @private
+     * 単純テキスト用テクスチャを生成
+     * @param  width    横幅
+     * @param  height   高さ
+     * @return テキストテクスチャ
      */
-    _createTextureForSimple( width, height )
+    private _createTextureForSimple( width: number, height: number ): Texture
     {
         var context = Dom.createCanvasContext( width, height );
 
@@ -1469,7 +1587,7 @@ class Layout {
             item.drawText( context );
         }
 
-        var glenv = this._owner._glenv;
+        var glenv = this._owner.getEntity().scene.glenv;
         var  opts = {
             usage: Texture.Usage.SIMPLETEXT
         };
@@ -1478,20 +1596,19 @@ class Layout {
 
 
     /**
-     * @summary 単純テキスト用頂点配列を生成
+     * 単純テキスト用頂点配列を生成
      *
-     * @param  {number}   width       横幅
-     * @param  {number}   height      高さ
-     * @param  {number[]} gocs_array  GOCS 平坦化配列
-     * @return {array.<number>}  頂点配列 [左下0, 右下0, 左上0, 右上0, ...]
-     *
-     * @private
+     * @param  width       横幅
+     * @param  height      高さ
+     * @param  gocs_array  GOCS 平坦化配列
+     * @return 頂点配列 [左下0, 右下0, 左上0, 右上0, ...]
      */
-    _createVerticesForSimple( width, height, gocs_array )
+    private _createVerticesForSimple( width: number, height: number, gocs_array: Float64Array ): number[]
     {
         var vertices = [];
 
         // テキスト集合の原点 (GOCS)
+        // @ts-ignore
         var transform = this._owner._transform;
         var xo = transform[12];
         var yo = transform[13];
@@ -1554,11 +1671,10 @@ class Layout {
     
 
     /**
-     * @summary インデックス配列を生成
-     * @return {array.<number>}  インデックス配列 []
-     * @private
+     * インデックス配列を生成
+     * @return インデックス配列 []
      */
-    _createIndices()
+    private _createIndices(): number[]
     {
         var indices = [];
 
@@ -1581,7 +1697,7 @@ class Layout {
      * @return {object}                              キャンバスサイズ
      * @private
      */
-    _setupLocation( row_layouts )
+    _setupLocation( row_layouts: RowLayout[] )
     {
         var width  = 0;
         var height = 0;
@@ -1602,26 +1718,24 @@ class Layout {
     }
 
     /**
-     * @summary シンプルテキストモードかどうか
-     * @param  {mapray.TextEntity.LItem} item
-     * @return {boolean}                 シンプルテキストモードならtrue
-     * @private
+     * シンプルテキストモードかどうか
+     * @param  item
+     * @return シンプルテキストモードならtrue
      */
-    _isSimpleText( item ) 
+    private _isSimpleText( item: LItem ): boolean
     {
-        if ( item._entry.enable_background || item._entry.enable_stroke ) {
+        if ( item.entry.enable_background || item.entry.enable_stroke ) {
             return false;
         }
         return true;
     } 
 
     /**
-     * @summary シンプルテキストモードかどうか
-     * @param  {array.<mapray.TextEntity.LItem>} items
-     * @return {boolean}                 シンプルテキストモードならtrue
-     * @private
+     * シンプルテキストモードかどうか
+     * @param  items
+     * @return シンプルテキストモードならtrue
      */
-    _isSimpleTextWithAllItems( items ) 
+    private _isSimpleTextWithAllItems( items: LItem[] ): boolean
     {
         let enable = true;
         let i = 0;
@@ -1644,24 +1758,41 @@ class Layout {
  */
 class LItem {
 
+    private _entry: TextEntry;
+
+    /** テキストの左端 */
+    private _pos_x: number;
+
+    /** テキストのベースライン位置 */
+    private _pos_y: number;
+
+    /** テキストの横幅 */
+    private _width: number;
+
+    /** テキストの範囲（上） */
+    private _upper: number;
+
+    /** テキストの範囲（下） */
+    private _lower: number;
+
+    private _is_canceled: boolean;
+
+
     /**
      * @param {mapray.TextEntity.Layout} layout   所有者
      * @param {mapray.TextEntity.Entry}  entry    TextEntity エントリ
      * @param {CanvasRenderingContext2D} context  測定用コンテキスト
      */
-    constructor( layout, entry, context )
+    constructor( layout: Layout, entry: TextEntry, context: CanvasRenderingContext2D )
     {
         this._entry = entry;
 
-        // テキストの基点
-        this._pos_x = 0;  // 左端
-        this._pos_y = 0;  // ベースライン位置
+        this._pos_x = 0;
+        this._pos_y = 0;
 
-        // テキストの横幅
         context.font = entry.font;
         this._width  = context.measureText( entry.text ).width;
 
-        // テキストの上下範囲
         this._upper = entry.size * TextEntity.DEFAULT_TEXT_UPPER;
         this._lower = entry.size * TextEntity.DEFAULT_TEXT_LOWER;
 
@@ -1669,61 +1800,37 @@ class LItem {
     }
 
 
-    /**
-     * @type {mapray.TextEntity.Entry}
-     * @readonly
-     */
-    get entry()
+    get entry(): TextEntry
     {
         return this._entry;
     }
 
 
-    /**
-     * @type {number}
-     * @readonly
-     */
-    get pos_x()
+    get pos_x(): number
     {
         return this._pos_x;
     }
 
 
-    /**
-     * @type {number}
-     * @readonly
-     */
-    get pos_y()
+    get pos_y(): number
     {
         return this._pos_y;
     }
 
 
-    /**
-     * @type {number}
-     * @readonly
-     */
-    get width()
+    get width(): number
     {
         return this._width;
     }
 
 
-    /**
-     * @type {number}
-     * @readonly
-     */
-    get upper()
+    get upper(): number
     {
         return this._upper;
     }
 
 
-    /**
-     * @type {number}
-     * @readonly
-     */
-    get lower()
+    get lower(): number
     {
         return this._lower;
     }
@@ -1731,10 +1838,8 @@ class LItem {
 
     /**
      * キャンバス上でのテキストの横画素数
-     * @type {number}
-     * @readonly
      */
-    get width_pixel()
+    get width_pixel(): number
     {
         return Math.ceil( this._width );
     }
@@ -1742,10 +1847,8 @@ class LItem {
 
     /**
      * キャンバス上でのテキストの縦画素数
-     * @type {number}
-     * @readonly
      */
-    get height_pixel()
+    get height_pixel(): number
     {
         return Math.ceil( this._upper ) + Math.ceil( this._lower );
     }
@@ -1753,17 +1856,15 @@ class LItem {
 
     /**
      * 取り消し状態か？
-     * @type {boolean}
-     * @readonly
      */
-    get is_canceled()
+    get is_canceled(): boolean
     {
         return this._is_canceled;
     }
 
 
     /**
-     * @summary 取り消し状態に移行
+     * 取り消し状態に移行
      */
     cancel()
     {
@@ -1772,11 +1873,11 @@ class LItem {
 
 
     /**
-     * @summary 配置を決定
-     * @param {number} x  テキスト矩形左辺の X 座標 (キャンバス座標系)
-     * @param {number} y  テキスト矩形上辺の Y 座標 (キャンバス座標系)
+     * 配置を決定
+     * @param x  テキスト矩形左辺の X 座標 (キャンバス座標系)
+     * @param y  テキスト矩形上辺の Y 座標 (キャンバス座標系)
      */
-    locate( x, y )
+    locate( x: number, y: number )
     {
         this._pos_x = x;
         this._pos_y = y + Math.ceil( this._upper );
@@ -1784,17 +1885,17 @@ class LItem {
 
 
     /**
-     * @summary テキストだけを描画 (stokeやfillRectとは組み合わせ不可)
-     * @desc
-     * <p>context は以下のように設定していること。</p>
-     * <pre>
+     * テキストだけを描画 (stokeやfillRectとは組み合わせ不可)
+     *
+     * context は以下のように設定していること。
+     * ```ts
      *   context.textAlign    = "left";
      *   context.textBaseline = "alphabetic";
      *   context.fillStyle    = "rgba( 255, 255, 255, 1.0 )";
-     * </pre>
-     * @param {CanvasRenderingContext2D} context  描画先コンテキスト
+     * ```
+     * @param context  描画先コンテキスト
      */
-    drawTextOnly( context )
+    drawTextOnly( context: CanvasRenderingContext2D )
     {
         var entry = this._entry;
         context.font = entry.font;
@@ -1813,7 +1914,7 @@ class LItem {
      * </pre>
      * @param {CanvasRenderingContext2D} context  描画先コンテキスト
      */
-    drawText( context )
+    drawText( context: CanvasRenderingContext2D )
     {
         var entry = this._entry;
 
@@ -1830,7 +1931,7 @@ class LItem {
 
      * @param {CanvasRenderingContext2D} context  描画先コンテキスト
      */
-    drawStrokeText( context )
+    drawStrokeText( context: CanvasRenderingContext2D )
     {
         /*
          context.fillText()
@@ -1870,7 +1971,7 @@ class LItem {
 
      * @param {CanvasRenderingContext2D} context  描画先コンテキスト
      */
-    drawRect( context )
+    drawRect( context: CanvasRenderingContext2D )
     {
         var entry = this._entry;
 
@@ -1881,19 +1982,23 @@ class LItem {
 
 
 /**
- * @summary 水平レイアウト
- * @memberof mapray.TextEntity
- * @private
+ * 水平レイアウト
+ * @internal
  */
 class RowLayout {
 
+    private _items: LItem[];
+
+    private _width_assumed: number;
+
+    private _height_pixel: number;
+
     /**
-     * @desc
-     * <p>レイアウトされた、またはレイアウトに失敗したアイテムは src_items から削除される。</p>
-     * <p>レイアウトに失敗したアイテムは取り消し (is_canceled) になる。</p>
-     * @param {array.<mapray.TextEntity.LItem>} src_items  アイテムリスト
+     * レイアウトされた、またはレイアウトに失敗したアイテムは src_items から削除される。
+     * レイアウトに失敗したアイテムは取り消し (is_canceled) になる。
+     * @param src_items  アイテムリスト
      */
-    constructor( src_items )
+    constructor( src_items: LItem[] )
     {
         var width_assumed_total = 0;
         var height_pixel_max    = 0;
@@ -1902,7 +2007,7 @@ class RowLayout {
         width_assumed_total += TextEntity.SAFETY_PIXEL_MARGIN;  // 左マージン
 
         while ( src_items.length > 0 ) {
-            var item          = src_items.shift();
+            var item          = src_items.shift() as LItem;
             var width_assumed = item.width_pixel + TextEntity.SAFETY_PIXEL_MARGIN;  // テキスト幅 + 右マージン
 
             if ( width_assumed_total + width_assumed <= TextEntity.MAX_IMAGE_WIDTH ) {
@@ -1931,23 +2036,18 @@ class RowLayout {
 
 
     /**
-     * @summary 有効なオブジェクトか？
-     * @desc
-     * <p>無効のとき、他のメソッドは呼び出せない。</p>
-     * @return {boolean}  有効のとき true, 無効のとき false
+     * 有効なオブジェクトか？
+     *
+     * 無効のとき、他のメソッドは呼び出せない。
+     * @return 有効のとき true, 無効のとき false
      */
-    isValid()
+    isValid(): boolean
     {
         return this._items.length > 0;
     }
 
 
-    /**
-     * 
-     * @type {array.<mapray.TextEntity.LItem>}
-     * @readonly
-     */
-    get items()
+    get items(): LItem[]
     {
         return this._items;
     }
@@ -1955,10 +2055,8 @@ class RowLayout {
 
     /**
      * キャンバス上での行の横占有画素数
-     * @type {number}
-     * @readonly
      */
-    get width_assumed()
+    get width_assumed(): number
     {
         return this._width_assumed;
     }
@@ -1966,20 +2064,18 @@ class RowLayout {
 
     /**
      * キャンバス上での行の縦画素数
-     * @type {number}
-     * @readonly
      */
-    get height_pixel()
+    get height_pixel(): number
     {
         return this._height_pixel;
     }
 
 
     /**
-     * @summary レイアウトの配置を決定
-     * @param {number} y  テキスト矩形上辺の Y 座標 (キャンバス座標系)
+     * レイアウトの配置を決定
+     * @param y  テキスト矩形上辺の Y 座標 (キャンバス座標系)
      */
-    locate( y )
+    locate( y: number )
     {
         var items = this._items;
         var x = 0;
@@ -1994,6 +2090,11 @@ class RowLayout {
     }
 
 }
+
+
+
+} // namespace TextEntity
+
 
 
 export default TextEntity;

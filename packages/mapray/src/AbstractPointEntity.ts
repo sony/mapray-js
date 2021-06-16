@@ -1,54 +1,77 @@
+import Scene from "./Scene";
 import Entity from "./Entity";
 import GeoPoint from "./GeoPoint";
 import GeoRegion from "./GeoRegion";
+import BindingBlock from "./animation/BindingBlock";
+import EasyBindingBlock from "./animation/EasyBindingBlock";
 
 
 /**
- * @summary 点エンティティ
+ * 点エンティティ
  *
- * @classdesc
- * <p>{@link mapray.ImageIconEntity} と {@link mapray.PinEntity}
- *    と {@link mapray.TextEntity} の共通機能を提供するクラスである。</p>
- *
- * @memberof mapray
- * @extends mapray.Entity
- * @abstract
- * @protected
+ * {@link mapray.ImageIconEntity} と {@link mapray.PinEntity}
+ * と {@link mapray.TextEntity} の共通機能を提供するクラスである。
  */
-class AbstractPointEntity extends Entity {
+abstract class AbstractPointEntity<T extends AbstractPointEntity.Entry> extends Entity {
+
+    /** 要素管理 */
+    protected _entries: T[];
 
     /**
-     * @param {mapray.Scene} scene        所属可能シーン
-     * @param {object}       [opts]       オプション集合
-     * @param {object}       [opts.json]  生成情報
-     * @param {object}       [opts.refs]  参照辞書
+     * @param scene   所属可能シーン
+     * @param opts    オプション集合
      */
-    constructor( scene, opts )
+    constructor( scene: Scene, opts?: Entity.Option )
     {
         super( scene, opts );
-
-        // 要素管理
         this._entries = [];
     }
 
 
     /**
-     * @summary すべてのEntryのバウンディングを算出
+     * すべてのEntryのバウンディングを算出
      *
      * @override
-     * @return {mapray.GeoRegion}  バウンディング情報を持ったGeoRegion
+     * @return バウンディング情報を持ったGeoRegion
      */
-    getBounds()
+    getBounds(): GeoRegion
     {
         const region = new GeoRegion();
         for ( let entry of this._entries ) {
-            region.addPoint( entry._position );
+            region.addPoint( entry.position );
         }
         return region;
     }
 
 
+    /**
+     * Entry配列を取得
+     * @internal
+     */
+    get entries(): T[] {
+        return this._entries;
+    }
 }
+
+
+
+namespace AbstractPointEntity {
+
+
+export abstract class Entry {
+    /** id */
+    abstract get id(): string;
+
+    /** 基準となる位置 */
+    abstract get position(): GeoPoint;
+
+    /** アニメーションパラメータ設定 */
+    abstract getAnimation(): BindingBlock;
+}
+
+
+} // namespace AbstractPointEntity
+
 
 
 export default AbstractPointEntity;
