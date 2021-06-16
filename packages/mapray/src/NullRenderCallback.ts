@@ -2,12 +2,10 @@ import RenderCallback from "./RenderCallback";
 
 
 /**
- * @summary 無機能 RenderCallback
- * @desc
- * <p>Viewer に RenderCallback が設定されていないときに使用する内部クラスである。</p>
- * @memberof mapray
- * @extends mapray.RenderCallback
- * @private
+ * 無機能 RenderCallback
+ *
+ * Viewer に RenderCallback が設定されていないときに使用する内部クラスである。
+ * @internal
  */
 class NullRenderCallback extends RenderCallback {
 
