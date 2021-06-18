@@ -1,15 +1,29 @@
+import { Vector3, Vector4 } from "../GeoMath";
+
+
 /**
- * @summary Utility Class for Color
- * @memberof mapray
+ * Utility Class for Color
  */
 class Color {
+    /** The red (0.0 ~ 1.0) */
+    private _r: number;
+
+    /** The green (0.0 ~ 1.0) */
+    private _g: number;
+
+    /** The blue (0.0 ~ 1.0) */
+    private _b: number;
+
+    /** The alpha (0.0 ~ 1.0) */
+    private _a: number;
+
     /**
-     * @param r {number}    The red (0.0 ~ 1.0)
-     * @param g {number}    The green (0.0 ~ 1.0)
-     * @param b {number}    The blue (0.0 ~ 1.0)
-     * @param a {number}    The alpha (0.0 ~ 1.0)
+     * @param r The red (0.0 ~ 1.0)
+     * @param g The green (0.0 ~ 1.0)
+     * @param b The blue (0.0 ~ 1.0)
+     * @param a The alpha (0.0 ~ 1.0)
      */
-    constructor( r, g, b, a ) 
+    constructor( r: number, g: number, b: number, a: number ) 
     {
         this._r = r;
         this._g = g;
@@ -18,23 +32,21 @@ class Color {
     }
 
     /**
-     * @summary 不透明色を生成
-     * @param  {mapray.Vector3}
-     * @return {mapray.Color}
+     * 不透明色を生成
      */
-    static generateOpacityColor( rgb ) {
+    static generateOpacityColor( rgb: Vector3 ): Color {
         return new Color(rgb[0], rgb[1], rgb[2], 1)
     }
 
     /**
-     * @summary 色を代入
-     * @desc
-     * <p>src を dst に代入する。</p>
-     * @param  {mapray.Color} src  代入元
-     * @param  {mapray.Color} dst  代入先
-     * @return {mapray.Color}      dst
+     * 色を代入
+     *
+     * src を dst に代入する。
+     * @param  src  代入元
+     * @param  dst  代入先
+     * @return dst
      */
-    static copyColor( src, dst )
+    static copyColor( src: Color, dst: Color ): Color
     {
         dst._r = src._r;
         dst._g = src._g;
@@ -45,14 +57,13 @@ class Color {
     }
 
     /**
-     * @summary 不透明色を代入
-     * @desc
-     * <p>src を dst に代入する。</p>
-     * @param  {mapray.Vector3} rgb  代入元
-     * @param  {mapray.Color} dst  代入先
-     * @return {mapray.Color}      dst
+     * 不透明色を代入
+     *
+     * src を dst に代入する。
+     * @param  rgb  代入元
+     * @param  dst  代入先
      */
-    static setOpacityColor( rgb, dst )
+    static setOpacityColor( rgb: Vector3, dst: Color )
     {
         dst._r = rgb[0];
         dst._g = rgb[1];
@@ -61,13 +72,11 @@ class Color {
     }
 
     /**
-     * @summary 色配列に変換する
-     * @desc
-     * <p>0から255に正規化。 [R, G, B, A]の順番</p>
+     * 色配列に変換する
      *
-     * @return {mapray.Vector4}      dst
+     * 0から255に正規化。 [R, G, B, A]の順番
      */
-    toArray()
+    toArray(): Vector4
     {
         return (this._a === 0 ? [0, 0, 0, 0] : [
             this.floatToByte(this._r) / this._a, 
@@ -78,13 +87,13 @@ class Color {
     }
 
     /**
-     * @summary 色配列に変換する
-     * @desc
-     * <p>0から1に正規化。 [R, G, B, A]の順番</p>
+     * 色配列に変換する
      *
-     * @return {mapray.Vector4}      dst
+     * 0から1に正規化。 [R, G, B, A]の順番
+     *
+     * @return dst
      */
-    toVector4()
+    toVector4(): Vector4
     {
         return (this._a === 0 ? [0, 0, 0, 0] : [
             this._r / this._a, 
@@ -95,63 +104,52 @@ class Color {
     }
 
     /**
-     * @summary RGBA文字列に変換する
-     * @desc
-     * <p>RGBA文字列に変換して文字列を返却</p>
+     * RGBA文字列に変換する
      *
-     * @return {mapray.string}
+     * RGBA文字列に変換して文字列を返却
      */
-    toRGBString()
+    toRGBString(): string
     {
         const rgba = this.toArray();
         return `rgba(${Math.round(rgba[0])},${Math.round(rgba[1])},${Math.round(rgba[2])},${rgba[3]})`;
     }
 
     /**
-     * @summary 0~1.0の色値を255までで正規化
-     * @desc
-     * <p>0から1で正規化された色値を255までに拡張する</p>
+     * 0~1.0の色値を255までで正規化
      *
-     * @return {mapray.string}
+     * 0から1で正規化された色値を255までに拡張する
      */
-    floatToByte( value )
+    floatToByte( value: number ): number
     {
         return value === 1.0 ? 255.0 : (value * 256.0) | 0;
     }
 
     /**
-     * @summary Red
-     * @type {number}
-     * @readonly
+     * Red
      */
-    get r() {
+    get r(): number {
         return this._r;
     }
 
     /**
-     * @summary Green
-     * @type {number}
-     * @readonly
+     * Green
      */
-    get g() {
+    get g(): number {
         return this._g;
     }
 
      /**
-     * @summary Blue
-     * @type {number}
-     * @readonly
+     * Blue
+     * number
      */
-    get b() {
+    get b(): number {
         return this._b;
     }
 
     /**
-     * @summary Alpha
-     * @type {number}
-     * @readonly
+     * Alpha
      */
-    get a() {
+    get a(): number {
         return this._a;
     }
 };
