@@ -1,38 +1,68 @@
 import Loader from "./Loader"
-import GeoMath from "./GeoMath";
+import GeoMath, { Vector3, Vector4 } from "./GeoMath";
+import Scene from "./Scene";
+import GLEnv from "./GLEnv";
 import GeoPoint from "./GeoPoint";
 import CredentialMode from "./CredentialMode";
 import MarkerLineEntity from "./MarkerLineEntity";
 import PolygonEntity from "./PolygonEntity";
 import PinEntity from "./PinEntity";
-import Resource, { URLResource, ResourceType } from "./Resource";
+import Resource, { URLResource } from "./Resource";
 import AltitudeMode from "./AltitudeMode";
+import GeoJSON from "./GeoJSON";
 
 /**
- * GeoJSON形式（<a href="https://tools.ietf.org/html/rfc7946">rfc7946</a>）のデータをシーンに読み込みます。
- * @memberof mapray
+ * GeoJSON形式（[rfc7946](https://tools.ietf.org/html/rfc7946)）のデータをシーンに読み込みます。
  */
 class GeoJSONLoader extends Loader {
 
+    private _getPointFGColor: (geojson: GeoJSON.FeatureJson) => Vector3 | number[];
+
+    private _getPointBGColor: (geojson: GeoJSON.FeatureJson) => Vector3 | number[];
+
+    private _getPointSize: (geojson: GeoJSON.FeatureJson) => number;
+
+    private _getPointIconId: (geojson: GeoJSON.FeatureJson) => string | undefined;
+
+    private _getLineColor: (geojson: GeoJSON.FeatureJson) => Vector3 | Vector4 | number[];
+
+    private _getLineWidth: (geojson: GeoJSON.FeatureJson) => number;
+
+    private _getFillColor: (geojson: GeoJSON.FeatureJson) => Vector4 | number[];
+
+    private _getExtrudedHeight: (geojson: GeoJSON.FeatureJson) => number;
+
+    private _getAltitudeMode: (geojson: GeoJSON.FeatureJson) => AltitudeMode;
+
+    private _getAltitude: (geojson: GeoJSON.FeatureJson) => number | undefined;
+
+    private _glenv: GLEnv;
+
+    private _cancelled: boolean;
+
+    private _finished: boolean;
+
+
     /**
-     * @desc
-     * <p>url で指定したシーンデータの読み込みを開始し、scene にエンティティを構築する。</p>
-     * <p>読み込みが終了したとき options.callback を呼び出す。</p>
-     * @param {mapray.Scene} scene      読み込み先のシーン
-     * @param {string}       resource        シーンファイルの URL
-     * @param {object}       [options]  オプション集合
-     * @param {mapray.Loader.TransformCallback} [options.transform]  リソース要求変換関数
-     * @param {mapray.GeoJSONLoader.FinishCallback}    [options.callback]   終了コールバック関数
-     * @param {mapray.Loader.EntityCallback}           [options.onEntity]   エンティティコールバック関数
+     * url で指定したシーンデータの読み込みを開始し、scene にエンティティを構築する。
+     *
+     * 読み込みが終了したとき options.callback を呼び出す。
+     * @param scene    読み込み先のシーン
+     * @param resource シーンファイルの URL
+     * @param options  オプション集合
      */
-    constructor( scene, resource, options={} )
+    constructor( scene: Scene, resource: Resource | string, options: GeoJSONLoader.Option = {} )
     {
+        let v3: Vector3;
+        v3 = [1,2,3];
+        console.log(v3);
+        let res: Resource;
         if (resource instanceof Resource) {
-            // OK
+            res = resource;
         }
         else if ( typeof resource === "string" ) {
-            resource = new URLResource(resource, {
-                    type: "json",
+            res = new URLResource(resource, {
+                    type: Resource.Type.JSON,
                     transform: options.transform
             });
         }
@@ -40,7 +70,7 @@ class GeoJSONLoader extends Loader {
             throw new Error( "Unsupported Resource: " + resource);
         }
 
-        super( scene, resource, {
+        super( scene, res, {
                 onEntity: options.onEntity,
                 onLoad: options.onLoad
         } );
@@ -64,20 +94,19 @@ class GeoJSONLoader extends Loader {
         this._getAltitude = options.getAltitude || defaultGetAltitudeCallback;
 
         this._glenv      = scene.glenv;
-        this._references = {};
+        // this._references = {};
         this._cancelled  = false;
         this._finished   = false;
     }
 
 
     /**
-     * @summary 読み込み処理の実態。継承クラスによって実装される。
-     * @private
+     * 読み込み処理の実態。継承クラスによって実装される。
      */
-    _load()
+    protected override _load(): Promise<void>
     {
         return (
-            this._resource.load( { type: ResourceType.JSON } )
+            this._resource.load( { type: Resource.Type.JSON } )
             .then( geoJson => {
                     // JSON データの取得に成功
                     this._check_cancel();
@@ -89,32 +118,27 @@ class GeoJSONLoader extends Loader {
 
     /**
      * Load GeoJSON Object
-     * @private
      */
-    _load_geojson_object( geojson )
+    private _load_geojson_object( geojson: GeoJSON.FeatureCollectionJson | GeoJSON.FeatureJson | GeoJSON.GeometryJson ): boolean
     {
         var success;
-        if ( geojson.type === TYPES.FEATURE_COLLECTION ) {
-            var features = geojson.features;
+        if ( GeoJSON.isFeatureCollectionJson( geojson ) ) {
             success = false;
-            for ( var i = 0, len = features.length; i < len; i++ ) {
-                var feature = features[i];
+            for ( var i = 0, len = geojson.features.length; i < len; i++ ) {
+                var feature = geojson.features[i];
+                // @ts-ignore
                 var s = this._load_geojson_object( feature.featureId ? feature.feature : feature ); // @ToDo: Unknown
                 // var s = this._load_geojson_object( feature );
                 if (s && !success) success = s;
             }
         }
-        else if ( geojson.type === TYPES.FEATURE ) {
-            var geometry = geojson.geometry;
-            success = this._load_geometry_object( geometry, geojson );
-        }
-        else if ( SUPPORTED_GEOMETRY_TYPES.indexOf( geojson.type ) !== -1 ) {
-            success = this._load_geometry_object( geojson, null );
+        else if ( GeoJSON.isFeatureJson( geojson ) ) {
+            success = this._load_geometry_object( geojson.geometry, geojson );
         }
         else {
-            throw new Error( "Unnsupported Type: " + geojson.type );
+            success = this._load_geometry_object( geojson, undefined );
         }
-        
+
         if ( this._cancelled ) return false;
 
         return success;
@@ -123,27 +147,26 @@ class GeoJSONLoader extends Loader {
 
     /**
      * Load Geometry Object
-     * @private
      */
-    _load_geometry_object( geometry, geojson={} ) {
-        var coords = geometry.coordinates;
+    private _load_geometry_object( geometry: GeoJSON.GeometryJson, geojson?: GeoJSON.FeatureJson ): boolean {
+        const vGeojson = geojson || {
+            id: "",
+            type: "Feature",
+            geometry: geometry,
+        } as GeoJSON.FeatureJson;
 
-        if (!coords && !geometry) {
-            return false;
-        }
-        
         switch ( geometry.type ) {
           case GEOMETRY_TYPES.POINT:
           case GEOMETRY_TYPES.MULTI_POINT:
-              return this._loadPoint( geometry, geojson );
+              return this._loadPoint( geometry as (GeoJSON.PointGeometryJson | GeoJSON.MultiPointGeometryJson), vGeojson );
 
           case GEOMETRY_TYPES.LINE_STRING:
           case GEOMETRY_TYPES.MULTI_LINE_STRING:
-              return this._loadLines( geometry, geojson );
+              return this._loadLines( geometry as (GeoJSON.LineStringGeometryJson | GeoJSON.MultiLineStringGeometryJson), vGeojson );
 
           case GEOMETRY_TYPES.POLYGON:
           case GEOMETRY_TYPES.MULTI_POLYGON:
-              return this._loadPolygons( geometry, geojson );
+              return this._loadPolygons( geometry as (GeoJSON.PolygonGeometryJson | GeoJSON.MultiPolygonGeometryJson), vGeojson );
 
           case GEOMETRY_TYPES.GEOMETRY_COLLECTION:
               return true;
@@ -154,29 +177,11 @@ class GeoJSONLoader extends Loader {
       }
 
 
-    /**
-     * fetch() の init 引数に与えるオブジェクトを生成
-     * @private
-     */
-    _make_fetch_params( tr )
-    {
-        var init = {
-            signal:      this._abort_ctrl.signal,
-            credentials: (tr.credentials || CredentialMode.OMIT).credentials
-        };
-
-        if ( tr.headers ) {
-            init.headers = (tr.headers || GeoJSONLoader._defaultHeaders);
-        }
-
-        return init;
-    }
-
 
     /**
-     * @private
+     * Load Line and LineString
      */
-    _loadLines( geometry, geojson ) 
+    private _loadLines( geometry: GeoJSON.LineStringGeometryJson | GeoJSON.MultiLineStringGeometryJson, geojson: GeoJSON.FeatureJson ): boolean
     {
         const color4 = this._getLineColor( geojson );
         const width = this._getLineWidth( geojson );
@@ -188,40 +193,50 @@ class GeoJSONLoader extends Loader {
         }
         var type = geometry.type;
         var coords = geometry.coordinates;
-        var rgb = color4.slice(0, 3);
+        var rgb = color4.slice(0, 3) as Vector3;
         var alpha = color4[3];
 
         // If multiline, split entity
         if ( type === GEOMETRY_TYPES.MULTI_LINE_STRING ) {
-            coords.forEach( points => {
-                if ( !this._generateLine( points, width, rgb, alpha, altitude_mode, altitude, geojson ) ) {
-                    return false;
+            const multiLineStringGeometry = geometry as GeoJSON.MultiLineStringGeometryJson;
+            let noError = true;
+            multiLineStringGeometry.coordinates.forEach( points => {
+                const flag = this._generateLine( points, width, rgb, alpha, altitude_mode, altitude, geojson );
+                if ( !flag ) {
+                    noError = false;
                 }
+                return flag;
             });
-            return true;
+            return noError;
         }
         else { // type === GEOMETRY_TYPES.LINE_STRING
-            return this._generateLine( coords, width, rgb, alpha, altitude_mode, altitude, geojson )
+            const lineStringGeometry = geometry as GeoJSON.LineStringGeometryJson;
+            return this._generateLine( lineStringGeometry.coordinates, width, rgb, alpha, altitude_mode, altitude, geojson )
         }
     }
 
 
     /**
-     * @private
+     * Create MarkerLineEntity
      */
-    _generateLine( points, width, color, opaticy, altitude_mode, altitude, geojson )
+    private _generateLine( points: GeoJSON.CoordinatesJson[], width: number, color: Vector3, opacity: number, altitude_mode: AltitudeMode, altitude: number | undefined, geojson: GeoJSON.FeatureJson ): boolean
     {
         if ( !points ) {
             return false;
         }
 
         var entity = new MarkerLineEntity( this._scene );
+        // @ts-ignore
         entity.altitude_mode = altitude_mode;
         var fp = this._flatten( points, altitude );
         entity.addPoints( fp );
+        // @ts-ignore
         entity.setLineWidth( width );
+        // @ts-ignore
         entity.setColor( color );
-        entity.setOpacity( opaticy );
+        // @ts-ignore
+        entity.setOpacity( opacity );
+        // @ts-ignore
         this._onEntity( this, entity, geojson );
 
         return true;
@@ -229,9 +244,9 @@ class GeoJSONLoader extends Loader {
 
 
     /**
-     * @private
+     * Load Point and MultiPoint
      */
-    _loadPoint( geometry, geojson )
+    private _loadPoint( geometry: GeoJSON.PointGeometryJson | GeoJSON.MultiPointGeometryJson, geojson: GeoJSON.FeatureJson ): boolean
     {
         const fgColor = this._getPointFGColor( geojson );
         const bgColor = this._getPointBGColor( geojson );
@@ -247,33 +262,30 @@ class GeoJSONLoader extends Loader {
 
 
         var props = {
-            "fg_color": fgColor.slice( 0, 3 ),
-            "bg_color": bgColor.slice( 0, 3 ),
-            size: size,
+            "fg_color": fgColor.slice( 0, 3 ) as Vector3,
+            "bg_color": bgColor.slice( 0, 3 ) as Vector3,
+            "size": size,
         };
 
         // If multiline, split entity
-        if ( type === GEOMETRY_TYPES.POINT ) {
-            var entity = new PinEntity( this._scene );
-            entity.altitude_mode = altitude_mode;
+        const entity = new PinEntity( this._scene );
+        entity.altitude_mode = altitude_mode;
+        if ( GeoJSON.isPointGeometryJson( geometry ) ) {
             var alt = this._getActualValue( altitude, geometry.coordinates[2], GeoJSONLoader.defaultAltitude );
             var coords = new GeoPoint( geometry.coordinates[0], geometry.coordinates[1], alt );
-            if ( iconId !== null ) {
+            if ( iconId ) {
                 entity.addMakiIconPin( iconId, coords, props );
             }
             else {
                 entity.addPin( coords, props );
             }
-            this._onEntity( this, entity, geojson );
         }
         else { // type === GEOMETRY_TYPES.MULTI_POINT
-            var entity = new PinEntity( this._scene );
-            entity.altitude_mode = altitude_mode;
             for ( var i = 0; i < geometry.coordinates.length; i++ ) {
                 var targetCoordinates = geometry.coordinates[i];
-                var alt = this._getActualValue( altitude, geometry.coordinates[2], GeoJSONLoader.defaultAltitude );
+                var alt = this._getActualValue( altitude, targetCoordinates[2], GeoJSONLoader.defaultAltitude );
                 var coords = new GeoPoint( targetCoordinates[0], targetCoordinates[1], alt );
-                if ( iconId !== null ) {
+                if ( iconId ) {
                     entity.addMakiIconPin( iconId, coords, props );
                     // entity.addPin( coords, props );
                 }
@@ -281,17 +293,18 @@ class GeoJSONLoader extends Loader {
                     entity.addPin( coords, props );
                 }
             }
-            this._onEntity( this, entity, geojson );
         }
+        // @ts-ignore
+        this._onEntity( this, entity, geojson );
 
         return true;
     }
 
 
     /**
-     * @private
+     * Load Polygon and MultiPolygon
      */
-    _loadPolygons( geometry, geojson )
+    private _loadPolygons( geometry: GeoJSON.PolygonGeometryJson | GeoJSON.MultiPolygonGeometryJson, geojson: GeoJSON.FeatureJson ): boolean
     {
         const color4 = this._getFillColor( geojson );
         const altitude_mode = this._getAltitudeMode( geojson );
@@ -303,141 +316,185 @@ class GeoJSONLoader extends Loader {
         }
         var type = geometry.type;
         var coords = geometry.coordinates;
-        var rgb = color4.slice(0, 3);
+        var rgb = color4.slice(0, 3) as Vector3;
         var alpha = color4[3];
 
         // If multiline, split entity
         if ( type === GEOMETRY_TYPES.MULTI_POLYGON ) {
-            coords.forEach( points => {
-                if ( !this._generatePolygon( points, rgb, alpha, altitude_mode, altitude, extruded_height, geojson ) ) {
-                    return false;
+            const multiPolygonGeometry = geometry as GeoJSON.MultiPolygonGeometryJson;
+            let noError = true;
+            multiPolygonGeometry.coordinates.forEach( points => {
+                const flag = this._generatePolygon( points, rgb, alpha, altitude_mode, altitude, extruded_height, geojson );
+                if ( !flag ) {
+                    noError = false;
                 }
+                return flag;
             });
-            return true;
+            return noError;
         }
         else { // type === GEOMETRY_TYPES.POLYGON
-            return this._generatePolygon( coords, rgb, alpha, altitude_mode, altitude, extruded_height, geojson )
+            const polygonGeometry = geometry as GeoJSON.PolygonGeometryJson;
+            return this._generatePolygon( polygonGeometry.coordinates, rgb, alpha, altitude_mode, altitude, extruded_height, geojson )
         }
     }
 
 
     /**
-     * @private
+     * Create Polygon
      */
-    _generatePolygon( pointsList, color, opaticy, altitude_mode, altitude, extruded_height, geojson ) 
+    private _generatePolygon( pointsList: GeoJSON.CoordinatesJson[][], color: Vector3, opacity: number, altitude_mode: AltitudeMode, altitude: number | undefined, extruded_height: number, geojson: GeoJSON.FeatureJson ): boolean
     {
         if ( !pointsList ) {
             return false;
         }
 
         const entity = new PolygonEntity( this._scene );
+        // @ts-ignore
         entity.altitude_mode = altitude_mode;
         entity.extruded_height = extruded_height;
         entity.setColor( color );
-        entity.setOpacity( opaticy );
+        entity.setOpacity( opacity );
         for ( let i=0; i< pointsList.length; i++ ) {
             const fp = this._flatten( pointsList[ i ], altitude, pointsList[ i ].length-1 );
             if ( !fp ) return false;
             if ( i === 0 ) entity.addOuterBoundary( fp );
             else entity.addInnerBoundary( fp );
         }
+        // @ts-ignore
         this._onEntity( this, entity, geojson );
-        
+
         return true;
     }
 
 
-    /**
-     * @private
-     */
-    _getActualValue( valueFromCallback, valueInGeoJSON, defaultValue ) {
+    private _getActualValue( valueFromCallback: number | undefined, valueInGeoJSON: number | undefined, defaultValue: number ): number {
         return (
-            valueFromCallback != null ? valueFromCallback: // value from callback is the most prioritized
-            valueInGeoJSON    != null ? valueInGeoJSON:    // value in GeoJSON will be used if defined
+            valueFromCallback != undefined ? valueFromCallback: // value from callback is the most prioritized
+            valueInGeoJSON    != undefined ? valueInGeoJSON:    // value in GeoJSON will be used if defined
             defaultValue                                   // default value
         );
     }
 
 
-    /**
-     * @private
-     */
-    _flatten( ary, altitude, len=ary.length )
+    private _flatten( array: number[][], altitude: number | undefined, len: number = array.length ): number[]
     {
-        return ary.reduce( (p, c, i) => (
-                i >= len ? p :
-                p.concat( c.slice(0, 2), this._getActualValue( altitude, c[2], GeoJSONLoader.defaultAltitude ) )
+        return array.reduce( (arr: number[], v: number[], index: number) => (
+                index >= len ? v :
+                arr.concat( v.slice(0, 2), this._getActualValue( altitude, v[2], GeoJSONLoader.defaultAltitude ) )
         ), [] );
     };
 }
 
 
 
-{
-    GeoJSONLoader._defaultHeaders = {};
-    GeoJSONLoader.defaultLineColor = [0, 0, 0, 1];
-    GeoJSONLoader.defaultFillColor = [0, 0, 0, 1];
-    GeoJSONLoader.defaultLineWidth = 1;
-    GeoJSONLoader.defaultPointFGColor = [1.0, 1.0, 1.0];
-    GeoJSONLoader.defaultPointBGColor = [0.35, 0.61, 0.81];
-    GeoJSONLoader.defaultPointSize = 30;
-    GeoJSONLoader.defaultPointIconId = null;
-    GeoJSONLoader.defaultAltitude = 0.0;
-    GeoJSONLoader.defaultExtrudedHeight = 0.0;
+namespace GeoJSONLoader {
+
+
+
+export interface Option {
+    /** リソース要求変換関数 */
+    transform?: Resource.TransformCallback;
+
+    /** 終了コールバック関数 */
+    callback?: Loader.FinishCallback;
+
+    /** 読み込み完了時のコールバック関数 */
+    onLoad?: Loader.FinishCallback;
+
+    /** エンティティコールバック関数 */
+    onEntity?: Loader.EntityCallback;
+
+    getPointFGColor?: (geojson: GeoJSON.FeatureJson) => Vector3;
+
+    getPointBGColor?: (geojson: GeoJSON.FeatureJson) => Vector3;
+
+    getPointSize?: (geojson: GeoJSON.FeatureJson) => number;
+
+    getPointIconId?: (geojson: GeoJSON.FeatureJson) => string | undefined;
+
+    getLineColor?: (geojson: GeoJSON.FeatureJson) => Vector3 | Vector4;
+
+    getLineWidth?: (geojson: GeoJSON.FeatureJson) => number;
+
+    getFillColor?: (geojson: GeoJSON.FeatureJson) => Vector4;
+
+    getExtrudedHeight?: (geojson: GeoJSON.FeatureJson) => number;
+
+    getAltitudeMode?: (geojson: GeoJSON.FeatureJson) => AltitudeMode;
+
+    getAltitude?: (geojson: GeoJSON.FeatureJson) => number | undefined;
 }
 
 
 
-function defaultGetLineColorCallback( geojson )
+export const _defaultHeaders = {};
+export const defaultLineColor = [0, 0, 0, 1];
+export const defaultFillColor = [0, 0, 0, 1];
+export const defaultLineWidth = 1;
+export const defaultPointFGColor = [1.0, 1.0, 1.0];
+export const defaultPointBGColor = [0.35, 0.61, 0.81];
+export const defaultPointSize = 30;
+export const defaultPointIconId = undefined;
+export const defaultAltitude = 0.0;
+export const defaultExtrudedHeight = 0.0;
+
+
+
+} // namespace GeoJSONLoader
+
+
+
+function defaultGetLineColorCallback( geojson: GeoJSON.FeatureJson )
 {
     return GeoJSONLoader.defaultLineColor;
 }
 
-function defaultGetLineWidthCallback( geojson ) 
+function defaultGetLineWidthCallback( geojson: GeoJSON.FeatureJson ) 
 {
     return GeoJSONLoader.defaultLineWidth;
 }
 
-function defaultGetFillColorCallback( geojson )
+function defaultGetFillColorCallback( geojson: GeoJSON.FeatureJson )
 {
     return GeoJSONLoader.defaultFillColor;
 }
 
 
-function defaultGetPointFGColorCallback( geojson )
+function defaultGetPointFGColorCallback( geojson: GeoJSON.FeatureJson )
 {
     return GeoJSONLoader.defaultPointFGColor;
 }
 
-function defaultGetPointBGColorCallback( geojson )
+function defaultGetPointBGColorCallback( geojson: GeoJSON.FeatureJson )
 {
     return GeoJSONLoader.defaultPointBGColor;
 }
 
-function defaultGetPointSizeCallback( geojson )
+function defaultGetPointSizeCallback( geojson: GeoJSON.FeatureJson )
 {
     return GeoJSONLoader.defaultPointSize;
 }
 
-function defaultGetPointIconIdCallback( geojson )
+function defaultGetPointIconIdCallback( geojson: GeoJSON.FeatureJson )
 {
     return GeoJSONLoader.defaultPointIconId;
 }
 
 
-function defaultGetAltitudeModeCallback( geojson )
+function defaultGetAltitudeModeCallback( geojson: GeoJSON.FeatureJson )
 {
     return AltitudeMode.ABSOLUTE;
 }
-function defaultGetAltitudeCallback( geojson )
+function defaultGetAltitudeCallback( geojson: GeoJSON.FeatureJson )
 {
-    return null;
+    return undefined;
 }
 
-function defaultGetExtrudedHeightCallback( geojson )
+function defaultGetExtrudedHeightCallback( geojson: GeoJSON.FeatureJson )
 {
     return GeoJSONLoader.defaultExtrudedHeight;
 }
+
 
 
 var TYPES = {
@@ -457,5 +514,7 @@ var GEOMETRY_TYPES = {
 };
 
 var SUPPORTED_GEOMETRY_TYPES = Object.values( GEOMETRY_TYPES );
+
+
 
 export default GeoJSONLoader;
