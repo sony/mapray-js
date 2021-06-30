@@ -11,3 +11,6 @@ package-lock.json
 .vscode
 .DS_Store
 .vscode
+
+## pyenv
+.python-version

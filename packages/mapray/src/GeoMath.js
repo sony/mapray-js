@@ -448,6 +448,68 @@ class GeoMath {
 
 
     /**
+     * @summary 位置を変換 (アフィン変換)
+     *
+     * @desc
+     * <p>位置 pos を変換行列 mat により座標変換して dst に代入する。</p>
+     *
+     * <p>mat は pos が想定する座標系から、ある座標系へ位置ベクトルを変換するための
+     * 行列である。</p>
+     *
+     * @param mat {mapray.Matrix}   変換行列
+     * @param pos {mapray.Vector3}  位置
+     * @param dst {mapray.Vector3}  結果を代入するベクトル
+     *
+     * @return {mapray.Vector4}  dst
+     */
+    static
+    transformPosition_A( mat, pos, dst )
+    {
+        const m = mat;
+        const x = pos[0];
+        const y = pos[1];
+        const z = pos[2];
+
+        dst[0] = x*m[ 0] + y*m[ 4] + z*m[ 8] + m[12];
+        dst[1] = x*m[ 1] + y*m[ 5] + z*m[ 9] + m[13];
+        dst[2] = x*m[ 2] + y*m[ 6] + z*m[10] + m[14];
+
+        return dst;
+    }
+
+
+    /**
+     * @summary 方向を変換 (アフィン変換)
+     *
+     * @desc
+     * <p>方向 dir を変換行列 mat により座標変換して dst に代入する。</p>
+     *
+     * <p>mat は dir が想定する座標系から、ある座標系へ方向ベクトルを変換するための
+     * 行列である。</p>
+     *
+     * @param mat {mapray.Matrix}   変換行列
+     * @param dir {mapray.Vector3}  方向
+     * @param dst {mapray.Vector3}  結果を代入するベクトル
+     *
+     * @return {mapray.Vector4}  dst
+     */
+    static
+    transformDirection_A( mat, dir, dst )
+    {
+        const m = mat;
+        const x = dir[0];
+        const y = dir[1];
+        const z = dir[2];
+
+        dst[0] = x*m[ 0] + y*m[ 4] + z*m[ 8];
+        dst[1] = x*m[ 1] + y*m[ 5] + z*m[ 9];
+        dst[2] = x*m[ 2] + y*m[ 6] + z*m[10];
+
+        return dst;
+    }
+
+
+    /**
      * @summary 平面ベクトルを変換 (アフィン変換)
      * @desc
      * <p>mat には平面ベクトルを変換する行列を指定する。
@@ -472,6 +534,31 @@ class GeoMath {
         dst[1] = x*m[ 4] + y*m[ 5] + z*m[ 6];
         dst[2] = x*m[ 8] + y*m[ 9] + z*m[10];
         dst[3] = x*m[12] + y*m[13] + z*m[14] + w;
+
+        return dst;
+    }
+
+
+    /**
+     * @summary 平面ベクトルの正規化を計算
+     *
+     * 法線部 (最初の 3 要素) の長さが 1 になるように平面ベクトル plane を正規化し、dst に代入する。
+     *
+     * @param {mapray.Vector4} plane  平面ベクトル
+     * @param {mapray.Vector4} dst    正規化された値を代入するベクトル
+     *
+     * @return {mapray.Vector4}  dst
+     */
+    static normalizePlane( plane, dst )
+    {
+        let x = plane[0];
+        let y = plane[1];
+        let z = plane[2];
+        let ilen = 1 / Math.sqrt( x*x + y*y + z*z );  // 長さの逆数
+
+        for ( let i = 0; i < 4; ++i ) {
+            dst[i] = plane[i] * ilen;
+        }
 
         return dst;
     }

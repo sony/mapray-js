@@ -7,6 +7,8 @@ import postcss from 'rollup-plugin-postcss'
 import resolve from 'rollup-plugin-node-resolve'
 import commonjs from 'rollup-plugin-commonjs'
 import strip from '@rollup/plugin-strip';
+import { base64 } from 'rollup-plugin-base64';
+
 import { addLocalSettings } from '../rollup.config.local.js'
 
 var outdir = "dist/"
@@ -54,6 +56,11 @@ const getPluginsConfig = (prod) => {
                     ]
             })
         : null),
+        (process.env.local ?
+            base64({
+                include: '../../**/*.wasm'
+            })
+        : null),
         babel({
             exclude: 'node_modules/**'
         })
@@ -79,9 +86,9 @@ const getPluginsConfig = (prod) => {
 const config = (build) => {
     const bundle = {
         input: 'src/index.js',
-        output: { 
-            file: outdir+'bundle.js', 
-            format: 'iife', 
+        output: {
+            file: outdir+'bundle.js',
+            format: 'iife',
             indent: false,
             sourcemap: true
         }

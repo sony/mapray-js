@@ -218,6 +218,10 @@ class AbstractRenderStage {
             }
         }
 
+        // すべての B3D タイルの描画
+        this._viewer.b3d_collection.draw( this );
+
+        // ポイントクラウドを描画
         this._draw_point_cloud();
 
         // モデルシーン描画
@@ -399,6 +403,7 @@ class RenderStage extends AbstractRenderStage {
 
         // フレーム終了処理
         this._globe.endFrame();
+        this._viewer.b3d_collection.endFrame();
         this._tile_texture_cache.endFrame();
         this._viewer.layers.endFrame();
     }

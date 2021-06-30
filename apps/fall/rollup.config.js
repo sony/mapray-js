@@ -8,6 +8,7 @@ import resolve from 'rollup-plugin-node-resolve'
 import commonjs from 'rollup-plugin-commonjs'
 import strip from '@rollup/plugin-strip';
 import { addLocalSettings } from '../rollup.config.local.js'
+import { base64 } from 'rollup-plugin-base64';
 
 var outdir = "dist/"
 
@@ -43,6 +44,11 @@ const getPluginsConfig = (prod) => {
                         '../../**/*.vert',
                         '../../**/*.frag',
                     ]
+            })
+        : null),
+        (process.env.local ?
+            base64({
+                include: '../../**/*.wasm'
             })
         : null),
         babel({

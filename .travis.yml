@@ -1,3 +1,4 @@
+dist: bionic
 language: node_js
 node_js:
   - "12.13.1"
@@ -8,14 +9,31 @@ git:
 cache:
   yarn: true
 
+env:
+  EMSDK=$HOME/emsdk
+
 before_install:
+  - git clone --branch=2.0.9 --depth=1 https://github.com/emscripten-core/emsdk.git $EMSDK
+
+install:
   - npm install -g firebase-tools
+  ## Install emscripten
+  - cd $EMSDK
+  - ./emsdk install latest
+  - ./emsdk activate latest
+  - git apply -p1 $TRAVIS_BUILD_DIR/packages/mapray/wasm/emsdk.patch
+
+before_script:
+  - source $EMSDK/emsdk_env.sh
+  - cd $TRAVIS_BUILD_DIR
+  - yarn install
 
 script:
   - yarn test
   - echo "yarn test finished"
-  - yarn build
   - echo "TRAVIS_BUILD_DIR:"$TRAVIS_BUILD_DIR
+  - bash $TRAVIS_BUILD_DIR/packages/mapray/wasm/rebuild_and_install.sh
+  - yarn build
   - cd $TRAVIS_BUILD_DIR/packages/mapray
   - yarn pack
   - cd $TRAVIS_BUILD_DIR/packages/ui
