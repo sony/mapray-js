@@ -68,9 +68,12 @@ class MaprayApi extends HTTP {
     constructor( option = {} )
     {
         super();
-        var basePath = option.basePath.endsWith("/") ? option.basePath.slice(0, -1) : option.basePath;
+        var basePath = MaprayApi.DEFAULT_BASE_PATH;
+        if (option.basePath) {
+            basePath = option.basePath.endsWith("/") ? option.basePath.slice(0, -1) : option.basePath;
+        }
         this._option = {
-            basePath: basePath || DEFAULT_BASE_PATH,
+            basePath: basePath,
             version: option.version,
             token: option.token,
             userId: option.userId
@@ -503,7 +506,7 @@ class MaprayApi extends HTTP {
 
 
 
-MaprayApi.DEFAULT_BASE_PATH = "https://cloud.mapray.com";
+MaprayApi.DEFAULT_BASE_PATH = "https://api.mapray.com";
 
 
 
