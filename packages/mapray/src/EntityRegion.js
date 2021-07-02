@@ -52,7 +52,7 @@ class EntityRegion {
     /**
      * @summary 複数の位置を追加
      *
-     * @param {number[]} points      頂点配列 (経度, 緯度, ...)
+     * @param {number[]|Float64Array} points      頂点配列 (経度, 緯度, ...)
      * @param {number}   offset      先頭インデックス
      * @param {number}   stride      ストライド
      * @param {number}   num_points  頂点数

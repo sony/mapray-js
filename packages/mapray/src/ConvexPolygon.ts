@@ -1,18 +1,20 @@
 /**
- * @summary 凸多角形
+ * 凸多角形
  *
- * @memberof mapray
- *
- * @private
+ * @internal
  */
 class ConvexPolygon {
 
+    private _vertices: Float64Array;
+
+    private _num_vertices: number;
+
     /**
-     * <p>3 点またはそれ以上の頂点座標を反時計回りで指定する。</p>
+     * 3 点またはそれ以上の頂点座標を反時計回りで指定する。
      *
-     * @param {iterable.<number>} coords  頂点座標の並び x0, y0, x1, y1, ...
+     * @param coords  頂点座標の並び x0, y0, x1, y1, ...
      */
-    constructor( coords )
+    constructor( coords: number[] )
     {
         this._vertices     = Float64Array.from( coords );
         this._num_vertices = this._vertices.length / 2;
@@ -20,47 +22,37 @@ class ConvexPolygon {
 
 
     /**
-     * @summary 凸多角形の頂点数
-     *
-     * @type {number}
-     *
-     * @readonly
+     * 凸多角形の頂点数
      */
-    get num_vertices()
+    get num_vertices(): number
     {
         return this._num_vertices;
     }
 
 
     /**
-     * @summary 凸多角形の頂点座標配列
+     * 凸多角形の頂点座標配列
      *
-     * @desc
-     * <p>反時計回りで格納された頂点座標の配列 [x0, y0, x1, y1, ...] を返す。<p>
-     * <p>返された配列の内容は this に対して変更操作が行われるまで有効である。<p>
-     *
-     * @type {number[]}
-     *
-     * @readonly
+     * - 反時計回りで格納された頂点座標の配列 [x0, y0, x1, y1, ...] を返す。
+     * - 返された配列の内容は this に対して変更操作が行われるまで有効である。
      */
-    get vertices()
+    get vertices(): Float64Array
     {
         return this._vertices;
     }
 
 
     /**
-     * @summary 矩形から凸多角形を生成
+     * 矩形から凸多角形を生成
      *
-     * @param {number} x_min  x 座標の最小値
-     * @param {number} y_min  y 座標の最小値
-     * @param {number} x_max  x 座標の最大値
-     * @param {number} y_max  y 座標の最大値
+     * @param x_min  x 座標の最小値
+     * @param y_min  y 座標の最小値
+     * @param x_max  x 座標の最大値
+     * @param y_max  y 座標の最大値
      *
-     * @return {mapray.ConvexPolygon}  凸多角形
+     * @return 凸多角形
      */
-    static
-    createByRectangle( x_min, y_min, x_max, y_max )
+    static createByRectangle( x_min: number, y_min: number, x_max: number, y_max: number ): ConvexPolygon
     {
         // 入力座標配列
         const coords = [
@@ -76,14 +68,13 @@ class ConvexPolygon {
 
 
     /**
-     * @summary 妥当性を検査
+     * 妥当性を検査
      *
-     * @desc
-     * <p>this が妥当な凸多角形かどうかを確かめる。</p>
+     * this が妥当な凸多角形かどうかを確かめる。
      *
-     * @return {boolean}  this が妥当なとき true, それ以外のとき false
+     * @return this が妥当なとき true, それ以外のとき false
      */
-    isValid()
+    isValid(): boolean
     {
         if ( this._num_vertices < 3 ) {
             // 3 頂点未満の多角形は非対応
@@ -146,20 +137,19 @@ class ConvexPolygon {
 
 
     /**
-     * @summary 交差凸多角形を取得
+     * 交差凸多角形を取得
      *
-     * @desc
-     * <p>凸多角形 this と凸多角形 polygon が交差すれば、交差部分の凸多角形を返す。</p>
-     * <p>this と polygon が交差しないときは null を返す。</p>
-     * <p>this が polygon を包含するときは polygon を返す可能性がある。</p>
+     * - 凸多角形 this と凸多角形 polygon が交差すれば、交差部分の凸多角形を返す。
+     * - this と polygon が交差しないときは null を返す。
+     * - this が polygon を包含するときは polygon を返す可能性がある。
      *
-     * @param {ConvexPolygon} polygon  凸多角形
+     * @param polygon  凸多角形
      *
-     * @return {?ConvexPolygon}  交差凸多角形、ただし交差しないときは null
+     * @return 交差凸多角形、ただし交差しないときは null
      *
      * @throws Error  凸多角形の切り取りに失敗
      */
-    getIntersection( polygon )
+    getIntersection( polygon: ConvexPolygon ): ConvexPolygon | null
     {
         try {
             return this._clip_by_polygon( polygon );
@@ -171,18 +161,15 @@ class ConvexPolygon {
 
 
     /**
-     * @summary 凸多角形同士に交差があるかどうか？
+     * 凸多角形同士に交差があるかどうか？
      *
-     * @desc
-     * <p>凸多角形 this と凸多角形 polygon が交差するかどうかを返す。</p>
+     * 凸多角形 this と凸多角形 polygon が交差するかどうかを返す。
      *
-     * @param {ConvexPolygon} polygon  凸多角形
-     *
-     * @return {boolean}  交差するとき true, 交差しないとき false
-     *
+     * @param polygon  凸多角形
+     * @return 交差するとき true, 交差しないとき false
      * @throws Error  交差の確認に失敗
      */
-    hasIntersection( polygon )
+    hasIntersection( polygon: ConvexPolygon ): boolean
     {
         try {
             return this._clip_by_polygon( polygon ) !== null;
@@ -194,16 +181,14 @@ class ConvexPolygon {
 
 
     /**
-     * @summary 凸多角形を包含するか？
+     * 凸多角形を包含するか？
      *
-     * @desc
-     * <p>凸多角形 this は凸多角形 polygon を包含するかどうかを返す。</p>
+     * 凸多角形 this は凸多角形 polygon を包含するかどうかを返す。
      *
-     * @param {ConvexPolygon} polygon  凸多角形
-     *
-     * @return {boolean}  this が polygon を包含するとき true, それ以外は false
+     * @param polygon  凸多角形
+     * @return this が polygon を包含するとき true, それ以外は false
      */
-    includes( polygon )
+    includes( polygon: ConvexPolygon ): boolean
     {
         for ( let ei = 0; ei < this._num_vertices; ++ei ) {
             let si = (ei != 0) ? ei - 1 : this._num_vertices - 1;
@@ -239,24 +224,19 @@ class ConvexPolygon {
 
 
     /**
-     * @summary 凸多角形により凸多角形を切り取る
+     * 凸多角形により凸多角形を切り取る
      *
-     * @desc
-     * <p>凸多角形 this により凸多角形 polygon を切り取った凸多角形を返す。</p>
-     * <p>this が polygon を包含するときは polygon を返す。</p>
-     * <p>this と polygon が交差しないときは null を返す。</p>
+     * - 凸多角形 this により凸多角形 polygon を切り取った凸多角形を返す。
+     * - this が polygon を包含するときは polygon を返す。
+     * - this と polygon が交差しないときは null を返す。
      *
-     * @param {ConvexPolygon} polygon  凸多角形
-     *
-     * @return {?ConvexPolygon}  凸多角形または null
-     *
+     * @param polygon  凸多角形
+     * @return 凸多角形または null
      * @throws Error  凸多角形の切り取りに失敗
-     *
-     * @private
      */
-    _clip_by_polygon( polygon )
+    private _clip_by_polygon( polygon: ConvexPolygon ): ConvexPolygon | null
     {
-        let current = polygon;
+        let current: ConvexPolygon | null = polygon;
 
         for ( let ei = 0; ei < this._num_vertices; ++ei ) {
             let si = (ei != 0) ? ei - 1 : this._num_vertices - 1;
@@ -285,24 +265,21 @@ class ConvexPolygon {
 
 
     /**
-     * @summary 半空間により凸多角形を切り取る
+     * 半空間により凸多角形を切り取る
      *
-     * @desc
-     * <p>半空間により凸多角形 this を切り取ったり、その凸多角形を返す。</p>
-     * <p>半空間が this を内包するときは this を返す。</p>
-     * <p>半空間と this が交差しないときは null を返す。</p>
+     * - 半空間により凸多角形 this を切り取ったり、その凸多角形を返す。
+     * - 半空間が this を内包するときは this を返す。
+     * - 半空間と this が交差しないときは null を返す。
      *
-     * @param {number} nx    半空間の内側方向の x 座標
-     * @param {number} ny    半空間の内側方向の y 座標
-     * @param {number} dval  判定用数値
+     * @param nx    半空間の内側方向の x 座標
+     * @param ny    半空間の内側方向の y 座標
+     * @param dval  判定用数値
      *
-     * @return {?ConvexPolygon}  凸多角形または null
+     * @return 凸多角形または null
      *
      * @throws Error  半空間による切り取りに失敗
-     *
-     * @private
      */
-    _clip_by_halfspace( nx, ny, dval )
+    private _clip_by_halfspace( nx: number, ny: number, dval: number ): ConvexPolygon | null
     {
         // 半空間の境界線からの距離範囲
         let dist_min =  Number.MAX_VALUE;
@@ -341,24 +318,22 @@ class ConvexPolygon {
 
 
     /**
-     * @summary 半空間により凸多角形を切り取る (一部交差前提)
+     * 半空間により凸多角形を切り取る (一部交差前提)
      *
-     * @desc
-     * <p>半空間により凸多角形 this を切り取ったり、その凸多角形を返す。</p>
-     * <p>このメソッドは凸多角形 this の境界線と半空間の境界線が異なる
-     *    2 点で交差していることが前提になっている。</p>
+     * 半空間により凸多角形 this を切り取ったり、その凸多角形を返す。
      *
-     * @param {number} nx    半空間の内側方向の x 座標
-     * @param {number} ny    半空間の内側方向の y 座標
-     * @param {number} dval  判定用数値
+     * このメソッドは凸多角形 this の境界線と半空間の境界線が異なる
+     *    2 点で交差していることが前提になっている。
      *
-     * @return {ConvexPolygon}  凸多角形
+     * @param nx    半空間の内側方向の x 座標
+     * @param ny    半空間の内側方向の y 座標
+     * @param dval  判定用数値
+     *
+     * @return 凸多角形
      *
      * @throws Error  半空間による切り取りに失敗
-     *
-     * @private
      */
-    _clip_by_crossed_halfspace( nx, ny, dval )
+    private _clip_by_crossed_halfspace( nx: number, ny: number, dval: number ): ConvexPolygon
     {
         let [ce0, ce1] = this._get_cross_edges_by_crossed_halfspace_boundary( nx, ny, dval );
 
@@ -387,31 +362,28 @@ class ConvexPolygon {
 
 
     /**
-     * @summary 半空間境界線と交差する2稜線のデータを取得 (2点交差前提)
+     * 半空間境界線と交差する2稜線のデータを取得 (2点交差前提)
      *
-     * @desc
-     * <p>2要素の配列を返す。</p>
-     * <p>最初の要素は切り取りにより前方が残される稜線のデータである。</p>
-     * <p>次の要素は切り取りにより後方が残される稜線のデータである。</p>
+     * - 2要素の配列を返す。
+     * - 最初の要素は切り取りにより前方が残される稜線のデータである。
+     * - 次の要素は切り取りにより後方が残される稜線のデータである。
      *
-     * <p>配列の各要素のオブジェクトプロパティは次のようになる。</p>
-     * <pre>
-     *   ei: 境界線と交差した稜線の終点インデックス
-     *   qx: 境界線と稜線が交差した位置の x 座標
-     *   qy: 境界線と稜線が交差した位置の y 座標
-     * </pre>
+     * 配列の各要素のオブジェクトプロパティは次のようになる。
      *
-     * @param {number} nx    半空間の内側方向の x 座標
-     * @param {number} ny    半空間の内側方向の y 座標
-     * @param {number} dval  判定用数値
+     * | ei | 境界線と交差した稜線の終点インデックス |
+     * | qx | 境界線と稜線が交差した位置の x 座標 |
+     * | qy | 境界線と稜線が交差した位置の y 座標 |
      *
-     * @return {object[]}  2稜線の交差データ
+     *
+     * @param nx    半空間の内側方向の x 座標
+     * @param ny    半空間の内側方向の y 座標
+     * @param dval  判定用数値
+     *
+     * @return 2稜線の交差データ
      *
      * @throws Error  2点の交差が見つからなかった
-     *
-     * @private
      */
-    _get_cross_edges_by_crossed_halfspace_boundary( nx, ny, dval )
+    private _get_cross_edges_by_crossed_halfspace_boundary( nx: number, ny: number, dval: number ): CrossEdgesByCrossedHalfspaceBoundary[]
     {
         let cross_edges = new Array( 2 );
 
@@ -454,6 +426,14 @@ class ConvexPolygon {
     }
 
 }
+
+
+interface CrossEdgesByCrossedHalfspaceBoundary {
+    ei: number,
+    qx: number,
+    qy: number,
+}
+
 
 
 export default ConvexPolygon;
