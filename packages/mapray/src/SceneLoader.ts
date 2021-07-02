@@ -228,7 +228,7 @@ class SceneLoader extends Loader {
                     entity = new ModelEntity( scene, { json: item, refs: this._references } as ModelEntity.Option );
                     break;
                 case "polygon":
-                    entity = new PolygonEntity( scene, { json: item, refs: this._references } );
+                    entity = new PolygonEntity( scene, { json: item, refs: this._references } as PolygonEntity.Option);
                     break;
                 default:
                     console.error( "mapray: unknown entity type: " + type );
