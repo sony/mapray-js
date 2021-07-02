@@ -1,8 +1,9 @@
 import Entity from "./Entity";
 import Primitive from "./Primitive";
 import Mesh from "./Mesh";
+import Scene from "./Scene";
 import PolygonMaterial from "./PolygonMaterial";
-import GeoMath from "./GeoMath";
+import GeoMath, { Vector3, Matrix } from "./GeoMath";
 import GeoPoint from "./GeoPoint";
 import GeoRegion from "./GeoRegion";
 import AltitudeMode from "./AltitudeMode";
@@ -12,23 +13,36 @@ import QAreaManager from "./QAreaManager";
 import ConvexPolygon from "./ConvexPolygon";
 import AreaUtil from "./AreaUtil";
 import Type from "./animation/Type";
-import { RenderTarget } from "./RenderStage";
+import RenderStage from "./RenderStage";
 
 
 /**
- * @summary 多角形エンティティ
- * @memberof mapray
- * @extends mapray.Entity
+ * 多角形エンティティ
  */
 class PolygonEntity extends Entity {
 
+    private _extruded_height: number;
+
+    private _color: Vector3;
+
+    private _opacity: number;
+
+    private _boundaries: PolygonEntity.Boundary[];
+
+    private _position?: GeoPoint;
+
+    private _producer: PolygonEntity.PrimitiveProducer | PolygonEntity.FlakePrimitiveProducer;
+
+    private _is_flake_mode: boolean;
+
+
     /**
-     * @param {mapray.Scene} scene        所属可能シーン
+     * @param scene        所属可能シーン
      * @param {object}       [opts]       オプション集合
      * @param {object}       [opts.json]  生成情報
      * @param {object}       [opts.refs]  参照辞書
      */
-    constructor( scene, opts )
+    constructor( scene: Scene, opts: PolygonEntity.Option = {} )
     {
         super( scene, opts );
 
@@ -38,16 +52,16 @@ class PolygonEntity extends Entity {
 
         // 頂点管理
         this._boundaries = [];    // Boundary のリスト
-        this._position   = null;  // 中央付近の GeoPoint
+        this._position   = undefined;  // 中央付近の GeoPoint
 
         // this._producer
         // this._is_flake_mode
         if ( this.altitude_mode === AltitudeMode.CLAMP ) {
-            this._producer = new FlakePrimitiveProducer( this );
+            this._producer = new PolygonEntity.FlakePrimitiveProducer( this );
             this._is_flake_mode = true;
         }
         else {
-            this._producer = new PrimitiveProducer( this );
+            this._producer = new PolygonEntity.PrimitiveProducer( this );
             this._is_flake_mode = false;
         }
 
@@ -61,10 +75,9 @@ class PolygonEntity extends Entity {
 
 
     /**
-     * @summary 押し出し量（0より大きい値）
-     * @type {number}
+     * 押し出し量（0より大きい値）
      */
-    set extruded_height( value )
+    set extruded_height( value: number )
     {
         var prev = this._extruded_height;
 
@@ -76,41 +89,41 @@ class PolygonEntity extends Entity {
 
 
     /**
-     * @summary 押し出し量
-     * @type {number}
+     * 押し出し量
      */
-    get extruded_height() { return this._extruded_height; }
+    get extruded_height(): number { return this._extruded_height; }
 
+
+    get boundaries(): PolygonEntity.Boundary[] {
+        return this._boundaries;
+    }
 
     /**
-     * @override
      */
-    getPrimitiveProducer()
+    override getPrimitiveProducer()
     {
-        return (!this._is_flake_mode) ? this._producer : null;
+        return (!this._is_flake_mode) ? this._producer as PolygonEntity.PrimitiveProducer : undefined;
     }
 
 
     /**
-     * @override
      */
-    getFlakePrimitiveProducer()
+    override getFlakePrimitiveProducer()
     {
-        return (this._is_flake_mode) ? this._producer : null;
+        return (this._is_flake_mode) ? this._producer as PolygonEntity.FlakePrimitiveProducer : undefined;
     }
 
 
     /**
-     * @override
      */
-    onChangeAltitudeMode( prev_mode )
+    override onChangeAltitudeMode( prev_mode: AltitudeMode )
     {
         if ( this.altitude_mode === AltitudeMode.CLAMP ) {
-            this._producer = new FlakePrimitiveProducer( this );
+            this._producer = new PolygonEntity.FlakePrimitiveProducer( this );
             this._is_flake_mode = true;
         }
         else {
-            this._producer = new PrimitiveProducer( this );
+            this._producer = new PolygonEntity.PrimitiveProducer( this );
             this._is_flake_mode = false;
         }
     }
@@ -118,10 +131,8 @@ class PolygonEntity extends Entity {
 
     /**
      * アニメーションの BindingBlock を初期化
-     *
-     * @private
      */
-    _setupAnimationBindingBlock()
+    private _setupAnimationBindingBlock()
     {
         const block = this.animation;  // 実体は EasyBindingBlock
 
@@ -131,31 +142,31 @@ class PolygonEntity extends Entity {
         // パラメータ名: color
         // パラメータ型: vector3
         //   色
-        block.addEntry( "color", [vector3], null, value => {
+        block.addEntry( "color", [vector3], null, (value: Vector3) => {
             this.setColor( value );
         } );
         
         // パラメータ名: opacity
         // パラメータ型: number
         //   不透明度
-        block.addEntry( "opacity", [number], null, value => {
+        block.addEntry( "opacity", [number], null, (value: number) => {
             this.setOpacity( value );
         } );
         
         // パラメータ名: height
         // パラメータ型: number
         //   線の太さ
-        block.addEntry( "height", [number], null, value => {
+        block.addEntry( "height", [number], null, (value: number) => {
             this.setExtrudedHeight( value );
         } );
     }
 
 
     /**
-     * @summary 基本色を設定
-     * @param {mapray.Vector3} color  基本色
+     * 基本色を設定
+     * @param color  基本色
      */
-    setColor( color )
+    setColor( color: Vector3 )
     {
         if ( this._color[0] !== color[0] ||
              this._color[1] !== color[1] ||
@@ -167,10 +178,10 @@ class PolygonEntity extends Entity {
 
 
     /**
-     * @summary 不透明度を設定
-     * @param {number} opacity  不透明度
+     * 不透明度を設定
+     * @param opacity  不透明度
      */
-    setOpacity( opacity )
+    setOpacity( opacity: number )
     {
         if ( this._opacity !== opacity ) {
             this._opacity = opacity;
@@ -180,50 +191,47 @@ class PolygonEntity extends Entity {
 
 
     /**
-     * @summary 押し出し量を設定
-     * @param {number} opacity  押し出し量
+     * 押し出し量を設定
+     * @param height  押し出し量
      */
-    setExtrudedHeight( height )
+    setExtrudedHeight( height: number )
     {
         this.extruded_height = height;
     }
 
 
     /**
-     * @summary 外側境界を追加
+     * 外側境界を追加
      *
-     * @desc
-     * <p>points は [lon_0, lat_0, alt_0, lon_1, lat_1, alt_1, ...] のような形式で配列を与える。</p>
+     * points は [lon_0, lat_0, alt_0, lon_1, lat_1, alt_1, ...] のような形式で配列を与える。
      *
-     * @param {number[]} points  頂点の配列
+     * @param points  頂点の配列
      */
-    addOuterBoundary( points )
+    addOuterBoundary( points: number[] )
     {
         this._addBoundary( points, false );
     }
 
 
     /**
-     * @summary 内側境界を追加
+     * 内側境界を追加
      *
-     * @desc
-     * <p>points は [lon_0, lat_0, alt_0, lon_1, lat_1, alt_1, ...] のような形式で配列を与える。</p>
+     * points は [lon_0, lat_0, alt_0, lon_1, lat_1, alt_1, ...] のような形式で配列を与える。
      *
-     * @param {number[]} points  頂点の配列
+     * @param points  頂点の配列
      */
-    addInnerBoundary( points )
+    addInnerBoundary( points: number[] )
     {
         this._addBoundary( points, true );
     }
 
 
     /**
-     * @summary すべての頂点のバウンディングを算出
+     * すべての頂点のバウンディングを算出
      *
-     * @override
-     * @return {mapray.GeoRegion}  バウンディング情報を持ったGeoRegion
+     * @return バウンディング情報を持ったGeoRegion
      */
-    getBounds()
+    override getBounds()
     {
         const region = new GeoRegion();
         for ( let bo of this._boundaries ) {
@@ -233,19 +241,18 @@ class PolygonEntity extends Entity {
     }
 
     /**
-     * @summary 境界を追加
+     * 境界を追加
      *
-     * @desc
-     * <p>addOuterBoundary(), addInnerBoundary() の実装である。</p>
+     * addOuterBoundary(), addInnerBoundary() の実装である。
      *
-     * @param {number[]} points  頂点の配列
+     * @param points   頂点の配列
+     * @param is_inner 内側の境界を示すかを示すフラグ
      *
-     * @private
      */
-    _addBoundary( points, is_inner )
+    private _addBoundary( points: number[], is_inner: boolean )
     {
-        this._boundaries.push( new Boundary( points, is_inner ) );
-        this._position = null;
+        this._boundaries.push( new PolygonEntity.Boundary( points, is_inner ) );
+        this._position = undefined;
 
         // 境界の変更を通知
         this._producer.onChangeBoundary();
@@ -253,33 +260,34 @@ class PolygonEntity extends Entity {
 
 
     /**
-     * @summary 専用マテリアルを取得
-     * @private
+     * 専用マテリアルを取得
      */
-    _getMaterial( render_target )
+    private _getMaterial( render_target: RenderStage.RenderTarget )
     {
         var scene = this.scene;
-        if ( render_target === RenderTarget.SCENE ) {
+        if ( render_target === RenderStage.RenderTarget.SCENE ) {
             if ( !scene._PolygonEntity_material ) {
                 // scene にマテリアルをキャッシュ
                 scene._PolygonEntity_material = new PolygonMaterial( scene.glenv );
             }
             return scene._PolygonEntity_material;
         }
-        else if (render_target === RenderTarget.RID) {
+        else if (render_target === RenderStage.RenderTarget.RID) {
             if ( !scene._PolygonEntity_material_pick ) {
                 // scene にマテリアルをキャッシュ
                 scene._PolygonEntity_material_pick = new PolygonMaterial( scene.glenv, { ridMaterial: true } );
             }
             return scene._PolygonEntity_material_pick;
         }
+        else {
+            throw new Error("unknown render target: " + render_target);
+        }
     }
 
 
     /**
-     * @private
      */
-    _setupByJson( json )
+    private _setupByJson( json: PolygonEntity.Json )
     {
         // json.boundaries
         for ( let boundary of json.boundaries ) {
@@ -304,22 +312,17 @@ class PolygonEntity extends Entity {
 
 
     /**
-     * @summary 中央位置を取得
+     * 中央位置を取得
      *
-     * @desc
-     * <p>中央位置を計算して返す。多角形が存在しないときは null を返す。</p>
+     * 中央位置を計算して返す。多角形が存在しないときは null を返す。
      *
-     * <p>中央位置が変化する可能性があるときは this._position にを null を設定すること。</p>
+     * 中央位置が変化する可能性があるときは this._position にを null を設定すること。
      *
-     * <pre>
      * 入力: this._boundaries
-     * </pre>
      *
-     * @return {mapray.GeoPoint}  中央位置 (高度は 0) または null
-     *
-     * @private
+     * @return 中央位置 (高度は 0) または null
      */
-    _getPosition()
+    private _getPosition(): GeoPoint | undefined
     {
         if ( this._position !== null ) {
             // キャッシュさている値を返す
@@ -328,7 +331,7 @@ class PolygonEntity extends Entity {
 
         if ( this._boundaries.length == 0 ) {
             // 多角形が存在しない
-            return null;
+            return undefined;
         }
 
         var min_lon =  Number.MAX_VALUE;
@@ -359,11 +362,9 @@ class PolygonEntity extends Entity {
 
 
     /**
-     * @summary すべての境界の頂点数の合計を取得
-     *
-     * @private
+     * すべての境界の頂点数の合計を取得
      */
-    _countNumPointsOnBoundaries()
+    private _countNumPointsOnBoundaries()
     {
         let num_points = 0;
 
@@ -376,11 +377,10 @@ class PolygonEntity extends Entity {
 
 
     /**
-     * @summary 結合された境界点列を取得
-     *
-     * @return {Float64Array}  結合された境界点列
+     * 結合された境界点列を取得
+     * @return 結合された境界点列
      */
-    _getCombinedBoundaryPoints()
+    private _getCombinedBoundaryPoints(): Float64Array
     {
         let points = new Float64Array( 3 * this._countNumPointsOnBoundaries() );
         let offset = 0;
@@ -395,11 +395,11 @@ class PolygonEntity extends Entity {
 
 
     /**
-     * @summary 結合された 2D 境界点列を取得 (高度なし)
+     * 結合された 2D 境界点列を取得 (高度なし)
      *
-     * @return {Float64Array}  結合された 2D 境界点列
+     * @return 結合された 2D 境界点列
      */
-    _getCombinedBoundary2DPoints()
+    private _getCombinedBoundary2DPoints(): Float64Array
     {
         let dst_points = new Float64Array( 2 * this._countNumPointsOnBoundaries() );
         let di = 0;
@@ -418,16 +418,13 @@ class PolygonEntity extends Entity {
 
 
     /**
-     * @summary 三角形リストを生成
+     * 三角形リストを生成
      *
-     * @desc
-     * <p>this.entity._boundaries を三角形に変換してリストを返す。ただし変換に失敗したときは null を返す。</p>
+     * this.entity._boundaries を三角形に変換してリストを返す。ただし変換に失敗したときは null を返す。
      *
-     * @return {Uint32Array}  三角形リストまたは null
-     *
-     * @private
+     * @return 三角形リストまたは null
      */
-    _createTriangles()
+    private _createTriangles(): Uint32Array | null
     {
         let src_points     = this._getCombinedBoundary2DPoints();
         let num_src_points = this._countNumPointsOnBoundaries();
@@ -442,6 +439,7 @@ class PolygonEntity extends Entity {
             for ( let i = 0; i < num_indices; ++i ) {
                 indices[i] = index++;
             }
+            // @ts-ignore
             triangulator.addBoundary( indices );
         }
 
@@ -459,18 +457,70 @@ class PolygonEntity extends Entity {
 }
 
 
+
+namespace PolygonEntity {
+
+
+
+export interface Option extends Entity.Option {
+    json?: PolygonEntity.Json;
+}
+
+
+
+export interface Json extends Entity.Json {
+    color?: Vector3;
+
+    opacity?: number;
+
+    boundaries: BoundaryJson[];
+
+    extruded_height?: number;
+}
+
+
+export interface BoundaryJson {
+    type?: "inner";
+
+    num_points: number;
+
+    points: number[];
+}
+
+
 /**
- * @summary PolygonEntity の PrimitiveProducer
+ * PolygonEntity の PrimitiveProducer
  *
- * @private
+ * @internal
  */
-class PrimitiveProducer extends Entity.PrimitiveProducer {
+export class PrimitiveProducer extends Entity.PrimitiveProducer {
+
+    private _status: Status;
+
+    private _triangles: Uint32Array | null;  // 三角形リスト (Uint32Array)
+
+    private _transform: Matrix;
+
+    private _pivot: Vector3;
+
+    private _bbox: [ min: Vector3, max: Vector3 ];
+
+    private _primitive: Primitive;
+
+    private _pickPrimitive: Primitive;
+
+
+    private _properties: {
+        color: Vector3,
+        opacity: number,
+        lighting: boolean,
+    };
 
 
     /**
-     * @param {mapray.PolygonEntity} entity
+     * @param entity
      */
-    constructor( entity )
+    constructor( entity: PolygonEntity )
     {
         super( entity );
 
@@ -489,14 +539,16 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         };
 
         // プリミティブ
-        var primitive = new Primitive( entity.glenv, null, entity._getMaterial( RenderTarget.SCENE ), this._transform );
+        // @ts-ignore
+        var primitive = new Primitive( entity.scene.glenv, null, entity._getMaterial( RenderStage.RenderTarget.SCENE ), this._transform );
         primitive.pivot      = this._pivot;
         primitive.bbox       = this._bbox;
         primitive.properties = this._properties;
 
         this._primitive = primitive;
 
-        var pickPrimitive = new Primitive( entity.glenv, null, entity._getMaterial( RenderTarget.RID ), this._transform );
+        // @ts-ignore
+        var pickPrimitive = new Primitive( entity.scene.glenv, null, entity._getMaterial( RenderStage.RenderTarget.RID ), this._transform );
         pickPrimitive.pivot      = this._pivot;
         pickPrimitive.bbox       = this._bbox;
         pickPrimitive.properties = this._properties;
@@ -505,22 +557,25 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
     }
 
 
+    getEntity(): PolygonEntity {
+        return super.getEntity() as PolygonEntity;
+    }
+
+
     /**
-     * @override
      */
-    needsElevation()
+    override needsElevation()
     {
-        const owner = this.entity;
+        const owner = this.getEntity();
         return owner.altitude_mode !== AltitudeMode.ABSOLUTE;
     }
 
 
     /**
-     * @override
      */
-    createRegions()
+    override createRegions()
     {
-        let owner = this.entity;
+        let owner = this.getEntity();
 
         if ( this._status === Status.INVALID ) {
             // 多角形なし、または三角形に変換できなかったとき
@@ -531,10 +586,11 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
         var region = new EntityRegion();
 
-        for ( let bo of owner._boundaries ) {
+        for ( let bo of owner.boundaries ) {
             region.addPoints( bo.points, 0, 3, bo.num_points );
         }
 
+        // @ts-ignore
         region.addPoint( owner._getPosition() );
 
         return [region];
@@ -542,9 +598,8 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
 
     /**
-     * @override
      */
-    onChangeElevation( regions )
+    override onChangeElevation( regions: EntityRegion[] )
     {
         if ( this._status === Status.NORMAL ) {
             this._status = Status.MESH_DIRTY;
@@ -553,16 +608,17 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
 
     /**
-     * @override
+     *
      */
-    getPrimitives( stage )
+    override getPrimitives( stage: RenderStage )
     {
         if ( this._status === Status.INVALID ) {
             // 多角形なし、または三角形に変換できなかったとき
             return [];
         }
         else if ( this._status === Status.TRIANGLE_DIRTY ) {
-            this._triangles = this.entity._createTriangles();
+            // @ts-ignore
+            this._triangles = this.getEntity()._createTriangles();
             if ( this._triangles === null ) {
                 // 多角形の三角形化に失敗
                 this._primitive.mesh = null;
@@ -579,12 +635,12 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         this._updatePrimitiveProperties();
 
         this._status = Status.NORMAL;
-        return stage.getRenderTarget() === RenderTarget.SCENE ? [this._primitive] : [this._pickPrimitive];
+        return stage.getRenderTarget() === RenderStage.RenderTarget.SCENE ? [this._primitive] : [this._pickPrimitive];
     }
 
 
     /**
-     * @summary 押し出しモードが変更されたことを通知
+     * 押し出しモードが変更されたことを通知
      */
     onChangeExtruded()
     {
@@ -595,7 +651,7 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
 
     /**
-     * @summary プロパティが変更されたことを通知
+     * プロパティが変更されたことを通知
      */
     onChangeProperty()
     {
@@ -604,7 +660,7 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
 
     /**
-     * @summary 境界が変更されたことを通知
+     * 境界が変更されたことを通知
      */
     onChangeBoundary()
     {
@@ -615,22 +671,20 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
 
     /**
-     * @summary プリミティブの更新
+     * プリミティブの更新
      *
-     * 入力:
-     *   this.entity
-     *   this._triangles
-     * 出力:
-     *   this._transform
-     *   this._pivot
-     *   this._bbox
-     *   this._primitive.mesh
-     *
-     * @private
+     * - 入力:
+     *   - this.entity
+     *   - this._triangles
+     * - 出力:
+     *   - this._transform
+     *   - this._pivot
+     *   - this._bbox
+     *   - this._primitive.mesh
      */
-    _updatePrimitiveMesh()
+    private _updatePrimitiveMesh()
     {
-        var cb_data = new BoundaryConbiner( this.entity );
+        var cb_data = new BoundaryConbiner( this.getEntity() );
 
         // プリミティブの更新
         //   primitive.transform
@@ -647,7 +701,7 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
             vertices: this._createVertices( cb_data ),
             indices:  this._createIndices( cb_data )
         };
-        var mesh = new Mesh( this.entity.scene.glenv, mesh_data );
+        var mesh = new Mesh( this.getEntity().scene.glenv, mesh_data );
 
         // メッシュ設定
         this._primitive.mesh = mesh;
@@ -656,21 +710,18 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
 
     /**
-     * @summary プリミティブの更新
+     * プリミティブの更新
      *
-     * @desc
-     * <pre>
+     * ```
      * 出力:
      *   this._transform
      *   this._pivot
      *   this._bbox
-     * </pre>
+     * ```
      *
      * @param {BoundaryConbiner} cb_data  入力データ
-     *
-     * @private
      */
-    _updateTransformPivotBBox( cb_data )
+    private _updateTransformPivotBBox( cb_data: BoundaryConbiner )
     {
         // 変換行列の更新
         let transform = this._transform;
@@ -731,9 +782,8 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
 
     /**
-     * @summary 頂点配列の生成
+     * 頂点配列の生成
      *
-     * @desc
      * 生成される形式は [Px, Py, Pz, Nx, Ny, Nz, ...] のような形で、それぞれの座標はローカル座標系になる。
      * 配列の頂点データは 2 つの領域で分かれ、上面ポリゴンの頂点配列(S1) → 側面ポリゴンの頂点配列(S2) の順序で格納される。
      * ただし cb_data.lower == null のとき、配列は S1 部分しか設定されない。
@@ -745,13 +795,11 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
      *
      * 入力: this.entity._boundaries
      *
-     * @param {BoundaryConbiner} cb_data  入力データ
+     * @param cb_data  入力データ
      *
-     * @return {Float32Array}  Mesh 用の頂点配列
-     *
-     * @private
+     * @return Mesh 用の頂点配列
      */
-    _createVertices( cb_data )
+    private _createVertices( cb_data: BoundaryConbiner ): Float32Array
     {
         const fpv = 6;  // 1頂点データあたりの float 数
 
@@ -788,7 +836,7 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
             let beg_i = 0;  // bo の最初の頂点のインデックス
 
-            for ( let bo of this.entity._boundaries ) {
+            for ( let bo of this.getEntity().boundaries ) {
                 let end_i = beg_i + bo.num_points;  // bo の最後の頂点のインデックス + 1
 
                 for ( let i = beg_i; i < end_i; ++i ) {
@@ -848,28 +896,26 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
 
     /**
-     * @summary インデックス配列の生成
+     * インデックス配列の生成
      *
      * 入力: this._triangles
      *
-     * @param {BoundaryConbiner} cb_data  入力データ
-     *
-     * @return {Uint32Array}  インデックス配列
-     *
-     * @private
+     * @param cb_data  入力データ
+     * @return インデックス配列
      */
-    _createIndices( cb_data )
+    private _createIndices( cb_data: BoundaryConbiner ): Uint32Array
     {
         // 頂点の並びは _createVertices() を参照
+        const triangles = this._triangles as Uint32Array;
 
-        let num_upper_triangles = this._triangles.length / 3;
+        let num_upper_triangles = triangles.length / 3;
         let num_side_triangles  = cb_data.lower ? 2 * cb_data.num_points : 0;
         let num_bottom_triangles  = cb_data.lower ? num_upper_triangles : 0;
 
         let indices = new Uint32Array( 3 * (num_upper_triangles + num_side_triangles + num_bottom_triangles) );
 
         // 前半に上面のポリゴンを設定
-        indices.set( this._triangles );
+        indices.set( triangles );
 
         // 側面のポリゴンを設定
         if ( cb_data.lower ) {
@@ -891,12 +937,12 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
         // 底面のポリゴンを設定
         if ( cb_data.lower ) {
-            const len =  this._triangles.length / 3;
+            const len =  triangles.length / 3;
             const voffset = cb_data.num_points + 4 * cb_data.num_points;
             for ( let i = 0; i < len; ++i ) {
-                indices[ (num_upper_triangles + num_side_triangles + i) * 3 + 0 ] = this._triangles[ i * 3 + 0 ] + voffset;
-                indices[ (num_upper_triangles + num_side_triangles + i) * 3 + 1 ] = this._triangles[ i * 3 + 2 ] + voffset;
-                indices[ (num_upper_triangles + num_side_triangles + i) * 3 + 2 ] = this._triangles[ i * 3 + 1 ] + voffset;
+                indices[ (num_upper_triangles + num_side_triangles + i) * 3 + 0 ] = triangles[ i * 3 + 0 ] + voffset;
+                indices[ (num_upper_triangles + num_side_triangles + i) * 3 + 1 ] = triangles[ i * 3 + 2 ] + voffset;
+                indices[ (num_upper_triangles + num_side_triangles + i) * 3 + 2 ] = triangles[ i * 3 + 1 ] + voffset;
             }
         }
 
@@ -905,63 +951,79 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
 
     /**
-     * @summary プリミティブのプロパティを更新
+     * プリミティブのプロパティを更新
      *
      * 入力: this.entity
      * 出力: this._properties
-     *
-     * @private
      */
-    _updatePrimitiveProperties()
+    private _updatePrimitiveProperties()
     {
-        let owner = this.entity;
+        let owner = this.getEntity();
         let props = this._properties;
 
-        GeoMath.copyVector3( owner._color, props.color );
+        // @ts-ignore
+        const ownerColor = owner._color;
+        GeoMath.copyVector3( ownerColor, props.color );
+        // @ts-ignore
         props.opacity  = owner._opacity;
-        props.lighting = this.extruded_height !== 0.0;
+        props.lighting = owner.extruded_height !== 0.0;
     }
 
 }
 
 
 /**
- * @summary PolygonEntity の FlakePrimitiveProducer
+ * PolygonEntity の FlakePrimitiveProducer
  *
- * @private
+ * @internal
  */
-class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
+export class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
+
+    private _properties?: {
+        color: Vector3,
+        opacity: number,
+        lighting: boolean,
+    };
+
+    private _material_map: Map<RenderStage.RenderTarget, object>;
+
+    private _area_manager: PolygonAreaManager;
 
     /**
-     * @param {mapray.PolygonEntity} entity
+     * @param entity
      */
-    constructor( entity )
-    {
+    constructor( entity: PolygonEntity ) {
         super( entity );
 
-        this._material_map = Object.keys(RenderTarget).reduce((map, key) => {
-                const render_target = RenderTarget[key];
-                map.set( render_target, entity._getMaterial( render_target ) );
+        this._material_map = new Map<RenderStage.RenderTarget, object>();
+        RenderStage.ListOfRenderTarget.forEach(renderTarget => {
+                // @ts-ignore
+                this._material_map.set( renderTarget, entity._getMaterial( renderTarget ) );
+        });
+        /*
+        this._material_map = Object.entries(RenderStage.RenderTarget).reduce((map: Map<RenderStage.RenderTarget, object>, [ key, value ]: [ key: string, value: RenderStage.RenderTarget ]) => {
+                // @ts-ignore
+                map.set( value, entity._getMaterial( value ) );
                 return map;
-        }, new Map());
-        this._properties   = null;
+        }, new Map<RenderStage.RenderTarget, object>());
+        */
+        this._properties   = undefined;
         this._area_manager = new PolygonAreaManager( entity );
     }
 
 
     /**
-     * @override
+     *
      */
-    getAreaStatus( area )
+    override getAreaStatus( area: Entity.AreaStatus )
     {
         return this._area_manager.getAreaStatus( area );
     }
 
 
     /**
-     * @override
      */
-    createMesh( area, dpows, dem )
+    override createMesh( area: AreaUtil.Area, dpows: number[], dem: any ): Mesh | null
     {
         // ConvexPolygon の配列、または Entity.AreaStatus.FULL
         let polygons = this._area_manager.getAreaContent( area );
@@ -989,21 +1051,24 @@ class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
             indices:  this._createIndices( submeshes )
         };
 
-        return new Mesh( this.entity.scene.glenv, mesh_data );
+        return new Mesh( this.getEntity().scene.glenv, mesh_data );
     }
 
 
     /**
-     * @override
+     *
      */
-    getMaterialAndProperties( stage )
+    override getMaterialAndProperties( stage: RenderStage )
     {
-        if ( this._properties === null ) {
-            let entity = this.entity;
-
+        if ( this._properties === undefined ) {
+            let entity = this.getEntity();
+            // @ts-ignore
+            const color = entity._color;
+            // @ts-ignore
+            const opacity = entity._opacity;
             this._properties = {
-                color:    GeoMath.createVector3f( entity._color ),
-                opacity:  entity._opacity,
+                color:    GeoMath.createVector3f( color ),
+                opacity:  opacity,
                 lighting: false
             };
         }
@@ -1016,7 +1081,7 @@ class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
 
 
     /**
-     * @summary 押し出しモードが変更されたことを通知
+     * 押し出しモードが変更されたことを通知
      */
     onChangeExtruded()
     {
@@ -1025,16 +1090,16 @@ class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
 
 
     /**
-     * @summary プロパティが変更されたことを通知
+     * プロパティが変更されたことを通知
      */
     onChangeProperty()
     {
-        this._properties = null;
+        this._properties = undefined;
     }
 
 
     /**
-     * @summary 境界が変更されたことを通知
+     * 境界が変更されたことを通知
      */
     onChangeBoundary()
     {
@@ -1044,17 +1109,13 @@ class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
 
 
     /**
-     * @summary 頂点配列を生成
+     * 頂点配列を生成
      *
-     * @param {iterable.<Submesh>} submeshes
-     * @param {mapray.Area}        area
-     * @param {mapray.DemBinary}   dem
-     *
-     * @return {Float32Array}
-     *
-     * @private
+     * @param submeshes
+     * @param area
+     * @param dem
      */
-    _createVertices( submeshes, area, dem )
+    private _createVertices( submeshes: Submesh[]|PolygonsSubmesh[], area: AreaUtil.Area, dem: any ): Float32Array
     {
         let  origin = AreaUtil.getCenter( area, GeoMath.createVector3() );
         let sampler = dem.newSampler( area );
@@ -1077,15 +1138,11 @@ class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
 
 
     /**
-     * @summary インデックス配列を生成
+     * インデックス配列を生成
      *
-     * @param {iterable.<Submesh>} submeshes
-     *
-     * @return {Uint32Array}
-     *
-     * @private
+     * @param submeshes
      */
-    _createIndices( submeshes )
+    private _createIndices( submeshes: (Submesh[]|PolygonsSubmesh[]) ): Uint32Array
     {
         // インデックス配列を生成
         let num_triangles = 0;
@@ -1107,24 +1164,22 @@ class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
 
 
     /**
-     * @summary サブメッシュの配列を生成
+     * サブメッシュの配列を生成
      *
-     * <p>polygons は領域と交差する ConvexPolygon の配列である。ただし領域が多角形で覆われているときは
-     * Entity.AreaStatus.FULL になる場合がある。</p>
+     * polygons は領域と交差する ConvexPolygon の配列である。ただし領域が多角形で覆われているときは
+     * Entity.AreaStatus.FULL になる場合がある。
      *
-     * @param {number} x_min  領域の最小 x 座標
-     * @param {number} y_min  領域の最小 y 座標
-     * @param {number} x_max  領域の最大 x 座標
-     * @param {number} y_max  領域の最大 y 座標
-     * @param {number} div_x  領域の x 方向の分割数
-     * @param {number} div_y  領域の y 方向の分割数
-     * @param {iterable.<mapray.ConvexPolygon>|mapray.Entity.AreaStatus} polygons
+     * @param x_min  領域の最小 x 座標
+     * @param y_min  領域の最小 y 座標
+     * @param x_max  領域の最大 x 座標
+     * @param y_max  領域の最大 y 座標
+     * @param div_x  領域の x 方向の分割数
+     * @param div_y  領域の y 方向の分割数
+     * @param polygons
      *
-     * @return {iterable.<Submesh>}  サブメッシュの配列
-     *
-     * @private
+     * @return サブメッシュの配列
      */
-    _createSubmeshes( x_min, y_min, x_max, y_max, div_x, div_y, polygons )
+    private _createSubmeshes( x_min: number, y_min: number, x_max: number, y_max: number, div_x: number, div_y: number, polygons: ((ConvexPolygon[])|Entity.AreaStatus.FULL) ): (Submesh[]|PolygonsSubmesh[])
     {
         if ( polygons === Entity.AreaStatus.FULL ) {
             // 領域内は多角形に覆われている
@@ -1167,30 +1222,27 @@ class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
 
 
     /**
-     * @summary サブメッシュの配列を生成
+     * サブメッシュの配列を生成
      *
-     * @desc
-     * <p>_createSubmeshes() との違いは polygons に Entity.AreaStatus.FULL を指定できない。
-     * また、polygons には領域の外側の多角形が含まれている可能性がある。</p>
+     * _createSubmeshes() との違いは polygons に Entity.AreaStatus.FULL を指定できない。
+     * また、polygons には領域の外側の多角形が含まれている可能性がある。
      *
-     * @param {number} x_min  領域の最小 x 座標
-     * @param {number} y_min  領域の最小 y 座標
-     * @param {number} x_max  領域の最大 x 座標
-     * @param {number} y_max  領域の最大 y 座標
-     * @param {number} div_x  領域の x 方向の分割数
-     * @param {number} div_y  領域の y 方向の分割数
-     * @param {iterable.<mapray.ConvexPolygon>} polygons
+     * @param x_min  領域の最小 x 座標
+     * @param y_min  領域の最小 y 座標
+     * @param x_max  領域の最大 x 座標
+     * @param y_max  領域の最大 y 座標
+     * @param div_x  領域の x 方向の分割数
+     * @param div_y  領域の y 方向の分割数
+     * @param polygons
      *
-     * @return {Submesh[]}  サブメッシュの配列
-     *
-     * @private
+     * @return サブメッシュの配列
      */
-    _create_submeshes_sp( x_min, y_min, x_max, y_max, div_x, div_y, polygons )
+    private _create_submeshes_sp( x_min: number, y_min: number, x_max: number, y_max: number, div_x: number, div_y: number, polygons: ConvexPolygon[] ): Submesh[]
     {
         // 領域を凸多角形に変換
         let area_rect = ConvexPolygon.createByRectangle( x_min, y_min, x_max, y_max );
 
-        let selected_polygons = [];
+        let selected_polygons: ConvexPolygon[] | Entity.AreaStatus = [];
 
         for ( let polygon of polygons ) {
             if ( polygon.includes( area_rect ) ) {
@@ -1216,22 +1268,19 @@ class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
 
 
     /**
-     * @summary 凸多角形のサブメッシュの配列を生成
-     * 
-     * @desc
-     * <p>area_triangle の三角形で src_polygons の凸多角形を切り取り、それらの切り取られた凸多角形に対応する
-     * PolygonsSubmesh インスタンスの配列を生成する。</p>
+     * 凸多角形のサブメッシュの配列を生成
+     *
+     * area_triangle の三角形で src_polygons の凸多角形を切り取り、それらの切り取られた凸多角形に対応する
+     * PolygonsSubmesh インスタンスの配列を生成する。
      *
      * arit = Area Right Isosceles Triangle (領域直角二等辺三角形)
      *
-     * @param {number[]}                        arit_coords   領域の三角形座標配列 (左下または右上の三角形)
-     * @param {iterable.<mapray.ConvexPolygon>} src_polygons  切り取り対象の凸多角形の配列
+     * @param arit_coords   領域の三角形座標配列 (左下または右上の三角形)
+     * @param src_polygons  切り取り対象の凸多角形の配列
      *
-     * @return {PolygonsSubmesh[]}  PolygonsSubmesh の配列
-     *
-     * @private
+     * @return PolygonsSubmesh の配列
      */
-    _create_clipped_polygons_submeshes( arit_coords, src_polygons )
+    private _create_clipped_polygons_submeshes( arit_coords: number[], src_polygons: ConvexPolygon[] ): PolygonsSubmesh[]
     {
         let area_polygon = new ConvexPolygon( arit_coords );
 
@@ -1261,24 +1310,25 @@ class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
 
 
 /**
- * @summary 多角形の境界
+ * 多角形の境界
  *
- * @classdesc
- * <p>多角形の1つの境界を表現する。</p>
- * <p>外側境界のときは反時計回り、内側境界のときは時計回りで格納される。</p>
- *
- * @private
+ * 多角形の1つの境界を表現する。
+ * 外側境界のときは反時計回り、内側境界のときは時計回りで格納される。
  */
-class Boundary {
+export class Boundary {
+
+    private _points: Float64Array;
+
+    private _num_points: number;
+
 
     /**
-     * @desc
-     * <p>points は addOuterBoundary(), addInnerBoundary() と同じ形式である。</p>
+     * points は addOuterBoundary(), addInnerBoundary() と同じ形式である。
      *
-     * @param {number[]} points    境界の頂点データ
-     * @param {boolean}  is_inner  内側境界か？
+     * @param points    境界の頂点データ
+     * @param is_inner  内側境界か？
      */
-    constructor( points, is_inner )
+    constructor( points: number[], is_inner: boolean )
     {
         let num_points = Math.floor( points.length / 3 );
 
@@ -1312,33 +1362,28 @@ class Boundary {
 
 
     /**
-     * @summary 頂点座標の配列
-     * @type {number[]}
-     * @readonly
+     * 頂点座標の配列
      */
-    get points() { return this._points; }
+    get points(): Float64Array { return this._points; }
 
 
     /**
-     * @summary 頂点数
-     * @type {number}
-     * @readonly
+     * 頂点数
      */
-    get num_points() { return this._num_points; }
+    get num_points(): number { return this._num_points; }
 
 
     /**
-     * @summary 境界は反時計回りか？
+     * 境界は反時計回りか？
      *
-     * @param {number[]} points  境界の頂点データ
+     * @param points  境界の頂点データ
      *
-     * @return {boolean}  反時計回りのとき true, それ以外のとき false
+     * @return 反時計回りのとき true, それ以外のとき false
      */
-    static
-    isCCW( points, num_points )
+    static isCCW( points: number[], num_points: number ): boolean
     {
         // 頂上の点、同じ高さなら左側優先
-        let top_i;
+        let top_i = 0;
         let top_x = -Number.MAX_VALUE;
         let top_y = -Number.MAX_VALUE;
 
@@ -1377,37 +1422,42 @@ class Boundary {
 
 
 /**
- * @summary 境界線データを結合
+ * 境界線データを結合
  *
- * @classdesc
- * <p>pe._bounaries に対応する上頂点と底頂点の LOCS 平坦化配列を取得する。</p>
- * <p>pe._extruded_height === 0 のときは lower に null を設定する。</p>
+ * - pe._bounaries に対応する上頂点と底頂点の LOCS 平坦化配列を取得する。
+ * - pe._extruded_height === 0 のときは lower に null を設定する。
  *
- * <pre>
+ * ```
  * プロパティ:
  *   origin: Vector3       // LOCS の原点位置 (GOCS)
  *   num_points: number    // upper の頂点数
  *   upper: Float64Array   // 上頂点 (LOCS, 順序は pe._bounaries.points の連結)
  *   lower: Float64Array   // 底頂点 (LOCS, 順序は upper と同じ, nullable)
- * </pre>
+ * ```
  *
- * @private
+ * @internal
  */
 class BoundaryConbiner {
 
+    origin: Vector3;
+
+    upper: Float64Array;
+
+    lower: Float64Array | null;
+
+    num_points: number;
+
+
     /**
-     * @desc
-     * <pre>
      * 入力:
      *   pe.viewer
      *   pe.altitude_mode
      *   pe._extruded_height
      *   pe._bounaries
-     * </pre>
      *
-     * @param {mapray.PolygonEntity} pe  呼び出し側のポリゴンエンティティ
+     * @param pe 呼び出し側のポリゴンエンティティ
      */
-    constructor( pe )
+    constructor( pe: PolygonEntity )
     {
         /*
         pe._extruded_height !== 0             == 0    
@@ -1423,12 +1473,15 @@ class BoundaryConbiner {
         let        viewer = pe.scene.viewer;
         let altitude_mode = pe.altitude_mode;
 
+        // @ts-ignore
         let src_points = pe._getCombinedBoundaryPoints();
+        // @ts-ignore
         let num_points = pe._countNumPointsOnBoundaries();
 
         let base_points = Float64Array.from( src_points );
 
         if ( altitude_mode === AltitudeMode.RELATIVE ) {
+            // @ts-ignore
             let elevation = viewer.getExistingElevation( pe._getPosition() );
             for ( let i = 0; i < num_points; ++i ) {
                 let ai = 3 * i + 2;
@@ -1438,7 +1491,7 @@ class BoundaryConbiner {
 
         let upper_points = null;
         let lower_points = null;
-        if ( pe._extruded_height !== 0 ) {
+        if ( pe.extruded_height !== 0 ) {
             if ( altitude_mode === AltitudeMode.CLAMP ) {
                 upper_points = base_points;
                 lower_points = Float64Array.from( src_points );
@@ -1452,7 +1505,7 @@ class BoundaryConbiner {
                 upper_points = Float64Array.from( src_points );
                 for ( let i = 0; i < num_points; ++i ) {
                     let ai = 3 * i + 2;
-                    upper_points[ai] = lower_points[ai] + pe._extruded_height;
+                    upper_points[ai] = lower_points[ai] + pe.extruded_height;
                 }
             }
         }
@@ -1460,7 +1513,9 @@ class BoundaryConbiner {
             upper_points = base_points;
         }
 
-        let origin = pe._getPosition().getAsGocs( GeoMath.createVector3() );
+        // @ts-ignore
+        let position = pe._getPosition() as GeoPoint;
+        let origin = position.getAsGocs( GeoMath.createVector3() );
 
         // LOCS 平坦化配列
         let upper_ocs_points = GeoPoint.toGocsArray( upper_points, num_points,
@@ -1496,16 +1551,18 @@ class BoundaryConbiner {
 
 
 /**
- * @summary 多角形の領域管理
+ * 多角形の領域管理
  *
- * @private
+ * @internal
  */
-class PolygonAreaManager extends QAreaManager {
+export class PolygonAreaManager extends QAreaManager {
+
+    private _entity: PolygonEntity;
 
     /**
-     * @param {mapray.PolygonEntity} entity  管理対象のエンティティ
+     * @param {mapray.} entity  管理対象のエンティティ
      */
-    constructor( entity )
+    constructor( entity: PolygonEntity )
     {
         super();
 
@@ -1514,15 +1571,16 @@ class PolygonAreaManager extends QAreaManager {
 
 
     /**
-     * @override
      */
-    getInitialContent()
+    override getInitialContent()
     {
+        // @ts-ignore
         let     src_indices = this._entity._createTriangles() || [];
         let num_src_indices = src_indices.length;
 
+        // @ts-ignore
         let src_coords = this._entity._getCombinedBoundary2DPoints();
-        let    content = [];  // ConvexPolygon の配列
+        let    content = [] as ConvexPolygon[];
 
         for ( let si = 0; si < num_src_indices; si += 3 ) {
             let i0 = src_indices[si    ];
@@ -1536,9 +1594,8 @@ class PolygonAreaManager extends QAreaManager {
 
 
     /**
-     * @override
      */
-    createAreaContent( min_x, min_y, msize, parent_content )
+    override createAreaContent( min_x: number, min_y: number, msize: number, parent_content: ConvexPolygon[] )
     {
         // 単位球メルカトルでの領域に変換
         const x_area_min = Math.PI * min_x;
@@ -1576,24 +1633,22 @@ class PolygonAreaManager extends QAreaManager {
 
 
     /**
-     * @summary 三角形を凸多角形として追加
+     * 三角形を凸多角形として追加
      *
-     * @param {number[]} src_coords  入力頂点の座標配列 (経緯度)
-     * @param {number}   si0         三角形の頂点 0
-     * @param {number}   si1         三角形の頂点 1
-     * @param {number}   si2         三角形の頂点 2
-     * @param {mapray.ConvexPolygon[]} dst_polygons  出力先の ConvexPolygon 配列
-     *
-     * @private
+     * @param src_coords  入力頂点の座標配列 (経緯度)
+     * @param si0         三角形の頂点 0
+     * @param si1         三角形の頂点 1
+     * @param si2         三角形の頂点 2
+     * @param dst_polygons  出力先の ConvexPolygon 配列
      */
-    _add_polygon_to_array( src_coords, si0, si1, si2, dst_polygons )
+    private _add_polygon_to_array( src_coords: Float64Array, si0: number, si1: number, si2: number, dst_polygons: ConvexPolygon[] )
     {
         const Degree = GeoMath.DEGREE;
         const RAngle = Math.PI / 2;  // 直角
         const TwoPI  = 2 * Math.PI;  // 2π
 
         // 三角形の頂点座標配列 (単位球メルカトル座標系) を作成
-        let vertices = [];
+        let vertices: number[] = [];
         let mx_min_1 = Number.MAX_VALUE;  // オフセット処理前の最小 mx 座標
 
         for ( let si of [si0, si1, si2] ) {
@@ -1661,11 +1716,9 @@ class PolygonAreaManager extends QAreaManager {
 
 
 /**
- * @summary サブメッシュ
- *
- * @private
+ * サブメッシュ
  */
-class Submesh {
+abstract class Submesh {
 
     /**
      */
@@ -1675,74 +1728,67 @@ class Submesh {
 
 
     /**
-     * @summary 頂点数を取得
+     * 頂点数を取得
      *
-     * @return {number}  頂点数
-     *
-     * @abstract
+     * @return 頂点数
      */
-    getNumVertices()
-    {
-        throw "";
-    }
+    abstract getNumVertices(): number;
 
 
     /**
-     * @summary 三角形数を取得
+     * 三角形数を取得
      *
-     * @return {number}  三角形数
-     *
-     * @abstract
+     * @return  三角形数
      */
-    getNumTriangles()
-    {
-        throw "";
-    }
+    abstract getNumTriangles(): number;
 
 
     /**
-     * @summary 頂点配列に頂点データを書き込む
+     * 頂点配列に頂点データを書き込む
      *
      * @param {mapray.Vector3} origin    座標系の原点 (GOCS)
      * @param {mapray.Sampler} sampler   DEM サンプラー
      * @param {number[]}       vertices  書き込み先の配列
      * @param {number}         offset    書き込み開始インデックス
      *
-     * @return {number}  offset + 書き込んだ要素数
-     *
-     * @abstract
+     * @return offset + 書き込んだ要素数
      */
-    addVertices( origin, sampler, vertices, offset )
-    {
-        throw "";
-    }
+    abstract addVertices( origin: Vector3, sampler: any, vertices: Float32Array, offset: number ): number;
 
 
     /**
-     * @summary インデックス配列にインデックスを書き込む
+     * インデックス配列にインデックスを書き込む
      *
-     * @param {number}   voffset  this 用頂点の先頭の頂点インデックス
-     * @param {number[]} indices  書き込み先の配列
-     * @param {number}   ioffset  書き込み開始インデックス
+     * @param voffset  this 用頂点の先頭の頂点インデックス
+     * @param indices  書き込み先の配列
+     * @param ioffset  書き込み開始インデックス
      *
-     * @return {number}  ioffset + 書き込んだ要素数
-     *
-     * @abstract
+     * @return ioffset + 書き込んだ要素数
      */
-    addIndices( voffset, indices, ioffset )
-    {
-        throw "";
-    }
+    abstract addIndices( voffset: number, indices: Uint32Array, ioffset: number ): number;
 
 }
 
 
 /**
- * @summary 矩形サブメッシュ
+ * 矩形サブメッシュ
  *
- * @private
+ * @internal
  */
 class RectSubmesh extends Submesh {
+
+    private _x_min: number;
+
+    private _y_min: number;
+
+    private _x_max: number;
+
+    private _y_max: number;
+
+    private _div_x: number;
+
+    private _div_y: number;
+
 
     /**
      * @param {number} x_min
@@ -1752,7 +1798,7 @@ class RectSubmesh extends Submesh {
      * @param {number} div_x
      * @param {number} div_y
      */
-    constructor( x_min, y_min, x_max, y_max, div_x, div_y )
+    constructor( x_min: number, y_min: number, x_max: number, y_max: number, div_x: number, div_y: number )
     {
         super();
 
@@ -1766,27 +1812,24 @@ class RectSubmesh extends Submesh {
 
 
     /**
-     * @override
      */
-    getNumVertices()
+    override getNumVertices()
     {
         return (this._div_x + 1) * (this._div_y + 1);
     }
 
 
     /**
-     * @override
      */
-    getNumTriangles()
+    override getNumTriangles()
     {
         return 2 * this._div_x * this._div_y;
     }
 
 
     /**
-     * @override
      */
-    addVertices( origin, sampler, vertices, offset )
+    override addVertices( origin: [ x: number, y: number, z: number ], sampler: any, vertices: Float32Array, offset: number ): number
     {
         // 刻み幅
         let mx_step = (this._x_max - this._x_min) / this._div_x;
@@ -1833,9 +1876,8 @@ class RectSubmesh extends Submesh {
 
 
     /**
-     * @override
      */
-    addIndices( voffset, indices, ioffset )
+    override addIndices( voffset: number, indices: Uint32Array, ioffset: number ): number
     {
         let div_x = this._div_x;
         let div_y = this._div_y;
@@ -1868,19 +1910,27 @@ class RectSubmesh extends Submesh {
 
 
 /**
- * @summary 凸多角形集合サブメッシュ
+ * 凸多角形集合サブメッシュ
  *
- * @private
+ * @internal
  */
 class PolygonsSubmesh extends Submesh {
+
+    private _arit_coords: number[];
+
+    private _polygons: ConvexPolygon[];
+
+    private _num_vertices: number;
+
+    private _num_triangles: number;
 
     /**
      * this の生存中はパラメータのオブジェクトを変更しないこと。
      *
-     * @param {number[]}                     arit_coords  領域の三角形座標配列 (左下または右上の三角形)
-     * @param {iterable.<mapray.ConvexPolygon>} polygons  arit_coords の上にある凸多角形集合
+     * @param arit_coords  領域の三角形座標配列 (左下または右上の三角形)
+     * @param polygons  arit_coords の上にある凸多角形集合
      */
-    constructor( arit_coords, polygons )
+    constructor( arit_coords: number[], polygons: ConvexPolygon[] )
     {
         super();
 
@@ -1898,27 +1948,24 @@ class PolygonsSubmesh extends Submesh {
 
 
     /**
-     * @override
      */
-    getNumVertices()
+    override getNumVertices()
     {
         return this._num_vertices;
     }
 
 
     /**
-     * @override
      */
-    getNumTriangles()
+    override getNumTriangles()
     {
         return this._num_triangles;
     }
 
 
     /**
-     * @override
      */
-    addVertices( origin, sampler, vertices, offset )
+    override addVertices( origin: Vector3, sampler: any, vertices: Float32Array, offset: number ): number
     {
         let plane = this._get_elevation_plane( sampler );
 
@@ -1933,9 +1980,8 @@ class PolygonsSubmesh extends Submesh {
 
 
     /**
-     * @override
      */
-    addIndices( voffset, indices, ioffset )
+    override addIndices( voffset: number, indices: Uint32Array, ioffset: number ): number
     {
         let iofs_next = ioffset;
         let vofs_next = voffset;
@@ -1950,19 +1996,17 @@ class PolygonsSubmesh extends Submesh {
 
 
     /**
-     * @summary 凸多角形の頂点を追加
+     * 凸多角形の頂点を追加
      *
-     * @param {mapray.ConvexPolygon} polygon   凸多角形
-     * @param {number[]}             plane     平面係数
-     * @param {mapray.Vector3}       origin    座標系の原点 (GOCS)
-     * @param {number[]}             vertices  書き込み先の配列
-     * @param {number}               offset    書き込み開始インデックス
+     * @param polygon   凸多角形
+     * @param plane     平面係数
+     * @param origin    座標系の原点 (GOCS)
+     * @param vertices  書き込み先の配列
+     * @param offset    書き込み開始インデックス
      *
-     * @return {number}  offset + 書き込んだ要素数
-     *
-     * @private
+     * @return offset + 書き込んだ要素数
      */
-    _add_polygon_vertices( polygon, plane, origin, vertices, offset )
+    private _add_polygon_vertices( polygon: ConvexPolygon, plane: number[], origin: Vector3, vertices: Float32Array, offset: number ): number
     {
         let index = offset;
 
@@ -2008,18 +2052,16 @@ class PolygonsSubmesh extends Submesh {
 
 
     /**
-     * @summary 凸多角形のインデックスを追加
+     * 凸多角形のインデックスを追加
      *
-     * @param {mapray.ConvexPolygon} polygon  凸多角形
-     * @param {number}               voffset  this 用頂点の先頭の頂点インデックス
-     * @param {number[]}             indices  書き込み先の配列
-     * @param {number}               ioffset  書き込み開始インデックス
+     * @param polygon  凸多角形
+     * @param voffset  this 用頂点の先頭の頂点インデックス
+     * @param indices  書き込み先の配列
+     * @param ioffset  書き込み開始インデックス
      *
-     * @return {number}  ioffset + 書き込んだ要素数
-     *
-     * @private
+     * @return ioffset + 書き込んだ要素数
      */
-    _add_polygon_indices( polygon, voffset, indices, ioffset )
+    private _add_polygon_indices( polygon: ConvexPolygon, voffset: number, indices: Uint32Array, ioffset: number ): number
     {
         let index = ioffset;
 
@@ -2036,15 +2078,13 @@ class PolygonsSubmesh extends Submesh {
 
 
     /**
-     * @summary 平面ベースで標高を計算するための係数を取得
+     * 平面ベースで標高を計算するための係数を取得
      *
-     * @param {mapray.Sampler} sampler
+     * @param sampler
      *
-     * @return {number[]}  平面係数 [x, y, z, w]
-     *
-     * @private
+     * @return 平面係数 [x, y, z, w]
      */
-    _get_elevation_plane( sampler )
+    private _get_elevation_plane( sampler: any ): number[]
     {
         let coords = this._arit_coords;
 
@@ -2081,14 +2121,12 @@ class PolygonsSubmesh extends Submesh {
 
 
 /**
- * @summary 配列からベクトルを設定
+ * 配列からベクトルを設定
  *
  * array[index] から vec に設定する。
- *
- * @private
  */
 function
-setArrayToVec3( array, index, vec )
+setArrayToVec3( array: Float64Array, index: number, vec: Vector3 )
 {
     vec[0] = array[index];
     vec[1] = array[index + 1];
@@ -2097,14 +2135,12 @@ setArrayToVec3( array, index, vec )
 
 
 /**
- * @summary 配列からベクトルを設定
+ * 配列からベクトルを設定
  *
  * vec から array[index] に設定する。
- *
- * @private
  */
 function
-setVec3ToArray( vec, array, index )
+setVec3ToArray( vec: Vector3, array: [ x: number, y: number, z: number ] | Float32Array, index: number )
 {
     array[index]     = vec[0];
     array[index + 1] = vec[1];
@@ -2113,11 +2149,10 @@ setVec3ToArray( vec, array, index )
 
 
 /**
- * @summary 3頂点から正規化法線ベクトルを設定
- * @private
+ * 3頂点から正規化法線ベクトルを設定
  */
 function
-setTriangleNormal( p0, p1, p2, normal )
+setTriangleNormal( p0: Vector3, p1: Vector3, p2: Vector3, normal: Vector3 ): Vector3
 {
     for ( let i = 0; i < 3; ++i ) {
         temp_normal_ax[i] = p1[i] - p0[i];
@@ -2136,19 +2171,20 @@ var temp_normal_ay = GeoMath.createVector3();
 
 
 /**
- * @summary 内部ステータス
- * @enum {object}
- * @constant
- * @private
+ * 内部ステータス
+ * @internal
  */
-var Status = {
-
-    INVALID:        { id: "INVALID" },
-    NORMAL:         { id: "NORMAL" },
-    TRIANGLE_DIRTY: { id: "TRIANGLE_DIRTY" },
-    MESH_DIRTY:     { id: "MESH_DIRTY" }
-
+export enum Status {
+    INVALID,
+    NORMAL,
+    TRIANGLE_DIRTY,
+    MESH_DIRTY,
 };
+
+
+
+} // namespace PolygonEntity
+
 
 
 export default PolygonEntity;

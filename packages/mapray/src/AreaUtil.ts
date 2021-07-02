@@ -1,29 +1,28 @@
-import GeoMath from "./GeoMath";
+import GeoMath, { Vector3 } from "./GeoMath";
 
 
 /**
- * @summary 地表領域ユーティリティー
- *
- * @hideconstructor
- * @memberof mapray
- * @private
+ * 地表領域ユーティリティー
+ * @internal
  */
 class AreaUtil
 {
+    /**
+     * @ignore
+     */
+    constructor() {}
 
     /**
-     * @summary 地表領域の中心位置を GOCS で取得
+     * 地表領域の中心位置を GOCS で取得
      *
-     * @desc
-     * <p>領域 area の中心位置 (GOCS) を dst に格納する。</p>
+     * 領域 area の中心位置 (GOCS) を dst に格納する。
      *
-     * @param {mapray.Area}    area  地表領域
-     * @param {mapray.Vector3} dst   結果を格納するオブジェクト (GOCS)
+     * @param area  地表領域
+     * @param dst   結果を格納するオブジェクト (GOCS)
      *
-     * @return {mapray.Vector3} dst
+     * @return dst
      */
-    static
-    getCenter( area, dst )
+    static getCenter( area: AreaUtil.Area, dst: Vector3 ): Vector3
     {
         switch ( area.z ) {
         case 0:  return getCenter_0( dst );
@@ -35,23 +34,10 @@ class AreaUtil
 }
 
 
-/**
- * @summary 地表の ZXY 領域を表現
- *
- * @desc
- * <p>このクラスは便宜的なものであり実在しない。</p>
- * <p>z, x, y プロパティから地表の領域を表す ZXY 座標を読み出せるオブジェクトは、このクラスのインスタンスと解釈する。</p>
- *
- * @class mapray.Area
- * @private
- *
- * @see mapray.AreaUtil
- */
-
 
 // AreaUtil.getCenter() の一部
 function
-getCenter_0( dst )
+getCenter_0( dst: Vector3 ): Vector3
 {
     dst[0] = 0;
     dst[1] = 0;
@@ -63,7 +49,7 @@ getCenter_0( dst )
 
 // AreaUtil.getCenter() の一部
 function
-getCenter_1( x, y, dst )
+getCenter_1( x: number, y: number, dst: Vector3 ): Vector3
 {
     var r = GeoMath.EARTH_RADIUS;
 
@@ -77,7 +63,7 @@ getCenter_1( x, y, dst )
 
 // AreaUtil.getCenter() の一部
 function
-getCenter_N( z, x, y, dst )
+getCenter_N( z: number, x: number, y: number, dst: Vector3 ): Vector3
 {
     var pi = Math.PI;
 
@@ -184,6 +170,30 @@ getCenter_N( z, x, y, dst )
 
     return dst;
 }
+
+
+
+namespace AreaUtil {
+
+
+
+/**
+ * 地表の ZXY 領域を表現
+ *
+ * z, x, y プロパティから地表の領域を表す。
+ *
+ * @internal
+ */
+export interface Area {
+    x: number;
+    y: number;
+    z: number;
+}
+
+
+
+} // namespace Area
+
 
 
 export default AreaUtil;

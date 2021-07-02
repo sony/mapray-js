@@ -151,7 +151,7 @@ class QAreaManager {
      * @desc
      * <p>area に対応するノードを取得する。</p>
      *
-     * @param {mapray.Area} area  領域
+     * @param {AreaUtil.Area} area  領域
      *
      * @return {QAreaNode|mapray.Entity.AreaStatus}  area に対応するノード | AreaStatus.EMPTY | AreaStatus.FULL
      *
