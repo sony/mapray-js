@@ -17,7 +17,7 @@ class Triangulator {
      * <p>points は多角形の頂点の xy 座標の配列である。</p>
      * <p>座標系は x 軸が右方向、y 軸が上方向を想定している。</p>
      *
-     * @param {number[]} points  頂点配列
+     * @param {number[]|Float64Array} points  頂点配列
      * @param {number}   offset  最初の頂点のインデックス (>= 0)
      * @param {number}   stride  頂点の間隔 (>= 2)
      * @param {number}   count   頂点数
