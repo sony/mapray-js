@@ -83,6 +83,9 @@ class Scene {
 
         this._ImageEntity_image_material = null;
         this._ImageEntity_image_material_pick = null;
+
+        this._PolygonEntity_material = null;
+        this._PolygonEntity_material_pick = null;
     }
 
 
