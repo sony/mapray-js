@@ -1,22 +1,29 @@
-import GeoMath from "./GeoMath";
+import GeoMath, { Vector3 } from "./GeoMath";
+import Scene from "./Scene";
+import Entity from "./Entity";
 import Type from "./animation/Type";
 import AbstractLineEntity from "./AbstractLineEntity";
 
 
 /**
- * @summary 太さ付き連続線エンティティ
- * @memberof mapray
- * @extends mapray.AbstractLineEntity
+ * 太さ付き連続線エンティティ
  */
 class PathEntity extends AbstractLineEntity {
 
+    private _num_floats: number;
+
+    private _length_array: Float64Array;
+
+    private _lower_length: number;
+
+    private _upper_length: number;
+
+
     /**
-     * @param {mapray.Scene} scene        所属可能シーン
-     * @param {object}       [opts]       オプション集合
-     * @param {object}       [opts.json]  生成情報
-     * @param {object}       [opts.refs]  参照辞書
+     * @param scene 所属可能シーン
+     * @param opts  オプション集合
      */
-    constructor( scene, opts )
+    constructor( scene: Scene, opts: PathEntity.Option = {} )
     {
         super( scene, AbstractLineEntity.LineType.PATH, opts );
 
@@ -41,10 +48,8 @@ class PathEntity extends AbstractLineEntity {
 
     /**
      * アニメーションの BindingBlock を初期化
-     *
-     * @private
      */
-    _setupAnimationBindingBlock()
+    private _setupAnimationBindingBlock()
     {
         const block = this.animation;  // 実体は EasyBindingBlock
 
@@ -54,47 +59,47 @@ class PathEntity extends AbstractLineEntity {
         // パラメータ名: width
         // パラメータ型: number
         //   線の太さ
-        block.addEntry( "width", [number], null, value => {
+        block.addEntry( "width", [number], null, (value: number) => {
             this.setLineWidth( value );
         } );
         
         // パラメータ名: color
         // パラメータ型: vector3
         //   色
-        block.addEntry( "color", [vector3], null, value => {
+        block.addEntry( "color", [vector3], null, (value: Vector3) => {
             this.setColor( value );
         } );
         
         // パラメータ名: opacity
         // パラメータ型: number
         //   不透明度
-        block.addEntry( "opacity", [number], null, value => {
+        block.addEntry( "opacity", [number], null, (value: number) => {
             this.setOpacity( value );
         } );
         
         // パラメータ名: lower_length
         // パラメータ型: number
         //   距離の下限値
-        block.addEntry( "lower_length", [number], null, value => {
+        block.addEntry( "lower_length", [number], null, (value: number) => {
             this.setLowerLength( value );
         } );
 
         // パラメータ名: upper_length
         // パラメータ型: number
         //   距離の上限値
-        block.addEntry( "upper_length", [number], null, value => {
+        block.addEntry( "upper_length", [number], null, (value: number) => {
             this.setUpperLength( value );
         } );
     }
 
 
     /**
-     * @summary 距離の下限値を設定
+     * 距離の下限値を設定
      *
-     * @param {number} lower_length  距離の下限値
+     * @param lower_length  距離の下限値
      */
-    setLowerLength( lower_length )
-    {        
+    setLowerLength( lower_length: number )
+    {
         if ( this._lower_length !== lower_length ) {
             this._lower_length = lower_length;
             this._producer.onChangeProperty();
@@ -102,13 +107,13 @@ class PathEntity extends AbstractLineEntity {
     }
 
 
-        /**
-     * @summary 距離の上限値を設定
+    /**
+     * 距離の上限値を設定
      *
-     * @param {number} upper_length  距離の上限値
+     * @param upper_length  距離の上限値
      */
-    setUpperLength( upper_length )
-    {        
+    setUpperLength( upper_length: number )
+    {
         if ( this._upper_length !== upper_length ) {
             this._upper_length = upper_length;
             this._producer.onChangeProperty();
@@ -117,15 +122,14 @@ class PathEntity extends AbstractLineEntity {
 
 
     /**
-     * @summary 複数の頂点を追加
+     * 複数の頂点を追加
      *
-     * @desc
-     * <p>points は [lon_0, lat_0, alt_0, lon_1, lat_1, alt_1, ...] のような形式の配列を与える。</p>
+     * points は [lon_0, lat_0, alt_0, lon_1, lat_1, alt_1, ...] のような形式の配列を与える。
      *
-     * @param {number[]} points  頂点の配列
-     * @param {number[]} length_array  始点からの距離の配列
+     * @param points  頂点の配列
+     * @param length_array  始点からの距離の配列
      */
-    addPoints( points, length_array )
+    addPoints( points: number[], length_array: number[] )
     {
         let add_size = points.length;
         let add_length_size = length_array.length;
@@ -183,9 +187,8 @@ class PathEntity extends AbstractLineEntity {
     }
 
     /**
-     * @private
      */
-    _setupByJson( json )
+    private _setupByJson( json: PathEntity.Json )
     {
         // json.points
         this.addPoints( json.points.positions, json.points.lengths );
@@ -203,5 +206,43 @@ class PathEntity extends AbstractLineEntity {
     }
 
 }
+
+
+
+namespace PathEntity {
+
+
+
+export interface Option extends AbstractLineEntity.Option {
+    /**
+     * 生成情報
+     */
+    json?: Json;
+}
+
+
+
+export interface Json extends AbstractLineEntity.Json {
+
+    points: PointsJson;
+
+    lower_length: number;
+
+    upper_length: number;
+}
+
+
+
+export interface PointsJson {
+    positions: number[];
+
+    lengths: number[];
+}
+
+
+
+} // namespace PathEntity
+
+
 
 export default PathEntity;

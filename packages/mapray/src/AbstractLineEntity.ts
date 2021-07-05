@@ -1,8 +1,9 @@
 import Entity from "./Entity";
 import Primitive from "./Primitive";
 import Mesh from "./Mesh";
+import Scene from "./Scene";
 import LineMaterial from "./LineMaterial";
-import GeoMath from "./GeoMath";
+import GeoMath, { Vector3, Matrix } from "./GeoMath";
 import GeoPoint from "./GeoPoint";
 import GeoRegion from "./GeoRegion";
 import AltitudeMode from "./AltitudeMode";
@@ -10,87 +11,110 @@ import EntityRegion from "./EntityRegion";
 import AreaUtil from "./AreaUtil";
 import QAreaManager from "./QAreaManager";
 import Type from "./animation/Type";
-import { RenderTarget } from "./RenderStage";
+import RenderStage from "./RenderStage";
+import DemSampler from "./DemSampler";
+import DemBinary from "./DemBinary";
 
 
 /**
- * @summary 線エンティティ
+ * 線エンティティ
  *
- * @classdesc
- * <p>{@link mapray.MarkerLineEntity} と {@link mapray.PathEntity} の共通機能を
- *    提供するクラスである。</p>
- *
- * @memberof mapray
- * @extends mapray.Entity
- * @abstract
- * @protected
+ * {@link mapray.MarkerLineEntity} と {@link mapray.PathEntity} の共通機能を提供するクラスである。
  */
-class AbstractLineEntity extends Entity {
+abstract class AbstractLineEntity extends Entity {
+
+    protected _producer: AbstractLineEntity.FlakePrimitiveProducer | AbstractLineEntity.PrimitiveProducer;
+
+    private _is_flake_mode: boolean;
+
+    protected _width!: number;
+
+    protected _color!: Vector3;
+
+    protected _opacity!: number;
+
+    protected _line_type: AbstractLineEntity.LineType;
+
+    protected _point_array!: Float64Array;
+
 
     /**
-     * @param {mapray.Scene} scene        所属可能シーン
-     * @param {mapray.AbstractLineEntity.LineType} line_type  クラス種別
-     * @param {object}       [opts]       オプション集合
-     * @param {object}       [opts.json]  生成情報
-     * @param {object}       [opts.refs]  参照辞書
+     * @param scene        所属可能シーン
+     * @param line_type  クラス種別
+     * @param opts       オプション集合
      */
-    constructor( scene, line_type, opts )
+    constructor( scene: Scene, line_type: AbstractLineEntity.LineType, opts: AbstractLineEntity.Option = {} )
     {
         super( scene, opts );
-        
+
         this._line_type = line_type;
 
         if ( this.altitude_mode === AltitudeMode.CLAMP ) {
-            this._producer = new FlakePrimitiveProducer( this );
+            this._producer = new AbstractLineEntity.FlakePrimitiveProducer( this );
             this._is_flake_mode = true;
         }
         else {
-            this._producer = new PrimitiveProducer( this );
+            this._producer = new AbstractLineEntity.PrimitiveProducer( this );
             this._is_flake_mode = false;
         }
     }
 
 
     /**
-     * @override
      */
-    getPrimitiveProducer()
+    override getPrimitiveProducer()
     {
-        return (!this._is_flake_mode) ? this._producer : null;
+        return (!this._is_flake_mode) ? this._producer as AbstractLineEntity.PrimitiveProducer: undefined;
     }
 
 
     /**
-     * @override
      */
-    getFlakePrimitiveProducer()
+    override getFlakePrimitiveProducer()
     {
-        return (this._is_flake_mode) ? this._producer : null;
+        return (this._is_flake_mode) ? this._producer as AbstractLineEntity.FlakePrimitiveProducer: undefined;
     }
 
 
     /**
-     * @override
      */
-    onChangeAltitudeMode( prev_mode )
+    override onChangeAltitudeMode( prev_mode: AltitudeMode )
     {
         if ( this.altitude_mode === AltitudeMode.CLAMP ) {
-            this._producer = new FlakePrimitiveProducer( this );
+            this._producer = new AbstractLineEntity.FlakePrimitiveProducer( this );
             this._is_flake_mode = true;
         }
         else {
-            this._producer = new PrimitiveProducer( this );
+            this._producer = new AbstractLineEntity.PrimitiveProducer( this );
             this._is_flake_mode = false;
         }
     }
 
 
     /**
-     * @summary 線の太さを設定
-     *
-     * @param {number} width  線の太さ (画素単位)
+     * @internal
      */
-    setLineWidth( width )
+    getLineType() {
+        return this._line_type;
+    }
+
+
+    /**
+     * 線の太さを取得
+     * @internal
+     */
+    getLineWidth(): number
+    {
+        return this._width;
+    }
+
+
+    /**
+     * 線の太さを設定
+     *
+     * @param width  線の太さ (画素単位)
+     */
+    setLineWidth( width: number )
     {
         if ( this._width !== width ) {
             this._width = width;
@@ -100,11 +124,21 @@ class AbstractLineEntity extends Entity {
 
 
     /**
-     * @summary 基本色を設定
-     *
-     * @param {mapray.Vector3} color  基本色
+     * 基本色を取得
+     * @internal
      */
-    setColor( color )
+    getColor(): Vector3
+    {
+        return this._color;
+    }
+
+
+    /**
+     * 基本色を設定
+     *
+     * @param color  基本色
+     */
+    setColor( color: Vector3 )
     {
         if ( this._color[0] !== color[0] ||
              this._color[1] !== color[1] ||
@@ -117,11 +151,11 @@ class AbstractLineEntity extends Entity {
 
 
     /**
-     * @summary 不透明度を設定
+     * 不透明度を設定
      *
-     * @param {number} opacity  不透明度
+     * @param opacity  不透明度
      */
-    setOpacity( opacity )
+    setOpacity( opacity: number )
     {
         if ( this._opacity !== opacity ) {
             this._opacity = opacity;
@@ -131,12 +165,19 @@ class AbstractLineEntity extends Entity {
 
 
     /**
-     * @summary すべての頂点のバウンディングを算出
-     *
-     * @override
-     * @return {mapray.GeoRegion}  バウンディング情報を持ったGeoRegion
+     * @internal
      */
-    getBounds()
+    getPointArray() {
+        return this._point_array;
+    }
+
+
+    /**
+     * すべての頂点のバウンディングを算出
+     *
+     * @return バウンディング情報を持ったGeoRegion
+     */
+    override getBounds(): GeoRegion
     {
         const region = new GeoRegion();
         region.addPointsAsArray( this._point_array );
@@ -145,40 +186,85 @@ class AbstractLineEntity extends Entity {
 
 
     /**
-     * @summary 専用マテリアルを取得
-     * @private
+     * 専用マテリアルを取得
      */
-    _getLineMaterial( render_target )
+    private _getLineMaterial( render_target: RenderStage.RenderTarget )
     {
         const scene    = this.scene;
         const cache_id = (
             "_AbstractLineEntity_material" +
-            (this._line_type === LineType.PATH ? "_path" : "_markerline") +
-            (render_target === RenderTarget.RID ? "_pick" : "")
+            (this._line_type === AbstractLineEntity.LineType.PATH ? "_path" : "_markerline") +
+            (render_target === RenderStage.RenderTarget.RID ? "_pick" : "")
         );
 
-        if ( !scene[cache_id] ) {
+        // @ts-ignore
+        let material = scene[cache_id];
+        if ( !material ) {
             // scene にマテリアルをキャッシュ
-            const opt = { ridMaterial: render_target === RenderTarget.RID };
-            scene[cache_id] = new LineMaterial( scene.glenv, this._line_type, opt );
+            const opt = { ridMaterial: render_target === RenderStage.RenderTarget.RID };
+            // @ts-ignore
+            material = scene[cache_id] = new LineMaterial( scene.glenv, this._line_type, opt );
         }
 
-        return scene[cache_id];
+        return material;
     }
 }
 
 
+
+namespace AbstractLineEntity {
+
+
+export interface Option extends Entity.Option {
+    
+}
+
+
+export interface Json extends Entity.Json {
+    color: Vector3;
+
+    opacity: number;
+
+    line_width: number;
+}
+
+
 /**
- * @summary MarkerLineEntity の PrimitiveProducer
+ * MarkerLineEntity の PrimitiveProducer
  *
- * @private
+ * @internal
  */
-class PrimitiveProducer extends Entity.PrimitiveProducer {
+export class PrimitiveProducer extends Entity.PrimitiveProducer {
+
+    private _transform: Matrix;
+
+    private _pivot: Vector3;
+
+    private _bbox: [ Vector3, Vector3 ];
+
+    private _properties: {
+        width: number;
+        color: Vector3;
+        opacity: number;
+        lower_length?: number;
+        upper_length?: number;
+    };
+
+    private _geom_dirty: boolean;
+
+    private _primitive: Primitive;
+
+    private _pickPrimitive: Primitive;
+
+    private _primitives: Primitive[];
+
+    private _pickPrimitives: Primitive[];
+
 
     /**
-     * @param {mapray.MarkerLineEntity} entity
+     * @param entity
      */
-    constructor( entity )
+    constructor( entity: AbstractLineEntity )
     {
         super( entity );
 
@@ -191,23 +277,25 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         this._properties = {
             width:   1.0,
             color:   GeoMath.createVector3f(),
-            opacity: 1.0
+            opacity: 1.0,
         };
-        
-        if ( entity._line_type == LineType.PATH ) {
-            this._properties["lower_length"] = 0.0;
-            this._properties["upper_length"] = 0.0;
+
+        if ( this.getEntity().getLineType() == LineType.PATH ) {
+            this._properties.lower_length = 0.0;
+            this._properties.upper_length = 0.0;
         }
 
         // プリミティブ
-        const      material = entity._getLineMaterial( RenderTarget.SCENE );
+        // @ts-ignore
+        const      material = entity._getLineMaterial( RenderStage.RenderTarget.SCENE );
         const primitive = new Primitive( entity.scene.glenv, null, material, this._transform );
         primitive.pivot      = this._pivot;
         primitive.bbox       = this._bbox;
         primitive.properties = this._properties;
         this._primitive = primitive;
 
-        const pick_material = entity._getLineMaterial( RenderTarget.RID );
+        // @ts-ignore
+        const pick_material = entity._getLineMaterial( RenderStage.RenderTarget.RID );
         const pickPrimitive = new Primitive( entity.scene.glenv, null, pick_material, this._transform );
         pickPrimitive.pivot      = this._pivot;
         pickPrimitive.bbox       = this._bbox;
@@ -222,46 +310,51 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
     }
 
 
+    getEntity(): AbstractLineEntity
+    {
+        return super.getEntity() as AbstractLineEntity;
+    }
+
+
     /**
-     * @override
      */
-    createRegions()
+    override createRegions()
     {
         let region = new EntityRegion();
 
-        region.addPoints( this.entity._point_array, 0, 3, this._numPoints() );
+        region.addPoints( this.getEntity().getPointArray(), 0, 3, this._numPoints() );
 
         return [region];
     }
 
 
     /**
-     * @override
      */
-    onChangeElevation( regions )
+    override onChangeElevation( regions: EntityRegion[] )
     {
         this._geom_dirty = true;
     }
 
 
     /**
-     * @override
      */
-    getPrimitives( stage )
+    override getPrimitives( stage: RenderStage ): Primitive[]
     {
-        if ( this._num_floats < 6 ) {
+        // @ts-ignore
+        const num_floats = this.getEntity()._num_floats;
+        if ( num_floats < 6 ) {
             // 2頂点未満は表示しない
             return [];
         }
         else {
             this._updatePrimitive();
-            return stage.getRenderTarget() === RenderTarget.SCENE ? this._primitives : this._pickPrimitives;
+            return stage.getRenderTarget() === RenderStage.RenderTarget.SCENE ? this._primitives : this._pickPrimitives;
         }
     }
 
 
     /**
-     * @summary 頂点が変更されたことを通知
+     * 頂点が変更されたことを通知
      */
     onChangePoints()
     {
@@ -271,7 +364,7 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
 
     /**
-     * @summary プロパティが変更されたことを通知
+     * プロパティが変更されたことを通知
      */
     onChangeProperty()
     {
@@ -279,31 +372,28 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
 
     /**
-     * @summary プリミティブの更新
+     * プリミティブの更新
      *
-     * @desc
-     * <pre>
      * 条件: this._num_floats >= 6
-     * 入力:
-     *   this._geom_dirty
-     *   this.entity._point_array
-     *   this.entity._num_floats
-     *   this.entity._width
-     *   this.entity._color
-     *   this.entity._opacity
-     *   this.entity._length_array
-     * 出力:
-     *   this._transform
-     *   this._pivot
-     *   this._bbox
-     *   this._properties
-     *   this._primitive.mesh
-     *   this._geom_dirty
-     * </pre>
      *
-     * @private
+     * 入力:
+     * - this._geom_dirty
+     * - this.entity._point_array
+     * - this.entity._num_floats
+     * - this.entity._width
+     * - this.entity._color
+     * - this.entity._opacity
+     * - this.entity._length_array
+     * 出力:
+     * - this._transform
+     * - this._pivot
+     * - this._bbox
+     * - this._properties
+     * - this._primitive.mesh
+     * - this._geom_dirty
+     *
      */
-    _updatePrimitive()
+    private _updatePrimitive()
     {
         this._updateProperties();
 
@@ -312,11 +402,12 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
             return;
         }
 
-        let entity = this.entity;
+        const entity = this.getEntity();
 
         // GeoPoint 平坦化配列を GOCS 平坦化配列に変換
         var  num_points = this._numPoints();
         var gocs_buffer = GeoPoint.toGocsArray( this._getFlatGeoPoints_with_Absolute(), num_points,
+                                                // @ts-ignore
                                                 new Float64Array( entity._num_floats ) );
 
         // プリミティブの更新
@@ -325,7 +416,8 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
         //   primitive.bbox
         this._updateTransformPivotBBox( gocs_buffer, num_points );
 
-        let add_length = (entity._line_type === LineType.PATH);
+        let add_length = (entity.getLineType() === AbstractLineEntity.LineType.PATH);
+        // @ts-ignore
         let length_array = add_length ? entity._length_array : undefined;
 
         // メッシュ生成
@@ -383,14 +475,19 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
      */
     _updateProperties()
     {
-        let entity = this.entity;
+        let entity = this.getEntity();
         let props  = this._properties;
 
-        props.width = entity._width;
-        GeoMath.copyVector3( entity._color, props.color );
+        props.width = entity.getLineWidth();
+        GeoMath.copyVector3( entity.getColor(), props.color );
+        // @ts-ignore
         props.opacity = entity._opacity;
-        props.lower_length = entity._lower_length;
-        props.upper_length = entity._upper_length;
+        if (entity.getLineType() === AbstractLineEntity.LineType.PATH) {
+            // @ts-ignore
+            props.lower_length = entity._lower_length;
+            // @ts-ignore
+            props.upper_length = entity._upper_length;
+        }
     }
 
 
@@ -402,8 +499,9 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
      */
     _getFlatGeoPoints_with_Absolute()
     {
-        let entity      = this.entity;
-        let point_array = entity._point_array;
+        let entity      = this.getEntity();
+        let point_array = entity.getPointArray();
+        // @ts-ignore
         let num_floats  = entity._num_floats;
 
         var abs_buffer = null;
@@ -432,21 +530,17 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
 
 
     /**
-     * @summary プリミティブの更新
+     * プリミティブの更新
      *
-     * @desc
-     * <pre>
      * 出力:
-     *   this._transform
-     *   this._pivot
-     *   this._bbox
-     * </pre>
+     * - this._transform
+     * - this._pivot
+     * - this._bbox
      *
-     * @param {Float64Array} gocs_buffer  入力頂点配列 (GOCS)
-     * @param {number}       num_points   入力頂点数
-     * @private
+     * @param gocs_buffer  入力頂点配列 (GOCS)
+     * @param num_points   入力頂点数
      */
-    _updateTransformPivotBBox( gocs_buffer, num_points )
+    private _updateTransformPivotBBox( gocs_buffer: Float64Array, num_points: number )
     {
         // モデル座標系の原点 (GOCS)
         var ox = gocs_buffer[0];
@@ -519,7 +613,7 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
      *
      * @private
      */
-    _createVertices( gocs_buffer, num_points, length_array = undefined )
+    _createVertices( gocs_buffer: Float64Array, num_points: number, length_array?: number[] )
     {
         // 頂点の距離を追加するか
         var add_length = (length_array !== undefined);
@@ -578,6 +672,7 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
                 }
 
                 if ( add_length ) {
+                    // @ts-ignore
                     vertices[id + 8] = length_array[start ? i : i + 1];
                 }
             }
@@ -631,7 +726,9 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
      */
     _numPoints()
     {
-        return Math.floor( this.entity._num_floats / 3 );
+        // @ts-ignore
+        const num_floats = this.getEntity()._num_floats;
+        return Math.floor( num_floats / 3 );
     }
 
 }
@@ -642,29 +739,42 @@ class PrimitiveProducer extends Entity.PrimitiveProducer {
  *
  * @private
  */
-class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
+export class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
+
+    private _material_map: Map<RenderStage.RenderTarget, object>;
+
+    private _area_manager: LineAreaManager;
+
+    private _properties?: {};
 
     /**
-     * @param {mapray.MarkerLineEntity} entity
+     * @param entity
      */
-    constructor( entity )
+    constructor( entity: AbstractLineEntity )
     {
         super( entity );
 
-        this._material_map = Object.keys(RenderTarget).reduce((map, key) => {
-                const render_target = RenderTarget[key];
-                map.set( render_target, entity._getLineMaterial( render_target ) );
-                return map;
-        }, new Map());
-        this._properties   = null;
+        this._material_map = new Map<RenderStage.RenderTarget, object>();
+        RenderStage.ListOfRenderTarget.forEach(renderTarget => {
+                // @ts-ignore
+                this._material_map.set( renderTarget, entity._getLineMaterial( renderTarget ) );
+        });
+
+        this._properties   = undefined;
         this._area_manager = new LineAreaManager( entity );
+    }
+
+
+    getEntity(): AbstractLineEntity
+    {
+        return super.getEntity() as AbstractLineEntity;
     }
 
 
     /**
      * @override
      */
-    getAreaStatus( area )
+    getAreaStatus( area: Entity.AreaStatus )
     {
         return this._area_manager.getAreaStatus( area );
     }
@@ -673,14 +783,14 @@ class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
     /**
      * @override
      */
-    createMesh( area, dpows, dem )
+    createMesh( area: AreaUtil.Area, dpows: number[], dem: any ): Mesh | null // DemBinary
     {
         let segments = this._divideXY( area, dpows );
         if ( segments.length == 0 ) {
             return null;
         }
 
-        let add_length = (this.entity._line_type === LineType.PATH);
+        let add_length = (this.getEntity().getLineType() === LineType.PATH);
 
         // メッシュ生成
         let mesh_data = {
@@ -697,26 +807,30 @@ class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
             mesh_data.vtype.push( { name: "a_length", size: 1 } );
         }
 
-        return new Mesh( this.entity.scene.glenv, mesh_data );
+        return new Mesh( this.getEntity().scene.glenv, mesh_data );
     }
 
 
     /**
-     * @override
      */
-    getMaterialAndProperties( stage )
+    override getMaterialAndProperties( stage: RenderStage )
     {
-        if ( this._properties === null ) {
-            let entity = this.entity;
+        if ( !this._properties ) {
+            let entity = this.getEntity();
             this._properties = {
+                // @ts-ignore
                 width:   entity._width,
+                // @ts-ignore
                 color:   GeoMath.createVector3f( entity._color ),
+                // @ts-ignore
                 opacity: entity._opacity
             };
 
-            if ( entity._line_type == LineType.PATH ) {
-                this._properties["lower_length"] = entity._lower_length;
-                this._properties["upper_length"] = entity._upper_length;
+            if ( entity.getLineType() === LineType.PATH ) {
+                // @ts-ignore
+                this._properties.lower_length = entity._lower_length;
+                // @ts-ignore
+                this._properties.upper_length = entity._upper_length;
             }
         }
 
@@ -742,20 +856,18 @@ class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
      */
     onChangeProperty()
     {
-        this._properties = null;
+        this._properties = undefined;
     }
 
 
     /**
      * @summary すべての線分を垂直グリッドで分割
      *
-     * @param {mapray.Area} area   地表断片の領域
-     * @param {number}      msize  area 寸法 ÷ π (厳密値)
-     * @param {number}      dpow   area の x 分割指数
-     *
-     * @private
+     * @param area   地表断片の領域
+     * @param msize  area 寸法 ÷ π (厳密値)
+     * @param dpow   area の x 分割指数
      */
-    _divideXOnly( area, msize, dpow )
+    private _divideXOnly( area: AreaUtil.Area, msize: number, dpow: number )
     {
         let x_min = Math.PI * (area.x * msize - 1);
         let x_max = Math.PI * ((area.x + 1) * msize - 1);
@@ -844,12 +956,10 @@ class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
     /**
      * @summary すべての線分をグリッドで分割
      *
-     * @param {mapray.Area} area   地表断片の領域
-     * @param {number[]}    dpows  area の xy 分割指数
-     *
-     * @private
+     * @param area   地表断片の領域
+     * @param dpows  area の xy 分割指数
      */
-    _divideXY( area, dpows )
+    private _divideXY( area: AreaUtil.Area, dpows: number[] ): [number, number, number, number, number, number][]
     {
         // area 寸法 ÷ π (厳密値)
         // 線分の場合、領域の端によるクリッピングがシビアなので厳密値 (2^整数) を使う
@@ -862,7 +972,7 @@ class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
         let  div_y = 1 << dpows[1];            // 縦分割数: 2^dpow
         let step_y = (y_max - y_min) / div_y;  // 縦分割間隔
 
-        let segments = [];
+        let segments: [number, number, number, number, number, number][] = [];
 
         // 水平グリッド線で分割
         for ( let [px, py, pl, qx, qy, ql] of this._divideXOnly( area, msize, dpows[0] ) ) {
@@ -941,16 +1051,14 @@ class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
 
 
     /**
-     * @summary 頂点配列の生成
+     * 頂点配列の生成
      *
-     * @param {mapray.Area}      area  地表断片の領域
-     * @param {mapray.DemBinary} dem   DEM バイナリ
+     * @param area  地表断片の領域
+     * @param dem   DEM バイナリ
      *
-     * @return {Float32Array}  Mesh 用の頂点配列
-     *
-     * @private
+     * @return Mesh 用の頂点配列
      */
-    _createVertices( area, dem, segments, add_length = false )
+    private _createVertices( area: AreaUtil.Area, dem: DemBinary, segments: [number, number, number, number, number, number][], add_length: boolean = false ): Float32Array
     {
         let sampler = dem.newLinearSampler();
         let [ox, oy, oz] = AreaUtil.getCenter( area, GeoMath.createVector3() );
@@ -1021,15 +1129,13 @@ class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
 
 
     /**
-     * @summary @summary 頂点インデックスの生成
+     * 頂点インデックスの生成
      *
-     * @param {number} num_segments  線分の数
+     * @param num_segments  線分の数
      *
-     * @return {Uint32Array}  Mesh 用の頂点インデックス
-     *
-     * @private
+     * @return Mesh 用の頂点インデックス
      */
-    _createIndices( num_segments )
+    private _createIndices( num_segments: number ): Uint32Array
     {
         let num_indices = 6 * num_segments;
         let indices     = new Uint32Array( num_indices );
@@ -1055,7 +1161,7 @@ class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
  * @private
  */
 function
-toGocs( x, y, sampler )
+toGocs( x: number, y: number, sampler: DemSampler )
 {
     let λ = x;
     let φ = GeoMath.gudermannian( y );
@@ -1074,12 +1180,14 @@ toGocs( x, y, sampler )
  *
  * @private
  */
-class LineAreaManager extends QAreaManager {
+export class LineAreaManager extends QAreaManager {
+
+    private _entity: AbstractLineEntity;
 
     /**
-     * @param {mapray.MarkerLineEntity} entity  管理対象のエンティティ
+     * @param entity  管理対象のエンティティ
      */
-    constructor( entity )
+    constructor( entity: AbstractLineEntity )
     {
         super();
 
@@ -1090,16 +1198,17 @@ class LineAreaManager extends QAreaManager {
     /**
      * @override
      */
-    getInitialContent()
+    getInitialContent(): [number, number, number, number, number, number][]
     {
         const Degree = GeoMath.DEGREE;
         const RAngle = Math.PI / 2;  // 直角
         const TwoPI  = 2 * Math.PI;  // 2π
 
-        let segments = [];
+        let segments: [number, number, number, number, number, number][] = [];
 
         // 頂点データ
-        let points    = this._entity._point_array;
+        let points    = this._entity.getPointArray();
+        // @ts-ignore
         let end_point = this._entity._num_floats;
 
         if ( end_point < 6 ) {
@@ -1107,7 +1216,9 @@ class LineAreaManager extends QAreaManager {
             return segments;
         }
 
+        // @ts-ignore
         let is_path = (this._entity._line_type === LineType.PATH);
+        // @ts-ignore
         let length_array = is_path ? this._entity._length_array : null;
 
         // 線分の始点 (ラジアン)
@@ -1173,9 +1284,8 @@ class LineAreaManager extends QAreaManager {
 
 
     /**
-     * @override
      */
-    createAreaContent( min_x, min_y, msize, parent_content )
+    override createAreaContent( min_x: number, min_y: number, msize: number, parent_content: [number, number, number, number, number, number][] )
     {
         // 単位球メルカトルでの領域に変換
         const x_area_min = Math.PI * min_x;
@@ -1197,32 +1307,27 @@ class LineAreaManager extends QAreaManager {
 
 
     /**
-     * @summary 矩形と線分の交差判定
+     * 矩形と線分の交差判定
      *
-     * @desc
-     * <p>矩形領域と線分が交差するかどうかを返す。</p>
-     * <p>矩形領域には x 座標が x_area_max の点と、y 座標が y_area_max の点は含まれないものとする。</p>
+     * 矩形領域と線分が交差するかどうかを返す。
+     * 矩形領域には x 座標が x_area_max の点と、y 座標が y_area_max の点は含まれないものとする。
      *
-     * <pre>
      * 事前条件:
-     *   x_area_min < x_area_max
-     *   y_area_min < y_area_max
-     * </pre>
+     * - x_area_min < x_area_max
+     * - y_area_min < y_area_max
      *
-     * @param {number} x_area_min  矩形領域の最小 x 座標
-     * @param {number} x_area_max  矩形領域の最大 x 座標
-     * @param {number} y_area_min  矩形領域の最小 y 座標
-     * @param {number} y_area_max  矩形領域の最大 y 座標
-     * @param {number} xP          線分端点 P の x 座標
-     * @param {number} yP          線分端点 P の y 座標
-     * @param {number} xQ          線分端点 Q の x 座標
-     * @param {number} yQ          線分端点 Q の y 座標
+     * @param x_area_min  矩形領域の最小 x 座標
+     * @param x_area_max  矩形領域の最大 x 座標
+     * @param y_area_min  矩形領域の最小 y 座標
+     * @param y_area_max  矩形領域の最大 y 座標
+     * @param xP          線分端点 P の x 座標
+     * @param yP          線分端点 P の y 座標
+     * @param xQ          線分端点 Q の x 座標
+     * @param yQ          線分端点 Q の y 座標
      *
      * @return {boolean}  交差するとき true, それ以外のとき false
-     *
-     * @private
      */
-    _intersect( x_area_min, x_area_max, y_area_min, y_area_max, xP, yP, xQ, yQ )
+    private _intersect( x_area_min: number, x_area_max: number, y_area_min: number, y_area_max: number, xP: number, yP: number, xQ: number, yQ: number )
     {
         if ( Math.abs( xP - xQ ) < Math.abs( yP - yQ ) ) {
             // 線分が垂直に近いとき
@@ -1236,35 +1341,31 @@ class LineAreaManager extends QAreaManager {
 
 
     /**
-     * @summary 矩形と非水平線分の交差判定
+     * 矩形と非水平線分の交差判定
      *
-     * @desc
-     * <p>矩形領域と線分が交差するかどうかを返す。</p>
-     * <p>矩形領域には x 座標が x_area_max の点と、y 座標が y_area_max の点は含まれないものとする。</p>
+     * 矩形領域と線分が交差するかどうかを返す。
+     * 矩形領域には x 座標が x_area_max の点と、y 座標が y_area_max の点は含まれないものとする。
      *
-     * <pre>
      * 事前条件:
-     *   x_area_min < x_area_max
-     *   y_area_min < y_area_max
-     *   yP != yQ
-     * </pre>
+     * - x_area_min < x_area_max
+     * - y_area_min < y_area_max
+     * - yP != yQ
      *
-     * <p>注意: |yP - yQ| が小さいと精度が悪くなる。</p>
      *
-     * @param {number} x_area_min  矩形領域の最小 x 座標
-     * @param {number} x_area_max  矩形領域の最大 x 座標
-     * @param {number} y_area_min  矩形領域の最小 y 座標
-     * @param {number} y_area_max  矩形領域の最大 y 座標
-     * @param {number} xP          線分端点 P の x 座標
-     * @param {number} yP          線分端点 P の y 座標
-     * @param {number} xQ          線分端点 Q の x 座標
-     * @param {number} yQ          線分端点 Q の y 座標
+     * 注意: |yP - yQ| が小さいと精度が悪くなる。
      *
-     * @return {boolean}  交差するとき true, それ以外のとき false
+     * @param x_area_min  矩形領域の最小 x 座標
+     * @param x_area_max  矩形領域の最大 x 座標
+     * @param y_area_min  矩形領域の最小 y 座標
+     * @param y_area_max  矩形領域の最大 y 座標
+     * @param xP          線分端点 P の x 座標
+     * @param yP          線分端点 P の y 座標
+     * @param xQ          線分端点 Q の x 座標
+     * @param yQ          線分端点 Q の y 座標
      *
-     * @private
+     * @return 交差するとき true, それ以外のとき false
      */
-    _nhorz_intersect( x_area_min, x_area_max, y_area_min, y_area_max, xP, yP, xQ, yQ )
+    private _nhorz_intersect( x_area_min: number, x_area_max: number, y_area_min: number, y_area_max: number, xP: number, yP: number, xQ: number, yQ: number ): boolean
     {
         // 線分の y 座標の範囲
         let [y_line_min, y_line_max] = (yP < yQ) ? [yP, yQ] : [yQ, yP];
@@ -1293,27 +1394,26 @@ class LineAreaManager extends QAreaManager {
 
 
  /**
- * @summary エンティティの種類の列挙型
- * @enum {object}
- * @memberof mapray.AbstractLineEntity
- * @constant
- * @see mapray.AbstractLineEntity#line_type
+ * エンティティの種類の列挙型
  */
-var LineType = {
+export enum LineType {
 
     /**
      * MarkerLineEntity
      */
-    MARKERLINE: { id: "MARKERLINE" },
+    MARKERLINE,
 
 
     /**
      * PathEntity
      */
-    PATH: { id: "PATH" }
+    PATH,
 };
 
-AbstractLineEntity.LineType = LineType;
+
+
+} // namespace AbstractLineEntity
+
 
 
 export default AbstractLineEntity;
