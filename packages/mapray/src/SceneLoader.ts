@@ -213,10 +213,10 @@ class SceneLoader extends Loader {
             else {
                 switch ( type ) {
                 case "markerline":
-                    entity = new MarkerLineEntity( scene, { json: item, refs: this._references } );
+                    entity = new MarkerLineEntity( scene, { json: item, refs: this._references } as MarkerLineEntity.Option );
                     break;
                 case "path":
-                    entity = new PathEntity( scene, { json: item, refs: this._references } );
+                    entity = new PathEntity( scene, { json: item, refs: this._references } as PathEntity.Option );
                     break;
                 /*
                 case "text":

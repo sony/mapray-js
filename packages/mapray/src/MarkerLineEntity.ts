@@ -1,22 +1,22 @@
-import GeoMath from "./GeoMath";
+import GeoMath, { Vector3 } from "./GeoMath";
+import Scene from "./Scene";
+import Entity from "./Entity";
 import Type from "./animation/Type";
 import AbstractLineEntity from "./AbstractLineEntity";
 
 
 /**
- * @summary 太さ付き連続線エンティティ
- * @memberof mapray
- * @extends mapray.AbstractLineEntity
+ * 太さ付き連続線エンティティ
  */
 class MarkerLineEntity extends AbstractLineEntity {
 
+    private _num_floats: number;
+
     /**
-     * @param {mapray.Scene} scene        所属可能シーン
-     * @param {object}       [opts]       オプション集合
-     * @param {object}       [opts.json]  生成情報
-     * @param {object}       [opts.refs]  参照辞書
+     * @param scene 所属可能シーン
+     * @param opts  オプション集合
      */
-    constructor( scene, opts )
+    constructor( scene: Scene, opts: MarkerLineEntity.Option = {} )
     {
         super( scene, AbstractLineEntity.LineType.MARKERLINE, opts );
 
@@ -38,10 +38,8 @@ class MarkerLineEntity extends AbstractLineEntity {
 
     /**
      * アニメーションの BindingBlock を初期化
-     *
-     * @private
      */
-    _setupAnimationBindingBlock()
+    private _setupAnimationBindingBlock()
     {
         const block = this.animation;  // 実体は EasyBindingBlock
 
@@ -51,35 +49,34 @@ class MarkerLineEntity extends AbstractLineEntity {
         // パラメータ名: width
         // パラメータ型: number
         //   線の太さ
-        block.addEntry( "width", [number], null, value => {
+        block.addEntry( "width", [number], null, (value: number) => {
             this.setLineWidth( value );
         } );
         
         // パラメータ名: color
         // パラメータ型: vector3
         //   色
-        block.addEntry( "color", [vector3], null, value => {
+        block.addEntry( "color", [vector3], null, (value: Vector3) => {
             this.setColor( value );
         } );
         
         // パラメータ名: opacity
         // パラメータ型: number
         //   不透明度
-        block.addEntry( "opacity", [number], null, value => {
+        block.addEntry( "opacity", [number], null, (value: number) => {
             this.setOpacity( value );
         } );        
     }
 
 
     /**
-     * @summary 複数の頂点を追加
+     * 複数の頂点を追加
      *
-     * @desc
-     * <p>points は [lon_0, lat_0, alt_0, lon_1, lat_1, alt_1, ...] のような形式の配列を与える。</p>
+     * points は [lon_0, lat_0, alt_0, lon_1, lat_1, alt_1, ...] のような形式の配列を与える。
      *
-     * @param {number[]} points  頂点の配列
+     * @param points 頂点の配列
      */
-    addPoints( points )
+    addPoints( points: number[] )
     {
         var add_size = points.length;
         if ( add_size == 0 ) {
@@ -114,9 +111,8 @@ class MarkerLineEntity extends AbstractLineEntity {
 
 
     /**
-     * @private
      */
-    _setupByJson( json )
+    private _setupByJson( json: MarkerLineEntity.Json )
     {
         // json.points
         this.addPoints( json.points );
@@ -130,6 +126,32 @@ class MarkerLineEntity extends AbstractLineEntity {
     }
 
 }
+
+
+
+
+namespace MarkerLineEntity {
+
+
+
+export interface Option extends AbstractLineEntity.Option {
+    /**
+     * 生成情報
+     */
+    json?: Json;
+}
+
+
+
+export interface Json extends AbstractLineEntity.Json {
+    points: number[];
+}
+
+
+
+} // namespace MarkerLineEntity
+
+
 
 
 export default MarkerLineEntity;
