@@ -31,6 +31,7 @@ export { default as StandardImageProvider } from "./StandardImageProvider";
 
 // Entity
 export { default as Entity } from "./Entity";
+export { default as AbstractLineEntity } from "./AbstractLineEntity";
 export { default as MarkerLineEntity } from "./MarkerLineEntity";
 export { default as PathEntity } from "./PathEntity";
 export { default as TextEntity } from "./TextEntity";
