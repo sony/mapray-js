@@ -21,6 +21,7 @@ export { default as RenderCallback } from "./RenderCallback";
 export { default as StandardImageProvider } from "./StandardImageProvider";
 export { default as Scene } from "./Scene";
 export { default as Entity } from "./Entity";
+export { default as AbstractLineEntity } from "./AbstractLineEntity";
 export { default as MarkerLineEntity } from "./MarkerLineEntity";
 export { default as PathEntity } from "./PathEntity";
 export { default as TextEntity } from "./TextEntity";
