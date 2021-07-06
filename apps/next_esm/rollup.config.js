@@ -7,7 +7,6 @@ import postcss from 'rollup-plugin-postcss'
 import resolve from 'rollup-plugin-node-resolve'
 import commonjs from 'rollup-plugin-commonjs'
 import strip from '@rollup/plugin-strip';
-import { addLocalSettings } from '../rollup.config.local.js'
 
 var outdir = "dist/"
 
@@ -94,7 +93,6 @@ const config = (build) => {
 const loadLocalSetting = (env) => {
     const appDir = path.join(__dirname, '../')
     let bundle = config(env.BUILD)
-    bundle = addLocalSettings(env, appDir, bundle)
     return bundle
 }
 
