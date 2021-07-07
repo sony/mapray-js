@@ -1,10 +1,14 @@
 import GeoMath from "./GeoMath";
 import Mesh from "./Mesh";
 import MeshBuffer from "./MeshBuffer";
+import Texture from "./Texture";
 
 
 /**
  * @summary B3D バイナリーデータ
+ *
+ * @classdesc
+ * <p>B3D のタイルデータに対応するオブジェクトである。</p>
  *
  * @memberof mapray
  * @private
@@ -12,21 +16,27 @@ import MeshBuffer from "./MeshBuffer";
 class B3dBinary {
 
     /**
-     * @param {mapray.B3dNative} native
-     * @param {ArrayBuffer}      buffer  タイルデータのバイナリデータ
+     * @desc
+     * <p>初期化は create() から呼び出される。直接呼び出すことはできない。</p>
+     *
+     * @param {mapray.GLEnv}         glenv  WebGL 環境
+     * @param {mapray.B3dNative}    native  シーンの B3dNative インスタンス
+     * @param {Uint8Array}         vecdata  タイルデータの VECDATA 部
+     * @param {?HTMLImageElement} teximage  テクスチャ画像 (テクスチャ がないとき null)
      */
-    constructor( native, buffer )
+    constructor( glenv, native, vecdata, teximage )
     {
+        this._glenv  = glenv;
         this._native = native;
-        this._handle = native.addBinary( buffer );
+        this._handle = native.addBinary( vecdata );
 
         // ヘッダー情報を取得
-        let data = new DataView( buffer );
+        const dview = new DataView( vecdata.buffer, vecdata.byteOffset, vecdata.byteLength );
 
         // DESCENDANTS
         // 最上位の枝ノード
-        const tree_size = data.getUint16( B3dBinary.OFFSET_DESCENDANTS + 0, true );
-        const children  = data.getUint16( B3dBinary.OFFSET_DESCENDANTS + 2, true );
+        const tree_size = dview.getUint16( B3dBinary.OFFSET_DESCENDANTS + 0, true );
+        const children  = dview.getUint16( B3dBinary.OFFSET_DESCENDANTS + 2, true );
 
         this._void_areas = 0;
         this._is_leaf    = true;
@@ -47,7 +57,93 @@ class B3dBinary {
         }
 
         // CONTENTS
-        this._contents = data.getUint32( B3dBinary.OFFSET_DESCENDANTS + 4 * tree_size, true );
+        this._contents = dview.getUint32( B3dBinary.OFFSET_DESCENDANTS + 4 * tree_size, true );
+
+        // テクスチャ
+        this._texture = null;
+
+        if ( teximage !== null ) {
+            const gl = glenv.context;
+            this._texture = new Texture( glenv, teximage,
+                                         { mag_filter: gl.LINEAR,
+                                           min_filter: gl.LINEAR,
+                                           wrap_s: gl.CLAMP_TO_EDGE,
+                                           wrap_t: gl.CLAMP_TO_EDGE } );
+        }
+    }
+
+
+    /**
+     * @summary B3dBinary インスタンスを生成
+     *
+     * @param {mapray.GLEnv}      glenv  WebGL 環境
+     * @param {mapray.B3dNative} native  シーンの B3dNative インスタンス
+     * @param {ArrayBuffer}      buffer  タイルのバイナリーデータ
+     *
+     * @return {Promise.<mapray.B3dBinary>}
+     */
+    static async create( glenv, native, buffer )
+    {
+        const dview = new DataView( buffer );
+
+        let cursor = B3dBinary.OFFSET_VECDATA_PART;
+
+        const vecdata_size = dview.getUint32( B3dBinary.OFFSET_VECDATA_SIZE, true );  // VECDATA_SIZE
+        const vecdata_part = new Uint8Array( buffer, cursor, vecdata_size );          // VECDATA_PART
+        cursor += vecdata_size;
+
+        let   teximage = null;  // HTMLImageElement
+        const teximage_size = dview.getUint32( B3dBinary.OFFSET_TEXIMAGE_SIZE, true );  // TEXIMAGE_SIZE
+
+        if ( teximage_size > 0 ) {
+            const teximage_part = new Uint8Array( buffer, cursor, teximage_size );  // TEXIMAGE_PART
+            cursor += teximage_size;
+            teximage = await B3dBinary._create_teximage( teximage_part );
+        }
+
+        return new B3dBinary( glenv, native, vecdata_part, teximage );
+    }
+
+
+    /**
+     * @summary B3dBinary インスタンスを生成
+     *
+     * @param {Uint8Array} binary  TEXIMAGE_PART のデータ
+     *
+     * @return {Promise.<HTMLImageElement>}
+     *
+     * @private
+     */
+    static async _create_teximage( binary )
+    {
+        const dview = new DataView( binary.buffer, binary.byteOffset, binary.byteLength );
+
+        // MIME_TYPE_SIZE
+        const mimetype_size = dview.getUint32( B3dBinary.OFFSET_MIME_TYPE_SIZE, true );
+
+        let cursor = B3dBinary.OFFSET_MIME_TYPE;
+
+        // MIME_TYPE
+        const decoder = new TextDecoder();  // UTF-8 デコーダ
+        const mimetype = decoder.decode( new Uint8Array( binary.buffer, binary.byteOffset + cursor, mimetype_size ) );
+        cursor += align4( mimetype_size );
+
+        // WIDTH
+        const width = dview.getUint16( cursor, true );
+        cursor += 2;
+
+        // HEIGHT
+        const height = dview.getUint16( cursor, true );
+        cursor += 2;
+
+        // IMAGE_DATA_SIZE
+        const image_data_size = dview.getUint32( cursor, true );
+        cursor += 4;
+
+        // IMAGE_DATA
+        // TODO: Safari
+        const image_data = new Uint8Array( binary.buffer, binary.byteOffset + cursor, image_data_size );
+        return createImageBitmap( new Blob( [image_data], { type: mimetype } ) );
     }
 
 
@@ -99,6 +195,23 @@ class B3dBinary {
 
 
     /**
+     * @summary テクスチャを取得
+     *
+     * このタイルの描画に使うテクスチャを取得する。
+     *
+     * テクスチャが存在しないときは null を返す。
+     *
+     * ※ タイルにポリゴンが存在する場合は、必ずテクスチャが存在する。
+     *
+     * @return {?mapray.Texture}
+     */
+    getTexture()
+    {
+        return this._texture;
+    }
+
+
+    /**
      * @summary 切り取ったメッシュを取得
      *
      * @desc
@@ -107,13 +220,12 @@ class B3dBinary {
      *
      * <p>幾何が存在しないときは null を返す。</p>
      *
-     * @param {mapray.GlEnv}   glenv
      * @param {mapray.Vector3} origin  クリップ立方体の原点 (ALCS)
      * @param {number}         size    クリップ立方体の寸法 (ALCS)
      *
      * @return {?mapray.Mesh}  メッシュまたは null
      */
-    clip( glenv, origin, size )
+    clip( origin, size )
     {
         let mesh = null;
 
@@ -154,20 +266,20 @@ class B3dBinary {
             const itype = (num_vertices > 65536) ?
                 Mesh.ComponentType.UNSIGNED_INT : Mesh.ComponentType.UNSIGNED_SHORT;
 
-            mesh_init.addIndex( new MeshBuffer( glenv, triangles, { target: MeshBuffer.Target.INDEX } ),
+            mesh_init.addIndex( new MeshBuffer( this._glenv, triangles, { target: MeshBuffer.Target.INDEX } ),
                                 triangles.length,  // num_indices
                                 itype );
 
             // 頂点属性
             mesh_init.addAttribute( "a_position",
-                                    new MeshBuffer( glenv, positions ),
+                                    new MeshBuffer( this._glenv, positions ),
                                     3,  // num_components
                                     Mesh.ComponentType.UNSIGNED_SHORT,
                                     { normalized: true } );
 
             if ( n_array !== null ) {
                 mesh_init.addAttribute( "a_normal",
-                                        new MeshBuffer( glenv, n_array ),
+                                        new MeshBuffer( this._glenv, n_array ),
                                         3,  // num_components
                                         Mesh.ComponentType.BYTE,
                                         { normalized: true } );
@@ -175,13 +287,13 @@ class B3dBinary {
 
             if ( c_array !== null ) {
                 mesh_init.addAttribute( "a_color",
-                                        new MeshBuffer( glenv, c_array ),
+                                        new MeshBuffer( this._glenv, c_array ),
                                         3,  // num_components
                                         Mesh.ComponentType.UNSIGNED_BYTE,
                                         { normalized: true } );
             }
 
-            mesh = new Mesh( glenv, mesh_init );
+            mesh = new Mesh( this._glenv, mesh_init );
         } );
 
         return mesh;
@@ -222,6 +334,11 @@ class B3dBinary {
     {
         this._native.removeBinary( this._handle );
         this._handle = 0;
+
+        if ( this._texture !== null ) {
+            this._texture.dispose();
+            this._texture = null;
+        }
     }
 
 }
@@ -244,9 +361,17 @@ align4( bytes )
 }
 
 
+B3dBinary.OFFSET_VECDATA_SIZE  = 0;
+B3dBinary.OFFSET_TEXIMAGE_SIZE = 4;
+B3dBinary.OFFSET_VECDATA_PART  = 8;
+
+// vecdata part
 B3dBinary.OFFSET_DESCENDANTS    = 0;
 B3dBinary.CONTENTS_MASK_N_ARRAY = 1;
 B3dBinary.CONTENTS_MASK_C_ARRAY = 2;
 
+// teximage part
+B3dBinary.OFFSET_MIME_TYPE_SIZE = 0;
+B3dBinary.OFFSET_MIME_TYPE      = 4;
 
 export default B3dBinary;

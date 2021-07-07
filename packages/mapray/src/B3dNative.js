@@ -18,13 +18,13 @@ class B3dNative {
         this._emod = em_module;
 
         // wasm とやり取りするための一時変数
-        this._src_binary  = null;  // タイルデータ (ArrayBuffer)
+        this._src_binary  = null;  // タイルデータ (Uint8Array)
         this._clip_result = null;  // クリッピング結果を受け取る関数 (mapray.B3dNative.ClipResult)
         this._ray_result  = null;  // レイ判定結果を受け取る関数 (mapray.B3dNative.findRayDistance)
 
         // 関数登録: Tile.hpp の binary_copy_func_t を参照
         const binary_copy = em_module.addFunction( (dst_begin) => {
-            this._emod.HEAPU8.set( new Uint8Array( this._src_binary ), dst_begin );
+            this._emod.HEAPU8.set( this._src_binary, dst_begin );
             this._src_binary = null;
         }, "vi" );
 
@@ -52,14 +52,14 @@ class B3dNative {
     /**
      * @summary バイナリデータを追加
      *
-     * @param {ArrayBuffer} buffer  タイルデータのバイナリデータ
+     * @param {Uint8Array} binary  タイルデータのバイナリデータ
      *
      * @return {number}  オブジェクトハンドル
      */
-    addBinary( buffer )
+    addBinary( binary )
     {
-        this._src_binary = buffer;  // 次の呼び出しから間接的に参照される
-        return this._emod._tile_create( buffer.byteLength );
+        this._src_binary = binary;  // 次の呼び出しから間接的に参照される
+        return this._emod._tile_create( binary.byteLength );
     }
 
 

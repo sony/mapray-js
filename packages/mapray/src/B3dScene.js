@@ -39,6 +39,7 @@ class B3dScene {
     {
         this._owner      = owner;
         this._provider   = provider;
+        this._glenv      = owner.viewer.glenv;
         this._status     = TreeState.NOT_READY;
         this._native     = null;
         this._root_cube  = null;
@@ -297,15 +298,16 @@ class B3dScene {
             this._setupMetadata( meta_data );
 
             const [tile_data,
-                   em_module] = await Promise.all( [this._getRootTile(),
+                   em_module] = await Promise.all( [this._getRootTileArray(),
                                                     WasmTool.createEmObjectByModule( wa_module,
                                                                                      b3dtile_factory )] );
 
             this._native = new B3dNative( em_module );
 
             // 基底 Cube のタイルを設定
+            const b3d_binary = await B3dBinary.create( this._glenv, this._native, tile_data );
             this._root_cube = new B3dCube( null, -1 );
-            this._root_cube.$$setupRootNode( this, tile_data );
+            this._root_cube.$$setupRootNode( this, b3d_binary );
 
             this._status = TreeState.READY;
         }
@@ -349,7 +351,7 @@ class B3dScene {
      *
      * @private
      */
-    _getRootTile()
+    _getRootTileArray()
     {
         return new Promise( (resolve, reject) => {
             this._b3d_req_id = this._provider.requestTile( 0, [0, 0, 0], data => {
@@ -572,7 +574,6 @@ class B3dStage {
         else {
             // cube に対応するメッシュ情報を取得
             const mesh_node = cube.getMeshNode( target_level );
-            mesh_node.$$ensure( this._glenv );
 
             // メッシュ情報をリストに追加
             if ( mesh_node.hasGeometry() ) {
@@ -776,8 +777,8 @@ class B3dCube {
      */
     constructor( parent, which )
     {
-        this._owner      = undefined;
-        this._parent     = parent;
+        this._owner      = undefined;  // B3dScene
+        this._parent     = parent;     // B3dCube
         this._children   = null;  // 配列は必要になってから生成
         this._b3d_state  = B3dState.NONE;
         this._b3d_data   = null;  // B3dBinary または cancel ID または null
@@ -1131,15 +1132,12 @@ class B3dCube {
 
         const tree = this._owner;
 
-        const native = tree._native;
-        console.assert( native );
-
         const tile_coords = new Array( 3 );
         for ( let i = 0; i < 3; ++i ) {
             tile_coords[i] = this.area_origin[i] / this.area_size;
         }
 
-        this._b3d_data = tree._provider.requestTile( this.level, tile_coords, data => {
+        this._b3d_data = tree._provider.requestTile( this.level, tile_coords, async data => {
             if ( this._b3d_state !== B3dState.REQUESTED ) {
                 // キャンセルまたは this は破棄されている
                 return;
@@ -1147,8 +1145,11 @@ class B3dCube {
 
             if ( data !== null ) {
                 // タイルの読み込みに成功
+                const b3d_binary = await B3dBinary.create( tree._glenv, tree._native, data );
+                console.assert( this._b3d_state === B3dState.REQUESTED );
+
                 this._b3d_state = B3dState.LOADED;
-                this._b3d_data  = new B3dBinary( native, data );
+                this._b3d_data  = b3d_binary;
                 this._update_tile_in_descendants_for_load();
             }
             else {
@@ -1606,21 +1607,18 @@ class B3dCube {
      *
      * ※ B3dScene のみが使用
      *
-     * @param {mapray.B3dScene} owner  ツリーを所有するオブジェクト
-     * @param {ArrayBuffer}      data  バイナリデータ
+     * @param {mapray.B3dScene}       owner  ツリーを所有するオブジェクト
+     * @param {mapray.B3dBinary} b3d_binary  B3dBinary インスタンス
      *
      * @package
      */
-    $$setupRootNode( owner, data )
+    $$setupRootNode( owner, b3d_binary )
     {
-        console.assert( data );
-
-        const native = owner._native;
-        console.assert( native );
+        console.assert( b3d_binary instanceof B3dBinary );
 
         this._owner     = owner;
         this._b3d_state = B3dState.LOADED;
-        this._b3d_data  = new B3dBinary( native, data );
+        this._b3d_data  = b3d_binary;
 
         ++owner._num_tree_cubes;
     }
@@ -1646,9 +1644,6 @@ class MeshNode {
         this._cube = owner;
         this._key  = tile_cube.level;  // owner._mesh_nodes での this のキー
 
-        this._tile_mesh = null;  // tile_cube のタイルを owner の領域で切り取ったメッシュ
-        this._area_mesh = null;  // 立方体ワイヤーフレームメッシュ
-
         this._mesh_to_a0cs = MeshNode._get_area_to_a0cs( tile_cube );
 
         // クリップ立方体の寸法 (メッシュ座標系)
@@ -1672,8 +1667,9 @@ class MeshNode {
         const tree = owner._owner;
         ++tree._num_tree_meshes;
 
-        // ensure() で必要
-        this._tile_data = tile_cube._b3d_data;
+        // メッシュを生成
+        this._tile_mesh = tile_cube._b3d_data.clip( this._clip_origin, this._clip_size ) || MeshNode.EMPTY_TILE_MESH;
+        this._area_mesh = null;  // 立方体ワイヤーフレームメッシュ
     }
 
 
@@ -1697,6 +1693,8 @@ class MeshNode {
      */
     getTileMesh()
     {
+        console.assert( this.hasGeometry() );
+
         return this._tile_mesh;
     }
 
@@ -1853,28 +1851,6 @@ class MeshNode {
         indices[23] = 7;
 
         return indices;
-    }
-
-
-    /**
-     * @summary メッシュを使えるようにする
-     *
-     * ※ アルゴリズムと本質的に関係ない glenv を深いところまで持ち運ばないように、
-     *    構築子と処理を分けた。B3dStage が使用する専用メソッドである。
-     *
-     * @param {mapray.GlEnv} glenv
-     *
-     * @package
-     */
-    $$ensure( glenv )
-    {
-        if ( this._tile_mesh !== null ) {
-            // すでに処理済み
-            return;
-        }
-
-        // メッシュを生成
-        this._tile_mesh = this._tile_data.clip( glenv, this._clip_origin, this._clip_size ) || MeshNode.EMPTY_TILE_MESH;
     }
 
 
