@@ -310,6 +310,7 @@ class B3dScene {
             this._status = TreeState.READY;
         }
         catch ( e ) {
+            console.error( "b3dtile error: " + e.message );
             this._status = TreeState.FAILED;
         }
 
@@ -370,9 +371,23 @@ class B3dScene {
      */
     _setupMetadata( metadata )
     {
-        if ( (metadata.format === undefined) || (metadata.format > 1) ) {
-            // 未対応の形式
-            throw Error( "b3dtile format error" );
+        let tile_format = 1;
+
+        if ( (metadata.format === undefined) || (metadata.format > 2) ) {
+            // 認識できないメタデータ形式
+            throw Error( "unrecognized b3dtile metadata format" );
+        }
+
+        // タイルデータの形式
+        if ( metadata.tile_format !== undefined ) {
+            tile_format = metadata.tile_format;
+        }
+
+        if ( tile_format <= 1 ) {
+            throw Error( "tile_format " + tile_format + " is no longer supported" );
+        }
+        else if ( tile_format > 2 ) {
+            throw Error( "tile_format " + tile_format + " is unrecognized" );
         }
 
         // メタデータを取得
