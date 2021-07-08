@@ -21,6 +21,9 @@ class B3dMaterial extends Material {
         const preamble = B3dMaterial._getPreamble( debug );
         super( glenv, preamble + vs_code, preamble + fs_code );
 
+        this.bindProgram();
+        this.setInteger( "u_teximage", B3dMaterial.TEXUNIT_TEXIMAGE );
+
         this._clip_coloring = debug.clip_coloring;
     }
 
@@ -33,9 +36,12 @@ class B3dMaterial extends Material {
      *
      * @param {mapray.B3dScene.B3dStage} stage  レンダリングステージ
      * @param {mapray.Matrix}          to_a0cs  メッシュの位置座標から A0CS への変換行列
+     * @param {mapray.Texture}        teximage
      */
-    setParameters( stage, to_a0cs )
+    setParameters( stage, to_a0cs, teximage )
     {
+        console.assert( teximage );
+
         // mat4 u_obj_to_clip
         let obj_to_clip = B3dMaterial._obj_to_clip;
         GeoMath.mul_GA( stage._a0cs_to_clip, to_a0cs, obj_to_clip );
@@ -53,6 +59,10 @@ class B3dMaterial extends Material {
         // 環境光
         // float u_ambient
         this.setFloat( "u_ambient", 0.5 );
+
+        // テクスチャ画像
+        // uniform sampler2D u_teximage
+        this.bindTexture2D( B3dMaterial.TEXUNIT_TEXIMAGE, teximage.handle );
 
         // クリップされたタイルを着色
         if ( this._clip_coloring ) {
@@ -82,6 +92,9 @@ class B3dMaterial extends Material {
         return lines.join( "\n" ) + "\n\n";
     }
 }
+
+
+B3dMaterial.TEXUNIT_TEXIMAGE = 0;  // u_teximage 用のテクスチャユニット
 
 
 // 計算用一時領域

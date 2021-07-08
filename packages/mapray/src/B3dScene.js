@@ -706,9 +706,10 @@ class B3dStage {
         for ( let mesh_node of this._mesh_node_list ) {
 
             // TEST
-            this._clip_flag = (mesh_node._clip_size != 1);
+            this._clip_flag = mesh_node.isClipped();
 
-            material.setParameters( this, mesh_node.getTransform() );
+            material.setParameters( this, mesh_node.getTransform(), mesh_node.getTileTexture() );
+
             let mesh = mesh_node.getTileMesh();
             mesh.draw( material );
         }
@@ -1669,7 +1670,19 @@ class MeshNode {
 
         // メッシュを生成
         this._tile_mesh = tile_cube._b3d_data.clip( this._clip_origin, this._clip_size ) || MeshNode.EMPTY_TILE_MESH;
+        this._tile_texture = tile_cube._b3d_data.getTexture();
         this._area_mesh = null;  // 立方体ワイヤーフレームメッシュ
+    }
+
+
+    /**
+     * @summary メッシュはクリップされているか？
+     *
+     * @return {boolean}
+     */
+    isClipped()
+    {
+        return this._clip_size != 1;
     }
 
 
@@ -1696,6 +1709,17 @@ class MeshNode {
         console.assert( this.hasGeometry() );
 
         return this._tile_mesh;
+    }
+
+
+    /**
+     * @summary テクスチャを取得
+     *
+     * @return {?mapray.Texture}
+     */
+    getTileTexture()
+    {
+        return this._tile_texture;
     }
 
 
@@ -1778,6 +1802,8 @@ class MeshNode {
             this._tile_mesh.dispose();
             this._tile_mesh = null;
         }
+
+        this._tile_texture = null;
 
         if ( this._area_mesh !== null ) {
             this._area_mesh.dispose();
