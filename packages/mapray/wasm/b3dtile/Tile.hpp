@@ -53,7 +53,7 @@ class Tile {
      *
      *  data は資料 LargeScale3DScene の「タイルの形式」
      *
-     *  { POSITIONS, TRIANGLES, N_ARRAY, C_ARRAY }
+     *  { POSITIONS, TRIANGLES, N_ARRAY, TC_ARRAY }
      *
      *  の部分と同じ形式で格納されている。ただし、存在するデータは CONTENTS の値
      *  に従う。

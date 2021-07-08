@@ -15,7 +15,7 @@ class Tile::Analyzer : Base {
 
     // バイナリフォーマットの情報
     static constexpr uint32_t FLAG_N_ARRAY  = (1u << 0);
-    static constexpr uint32_t FLAG_C_ARRAY  = (1u << 1);
+    static constexpr uint32_t FLAG_TC_ARRAY = (1u << 1);
     static constexpr uint32_t FID_DATA      = (1u << 7);
     static constexpr uint32_t FLAG_TRI_TREE = (1u << 8);
 
@@ -37,7 +37,7 @@ class Tile::Analyzer : Base {
     const p_elem_t* positions;
     const void*     triangles;  // vindex_t[]
     const n_elem_t*   n_array;  // optional
-    const c_elem_t*   c_array;  // optional
+    const tc_elem_t* tc_array;  // optional
 
     // feature ID (optional)
     const uint32_t* fid_palette;  // (num_fid_entries > 0) ⇔ fid_palette ⇔ fid_indices
@@ -60,7 +60,7 @@ class Tile::Analyzer : Base {
         findex_size{ 0 },
         bindex_size{ 0 },
         n_array{ nullptr },
-        c_array{ nullptr},
+        tc_array{ nullptr},
         fid_palette{ nullptr },
         fid_indices{ nullptr },
         tblock_table{ nullptr },
@@ -94,10 +94,10 @@ class Tile::Analyzer : Base {
             offset += get_aligned<4>( DIM * sizeof( n_elem_t ) * num_vertices );
         }
 
-        // カラー配列 (C_ARRAY)
-        if ( contents & FLAG_C_ARRAY ) {
-            c_array = get_pointer<c_elem_t>( data, offset );
-            offset += get_aligned<4>( NUM_COLOR_COMPOS * sizeof( c_elem_t ) * num_vertices );
+        // テクスチャ座標配列 (TC_ARRAY)
+        if ( contents & FLAG_TC_ARRAY ) {
+            tc_array = get_pointer<tc_elem_t>( data, offset );
+            offset += get_aligned<4>( NUM_TEXCOORD_COMPOS * sizeof( tc_elem_t ) * num_vertices );
         }
 
         // feature ID データ

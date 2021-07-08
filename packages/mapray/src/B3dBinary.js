@@ -141,9 +141,43 @@ class B3dBinary {
         cursor += 4;
 
         // IMAGE_DATA
-        // TODO: Safari
         const image_data = new Uint8Array( binary.buffer, binary.byteOffset + cursor, image_data_size );
-        return createImageBitmap( new Blob( [image_data], { type: mimetype } ) );
+        const image_blob = new Blob( [image_data], { type: mimetype } );
+
+        return B3dBinary._create_image( image_blob );
+    }
+
+
+    /**
+     * @summary 画像データから Image を生成
+     *
+     * @param {Blob} image_blob  画像データ
+     *
+     * @return {Promise.<HTMLImageElement>}
+     *
+     * createImageBitmap() による実装のほうがよいが、Safari では対応していない。
+     * また Firefox では imageOrientation オプションが使えないので諦めた。
+     *
+     * @private
+     */
+    static _create_image( image_blob )
+    {
+        return new Promise( ( resolve, reject ) => {
+            const url = URL.createObjectURL( image_blob );
+            const img = new Image();
+
+            img.onload = function() {
+                resolve( img );
+                URL.revokeObjectURL( url );
+            };
+
+            img.onerror = function( e ) {
+                reject( e );
+                URL.revokeObjectURL( url );
+            };
+
+            img.src = url;
+        } );
     }
 
 

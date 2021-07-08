@@ -29,9 +29,9 @@ class Tile::Base {
     static constexpr size_t NUM_TRI_CORNERS = 3;
 
 
-    /** @brief カラーの要素数
+    /** @brief テクスチャ座標の要素数
      */
-    static constexpr size_t NUM_COLOR_COMPOS = 3;
+    static constexpr size_t NUM_TEXCOORD_COMPOS = 2;
 
 
     /** @brief DESCENDANTS フィールドの先頭データからの位置
@@ -70,9 +70,9 @@ class Tile::Base {
     using n_elem_t = std::int8_t;
 
 
-    /** @brief タイルのカラー要素の型
+    /** @brief タイルのテクスチャ座標要素の型
      */
-    using c_elem_t = std::uint8_t;
+    using tc_elem_t = std::uint16_t;
 
 
     /** @brief タイル全体の直方体 (ALCS)

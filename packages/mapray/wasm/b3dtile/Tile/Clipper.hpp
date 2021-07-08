@@ -355,10 +355,10 @@ class Tile::Clipper : Base {
                 buffer_size += get_aligned<4>( DIM * sizeof( n_elem_t ) * num_vertices_ );
             }
 
-            // カラー配列 (C_ARRAY)
-            offset_c_array_ = buffer_size;
-            if ( adata_.c_array ) {
-                buffer_size += get_aligned<4>( NUM_COLOR_COMPOS * sizeof( c_elem_t ) * num_vertices_ );
+            // テクスチャ座標配列 (TC_ARRAY)
+            offset_tc_array_ = buffer_size;
+            if ( adata_.tc_array ) {
+                buffer_size += get_aligned<4>( NUM_TEXCOORD_COMPOS * sizeof( tc_elem_t ) * num_vertices_ );
             }
 
             // バッファを確保
@@ -423,12 +423,12 @@ class Tile::Clipper : Base {
                                                 new_index );
                 }
 
-                // C_ARRAY
-                if ( adata_.c_array ) {
-                    copy_vertex_to_buffer<NUM_COLOR_COMPOS>( adata_.c_array,
-                                                             old_index,
-                                                             offset_c_array_,
-                                                             new_index );
+                // TC_ARRAY
+                if ( adata_.tc_array ) {
+                    copy_vertex_to_buffer<NUM_TEXCOORD_COMPOS>( adata_.tc_array,
+                                                                old_index,
+                                                                offset_tc_array_,
+                                                                new_index );
                 }
             }
         }
@@ -466,12 +466,12 @@ class Tile::Clipper : Base {
                                                            dst_vindex );
                     }
 
-                    // C_ARRAY
-                    if ( adata_.c_array ) {
-                        interpolate_vertex_to_buffer<NUM_COLOR_COMPOS>( triangle, mu,
-                                                                        adata_.c_array,
-                                                                        offset_c_array_,
-                                                                        dst_vindex );
+                    // TC_ARRAY
+                    if ( adata_.tc_array ) {
+                        interpolate_vertex_to_buffer<NUM_TEXCOORD_COMPOS>( triangle, mu,
+                                                                           adata_.tc_array,
+                                                                           offset_tc_array_,
+                                                                           dst_vindex );
                     }
 
                     ++dst_vindex;
@@ -591,7 +591,7 @@ class Tile::Clipper : Base {
         size_t offset_positions_;
         size_t offset_triangles_;
         size_t offset_n_array_;
-        size_t offset_c_array_;
+        size_t offset_tc_array_;
 
         std::vector<byte_t> buffer_;
 
