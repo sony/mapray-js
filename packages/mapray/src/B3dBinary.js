@@ -287,10 +287,10 @@ class B3dBinary {
                 pointer += align4( n_array.byteLength );
             }
 
-            let c_array = null;
-            if ( (this._contents & B3dBinary.CONTENTS_MASK_C_ARRAY) != 0 ) {
-                c_array = new Uint8Array( buffer, pointer, 3 * num_vertices );
-                pointer += align4( c_array.byteLength );
+            let tc_array = null;
+            if ( (this._contents & B3dBinary.CONTENTS_MASK_TC_ARRAY) != 0 ) {
+                tc_array = new Uint16Array( buffer, pointer, 2 * num_vertices );
+                pointer += align4( tc_array.byteLength );
             }
 
             //
@@ -319,11 +319,11 @@ class B3dBinary {
                                         { normalized: true } );
             }
 
-            if ( c_array !== null ) {
-                mesh_init.addAttribute( "a_color",
-                                        new MeshBuffer( this._glenv, c_array ),
-                                        3,  // num_components
-                                        Mesh.ComponentType.UNSIGNED_BYTE,
+            if ( tc_array !== null ) {
+                mesh_init.addAttribute( "a_texcoord",
+                                        new MeshBuffer( this._glenv, tc_array ),
+                                        2,  // num_components
+                                        Mesh.ComponentType.UNSIGNED_SHORT,
                                         { normalized: true } );
             }
 
@@ -400,9 +400,9 @@ B3dBinary.OFFSET_TEXIMAGE_SIZE = 4;
 B3dBinary.OFFSET_VECDATA_PART  = 8;
 
 // vecdata part
-B3dBinary.OFFSET_DESCENDANTS    = 0;
-B3dBinary.CONTENTS_MASK_N_ARRAY = 1;
-B3dBinary.CONTENTS_MASK_C_ARRAY = 2;
+B3dBinary.OFFSET_DESCENDANTS     = 0;
+B3dBinary.CONTENTS_MASK_N_ARRAY  = 1;
+B3dBinary.CONTENTS_MASK_TC_ARRAY = 2;
 
 // teximage part
 B3dBinary.OFFSET_MIME_TYPE_SIZE = 0;
