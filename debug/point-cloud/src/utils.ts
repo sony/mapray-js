@@ -1,5 +1,5 @@
 
-const snakeToCamel = (snake) => {
+const snakeToCamel = (snake: string) => {
     return snake.replace(
         new RegExp("(_?)([^_])([^_]*)", "g"),
         (matched, underscore, first_char, others) => (
