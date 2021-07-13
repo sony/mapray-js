@@ -44,13 +44,13 @@ deploy:
     script: bash ./_deploy/scripts/setup_deploy.sh -t mapray -a production
     on:
       tags: true
-      condition: $TRAVIS_TAG =~ [0-9]+(\.[0-9]+)
+      condition: $TRAVIS_TAG =~ ^[0-9]+\.[0-9]+\.[0-9]+$
   - provider: script
     skip_cleanup: true
     script: bash ./_deploy/scripts/setup_deploy.sh -t ui -a production
     on:
       tags: true
-      condition: $TRAVIS_TAG =~ [0-9]+(\.[0-9]+)
+      condition: $TRAVIS_TAG =~ ^[0-9]+\.[0-9]+\.[0-9]+$
   - provider: script
     skip_cleanup: true
     script: bash ./_deploy/scripts/deploy_to_cdn.sh ${FIREBASE_DEV_PROJECT} ${FIREBASE_DEPLOY_TOKEN}
@@ -61,22 +61,42 @@ deploy:
     script: bash ./_deploy/scripts/deploy_to_cdn.sh ${FIREBASE_STG_PROJECT} ${FIREBASE_DEPLOY_TOKEN}
   - provider: script
     skip_cleanup: true
+    script: bash ./_deploy/scripts/deploy_to_cdn.sh ${FIREBASE_DEV_PROJECT} ${FIREBASE_DEPLOY_TOKEN}
+    on:
+      tags: true
+      condition: $TRAVIS_TAG =~ ^[0-9]+\.[0-9]+\.[0-9]+-(dev|alpha|beta|rc)\.[0-9]+
+  - provider: script
+    skip_cleanup: true
     script: bash ./_deploy/scripts/deploy_to_cdn.sh ${FIREBASE_PROD_PROJECT} ${FIREBASE_DEPLOY_TOKEN}
     on:
       tags: true
-      condition: $TRAVIS_TAG =~ [0-9]+(\.[0-9]+)
+      condition: $TRAVIS_TAG =~ ^[0-9]+\.[0-9]+\.[0-9]+$
+
   - provider: script
-    skip_cleanup: true
-    script: bash ./_deploy/scripts/deploy_to_npm_com.sh -t mapray -n ${NPM_TOKEN}
-    on:
-      tags: true
-      condition: $TRAVIS_TAG =~ [0-9]+(\.[0-9]+)
+      skip_cleanup: true
+      script: bash ./_deploy/scripts/deploy_to_npm_com.sh -t mapray -n ${NPM_TOKEN}
+      on:
+        tags: true
+        condition: $TRAVIS_TAG =~ ^[0-9]+\.[0-9]+\.[0-9]+-(dev|alpha|beta|rc)\.[0-9]+
   - provider: script
     skip_cleanup: true
     script: bash ./_deploy/scripts/deploy_to_npm_com.sh -t ui -n ${NPM_TOKEN}
     on:
       tags: true
-      condition: $TRAVIS_TAG =~ [0-9]+(\.[0-9]+)
+      condition: $TRAVIS_TAG =~ ^[0-9]+\.[0-9]+\.[0-9]+-(dev|alpha|beta|rc)\.[0-9]+
+
+  - provider: script
+    skip_cleanup: true
+    script: bash ./_deploy/scripts/deploy_to_npm_com.sh -t mapray -n ${NPM_TOKEN}
+    on:
+      tags: true
+      condition: $TRAVIS_TAG =~ ^[0-9]+\.[0-9]+\.[0-9]+$
+  - provider: script
+    skip_cleanup: true
+    script: bash ./_deploy/scripts/deploy_to_npm_com.sh -t ui -n ${NPM_TOKEN}
+    on:
+      tags: true
+      condition: $TRAVIS_TAG =~ ^[0-9]+\.[0-9]+\.[0-9]+$
   - provider: script
     skip_cleanup: true
     script: bash ./_deploy/scripts/deploy_to_npm_com.sh -t mapray -n ${NPM_TOKEN} -d
@@ -87,4 +107,5 @@ deploy:
     script: bash ./_deploy/scripts/deploy_to_npm_com.sh -t ui -n ${NPM_TOKEN} -d
     on:
       all_branches: true
+
 

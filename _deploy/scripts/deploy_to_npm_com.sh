@@ -10,6 +10,7 @@ usage_exit() {
 _TARGET="null"
 _NPM_TOKEN="null"
 _DEV_FLAG=0
+_NPM_TAG="latest"
 
 while getopts :t:n:d OPT
 do
@@ -50,14 +51,14 @@ fi
 
 #_VERSION=`git describe --tags --abbrev=0`
 _CURRENT_VERSION=`node -pe "require('${PACKAGE_ROOT}/package.json').version"`
-_VERSION=${_CURRENT_VERSION} 
+_VERSION=${_CURRENT_VERSION}
 _FILE_NAME=mapray-${_NAME}-v${_VERSION}.tgz
 
 if [ ${_DEV_FLAG} = 1 ]; then
   _VERSION=`git describe --tags`
   echo "dev mode _VERSION:"${_VERSION}
     echo "dev mode tag:"`git tag`
-  
+
   sed -i -e "s/@mapray\/${_NAME}/@mapray\/${_NAME}-dev/g" ${PACKAGE_ROOT}/package.json
   sed -i -e 's/\"version\": \"'${_CURRENT_VERSION}'\"/\"version\": \"'${_VERSION}'\"/g' ${PACKAGE_ROOT}/package.json
 
@@ -65,8 +66,8 @@ if [ ${_DEV_FLAG} = 1 ]; then
   if [ ${_TARGET} = "ui" ]; then
     sed -i -e "s/\"@mapray\/mapray-js\": \"^${_CURRENT_VERSION}\"/\"@mapray\/mapray-js-dev\": \"${_VERSION}\"/g" ${PACKAGE_ROOT}/package.json
 
-    ## NOTICE!! replace builded files directly, if depencency would be added, you would add other depencncy 
-    ## Following will replace from mapray-js to mapray-js-dev 
+    ## NOTICE!! replace builded files directly, if depencency would be added, you would add other depencncy
+    ## Following will replace from mapray-js to mapray-js-dev
     sed -i -e "s/@mapray\/mapray-js/@mapray\/mapray-js-dev/g" ${PACKAGE_ROOT}/dist/es/maprayui.js
     sed -i -e "s/@mapray\/mapray-js/@mapray\/mapray-js-dev/g" ${PACKAGE_ROOT}/dist/es/maprayui.js.map
     sed -i -e "s/@mapray\/mapray-js/@mapray\/mapray-js-dev/g" ${PACKAGE_ROOT}/dist/es/maprayui.mjs
@@ -81,10 +82,17 @@ if [ ${_DEV_FLAG} = 1 ]; then
     yarn pack
     cd -
   fi
-  
+
   cat ${PACKAGE_ROOT}/package.json
 fi
 
+## TagCheck
+if [[ ${TRAVIS_TAG} =~ ^[0-9]+\.[0-9]+\.[0-9]+-(dev|alpha|beta|rc)\.[0-9]+ ]]; then
+  echo ${BASH_REMATCH[1]}
+  _NPM_TAG=${BASH_REMATCH[1]}
+fi
+
 cd ${PACKAGE_ROOT}
-echo "Will publish, yarn publish "${_FILE_NAME}" version:"${_VERSION}" on `node -pe "require('${PACKAGE_ROOT}/package.json').name"`"
-yarn publish ${_FILE_NAME}
+echo "Will publish, yarn publish "${_FILE_NAME}" version:"${_VERSION}" tag:"${_NPM_TAG}" on `node -pe "require('${PACKAGE_ROOT}/package.json').name"`"
+# yarn publish ${_FILE_NAME} --tag ${_NPM_TAG}
+# Enable upper if this code finish test
