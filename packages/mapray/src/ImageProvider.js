@@ -27,6 +27,11 @@
  */
 class ImageProvider {
 
+
+    constructor() {
+    }
+
+
     /**
      * @summary 状態の取得
      * @desc

@@ -108,7 +108,7 @@ class FlakeRenderObject {
         primitive.properties = properties;
 
         return {
-            entity: edata.producer.entity,
+            entity: edata.producer.getEntity(),
             primitive: primitive
         };
     }
