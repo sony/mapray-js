@@ -7,7 +7,6 @@ import { snakeToCamel } from "./utils";
 import Option, { DomTool } from "./Option";
 
 
-
 const MAPRAY_ACCESS_TOKEN = "<your access token here>";
 const MAPRAY_API_BASE_PATH = "https://cloud.mapray.com";
 const MAPRAY_API_ACCESS_TOKEN = MAPRAY_ACCESS_TOKEN;
@@ -108,10 +107,40 @@ const RENDER_OPTION_PROPERTIES = [
 
 class PointCloudViewer extends maprayui.StandardUIViewer {
 
+    private _commander: Commander;
+
+    private _statusbar: StatusBar;
+
+    private _container: HTMLElement | string;
+
+    private _init_camera: mapray.GeoPointData;
+
+    private _init_camera_parameter: maprayui.StandardUIViewer.CameraParameterOption;
+
+    private _lookat_position: mapray.GeoPointData;
+
+    private _isChangedGIS: boolean;
+
+    private _layerUpParameter: number;
+
+    private _isGIS: boolean;
+
+    private _layer_transparency: number;
+
+    private _point_cloud_mode?: string;
+
+    private _point_cloud_cache: {
+        mode?: string;
+        bbox_geoms: number[];
+        pointCloudList?: mapray.PointCloud[];
+        ui?: HTMLElement;
+    };
+
+
     /**
      * @param {string|Element} container  コンテナ (ID または要素)
      */
-    constructor( container )
+    constructor( container: string | HTMLElement )
     {
         super( container, MAPRAY_ACCESS_TOKEN, { 
             debug_stats: new mapray.DebugStats(),
@@ -127,8 +156,12 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
             latitude: targetPos.latitude,
             longitude: targetPos.longitude,
             height: targetPos.altitude + 1000000,
-            fov: 46.0
         };
+
+        this._init_camera_parameter = {
+            fov: 46.0,
+        };
+
         this._lookat_position = {
             latitude: targetPos.latitude,
             longitude: targetPos.longitude,
@@ -142,7 +175,7 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
         this.setLookAtPosition( this._lookat_position );
 
         // カメラパラメータ
-        this.setCameraParameter( this._init_camera );
+        this.setCameraParameter( this._init_camera_parameter );
 
         // コンテンツ制御
         this._isChangedGIS = false;
@@ -152,7 +185,7 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
         this._isGIS = false;
         this._layer_transparency = 10; //layer
 
-        this._point_cloud_mode = null;
+        this._point_cloud_mode = undefined;
         this._point_cloud_cache = {
             bbox_geoms: []
         };
@@ -164,8 +197,6 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
     _closeViewer() 
     {
         this.destroy();
-        this._commander = null;
-        this._statusBar = null;
         this._isGIS = false;
         this._layer_transparency = 10;
     }
@@ -181,6 +212,7 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
 
         const tools = document.getElementById("tools") || (()=>{
                 const maprayContainer = document.getElementById("mapray-container");
+                if ( !maprayContainer ) throw new Error("?");
                 const tools = document.createElement("div");
                 tools.setAttribute("id", "tools");
                 maprayContainer.appendChild(tools);
@@ -197,18 +229,18 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
             const c2g = this.viewer.camera.getCanvasToGocs();
 
             const p = new mapray.GeoPoint();
-            const points = [];
+            const points: number[] = [];
             for ( let w=0; w<2; ++w ) for ( let v=0; v<2; ++v ) for ( let u=0; u<2; ++u ) {
               let x = u * this.viewer.canvas_element.width;
               let y = v * this.viewer.canvas_element.height;
               let z = w * 0.6;
 
-              const gocs_point = [
+              const gocs_point = mapray.GeoMath.createVector3([
                 x*c2g[0] + y*c2g[4] + z*c2g[ 8] + c2g[12],
                 x*c2g[1] + y*c2g[5] + z*c2g[ 9] + c2g[13],
                 x*c2g[2] + y*c2g[6] + z*c2g[10] + c2g[14],
-                x*c2g[3] + y*c2g[7] + z*c2g[11] + c2g[15],
-              ];
+                // x*c2g[3] + y*c2g[7] + z*c2g[11] + c2g[15],
+              ]);
               gocs_point[0] /= gocs_point[3];
               gocs_point[1] /= gocs_point[3];
               gocs_point[2] /= gocs_point[3];
@@ -219,7 +251,7 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
               points.push(p.altitude);
             }
 
-            const render_points = [0,1,3,2,0,4,5,1,5,7,3,7,6,2,6,4].reduce( (arr, index) => {
+            const render_points = [0,1,3,2,0,4,5,1,5,7,3,7,6,2,6,4].reduce<number[]>( (arr, index) => {
                 arr.push(points[index*3+0]);
                 arr.push(points[index*3+1]);
                 arr.push(points[index*3+2]);
@@ -233,14 +265,15 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
             this.viewer.scene.addEntity( line );
 
             const rInfo = this.viewer.camera.createRenderInfo();
-            const vp = rInfo.volume_planes.map(arr => new Float64Array(arr));
+            const vp: Float64Array[] = rInfo.volume_planes.map<number[], Float64Array>((arr: number[]) => new Float64Array(arr));
 
             vp.forEach( (plane, index) => {
                 if ( index !== 4) return;
 
                 const v2g = this.viewer.camera.view_to_gocs;
 
-                const w = index===1 ? 200 : 10;
+                // const w = index===1 ? 200 : 10;
+                const w = 10;
                 const Y_UP = [0, 1, 0];
                 const center = [plane[0]*plane[3], plane[1]*plane[3], -plane[2]*plane[3]];
 
@@ -258,7 +291,8 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
                   [center[0]+w*plane[0], center[1]+w*plane[1], center[2]+w*plane[2]],
                   center,
                 ];
-                const r = index===1 ? 200 : 10;
+                // const r = index===1 ? 200 : 10;
+                const r = 10;
                 const N = 20;
                 for (let j=0; j<4; j++) {
                   for (let i=0; i<N+1; i++) {
@@ -278,12 +312,12 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
                     const [ x, y, z ] = xyz;
 
                     //*
-                    const gocs_point = [
-                      x*v2g[0] + y*v2g[4] + z*v2g[ 8] + v2g[12],
-                      x*v2g[1] + y*v2g[5] + z*v2g[ 9] + v2g[13],
-                      x*v2g[2] + y*v2g[6] + z*v2g[10] + v2g[14],
-                      x*v2g[3] + y*v2g[7] + z*v2g[11] + v2g[15],
-                    ];
+                    const gocs_point = mapray.GeoMath.createVector3([
+                        x*v2g[0] + y*v2g[4] + z*v2g[ 8] + v2g[12],
+                        x*v2g[1] + y*v2g[5] + z*v2g[ 9] + v2g[13],
+                        x*v2g[2] + y*v2g[6] + z*v2g[10] + v2g[14],
+                        // x*v2g[3] + y*v2g[7] + z*v2g[11] + v2g[15],
+                    ]);
                     gocs_point[0] /= gocs_point[3];
                     gocs_point[1] /= gocs_point[3];
                     gocs_point[2] /= gocs_point[3];
@@ -314,14 +348,16 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
      */
     _clearGISInfo()
     {
-        this._viewer.scene.clearEntities();
-        this._point_cloud_mode = null;
+        this.viewer.scene.clearEntities();
+        this._point_cloud_mode = undefined;
         this._updatePointCloud();
         const tools = document.getElementById("tools");
-        tools.parentElement.removeChild( tools );
+        if ( tools && tools.parentElement ) {
+            tools.parentElement.removeChild( tools );
+        }
     }
 
-    onUpdateFrame( delta_time )
+    onUpdateFrame( delta_time: number )
     {
         if (!this._viewer) {
             return;
@@ -335,17 +371,21 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
         this._updateLayerParams(layer);
         this._updateGISMode();
 
+        // @ts-ignore
         var elevation = this._viewer.getElevation( this._camera_parameter.latitude, this._camera_parameter.longitude );
 
         var camera_matrix = this._viewer.camera.view_to_gocs
         var direction = [camera_matrix[4], camera_matrix[5], camera_matrix[6] ];
+        // @ts-ignore
         var pitch = this._camera_parameter.pitch - 90;
 
         // ステータスバーを更新
         var statusbar = this._statusbar;
+        // @ts-ignore
         statusbar.setCameraPosition( this._camera_parameter );
         statusbar.setElevation( elevation );
         statusbar.setDirection( direction, pitch );
+        // @ts-ignore
         statusbar.setFovAngle( this._camera_parameter.fov );
         statusbar.updateElements( delta_time );
         statusbar.setLayer( this._layer_transparency );
@@ -353,9 +393,9 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
         this._commander.endFrame();
     }
 
-    _onKeyDown( event )
+    override onKeyDown( event: KeyboardEvent )
     {
-        super._onKeyDown( event );
+        super.onKeyDown( event );
         this._commander.OnKeyDown( event );
     }
 
@@ -380,8 +420,9 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
                 });
             }
             delete this._point_cloud_cache.pointCloudList;
-            if (this._point_cloud_cache.ui) {
-                this._point_cloud_cache.ui.parentElement.removeChild(this._point_cloud_cache.ui);
+            const ui = this._point_cloud_cache.ui
+            if ( ui && ui.parentElement ) {
+                ui.parentElement.removeChild(ui);
                 delete this._point_cloud_cache.ui;
             }
             delete this._point_cloud_cache.mode;
@@ -395,6 +436,7 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
         if ( this._point_cloud_mode ) {
             const mode = this._point_cloud_mode;
             const tools = document.getElementById("tools");
+            if ( !tools ) throw new Error("?");
             const ui = document.createElement("div");
             ui.setAttribute("class", "tool-item");
             tools.appendChild(ui);
@@ -408,7 +450,7 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
 
             top.appendChild(DomTool.createSelect(items, {
                         initialValue: mode,
-                        onchange: event => {
+                        onchange: (event) => {
                             this._point_cloud_mode = event;
                             this._updatePointCloud();
                         },
@@ -423,7 +465,7 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
                             const traverse_summary = await mapray.PointCloud.requestTraverseSummary();
                             for (let i=0; i<traverse_summary.length; i++) {
                                 const traverse = traverse_summary[i];
-                                const statistics = traverse.pcb_collection.reduce((statistics, renderObject) => {
+                                const statistics = traverse.pcb_collection.reduce((statistics: any, renderObject: any) => {
                                         const box = renderObject.box;
                                         statistics.numberOfBoxes++;
                                         let level = statistics.levelData[box.level];
@@ -480,7 +522,10 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
             });
 
             renderOption.onChange("point size", event => {
-                    const option = {};
+                    const option: {
+                        type?: mapray.PointCloud.PointSizeType;
+                        value?: number;
+                    } = {};
                     if ( event.value.endsWith( "px" ) ) {
                         option.type = mapray.PointCloud.PointSizeType.PIXEL;
                         option.value = parseFloat(event.value.slice(0, -2));
@@ -508,15 +553,15 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
             });
 
             renderOption.onChange("point size limit", event => {
-                    const option = {};
+                    let size_limit: number;
                     if ( event.value.endsWith("px") ) {
-                        option.size_limit = parseFloat( event.value.slice(0, -2) );
+                        size_limit = parseFloat( event.value.slice(0, -2) );
                     }
                     else { // no limit
-                        option.size_limit = 10000;
+                        size_limit = 10000;
                     }
                     for ( let i=0; i<point_cloud_collection.length; i++ ) {
-                        point_cloud_collection.get( i ).setPointSizeLimit( option.size_limit );
+                        point_cloud_collection.get( i ).setPointSizeLimit( size_limit );
                     }
             });
 
@@ -544,7 +589,7 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
             ui.appendChild(log_area);
 
             const pointCloudList = [];
-            const bbox_geoms = [];
+            const bbox_geoms: number[] = [];
             if ( mode === "raw" ) {
                 const resource = maprayApi.getPointCloudDatasetAsResource( POINT_CLOUD_DATASET_ID );
                 const point_cloud = point_cloud_collection.add( new mapray.RawPointCloudProvider( resource ) );
@@ -556,7 +601,7 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
                 console.log( dataset );
             }
 
-            mapray.PointCloud.setStatisticsHandler(statistics => {
+            mapray.PointCloud.setStatisticsHandler((statistics: any) => {
                     const render_point_count = (statistics.render_point_count/1000000).toFixed(2);
                     const total_point_count  = (statistics.total_point_count /1000000).toFixed(2);
                     log_area.innerHTML = (`\
@@ -583,7 +628,7 @@ loading: ${statistics.loading_boxes}
     {
         if ( this._commander.isRenderModeChanged() ) {
             var RenderMode = mapray.Viewer.RenderMode;
-            var     viewer = this._viewer;
+            var     viewer = this.viewer;
             var      rmode = viewer.render_mode;
             if ( rmode === RenderMode.SURFACE ) {
                 viewer.render_mode = RenderMode.WIREFRAME;
@@ -609,7 +654,7 @@ loading: ${statistics.loading_boxes}
      * @param {number} value 増減値
      * @private
      */
-    _updateLayerParams(value)
+    _updateLayerParams( value: number )
     {
         if ( value != 0 ){
             this._layer_transparency = this._layer_transparency + value;
@@ -619,8 +664,8 @@ loading: ${statistics.loading_boxes}
                 this._layer_transparency = 0;
             }
             var d = ( this._layer_transparency ) / 10.0;
-            if (this._viewer.layers && this._viewer.layers.getLayer(0)) {
-                this._viewer.layers.getLayer(0).setOpacity(d);
+            if (this.viewer.layers && this.viewer.layers.getLayer(0)) {
+                this.viewer.layers.getLayer(0).setOpacity(d);
             }
         }
     }
