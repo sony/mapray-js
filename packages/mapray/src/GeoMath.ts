@@ -764,6 +764,7 @@ class GeoMath {
     }
 
 
+
     /**
      * グーデルマン関数
      * @param  x   数値
@@ -832,6 +833,23 @@ class GeoMath {
 
      // GeoMath の内部テンポラリ変数を生成
      private static _zaxis: Vector3 = GeoMath.createVector3();
+
+}
+
+
+
+namespace GeoMath {
+
+
+
+/**
+ * Math.log2 互換関数
+ * @see https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Math/log2
+ */
+// @ts-ignore
+export const maprayLog2 = Math.log2 || (( x: number ) => 1.4426950408889634074 * Math.log( x ));
+
+
 
 }
 
