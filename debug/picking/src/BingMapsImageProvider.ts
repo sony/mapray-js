@@ -5,12 +5,33 @@ var ImageProvider = mapray.ImageProvider;
 var        Status = ImageProvider.Status;
 
 
+
+type Callback = (status: any) => void;
+
+
+
 /**
  * @summary Bing Maps 画像プロバイダ
  * @memberof mapray
  * @extends mapray.ImageProvider
  */
-export default class BingMapsImageProvider extends ImageProvider {
+class BingMapsImageProvider extends ImageProvider {
+
+    private _status: any;
+
+    private _size?: number;
+
+    private _min_level?: number;
+
+    private _max_level?: number;
+
+    private _callbacks: Callback[];
+
+    /* サブドメインとカルチャを置き換えた URL テンプレート */
+    private _templ_urls!: string[];
+
+    private _counter: number;
+
 
     /**
      * @param {object} [options]                      オプション集合
@@ -19,11 +40,11 @@ export default class BingMapsImageProvider extends ImageProvider {
      * @param {string} [options.uriScheme="http"]     URI スキーム ("http" または "https")
      * @param {string} [options.culture]              カルチャ ({@link https://msdn.microsoft.com/en-us/library/hh441729.aspx|Supported Culture Codes} を参照)
      */
-    constructor( options )
+    constructor( options: BingMapsImageProvider.Option = {} )
     {
         super();
 
-        var opts = options || {};
+        var opts = options;
 
         this._status    = Status.NOT_READY;
         this._callbacks = [];
@@ -31,7 +52,6 @@ export default class BingMapsImageProvider extends ImageProvider {
         this._size       = undefined;
         this._min_level  = undefined;
         this._max_level  = options.maxLevel;
-        this._templ_urls = undefined;  // サブドメインとカルチャを置き換えた URL テンプレート
         this._counter    = 0;
 
         this._load_matadata( opts );
@@ -41,9 +61,8 @@ export default class BingMapsImageProvider extends ImageProvider {
     /**
      * メターデータの読み込み
      * @see https://msdn.microsoft.com/en-us/library/mt823633.aspx
-     * @private
      */
-    _load_matadata( opts )
+     private _load_matadata( opts: BingMapsImageProvider.Option )
     {
         var url = BingMapsImageProvider.TemplMetadataURL;
         url = url.replace( '{key}', opts.key || '' );
@@ -74,9 +93,8 @@ export default class BingMapsImageProvider extends ImageProvider {
     /**
      * メターデータの解析
      * @see https://msdn.microsoft.com/en-us/library/ff701716.aspx
-     * @private
      */
-    _analyze_matadata( json, opts )
+    private _analyze_matadata( json: any, opts: BingMapsImageProvider.Option )
     {
         var resource = json.resourceSets[0].resources[0];
 
@@ -90,13 +108,13 @@ export default class BingMapsImageProvider extends ImageProvider {
         this._size       = resource.imageWidth;
         this._min_level  = resource.zoomMin;
         this._max_level  = this._max_level || resource.zoomMax;
-        this._templ_urls = resource.imageUrlSubdomains.map( subdomain => templ.replace( '{subdomain}', subdomain ) );
+        this._templ_urls = resource.imageUrlSubdomains.map( (subdomain: string) => templ.replace( '{subdomain}', subdomain ) );
     }
 
     /**
      * @override
      */
-    status( callback )
+    status( callback: Callback )
     {
         if ( this._status === Status.NOT_READY ) {
             if ( callback ) {
@@ -110,7 +128,7 @@ export default class BingMapsImageProvider extends ImageProvider {
     /**
      * @override
      */
-    requestTile( z, x, y, callback )
+    requestTile( z: number, x: number, y:number, callback: Callback )
     {
         var image = new Image();
 
@@ -127,7 +145,7 @@ export default class BingMapsImageProvider extends ImageProvider {
     /**
      * @override
      */
-    cancelRequest( id )
+    cancelRequest( id: object )
     {
     }
 
@@ -135,9 +153,9 @@ export default class BingMapsImageProvider extends ImageProvider {
     /**
      * @override
      */
-    getImageSize()
+    getImageSize(): number
     {
-        return this._size;
+        return this._size !== undefined ? this._size : 0;
     }
 
 
@@ -146,15 +164,17 @@ export default class BingMapsImageProvider extends ImageProvider {
      */
     getZoomLevelRange()
     {
+        if ( this._min_level === undefined || this._max_level === undefined ) {
+            throw new Error("min_level or max_level is not defined");
+        }
         return new ImageProvider.Range( this._min_level, this._max_level );
     }
 
 
     /**
      * URL を作成
-     * @private
      */
-    _makeURL( z, x, y )
+    private _makeURL( z: number, x: number, y: number )
     {
         // templ_url の '{quadkey}' を置き換える
         // quadkey については Tile Coordinates and Quadkeys (https://msdn.microsoft.com/en-us/library/bb259689.aspx) を参照
@@ -174,7 +194,30 @@ export default class BingMapsImageProvider extends ImageProvider {
 }
 
 
-BingMapsImageProvider.TemplMetadataURL  = "{uriScheme}://dev.virtualearth.net/REST/v1/Imagery/Metadata/{imagerySet}?uriScheme={uriScheme}&include=ImageryProviders&key={key}";
-BingMapsImageProvider.DefaultCulture    = "";
-BingMapsImageProvider.DefaultUriScheme  = "http";
-BingMapsImageProvider.DefaultImagerySet = "Aerial";
+
+namespace BingMapsImageProvider {
+
+
+
+export interface Option {
+    key?: string;
+    imagerySet?: string;
+    uriScheme?: string;
+    culture?: string;
+    maxLevel?: number;
+}
+
+
+
+export const TemplMetadataURL  = "{uriScheme}://dev.virtualearth.net/REST/v1/Imagery/Metadata/{imagerySet}?uriScheme={uriScheme}&include=ImageryProviders&key={key}";
+export const DefaultCulture    = "";
+export const DefaultUriScheme  = "http";
+export const DefaultImagerySet = "Aerial";
+
+
+
+} // namespace BingMapsImageProvider
+
+
+
+export default BingMapsImageProvider
