@@ -1,4 +1,4 @@
-# maprayJS Fall 
+# mapray-js Fall 
 This is a simple demo application with beautiful Mt Fuji on [Mapray](https://mapray.com) website.
 
 ## Preparing your Development Environment
@@ -14,7 +14,8 @@ brew install yarn
 ```
 
 ## Usage
-**To set access token:**
+
+### Set access token
 
 To see the terrian data, you need a [Mapray access token](/doc/developer-guide/GettingStarted/index.md). You can either set an environment variable:
 
@@ -22,10 +23,10 @@ To see the terrian data, you need a [Mapray access token](/doc/developer-guide/G
 export MAPRAY_ACCESS_TOKEN=<mapray_access_token>
 ```
 
-Or set accsess token to `<your access token here>` directly in `Fall.js`.
+Or set accsess token to `<your access token here>` directly in `Fall.js` and `Turn.js`.
 
 
-**To install dependencies:**
+### Install dependencies
 
 ```bash
 npm install
@@ -33,7 +34,6 @@ npm install
 yarn
 ```
 
-**Commands:**
-* `npm start` is the development target, to serves the app and hot reload.
-* `npm run build` is the production target, to create the final bundle and write to disk.
-* `npm run start-local` is the target for developing mapray and ui packages, to include mapray packages from local modules to write to disk.
+### Commands
+- `npm start` is the development target, to serves the app and hot reload.
+- `npm run build-prod` is the production target, to create the final bundle and write to disk.
