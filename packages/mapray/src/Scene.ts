@@ -185,7 +185,7 @@ class Scene {
         for ( let enode of this._enode_list ) {
             let producer = enode.entity.getPrimitiveProducer();
 
-            if ( (producer === null) || !producer.needsElevation() ) {
+            if ( !producer || !producer.needsElevation() ) {
                 // producer が存在しないとき、または
                 // producer が標高を必要としないときは何もしない
                 continue;
@@ -230,7 +230,7 @@ class Scene {
     private _add_primitives( stage: RenderStage, entity: Entity,  op_prims: Primitive[], tp_prims: Primitive[], ac_prims: Primitive[] )
     {
         let producer = entity.getPrimitiveProducer();
-        if ( producer === null ) return;
+        if ( !producer ) return;
 
         for ( let primitive of producer.getPrimitives( stage ) ) {
             if ( primitive.isVisible( stage ) ) {
@@ -384,7 +384,7 @@ class Scene {
         for ( let {entity} of this._enode_list ) {
             if ( !entity.visibility ) continue;
             let prod = entity.getFlakePrimitiveProducer();
-            if ( prod !== null ) {
+            if ( prod ) {
                 producers.push( prod );
             }
         }
