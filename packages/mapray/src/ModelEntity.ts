@@ -604,6 +604,7 @@ export class PrimitiveProducer extends Entity.PrimitiveProducer {
     getMatrix( dst: Matrix ): Matrix
     {
         const entity = this.getEntity();
+        this._updateAbsPosition();
         const abs_position = this._abs_position;
 
         if ( !abs_position ) {
@@ -616,8 +617,6 @@ export class PrimitiveProducer extends Entity.PrimitiveProducer {
                 return GeoMath.copyMatrix(entity._matrix, dst);
             }
             case TransformMode.POSITION_MLOCS_SCALE_ORIENTATION: {
-                this._updateAbsPosition();
-
                 const mlocs_to_gocs = abs_position.getMlocsToGocsMatrix( GeoMath.createMatrix() );
                 // @ts-ignore
                 const entity_to_mlocs = mul_RS( entity._matrix, entity._scale, GeoMath.createMatrix() );
