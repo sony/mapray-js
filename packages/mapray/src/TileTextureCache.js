@@ -4,6 +4,7 @@ import TileTexture from "./TileTexture";
 import GeoMath from "./GeoMath";
 
 
+
 /**
  * @summary タイルテクスチャの管理
  * @memberof mapray
@@ -83,7 +84,7 @@ class TileTextureCache {
         this._min_image_z = renge.min;
         this._max_image_z = renge.max;
 
-        this._image_zbias = Math.maprayLog2( 2 * Math.PI / provider.getImageSize() );
+        this._image_zbias = GeoMath.maprayLog2( 2 * Math.PI / provider.getImageSize() );
     }
 
 
