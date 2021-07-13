@@ -1,13 +1,13 @@
 import mapray from "@mapray/mapray-js";
 import maprayui from "@mapray/ui";
 
+
 import BingMapsImageProvider from "./BingMapsImageProvider";
 
 
+const MAPRAY_ACCESS_TOKEN = "<your access token here>";
 
-const BINGMAP_TOKEN = "?";
-
-const MAPRAY_ACCESS_TOKEN = "?";
+const BINGMAP_TOKEN = "<your Bing Maps Key here>";
 
 const ICON_URL = "https://storage.googleapis.com/inou-dev-mapray-additional-resources/2d/image/mapray.png";
 const SCENE_3D_URL = "https://storage.googleapis.com/inou-dev-mapray-additional-resources/3d/gltf/mapray-box-with-texture/scene.json";
@@ -15,19 +15,59 @@ const SCENE_3D_URL = "https://storage.googleapis.com/inou-dev-mapray-additional-
 
 
 
+
+
+interface Option {
+    tools?: HTMLElement;
+}
+
+type PickHandler = (pickResult: mapray.Viewer.PickResult) => void;
+
+
 export default class App extends maprayui.StandardUIViewer {
 
-    constructor( container, options={} ) {
+    private _tools?: HTMLElement;
+    private _mouse_log?: HTMLElement;
+    private _enable_ui?: HTMLInputElement;
+
+    private _gis: {
+        flag: boolean;
+        loaded: boolean;
+    };
+
+    private _bing: {
+        flag: boolean;
+        loaded: boolean;
+    };
+
+    private _pre_mouse_position_app: any;
+
+    private _time: number;
+
+    private _override_mouse_event: boolean;
+
+    private _render_mode: mapray.Viewer.RenderMode;
+
+    private _pick_handler?: PickHandler;
+
+    private _path_list: mapray.PathEntity[];
+
+    private _cache_scale: number;
+
+
+    constructor( container: string, options: Option = {} ) {
         super( container, MAPRAY_ACCESS_TOKEN, {
                 debug_stats: new mapray.DebugStats(),
                 image_provider: (
-                    BINGMAP_TOKEN ?
+                    BINGMAP_TOKEN !== "<your Bing Maps Key here>" ?
                     new BingMapsImageProvider( {
                             uriScheme: "https",
                             key: BINGMAP_TOKEN,
                             maxLevel: 19
                     } ): undefined
                 ),
+                // dem_provider: new mapray.CloudDemProvider( MAPRAY_ACCESS_TOKEN ),
+                // dem_provider: new mapray.FlatDemProvider(),
         } );
 
         const init_camera = {
@@ -42,10 +82,12 @@ export default class App extends maprayui.StandardUIViewer {
         };
         this.setCameraPosition( init_camera );
         this.setLookAtPosition( lookat_position );
-        this.setCameraParameter( init_camera );
-        this._tools = options.tools;
-        this._mouse_log = this._tools.querySelector("pre");
-        this._enable_ui = this._tools.querySelector("div.options>input[name=log-mouse-position]");
+        // this.setCameraParameter( init_camera );
+        const tools = this._tools = options.tools;
+        if ( tools ) {
+            this._mouse_log = tools.querySelector("pre") || undefined;
+            this._enable_ui = tools.querySelector("div.options>input[name=log-mouse-position]") as HTMLInputElement || undefined;
+        }
 
         this._render_mode = mapray.Viewer.RenderMode.SURFACE;
         this._gis = {
@@ -56,12 +98,14 @@ export default class App extends maprayui.StandardUIViewer {
             flag: false,
             loaded: false
         };
-        this._pre_mouse_position = mapray.GeoMath.createVector2f();                // 直前のマウス位置
+        this._pre_mouse_position_app = mapray.GeoMath.createVector2f();                // 直前のマウス位置
         this._time = 0;
         this._override_mouse_event = false;
+        this._path_list = [];
+        this._cache_scale = 1;
     }
 
-    onKeyDown( event )
+    override onKeyDown( event: KeyboardEvent )
     {
         switch ( event.key ) {
             case "m": case "M": {
@@ -83,7 +127,7 @@ export default class App extends maprayui.StandardUIViewer {
         }
     }
 
-    onMouseDown( point, event )
+    override onMouseDown( point: [x: number, y: number], event: MouseEvent )
     {
         if ( event.shiftKey ) {
             this._override_mouse_event = true;
@@ -123,7 +167,7 @@ export default class App extends maprayui.StandardUIViewer {
             this._override_mouse_event = true;
             this._pick(pickResult => {
                     if (pickResult.point) {
-                        var pin = new mapray.PinEntity( this.viewer.scene );
+                        const pin = new mapray.PinEntity( this.viewer.scene );
                         const p = new mapray.GeoPoint();
                         p.setFromGocs( pickResult.point );
                         if (!pickResult.entity) {
@@ -135,7 +179,7 @@ export default class App extends maprayui.StandardUIViewer {
                     }
             }, true);
         }
-        else if ( !this._enable_ui.checked ) {
+        else if ( this._enable_ui && !this._enable_ui.checked ) {
             this._updateMousePos();
         }
 
@@ -145,7 +189,7 @@ export default class App extends maprayui.StandardUIViewer {
     }
 
 
-    onMouseMove( point, event )
+    override onMouseMove( point: [x: number, y: number], event: MouseEvent )
     {
         /*
         if (!this.tmp) this.tmp = [];
@@ -159,9 +203,9 @@ export default class App extends maprayui.StandardUIViewer {
         if ( !this._override_mouse_event ) {
             super.onMouseMove( point, event );
         }
-        mapray.GeoMath.copyVector2(point, this._pre_mouse_position);
+        mapray.GeoMath.copyVector2(point, this._pre_mouse_position_app);
 
-        if ( this._enable_ui.checked ) {
+        if ( this._enable_ui && this._enable_ui.checked ) {
             this._updateMousePos();
         }
     }
@@ -172,30 +216,32 @@ export default class App extends maprayui.StandardUIViewer {
                 if (pickResult.point) {
                     const p = new mapray.GeoPoint();
                     p.setFromGocs( pickResult.point );
-                    this._mouse_log.innerHTML = (
-                        "Ctrl + Click to put PinEntity\n" +
-                        "Shift + Click Entity to chnge some property\n" +
-                        p.longitude.toFixed(13) + ", " + p.latitude.toFixed(13) + ", " + p.altitude.toFixed(13) +
-                        "\n" +
-                        (pickResult.entity ? "Entity: " + pickResult.entity.constructor.name : "&nbsp;")
-                    );
+                    if (this._mouse_log) {
+                        this._mouse_log.innerHTML = (
+                            "Ctrl + Click to put PinEntity\n" +
+                            "Shift + Click Entity to chnge some property\n" +
+                            p.longitude.toFixed(13) + ", " + p.latitude.toFixed(13) + ", " + p.altitude.toFixed(13) +
+                            "\n" +
+                            (pickResult.entity ? "Entity: " + pickResult.entity.constructor.name : "&nbsp;")
+                        );
+                    }
                 }
-        });
+        }, false);
     }
 
 
-    onMouseUp( point, event )
+    override onMouseUp( point: [x: number, y: number], event: MouseEvent )
     {
         this._override_mouse_event = false;
         super.onMouseUp( point, event );
     }
 
 
-    onUpdateFrame( delta_time ) {
+    override onUpdateFrame( delta_time: number ) {
         this._time += delta_time;
         super.onUpdateFrame( delta_time );
 
-        const viewer = this._viewer;
+        const viewer = this.viewer;
         if ( viewer.render_mode !== this._render_mode ) {
             viewer.render_mode = this._render_mode;
         }
@@ -203,18 +249,21 @@ export default class App extends maprayui.StandardUIViewer {
             if (this._gis.flag) this.loadGIS();
             else this.unloadGIS();
         }
+        /*
         if ( this._bing.loaded !== this._bing.flag ) {
             if (this._bing.flag) this.loadBing();
             else this.unloadBing();
         }
+        */
 
-        if ( this._pick_handler ) {
+        const pick_handler = this._pick_handler;
+        if ( pick_handler ) {
             const start = Date.now();
-            const pickResult = this._viewer.pick(this._pre_mouse_position);
+            const pickResult = this.viewer.pick(this._pre_mouse_position_app);
             const end = Date.now();
             // console.log("Pick: " + (end-start) + "ms", pickResult);
-            this._pick_handler(pickResult);
-            this._pick_handler = null;
+            pick_handler(pickResult);
+            this._pick_handler = undefined;
         }
 
         if ( this._path_list ) {
@@ -228,7 +277,7 @@ export default class App extends maprayui.StandardUIViewer {
     }
 
 
-    _pick(pick_handler, force) {
+    _pick(pick_handler: PickHandler, force: boolean) {
         if ( force || !this._pick_handler ) {
             this._pick_handler = pick_handler;
         }
@@ -236,34 +285,38 @@ export default class App extends maprayui.StandardUIViewer {
 
 
     loadGIS() {
-        // 文字の追加
-        var entity = new mapray.TextEntity( this.viewer.scene );
-        var text_position = { longitude: 138.727363, latitude: 35.360626, height: 4000 };
-        var text_geoPoint = new mapray.GeoPoint( text_position.longitude, text_position.latitude, text_position.height );
+        {// 文字の追加
+            const entity = new mapray.TextEntity( this.viewer.scene );
+            var text_position = { longitude: 138.727363, latitude: 35.360626, height: 4000 };
+            var text_geoPoint = new mapray.GeoPoint( text_position.longitude, text_position.latitude, text_position.height );
 
-        entity.addText( "Mt.Fuji", text_geoPoint, { color: [1, 0, 0], font_size: 25 } );
-        entity.setBackgroundColor([1, 1, 1]);
-        entity.setEnableBackground(false);
-        this.addEntity( entity );
+            entity.addText( "Mt.Fuji", text_geoPoint, { color: [1, 0, 0], font_size: 25 } );
+            entity.setBackgroundColor([1, 1, 1]);
+            entity.setEnableBackground(false);
+            this.addEntity( entity );
+        }
 
-        // 線の追加
-        entity = new mapray.MarkerLineEntity( this.viewer.scene );
-        var line_position = { latitude: 35.360626, longitude: 138.727363, height: 3600 };
-        var position_array = [text_position.longitude, text_position.latitude, text_position.height,
-        line_position.longitude, line_position.latitude, line_position.height];
-        entity.addPoints( position_array );
-        this.addEntity( entity );
+        {// 線の追加
+            const entity = new mapray.MarkerLineEntity( this.viewer.scene );
+            var line_position = { latitude: 35.360626, longitude: 138.727363, height: 3600 };
+            var position_array = [text_position.longitude, text_position.latitude, text_position.height,
+            line_position.longitude, line_position.latitude, line_position.height];
+            entity.addPoints( position_array );
+            this.addEntity( entity );
+        }
 
-        /*
-        entity = new mapray.ImageIconEntity( this.viewer.scene );
-        entity.addImageIcon( "../resources/image/mapray.png", new mapray.GeoPoint(142.619, 43.017), { origin: [ 0.5, 1.0 ] });
-        this.addEntity( entity );
-        //*/
+        {// Icon
+            const entity = new mapray.ImageIconEntity( this.viewer.scene );
+            const url = "https://storage.googleapis.com/inou-dev-mapray-additional-resources/2d/image/mapray.png";
+            // const url = "../resources/image/mapray.png";
+            entity.addImageIcon( url, new mapray.GeoPoint(142.619, 43.017), { origin: [ 0.5, 1.0 ] });
+            this.addEntity( entity );
+        }
 
         const sceneResource = new mapray.URLResource( SCENE_3D_URL, {
                 transform: ( url, type ) => {
                     if (type.id === "IMAGE" ) {
-                        return { url, init: { crossOrigin: mapray.CredentialMode.SAME_ORIGIN.credentials } };
+                        return { url, init: { crossOrigin: mapray.CredentialMode.SAME_ORIGIN } };
                     }
                     else return { url }
                 }
@@ -309,42 +362,61 @@ export default class App extends maprayui.StandardUIViewer {
         ].map((v,index) => (index%3===1 ? v + 0.4 : v)));
         this.addEntity(polygon);
 
-        this._path_list = [];
-        for ( let i=0; i<2; i++ ) {
+        const path_option_list = [
+            {
+                altitude_mode: mapray.AltitudeMode.CLAMP,
+                points: [
+                    138.6, 35.36, 3000,
+                    138.8, 35.36, 3000
+                ]
+            },
+            {
+                altitude_mode: mapray.AltitudeMode.ABSOLUTE,
+                points: [
+                    138.6, 35.37, 3000,
+                    138.8, 35.37, 3000
+                ]
+            },
+            {
+                altitude_mode: mapray.AltitudeMode.RELATIVE,
+                points: [
+                    138.6, 35.38, 3000,
+                    138.8, 35.38, 3000
+                ]
+            }
+        ];
+
+        path_option_list.forEach( path_option => {
             const path = new mapray.PathEntity( this.viewer.scene );
             path.setColor([ 1.0, 0.0, 0.0 ]);
-            if ( i === 1 ) path.altitude_mode = mapray.AltitudeMode.CLAMP;
+            path.altitude_mode = path_option.altitude_mode;
             path.setLineWidth( 10.0 );
-            const ps = i === 0 ? [
-                138.6, 35.36, 3000,
-                138.8, 35.36, 3000
-            ]:
-            [
-                138.6, 35.37, 3000,
-                138.8, 35.37, 3000
-            ];
+            const ps = path_option.points;
             const ls = [ 0.0, 1.0 ];
-            path.addPoints(ps, ls);
+            path.addPoints( ps, ls );
             path.setLowerLength( 0.0 );
             path.setUpperLength( 1.0 );
             this.addEntity( path );
             this._path_list.push( path );
+
             const pin = new mapray.PinEntity( this.viewer.scene );
             pin.addMakiIconPin( "car-15", new mapray.GeoPoint(ps[0], ps[1], ps[2]));
             pin.addMakiIconPin( "car-15", new mapray.GeoPoint(ps[3], ps[4], ps[5]));
-            if ( i === 1 ) pin.altitude_mode = mapray.AltitudeMode.CLAMP;
+            pin.altitude_mode = path_option.altitude_mode;
             this.addEntity( pin );
-        }
+        });
 
         this._gis.loaded = true;
     }
 
 
     unloadGIS() {
-        this._viewer.scene.clearEntities();
+        this.viewer.scene.clearEntities();
         this._gis.loaded = false;
     }
 
 }
 
-window.App = App;
+
+// @ts-ignore
+window.mapray = mapray;
