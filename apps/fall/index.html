@@ -19,28 +19,40 @@
     </noscript>
     <style>
       #mapray-container {
-        width: 98%;
-        height: 95%;
+        width: 100%;
+        height: 100%;
         margin: 0;
         overflow: hidden;
         padding: 0;
-        border: solid 2px blue;
+        background: rgb(236, 236, 236);
         position: relative;
+        box-shadow: inset 0 0px 50px 20px #aaa;
       }
-      html {
-        height: 100%;
-      }
-      body {
-        padding: 0;
+      html, body {
         margin: 0;
-        overflow: hidden;
+        padding: 0;
         height: 100%;
+      }
+      .toolbar {
+        position: fixed;
+        height: 40px;
+        z-index: 10;
+      }
+      .toolbar input {
+        display: inline-block;
+        height: 30px;
+        padding: 0 15px;
+        margin: 5px 5px 5px 0;
+      }
+      .toolbar input:first-child {
+        margin: 5px;
       }
     </style>
   </head>
   <body>
-    <div>
-      <input type="button" value="start" onclick="window.startApp('mapray-container');"/>
+    <div class="toolbar">
+      <input type="button" value="Fall" onclick="window.startApp('mapray-container', 'fall');"/><!--
+   --><input type="button" value="Turn" onclick="window.startApp('mapray-container', 'turn');"/>
     </div>
     <div id="mapray-container">
     </div>
