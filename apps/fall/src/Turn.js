@@ -1,23 +1,35 @@
-import '../../packages/ui/dist/mapray.css';
 import mapray from "@mapray/mapray-js";
 
-var GeoMath = mapray.GeoMath;
+const GeoMath = mapray.GeoMath;
+
 
 const accessToken = "<your access token here>";
 
-class Turning extends mapray.RenderCallback {
 
+
+/**
+ * @summary 旋回カメラ
+ */
+class Turn extends mapray.RenderCallback {
+
+    /**
+     * @param {string|Element} container  コンテナ (ID または要素)
+     */
     constructor( container )
     {
         super();
-        var viewer = new mapray.Viewer( container, { render_callback: this,
-                                        image_provider: this.createImageProvider(),
-                                        dem_provider:    new mapray.CloudDemProvider(accessToken)
-                                    } );
-        viewer.attribution_controller.addAttribution({
+
+        this._viewer = new mapray.Viewer( container, {
+            render_callback: this,
+            image_provider: this.createImageProvider(),
+            dem_provider: new mapray.CloudDemProvider(accessToken),
+        });
+        
+        this._viewer.attribution_controller.addAttribution({
             display: "国土地理院",
             link: "http://maps.gsi.go.jp/development/ichiran.html"
         });     
+        
         this.longitude = 138.730647;
         this.latitude  = 35.362773;
         this.height    = 3776.24;
@@ -27,11 +39,25 @@ class Turning extends mapray.RenderCallback {
         this.turn_angle = 0;
     }
 
-    onStart()  // override
+
+    /**
+     * アプリを停止してから削除する。
+     */
+    destroy()
+    {
+        this._viewer.destroy();
+    }
+    
+
+    /**
+     * @override
+     */
+    onStart()
     {
         // 初期のターン角度
         this.turn_angle = 0;
     }
+
 
     onUpdateFrame( delta_time )  // override
     {
@@ -57,7 +83,7 @@ class Turning extends mapray.RenderCallback {
     // 基準座標系から GOCS への変換行列を生成
     createBaseToGocsMatrix()
     {
-        var base_to_gocs = GeoMath.createMatrix();
+        const base_to_gocs = GeoMath.createMatrix();
         GeoMath.iscs_to_gocs_matrix( { longitude: this.longitude, latitude: this.latitude, height: this.height }, base_to_gocs );
         return base_to_gocs;
     }
@@ -65,16 +91,16 @@ class Turning extends mapray.RenderCallback {
     // 視点座標系から基準座標系への変換行列を生成
     createViewToBaseMatrix()
     {
-        var t = this.turn_angle  * GeoMath.DEGREE;  // ターン角 (ラジアン)
-        var p = this.pitch_angle * GeoMath.DEGREE;  // 仰俯角 (ラジアン)
-        var d = this.distance;
+        const t = this.turn_angle  * GeoMath.DEGREE;  // ターン角 (ラジアン)
+        const p = this.pitch_angle * GeoMath.DEGREE;  // 仰俯角 (ラジアン)
+        const d = this.distance;
 
-        var sinT = Math.sin( t );
-        var cosT = Math.cos( t );
-        var sinP = Math.sin( p );
-        var cosP = Math.cos( p );
+        const sinT = Math.sin( t );
+        const cosT = Math.cos( t );
+        const sinP = Math.sin( p );
+        const cosP = Math.cos( p );
 
-        var mat = GeoMath.createMatrix();
+        const mat = GeoMath.createMatrix();
         mat[ 0] = cosT;
         mat[ 1] = sinT;
         mat[ 2] = 0;
@@ -97,5 +123,4 @@ class Turning extends mapray.RenderCallback {
 
 }
 
-// Turning クラスをブラウザのグローバル変数にエクスポート
-window.Turning = Turning;
+export default Turn;
