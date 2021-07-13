@@ -3,13 +3,11 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "start": "run-p start-server build-watch",
-    "start-local": "run-p start-server local-watch",
-    "build": "rollup -c --environment BUILD:production",
+    "start": "run-p server build-watch",
+    "build": "rollup -c",
+    "build-prod": "rollup -c --environment BUILD:production",
     "build-watch": "rollup -c -w",
-    "local": "rollup -c --environment local,BUILD:production",
-    "local-watch": "rollup -c -w --environment local",
-    "start-server": "st --no-cache -H 0.0.0.0 --port 7776 --index index.html ."
+    "server": "st --no-cache -H 0.0.0.0 --port 7776 --index index.html --dir ."
   },
   "devDependencies": {
     "@babel/core": "^7.8.6",
