@@ -645,7 +645,7 @@ class Flake {
 
         var cu;  // 水平球面分割レベル
         if ( η <= 2 ) {
-            cu = Math.max( Math.ceil( GeoMath.LOG2PI - this.z - Math.maprayLog2( Math.acos( 1 - η ) ) ), 0 );
+            cu = Math.max( Math.ceil( GeoMath.LOG2PI - this.z - GeoMath.maprayLog2( Math.acos( 1 - η ) ) ), 0 );
         }
         else {
             cu = 0;
@@ -654,7 +654,7 @@ class Flake {
         var cosφ = this._getCosφ();
         var cv;  // 垂直球面分割レベル
         if ( η * cosφ <= 2 ) {
-            cv = Math.max( Math.ceil( GeoMath.LOG2PI - this.z + Math.maprayLog2( cosφ / Math.acos( 1 - η * cosφ ) ) ), 0 );
+            cv = Math.max( Math.ceil( GeoMath.LOG2PI - this.z + GeoMath.maprayLog2( cosφ / Math.acos( 1 - η * cosφ ) ) ), 0 );
         }
         else {
             cv = 0;

@@ -279,8 +279,8 @@ class FlakeCollector {
             }
         }
 
-        var lodMin = -Math.maprayLog2( dMax );  // Log2[1/dMax]
-        var lodMax = -Math.maprayLog2( dMin );  // Log2[1/dMin]
+        var lodMin = -GeoMath.maprayLog2( dMax );  // Log2[1/dMax]
+        var lodMax = -GeoMath.maprayLog2( dMin );  // Log2[1/dMin]
 
         return {
             min: lodMin,
@@ -336,7 +336,7 @@ class FlakeCollector {
         var inv_d = r * cosφ / wUV;
 
         // Log2[1/d]
-        return Math.maprayLog2( inv_d );
+        return GeoMath.maprayLog2( inv_d );
     }
 
 
