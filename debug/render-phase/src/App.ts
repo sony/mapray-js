@@ -3,15 +3,42 @@ import maprayui from "@mapray/ui";
 
 
 
-const MAPRAY_ACCESS_TOKEN = "?";
+const MAPRAY_ACCESS_TOKEN = "<your access token here>";
 
 const SCENE_3D_URL = "https://storage.googleapis.com/inou-dev-mapray-additional-resources/3d/gltf/mapray-box-with-texture/scene.json";
 
 
 
-export default class App extends maprayui.StandardUIViewer {
+class App extends maprayui.StandardUIViewer {
 
-    constructor( container, options={} ) {
+    private _tools: HTMLElement;
+
+    private _mouse_log: HTMLElement;
+
+    private _enable_ui: HTMLInputElement;
+
+    private _render_mode: mapray.Viewer.RenderMode;
+
+    private _pre_mouse_position2: mapray.Vector2;
+
+    private _time: number;
+
+    private _override_mouse_event: boolean;
+
+    private _cache_scale: number;
+
+    private _pick_handler?: App.PickHandler;
+
+    private _path_list?: mapray.PathEntity[];
+
+    private _gis: {
+        flag: boolean,
+        loading: boolean,
+        loaded: boolean
+    };
+
+
+    constructor( container: string | HTMLElement, options: App.Option ) {
         super( container, MAPRAY_ACCESS_TOKEN, {
                 debug_stats: new mapray.DebugStats(),
         } );
@@ -28,10 +55,14 @@ export default class App extends maprayui.StandardUIViewer {
         };
         this.setCameraPosition( init_camera );
         this.setLookAtPosition( lookat_position );
-        this.setCameraParameter( init_camera );
+        // this.setCameraParameter( init_camera );
         this._tools = options.tools;
-        this._mouse_log = this._tools.querySelector("pre");
-        this._enable_ui = this._tools.querySelector("div.options>input[name=log-mouse-position]");
+        const mouse_log = this._tools.querySelector("pre");
+        if ( !mouse_log ) throw new Error( "couldn't find pre in tools" );
+        this._mouse_log = mouse_log;
+        const enable_ui = this._tools.querySelector("div.options>input[name=log-mouse-position]");
+        if ( !enable_ui ) throw new Error( "couldn't find div.options>input[name=log-mouse-position] in tools" );
+        this._enable_ui = enable_ui as HTMLInputElement;
 
         this._render_mode = mapray.Viewer.RenderMode.SURFACE;
         this._gis = {
@@ -39,12 +70,13 @@ export default class App extends maprayui.StandardUIViewer {
             loading: false,
             loaded: false
         };
-        this._pre_mouse_position = mapray.GeoMath.createVector2f();                // 直前のマウス位置
+        this._pre_mouse_position2 = mapray.GeoMath.createVector2f();                // 直前のマウス位置
         this._time = 0;
         this._override_mouse_event = false;
+        this._cache_scale = 1;
     }
 
-    onKeyDown( event )
+    onKeyDown( event: KeyboardEvent )
     {
         switch ( event.key ) {
             case "m": case "M": {
@@ -63,7 +95,7 @@ export default class App extends maprayui.StandardUIViewer {
         }
     }
 
-    onMouseDown( point, event )
+    onMouseDown( point: [number, number], event: MouseEvent )
     {
         if (event.shiftKey) {
             this._override_mouse_event = true;
@@ -122,12 +154,12 @@ export default class App extends maprayui.StandardUIViewer {
     }
 
 
-    onMouseMove( point, event )
+    onMouseMove( point: [number, number], event: MouseEvent )
     {
         if ( !this._override_mouse_event ) {
             super.onMouseMove( point, event );
         }
-        mapray.GeoMath.copyVector2(point, this._pre_mouse_position);
+        mapray.GeoMath.copyVector2(point, this._pre_mouse_position2);
 
         if ( this._enable_ui.checked ) {
             this._pick(pickResult => {
@@ -142,23 +174,23 @@ export default class App extends maprayui.StandardUIViewer {
                             (pickResult.entity ? "Entity: " + pickResult.entity.constructor.name : "&nbsp;")
                         );
                     }
-            });
+            }, false);
         }
     }
 
 
-    onMouseUp( point, event )
+    onMouseUp( point: [number, number], event: MouseEvent )
     {
         this._override_mouse_event = false;
         super.onMouseUp( point, event );
     }
 
 
-    onUpdateFrame( delta_time ) {
+    onUpdateFrame( delta_time: number ) {
         this._time += delta_time;
         super.onUpdateFrame( delta_time );
 
-        const viewer = this._viewer;
+        const viewer = this.viewer;
         if ( viewer.render_mode !== this._render_mode ) {
             viewer.render_mode = this._render_mode;
         }
@@ -174,11 +206,11 @@ export default class App extends maprayui.StandardUIViewer {
 
         if ( this._pick_handler ) {
             const start = Date.now();
-            const pickResult = this._viewer.pick(this._pre_mouse_position);
+            const pickResult = this.viewer.pick(this._pre_mouse_position2);
             const end = Date.now();
             // console.log("Pick: " + (end-start) + "ms", pickResult);
             this._pick_handler(pickResult);
-            this._pick_handler = null;
+            this._pick_handler = undefined;
         }
 
         if ( this._path_list ) {
@@ -192,7 +224,7 @@ export default class App extends maprayui.StandardUIViewer {
     }
 
 
-    _pick(pick_handler, force) {
+    _pick(pick_handler: App.PickHandler, force: boolean) {
         if ( force || !this._pick_handler ) {
             this._pick_handler = pick_handler;
         }
@@ -200,27 +232,32 @@ export default class App extends maprayui.StandardUIViewer {
 
 
     async loadGIS() {
-        // 文字の追加
-        var entity = new mapray.TextEntity( this.viewer.scene );
-        var text_position = { longitude: 138.727363, latitude: 35.360626, height: 4000 };
-        var text_geoPoint = new mapray.GeoPoint( text_position.longitude, text_position.latitude, text_position.height );
-        entity.addText( "Mt.Fuji", text_geoPoint, { color: [1, 0, 0], font_size: 25 } );
-        entity.setBackgroundColor([1, 1, 1]);
-        entity.setEnableBackground(false);
-        this.addEntity( entity );
+        const text_position = { longitude: 138.727363, latitude: 35.360626, height: 4000 };
+        {
+            // 文字の追加
+            const entity = new mapray.TextEntity( this.viewer.scene );
+            const text_geoPoint = new mapray.GeoPoint( text_position.longitude, text_position.latitude, text_position.height );
+            // @ts-ignore
+            entity.addText( "Mt.Fuji", text_geoPoint, { color: [1, 0, 0], font_size: 25 } );
+            entity.setBackgroundColor([1, 1, 1]);
+            entity.setEnableBackground(false);
+            this.addEntity( entity );
+        }
 
-        // 線の追加
-        entity = new mapray.MarkerLineEntity( this.viewer.scene );
-        var line_position = { latitude: 35.360626, longitude: 138.727363, height: 3600 };
-        var position_array = [text_position.longitude, text_position.latitude, text_position.height,
-        line_position.longitude, line_position.latitude, line_position.height];
-        entity.addPoints( position_array );
-        this.addEntity( entity );
+        {
+            // 線の追加
+            const entity = new mapray.MarkerLineEntity( this.viewer.scene );
+            const line_position = { latitude: 35.360626, longitude: 138.727363, height: 3600 };
+            const position_array = [text_position.longitude, text_position.latitude, text_position.height,
+            line_position.longitude, line_position.latitude, line_position.height];
+            entity.addPoints( position_array );
+            this.addEntity( entity );
+        }
 
         const sceneResource = new mapray.URLResource( SCENE_3D_URL, {
                 transform: ( url, type ) => {
                     if (type.id === "IMAGE" ) {
-                        return { url, init: { crossOrigin: mapray.CredentialMode.SAME_ORIGIN.credentials } };
+                        return { url, init: { crossOrigin: mapray.CredentialMode.SAME_ORIGIN } };
                     }
                     else return { url }
                 }
@@ -229,7 +266,9 @@ export default class App extends maprayui.StandardUIViewer {
         await new mapray.SceneLoader( this.viewer.scene, sceneResource, {
                 onEntity: (loader, entity, props) => {
                     const position = new mapray.GeoPoint(137.724919, 34.711773, 100);
-                    entity.setPosition(position);
+                    if ( entity instanceof mapray.ModelEntity ) {
+                        entity.setPosition(position);
+                    }
                     loader.scene.addEntity(entity);
                 }
         } ).load();
@@ -237,8 +276,11 @@ export default class App extends maprayui.StandardUIViewer {
         new mapray.SceneLoader( this.viewer.scene, sceneResource, {
                 onEntity: (loader, entity, props) => {
                     const position = new mapray.GeoPoint(137.724, 34.711, 200);
-                    entity.setAnchorMode(true);
-                    entity.setPosition(position);
+                    if ( entity instanceof mapray.ModelEntity ) {
+                        // @ts-ignore
+                        entity.setAnchorMode(true);
+                        entity.setPosition(position);
+                    }
                     loader.scene.addEntity(entity);
                 }
         } ).load();
@@ -249,11 +291,29 @@ export default class App extends maprayui.StandardUIViewer {
 
 
     unloadGIS() {
-        this._viewer.scene.clearEntities();
+        this.viewer.scene.clearEntities();
         this._gis.loaded = false;
     }
 
 
 }
 
-window.App = App;
+
+
+namespace App {
+
+
+export interface Option {
+    tools: HTMLElement;
+}
+
+
+export type PickHandler = (pickResult: mapray.Viewer.PickResult) => void;
+
+
+
+} // namespace App
+
+
+
+export default App;
