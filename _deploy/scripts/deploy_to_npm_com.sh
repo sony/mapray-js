@@ -95,4 +95,4 @@ fi
 cd ${PACKAGE_ROOT}
 echo "Will publish, yarn publish "${_FILE_NAME}" version:"${_VERSION}" tag:"${_NPM_TAG}" on `node -pe "require('${PACKAGE_ROOT}/package.json').name"`"
 # yarn publish ${_FILE_NAME} --tag ${_NPM_TAG}
-# Enable upper if this code finish test
+
