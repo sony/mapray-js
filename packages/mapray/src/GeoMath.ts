@@ -764,6 +764,7 @@ class GeoMath {
     }
 
 
+
     /**
      * グーデルマン関数
      * @param  x   数値
@@ -859,6 +860,23 @@ class GeoMath {
      {
          return vec.length === 4;
      }
+
+}
+
+
+
+namespace GeoMath {
+
+
+
+/**
+ * Math.log2 互換関数
+ * @see https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Math/log2
+ */
+// @ts-ignore
+export const maprayLog2 = Math.log2 || (( x: number ) => 1.4426950408889634074 * Math.log( x ));
+
+
 
 }
 

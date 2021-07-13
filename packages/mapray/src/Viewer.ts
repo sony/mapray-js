@@ -21,11 +21,14 @@ import Scene from "./Scene";
 import SceneLoader from "./SceneLoader";
 import EasyBindingBlock from "./animation/EasyBindingBlock";
 import BindingBlock from "./animation/BindingBlock";
+import Util from "./util/Util";
 
 // マウス・Attribution開発
 import LogoController from "./LogoController";
 import AttributionController from "./AttributionController";
 import ContainerController from "./ContainerController";
+
+
 
 /**
  * 表示管理
@@ -170,8 +173,7 @@ class Viewer {
 
         // フレームを止める
         if ( this._frame_req_id != 0 ) {
-            // @ts-ignore
-            window.maprayCancelAnimationFrame( this._frame_req_id );
+            Util.maprayCancelAnimationFrame( this._frame_req_id );
             this._frame_req_id = 0;
         }
 
@@ -681,8 +683,7 @@ class Viewer {
      */
     private _requestNextFrame()
     {
-        // @ts-ignore
-        this._frame_req_id = window.maprayRequestAnimationFrame( () => this._updateFrame() );
+        this._frame_req_id = Util.maprayRequestAnimationFrame( () => this._updateFrame() );
     }
 
 
@@ -731,7 +732,7 @@ class Viewer {
     private _updateTime(): number
     {
         // @ts-ignore
-        var   now_time = window.maprayNow();
+        var   now_time = Util.maprayNow();
         var delta_time = (this._previous_time !== undefined) ? (now_time - this._previous_time) / 1000 : 0;
         this._previous_time = now_time;
 
