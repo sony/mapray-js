@@ -2,13 +2,9 @@ import ImageProvider from "./ImageProvider";
 
 
 /**
- * @summary ダミー画像プロバイダ
+ * ダミー画像プロバイダ
  *
  * 状態は常に READY、レベル 0 のみの巨大画像、ただし画像は永遠に返さない。
- *
- * @memberof mapray
- * @extends mapray.ImageProvider
- * @private
  */
 class EmptyImageProvider extends ImageProvider {
 
@@ -21,35 +17,31 @@ class EmptyImageProvider extends ImageProvider {
 
 
     /**
-     * @override
      */
-    requestTile( z, x, y, callback )
+    override requestTile( z: number, x: number, y: number, callback: ImageProvider.RequestCallback ): object
     {
         return this;
     }
 
 
     /**
-     * @override
      */
-    cancelRequest( id )
+    override cancelRequest( id: object )
     {
     }
 
 
     /**
-     * @override
      */
-    getImageSize()
+    override getImageSize(): number
     {
         return 4096;
     }
 
 
     /**
-     * @override
      */
-    getZoomLevelRange()
+    override getZoomLevelRange(): ImageProvider.Range
     {
         return new ImageProvider.Range( 0, 0 );
     }
