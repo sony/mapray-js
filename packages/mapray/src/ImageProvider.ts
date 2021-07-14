@@ -1,27 +1,23 @@
 /**
- * @summary 地図画像プロバイダ
- * @classdesc
- * <p>レンダラーに地図画像を与えるための抽象クラスである。</p>
+ * 地図画像プロバイダ
  *
- * <p>このインスタンスには状態 ( {@link mapray.ImageProvider.Status} 型) があり、{@link mapray.ImageProvider#status|status()}
+ * レンダラーに地図画像を与えるための抽象クラスである。
+ *
+ * このインスタンスには状態 ( {@link mapray.ImageProvider.Status} 型) があり、{@link mapray.ImageProvider#status|status()}
  *    メソッドにより状態を確認することができる。<p>
  *
- * <p>初期状態は READY または NOT_READY でなければならず、状態の変化は NOT_READY から READY または NOT_READY から FAILED しか存在しない。<p>
- * <p>READY 以外の状態では {@link mapray.ImageProvider#status|status()} を除くメソッドを呼び出すことはできない。<p>
+ * 初期状態は READY または NOT_READY でなければならず、状態の変化は NOT_READY から READY または NOT_READY から FAILED しか存在しない。
+ * READY 以外の状態では {@link mapray.ImageProvider#status|status()} を除くメソッドを呼び出すことはできない。
  *
- * <p>初期状態が NOT_READY になる可能性があるプロバイダは、{@link mapray.ImageProvider#status|status()} メソッドをオーバーライドする必要がある。</p>
+ * 初期状態が NOT_READY になる可能性があるプロバイダは、{@link mapray.ImageProvider#status|status()} メソッドをオーバーライドする必要がある。
  *
- * <p>以下の抽象メソッドは既定の動作がないので、利用者はこれらのメソッドをオーバーライドした具象クラスを使用しなければならない。</p>
- * <ul>
- *   <li>{@link mapray.ImageProvider#requestTile|requestTile()}</li>
- *   <li>{@link mapray.ImageProvider#cancelRequest|cancelRequest()}</li>
- *   <li>{@link mapray.ImageProvider#getImageSize|getImageSize()}</li>
- *   <li>{@link mapray.ImageProvider#getZoomLevelRange|getZoomLevelRange()}</li>
- * </ul>
+ * 以下の抽象メソッドは既定の動作がないので、利用者はこれらのメソッドをオーバーライドした具象クラスを使用しなければならない。
  *
- * @memberof mapray
- * @abstract
- * @protected
+ * - [[ImageProvider.requestTile requestTile()]]
+ * - [[ImageProvider.cancelRequest cancelRequest()]]
+ * - [[ImageProvider.getImageSize getImageSize()]]
+ * - [[ImageProvider.getZoomLevelRange getZoomLevelRange()]]
+ *
  * @see mapray.StandardImageProvider
  * @see mapray.Viewer
  */
@@ -47,7 +43,7 @@ abstract class ImageProvider {
      */
     status( callback?: ImageProvider.StatusCallback ): ImageProvider.Status
     {
-        return Status.READY;
+        return ImageProvider.Status.READY;
     }
 
 
@@ -71,7 +67,7 @@ abstract class ImageProvider {
      * [requestTile()]{@link mapray.ImageProvider#requestTile} による要求を可能であれば取り消す。
      * @param id  要求 ID ([requestTile()]{@link mapray.ImageProvider#requestTile} から得たオブジェクト)
      */
-    abstract cancelRequest( id: object );
+    abstract cancelRequest( id: object ): void;
 
 
     /**
@@ -153,7 +149,7 @@ export class Range {
  * ただし [cancelRequest  mapray.cancelRequest] により要求が取り消されたとき、コールバック関数の呼び出しは無視されるので image は任意の値でよい。
  * @param image  地図タイル画像または null
  */
-export type RequestCallback = (image: Image | null) => void;
+export type RequestCallback = ( image: HTMLImageElement | null ) => void;
 
 
 
