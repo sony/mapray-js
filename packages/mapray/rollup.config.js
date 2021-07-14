@@ -1,11 +1,18 @@
 import { terser } from 'rollup-plugin-terser'
+import babel from 'rollup-plugin-babel'
 import { string } from 'rollup-plugin-string'
 import resolve from 'rollup-plugin-node-resolve'
+import commonjs from 'rollup-plugin-commonjs'
 import strip from '@rollup/plugin-strip';
-import typescript from '@rollup/plugin-typescript'
+// import typescript from '@rollup/plugin-typescript'
+import typescript from 'rollup-plugin-typescript2';
+
+
 
 const extensions = ['**/*.vert', '**/*.frag', '**/*.glsl']
 var outdir = "dist/"
+
+
 
 const strip_option = (
     process.env.BUILD === "production" ?
@@ -23,6 +30,8 @@ const strip_option = (
     }
 );
 
+
+
 export default [
   // ES
   {
@@ -34,7 +43,9 @@ export default [
       indent: false,
       sourcemap: false,
     },
-    external: ['tslib'],
+    external: [
+      'tslib',
+    ],
     plugins: [
       resolve(),
       strip(strip_option),
@@ -43,11 +54,16 @@ export default [
       }),
       typescript({
         tsconfig: './tsconfig.json',
-        outDir: outdir + 'es/',
-        sourceMap: false,
-        declaration: true,
-        declarationDir: outdir + 'es/@type',
-        declarationMap: true,
+        useTsconfigDeclarationDir: true,
+        tsconfigOverride: {
+          compilerOptions: {
+            outDir: outdir + 'es/',
+            sourceMap: false,
+            declaration: true,
+            declarationDir: outdir + 'es/@type',
+            declarationMap: true,
+          }
+        }
       }),
     ]
   },
@@ -56,7 +72,7 @@ export default [
   {
     input: 'src/mapray.ts',
     output: {
-      file: outdir+'es/mapray.mjs',
+      file: outdir + 'es/mapray.mjs',
       format: 'es',
       indent: false,
     },
@@ -68,7 +84,12 @@ export default [
       }),
       typescript({
         tsconfig: './tsconfig.json',
-        outDir: outdir+'es/',
+        useTsconfigDeclarationDir: true,
+        tsconfigOverride: {
+          compilerOptions: {
+            outDir: outdir + 'es/',
+          }
+        }
       }),
       terser()
     ]
@@ -76,51 +97,74 @@ export default [
 
   // UMD Development
   {
-    input: 'src/mapray.ts',
+    input: 'src/index.ts',
     output: {
-      file: outdir+'umd/mapray.js',
+      file: outdir + 'umd/mapray.js',
       format: 'umd',
       name: 'mapray',
+      exports: 'named',
       indent: false,
       sourcemap: true
     },
     plugins: [
       resolve(),
+      commonjs(),
       strip(strip_option),
       string({
         include: extensions
       }),
       typescript({
         tsconfig: './tsconfig.json',
-        outDir: outdir+'umd/',
-        sourceMap: true,
-        declaration: true,
-        declarationDir: '@type',
-        declarationMap: true,
-      })
+        useTsconfigDeclarationDir: true,
+        tsconfigOverride: {
+          compilerOptions: {
+            outDir: outdir + 'umd/',
+            sourceMap: true,
+            declaration: true,
+            declarationDir: outdir + 'umd/@type',
+            declarationMap: false,
+            target: 'es5',
+            module: 'es2015',
+          }
+        }
+      }),
+      babel({ // this is for js file in src dir
+        exclude: 'node_modules/**'
+      }),
     ]
   },
 
   // UMD Production
   {
-    input: 'src/mapray.ts',
+    input: 'src/index.ts',
     output: {
-      file: outdir+'umd/mapray.min.js',
+      file: outdir + 'umd/mapray.min.js',
       format: 'umd',
       name: 'mapray',
-      indent: false
+      exports: 'named',
+      indent: false,
     },
     plugins: [
       resolve(),
+      commonjs(),
       strip(strip_option),
       string({
         include: extensions
       }),
       typescript({
         tsconfig: './tsconfig.json',
-        outDir: outdir+'umd/',
+        useTsconfigDeclarationDir: true,
+        tsconfigOverride: {
+          compilerOptions: {
+            outDir: outdir + 'umd/',
+            target: 'es5',
+            module: 'es2015',
+          }
+        }
       }),
-      terser()
+      babel({ // this is for js file in src dir
+        exclude: 'node_modules/**'
+      }),
     ]
-  }
+  },
 ]
