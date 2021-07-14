@@ -1,79 +1,79 @@
-import GeoMath from "./GeoMath";
+import GeoMath, { Matrix, Vector2, Vector4 } from "./GeoMath";
 import Ray from "./Ray";
-  
+import Viewer from "./Viewer";
+
 
 /**
- * @summary 視点を表現するカメラ
+ * 視点を表現するカメラ
  *
- * @classdesc
- * <p>視点を表現するカメラである。</p>
- * <p>インスタンスは {@link mapray.Viewer#camera} から得ることができる。</p>
+ * 視点を表現するカメラである。
+ * インスタンスは [[Viewer.camera]] から得ることができる。
  *
- * @hideconstructor
- * @memberof mapray
- * @see mapray.Viewer
  */
 class Camera {
 
     /**
-     * @summary Cameraオブジェクトを生成
+     * レンダリング先のサイズ
+     * @internal
+     */
+    private _canvas_size: Camera.SizeObject;
+
+    /**
+     *  カメラの画角 (Degrees)
+     *  @default 46
+     */
+    fov: number;
+
+
+    /**
+     *  近接平面距離 (Meters)
+     *  @default 1
+     */
+    near: number;
+
+    /**
+     *  遠方平面距離 (Meters)
+     *  @default 1000
+     */
+    far: number;
+
+    /**
+     *  視点空間から GOCS への変換行列
+     *  @default 恒等行列
+     */
+    view_to_gocs: Matrix;
+
+
+    /**
+     * Cameraオブジェクトを生成
+     *
      * canvas_sizeには、width, heightプロパティを持つオブジェクトを指定する。
      * createRenderInfo()が呼ばれる度にwidth, height値が参照される。
      * canvas要素が指定される他、オフスクリーンレンダリング時にはwidth, height値を持ったオブジェクトが指定されます。
      *
-     * @param {object}  canvas_size  レンダリング先サイズ
-     * @param {number}  canvas_size.width 幅
-     * @param {number}  canvas_size.height 高さ
-     * @package
+     * @param canvas_size  レンダリング先サイズ
+     * @internal
      */
-    constructor( canvas_size )
+    constructor( canvas_size: Camera.SizeObject )
     {
-        /**
-         *  @summary レンダリング先のサイズ
-         *  @type {object}
-         */
-         this._canvas_size = canvas_size;
+        this._canvas_size = canvas_size;
 
-        /**
-         *  @summary カメラの画角 (Degrees)
-         *  @member mapray.Camera#fov
-         *  @type {number}
-         *  @default 46
-         */
         this.fov  = 46;
 
-        /**
-         *  @summary 近接平面距離 (Meters)
-         *  @member mapray.Camera#near
-         *  @type {number}
-         *  @default 1
-         */
         this.near = 1;
 
-        /**
-         *  @summary 遠方平面距離 (Meters)
-         *  @member mapray.Camera#far
-         *  @type {number}
-         *  @default 1000
-         */
         this.far  = 1000;
 
-        /**
-         *  @summary 視点空間から GOCS への変換行列
-         *  @member mapray.Camera#view_to_gocs
-         *  @type {mapray.Matrix}
-         *  @default 恒等行列
-         */
-        this.view_to_gocs = GeoMath.createMatrix();
-        GeoMath.setIdentity( this.view_to_gocs );
+        this.view_to_gocs = GeoMath.setIdentity( GeoMath.createMatrix() );
     }
 
+
     /**
-     * @summary カメラの姿勢や視体積に関するパラメータをコピーします。
+     * カメラの姿勢や視体積に関するパラメータをコピーします。
      * キャンバスサイズはコピーされません。
-     * @private
+     * @internal
      */
-    copyViewParameters( camera ) {
+    copyViewParameters( camera: Camera ) {
         this.fov = camera.fov;
         this.near = camera.near;
         this.far  = camera.far;
@@ -82,15 +82,18 @@ class Camera {
 
 
     /**
-     * @summary 変換行列 canvas_to_view を取得
-     * @desc
-     * <p>キャンバス座標系から視点座標系へ座標を変換するための変換行列を取得する。</p>
-     * <p>結果は omat に設定するが、omat を省略した場合は新規に生成した行列オブジェクトを使用する。</p>
-     * <p>キャンバスの幅または高さが 0 のときは結果は不定値となる。</p>
-     * @param  {mapray.Matrix} [omat]  結果を設定する行列オブジェクト
-     * @return {mapray.Matrix}         omat または新規に生成した行列
+     * 変換行列 canvas_to_view を取得
+     *
+     * キャンバス座標系から視点座標系へ座標を変換するための変換行列を取得する。
+     *
+     * 結果は omat に設定するが、omat を省略した場合は新規に生成した行列オブジェクトを使用する。
+     *
+     * キャンバスの幅または高さが 0 のときは結果は不定値となる。
+     *
+     * @param  omat  結果を設定する行列オブジェクト
+     * @return omat または新規に生成した行列
      */
-    getCanvasToView( omat )
+    getCanvasToView( omat?: Matrix ): Matrix
     {
         var dst = omat || GeoMath.createMatrix();
 
@@ -134,15 +137,17 @@ class Camera {
 
 
     /**
-     * @summary 変換行列 canvas_to_gocs を取得
-     * @desc
-     * <p>キャンバス座標系から地心座標系 (GOCS) へ座標を変換するための変換行列を取得する。</p>
-     * <p>結果は omat に設定するが、omat を省略した場合は新規に生成した行列オブジェクトを使用する。</p>
-     * <p>キャンバスの幅または高さが 0 のときは結果は不定値となる。</p>
-     * @param  {mapray.Matrix} [omat]  結果を設定する行列オブジェクト
-     * @return {mapray.Matrix}         omat または新規に生成した行列
+     * 変換行列 canvas_to_gocs を取得
+     * キャンバス座標系から地心座標系 (GOCS) へ座標を変換するための変換行列を取得する。
+     *
+     * 結果は omat に設定するが、omat を省略した場合は新規に生成した行列オブジェクトを使用する。
+     *
+     * キャンバスの幅または高さが 0 のときは結果は不定値となる。
+     *
+     * @param  omat  結果を設定する行列オブジェクト
+     * @return omat または新規に生成した行列
      */
-    getCanvasToGocs( omat )
+    getCanvasToGocs( omat?: Matrix ): Matrix
     {
         /*==  canvas_to_view  ==*/
         var nMat = this.getCanvasToView( omat );
@@ -218,15 +223,16 @@ class Camera {
 
 
     /**
-     * @summary 変換行列 view_to_canvas を取得
-     * @desc
-     * <p>視点座標系からキャンバス座標系へ座標を変換するための変換行列を取得する。</p>
-     * <p>結果は omat に設定するが、omat を省略した場合は新規に生成した行列オブジェクトを使用する。</p>
-     * <p>キャンバスの幅または高さが 0 のときは結果は不定値となる。</p>
-     * @param  {mapray.Matrix} [omat]  結果を設定する行列オブジェクト
-     * @return {mapray.Matrix}         omat または新規に生成した行列
+     * 変換行列 view_to_canvas を取得
+     *
+     * 視点座標系からキャンバス座標系へ座標を変換するための変換行列を取得する。
+     * 結果は omat に設定するが、omat を省略した場合は新規に生成した行列オブジェクトを使用する。
+     * キャンバスの幅または高さが 0 のときは結果は不定値となる。
+     *
+     * @param  omat  結果を設定する行列オブジェクト
+     * @return omat または新規に生成した行列
      */
-    getViewToCanvas( omat )
+    getViewToCanvas( omat: Matrix ): Matrix
     {
         var dst = omat || GeoMath.createMatrix();
 
@@ -270,16 +276,17 @@ class Camera {
 
 
     /**
-     * @summary キャンバス座標に対応するレイを取得
-     * @desc
-     * <p>キャンバス上の cpos で示した点に対応するレイを取得する。</p>
-     * <p>始点は近接平面上に置き、方向は長さ 1 に正規化される。</p>
-     * <p>返されるレイの座標系は GOCS である。</p>
-     * @param  {mapray.Vector2} cpos    キャンバス上の位置
-     * @param  {mapray.Ray}     [oray]  結果を設定する Ray オブジェクト
-     * @return {mapray.Ray}             oray または新規に生成した Ray
+     * キャンバス座標に対応するレイを取得
+     *
+     * キャンバス上の cpos で示した点に対応するレイを取得する。
+     * 始点は近接平面上に置き、方向は長さ 1 に正規化される。
+     * 返されるレイの座標系は GOCS である。
+     *
+     * @param  cpos  キャンバス上の位置
+     * @param  oray  結果を設定する Ray オブジェクト
+     * @return oray または新規に生成した Ray
      */
-    getCanvasRay( cpos, oray )
+    getCanvasRay( cpos: Vector2, oray?: Ray ): Ray
     {
         var x = cpos[0];
         var y = cpos[1];
@@ -311,54 +318,83 @@ class Camera {
 
 
     /**
-     * @summary レンダリング先のサイズ
-     * @type {object}
-     * @private
+     * レンダリング先のサイズ
+     * @internal
      */
-    get canvas_size() {
+    get canvas_size(): Camera.SizeObject {
         return this._canvas_size;
     }
 
 
     /**
-     * @summary レンダリング情報を生成します。
+     * レンダリング情報を生成します。
+     *
      * ビューポート内で実際にレンダリングを行う領域を指定します。（レンダリング領域が指定されなかった場合はビューポート全体にレンダリングを行います）
-     * @param  {number} [sx] レンダリング領域のx位置
-     * @param  {number} [sy] レンダリング領域のy位置
-     * @param  {number} [swidth] レンダリング領域の幅
-     * @param  {number} [sheight] レンダリング領域の高さ
-     * @return {mapray.Camera.RenderInfo}
-     * @package
+     * @param  sx レンダリング領域のx位置
+     * @param  sy レンダリング領域のy位置
+     * @param  swidth レンダリング領域の幅
+     * @param  sheight レンダリング領域の高さ
+     * @internal
      */
-    createRenderInfo( sx, sy, swidth, sheight )
+    createRenderInfo( sx?: number, sy?: number, swidth?: number, sheight?: number ): Camera.RenderInfo
     {
         const canvas_size = this._canvas_size;
-        return new RenderInfo( this, canvas_size.width, canvas_size.height, sx, sy, swidth, sheight );
+        return new Camera.RenderInfo( this, canvas_size.width, canvas_size.height, sx, sy, swidth, sheight );
     }
 
 }
 
 
-Camera._temp_mat = GeoMath.createMatrix();
+
+namespace Camera {
+
+
+/**
+ * @internal
+ */
+export const _temp_mat = GeoMath.createMatrix();
+
+
+
+export interface SizeObject {
+
+    /**
+     * 幅
+     */
+    width: number;
+
+    /**
+     * 高さ
+     */
+    height: number;
+}
+
 
 
 /**
  * @summary カメラから得るレンダリング情報
  * @memberof mapray.Camera
- * @private
+ * @internale
  */
-class RenderInfo {
+export class RenderInfo {
+
+    private _view_to_clip: Matrix;
+
+    private _volume_planes: Vector4[];
+
+    private _pixel_step: number;
+
 
     /**
-     * @param {mapray.Camera} camera  対象カメラ
-     * @param {number} width          ビューポートの幅
-     * @param {number} height         ビューポートの高さ
-     * @param {number} [sx]           レンダリング領域のx位置(ビューポート中央を0, 右方向を正とする)
-     * @param {number} [sy]           レンダリング領域のy位置(ビューポート中央を0, 上方向を正とする)
-     * @param {number} [swidth]       レンダリング領域の幅
-     * @param {number} [sheight]      レンダリング領域の高さ
+     * @param camera  対象カメラ
+     * @param width   ビューポートの幅
+     * @param height  ビューポートの高さ
+     * @param sx      レンダリング領域のx位置(ビューポート中央を0, 右方向を正とする)
+     * @param sy      レンダリング領域のy位置(ビューポート中央を0, 上方向を正とする)
+     * @param swidth  レンダリング領域の幅
+     * @param sheight レンダリング領域の高さ
      */
-    constructor( camera, width, height, sx, sy, swidth, sheight )
+    constructor( camera: Camera, width: number, height: number, sx?: number, sy?: number, swidth?: number, sheight?: number )
     {
         /*
         *                  y    swidth                  
@@ -381,7 +417,7 @@ class RenderInfo {
         */
         // オブジェクトを生成
         this._view_to_clip = GeoMath.createMatrix();
-        this._volume_planes = [];
+        this._volume_planes = [] as Vector4[];
         for ( var i = 0; i < 6; ++i ) {
             this._volume_planes.push( GeoMath.createVector4() );
         }
@@ -431,9 +467,8 @@ class RenderInfo {
 
 
     /**
-     * @private
      */
-    _setup_view_to_clip( camera, width, height, sx=0, sy=0, swidth=width, sheight=height )
+    private _setup_view_to_clip( camera: Camera, width: number, height: number, sx: number = 0, sy: number = 0, swidth: number = width, sheight: number = height )
     {
         // 矩形の中心位置 (単位空間)
         const cx = 2 * sx / width;
@@ -463,9 +498,8 @@ class RenderInfo {
 
 
     /**
-     * @private
      */
-    _setup_volume_planes()
+    private _setup_volume_planes()
     {
         var matrix = this._view_to_clip;
         var  plane = this._volume_planes;
@@ -495,9 +529,8 @@ class RenderInfo {
 
 
     /**
-     * @private
      */
-    _setup_pixel_step( width, height )
+    private _setup_pixel_step( width: number, height: number )
     {
         // mIJ は view_to_clip の I 行 J 列の成分
         //
@@ -524,9 +557,8 @@ class RenderInfo {
 
 
     /**
-     * @private
      */
-    _add_matrix_rows( mat, row1, row2, dst )
+    private _add_matrix_rows( mat: Matrix, row1: number, row2: number , dst: Vector4 )
     {
         dst[0] = mat[row1]      + mat[row2];
         dst[1] = mat[row1 +  4] + mat[row2 +  4];
@@ -537,9 +569,8 @@ class RenderInfo {
 
 
     /**
-     * @private
      */
-    _sub_matrix_rows( mat, row1, row2, dst )
+    private _sub_matrix_rows( mat: Matrix, row1: number, row2: number, dst: Vector4 )
     {
         dst[0] = mat[row1]      - mat[row2];
         dst[1] = mat[row1 +  4] - mat[row2 +  4];
@@ -549,6 +580,11 @@ class RenderInfo {
     }
 
 }
+
+
+
+} // namespace Camera
+
 
 
 export default Camera;
