@@ -4,12 +4,22 @@ import maprayui from "@mapray/ui";
 
 const accessToken = "<your access token here>";
 
+
 class AppViewer extends maprayui.StandardUIViewer {
+
+    private _container: string | HTMLElement;
+
+    private _init_camera: mapray.GeoPointData;
+
+    private _lookat_position: mapray.GeoPointData;
+
+    private _init_camera_param: maprayui.StandardUIViewer.CameraParameterOption;
+
 
     /**
      * @param {string|Element} container  コンテナ (ID または要素)
      */
-    constructor( container )
+    constructor( container: string | HTMLElement )
     {
         super( container, accessToken, {
             debug_stats: new mapray.DebugStats()
@@ -22,6 +32,9 @@ class AppViewer extends maprayui.StandardUIViewer {
             latitude: 28.0,         // 緯度
             longitude: 142.0,       // 経度
             height: 2500000,        // 高度
+        };
+
+        this._init_camera_param = {
             fov: 46.0               // 画角
         };
 
@@ -39,7 +52,7 @@ class AppViewer extends maprayui.StandardUIViewer {
         this.setLookAtPosition( this._lookat_position );
 
         // カメラパラメータ
-        this.setCameraParameter( this._init_camera );
+        this.setCameraParameter( this._init_camera_param );
     }
 
     /**
@@ -53,7 +66,8 @@ class AppViewer extends maprayui.StandardUIViewer {
     /**
      * リソース要求関数
      */
-    _onTransform( url, type )
+    /*
+    _onTransform( url: string, type:  )
     {
         return {
             url: url,
@@ -61,8 +75,9 @@ class AppViewer extends maprayui.StandardUIViewer {
             headers: {}
         };
     }
+    */
 
-    onUpdateFrame( delta_time )
+    onUpdateFrame( delta_time: number )
     {
         if (!this._viewer) {
             return;
@@ -71,16 +86,17 @@ class AppViewer extends maprayui.StandardUIViewer {
 
         var camera_matrix = this._viewer.camera.view_to_gocs
         var direction = [camera_matrix[4], camera_matrix[5], camera_matrix[6] ];
-        var pitch = this._camera_parameter.pitch - 90;
     }
 
     // Override from EventHandlers
-    onMouseDown( point, event ) {
+    onMouseDown( point: [number, number], event: MouseEvent )
+    {
         console.log( 'onMouseDown events:', point );
         super.onMouseDown( point, event );
     }
 
-    onMouseMove( point, event ) {
+    onMouseMove( point: [number, number], event: MouseEvent )
+    {
         console.log( 'onMouseMove:', point );
 
         const dummy_err_flag = false;
@@ -90,7 +106,8 @@ class AppViewer extends maprayui.StandardUIViewer {
         super.onMouseMove( point, event );
     }
 
-    onMouseUp( point, event ) {
+    onMouseUp( point: [number, number], event: MouseEvent )
+    {
         console.log( 'onMouseUp', point );
 
         const dummy_err_flag = false;
@@ -100,10 +117,11 @@ class AppViewer extends maprayui.StandardUIViewer {
         super.onMouseUp( point, event );
     }
 
-    onKeyDown( event )
+    onKeyDown( event: KeyboardEvent )
     {
         super.onKeyDown( event );
     }
 }
+
 
 export default AppViewer;
