@@ -3,33 +3,44 @@ import CredentialMode from "./CredentialMode";
 
 
 /**
- * @summary 標準地図画像プロバイダ
- * @classdesc
- * <p>汎用的な地図画像プロバイダの実装である。</p>
- * <p>構築子の引数に prefix, suffix, size, zmin, zmax を与えた場合、各メソッドの動作は以下のようになる。
- * ここで c1, c2, c3 は opts.coord_order の指定に従った第1、第2、第3の座標である。</p>
- * <pre>
+ * 標準地図画像プロバイダ
+ *
+ * 汎用的な地図画像プロバイダの実装である。
+ * 構築子の引数に prefix, suffix, size, zmin, zmax を与えた場合、各メソッドの動作は以下のようになる。
+ * ここで c1, c2, c3 は opts.coord_order の指定に従った第1、第2、第3の座標である。
+ *
+ * ```
  *   requestTile( z, x, y ) -> URL が prefix + c1 + '/' + c2 + '/' + c3 + suffix の画像を要求
  *   getImageSize()         -> size を返す
  *   getZoomLevelRange()    -> new ImageProvider.Range( zmin, zmax ) を返す
- * </pre>
- * @memberof mapray
- * @extends mapray.ImageProvider
+ * ```
  */
 class StandardImageProvider extends ImageProvider {
 
+    private _prefix: string;
+
+    private _suffix: string;
+
+    private _size: number;
+
+    private _min_level: number;
+
+    private _max_level: number;
+
+    private _coords_part: OrderCoords;
+
+    private _crossOrigin: string | null;
+
+
     /**
-     * @param {string} prefix  URL の先頭文字列
-     * @param {string} suffix  URL の末尾文字列
-     * @param {number} size    地図タイル画像の寸法
-     * @param {number} zmin    最小ズームレベル
-     * @param {number} zmax    最大ズームレベル
-     * @param {object} [opts]  オプション集合
-     * @param {mapray.StandardImageProvider.CoordOrder}  [opts.coord_order=ZXY]          URL の座標順序
-     * @param {mapray.StandardImageProvider.CoordSystem} [opts.coord_system=UPPER_LEFT]  タイル XY 座標系
-     * @param {mapray.CredentialMode}                    [opts.credentials=SAME_ORIGIN]  クレデンシャルモード
+     * @param prefix  URL の先頭文字列
+     * @param suffix  URL の末尾文字列
+     * @param size    地図タイル画像の寸法
+     * @param zmin    最小ズームレベル
+     * @param zmax    最大ズームレベル
+     * @param opts    オプション集合
      */
-    constructor( prefix, suffix, size, zmin, zmax, opts )
+    constructor( prefix: string, suffix: string, size: number, zmin: number, zmax: number, opts?: StandardImageProvider.Option )
     {
         super();
         this._prefix    = prefix;
@@ -39,33 +50,33 @@ class StandardImageProvider extends ImageProvider {
         this._max_level = zmax;
 
         // タイル座標を並び替える関数
-        var orderCoords;
+        let orderCoords: OrderCoords | null = null;
         if ( opts && opts.coord_order ) {
-            if ( opts.coord_order === CoordOrder.ZYX ) {
+            if ( opts.coord_order === StandardImageProvider.CoordOrder.ZYX ) {
                 orderCoords = function( z, x, y ) { return z + "/" + y + "/" + x; };
             }
-            else if ( opts.coord_order === CoordOrder.XYZ ) {
+            else if ( opts.coord_order === StandardImageProvider.CoordOrder.XYZ ) {
                 orderCoords = function( z, x, y ) { return x + "/" + y + "/" + z; };
             }
         }
-        if ( !orderCoords ) {
-            // その他の場合は既定値 COORD_ORDER_ZXY を使う
-            orderCoords = function( z, x, y ) { return z + "/" + x + "/" + y; };
-        }
+        const orderCoordsFixed = (
+            orderCoords ||
+            function( z, x, y ) { return z + "/" + x + "/" + y; } // その他の場合は既定値 COORD_ORDER_ZXY を使う
+        );
 
         // XY 座標を変換する関数
-        var convCoords;
+        let convCoords: OrderCoords | null = null;
         if ( opts && opts.coord_system ) {
-            if ( opts.coord_system === CoordSystem.LOWER_LEFT ) {
+            if ( opts.coord_system === StandardImageProvider.CoordSystem.LOWER_LEFT ) {
                 convCoords = function( z, x, y ) {
                     var size = Math.round( Math.pow( 2, z ) );
-                    return orderCoords( z, x, size - y - 1 );
+                    return orderCoordsFixed( z, x, size - y - 1 );
                 };
             }
         }
         if ( !convCoords ) {
             // その他の場合は既定値 UPPER_LEFT (無変換) を使う
-            convCoords = orderCoords;
+            convCoords = orderCoordsFixed;
         }
 
         // 座標部分の URL を取得する関数
@@ -85,9 +96,8 @@ class StandardImageProvider extends ImageProvider {
 
 
     /**
-     * @override
      */
-    requestTile( z, x, y, callback )
+    override requestTile( z: number, x: number, y: number, callback: ImageProvider.RequestCallback ): object
     {
         var image = new Image();
 
@@ -105,27 +115,24 @@ class StandardImageProvider extends ImageProvider {
 
 
     /**
-     * @override
      */
-    cancelRequest( id )
+    override cancelRequest( id: object )
     {
         // TODO: Image 読み込みの取り消し方法は不明
     }
 
 
     /**
-     * @override
      */
-    getImageSize()
+    override getImageSize(): number
     {
         return this._size;
     }
 
 
     /**
-     * @override
      */
-    getZoomLevelRange()
+    override getZoomLevelRange(): ImageProvider.Range
     {
         return new ImageProvider.Range( this._min_level, this._max_level );
     }
@@ -133,14 +140,38 @@ class StandardImageProvider extends ImageProvider {
 
     /**
      * URL を作成
-     * @private
      */
-    _makeURL( z, x, y )
+    private _makeURL( z: number, x: number, y: number ): string
     {
         return this._prefix + this._coords_part( z, x, y ) + this._suffix;
     }
 
 }
+
+
+
+namespace StandardImageProvider {
+
+
+
+export interface Option {
+
+    /**
+     * URL の座標順序
+     */
+    coord_order: StandardImageProvider.CoordOrder;
+
+    /**
+     * タイル XY 座標系
+     */
+    coord_system: StandardImageProvider.CoordSystem;
+
+    /**
+     * クレデンシャルモード
+     */
+    credentials: CredentialMode;
+}
+
 
 
 /**
@@ -151,22 +182,23 @@ class StandardImageProvider extends ImageProvider {
  * @memberof mapray.StandardImageProvider
  * @constant
  */
-var CoordOrder = {
+export enum CoordOrder {
     /**
      * 座標順序 Z/X/Y (既定値)
      */
-    ZXY: { id: "ZXY" },
+    ZXY,
 
     /**
      * 座標順序 Z/Y/X
      */
-    ZYX: { id: "ZYX" },
+    ZYX,
 
     /**
      * 座標順序 Z/X/Y
      */
-    XYZ: { id: "XYZ" }
+    XYZ,
 };
+
 
 
 /**
@@ -177,24 +209,26 @@ var CoordOrder = {
  * @memberof mapray.StandardImageProvider
  * @constant
  */
-var CoordSystem = {
+export enum CoordSystem {
     /**
      * 原点:左上, X軸:右方向, Y軸:下方向 (既定値)
      */
-    UPPER_LEFT: { id: "UPPER_LEFT" },
+    UPPER_LEFT,
 
     /**
      * 原点:左下, X軸:右方向, Y軸:上方向
      */
-    LOWER_LEFT: { id: "LOWER_LEFT" }
+    LOWER_LEFT,
 };
 
 
-// クラス定数の定義
-{
-StandardImageProvider.CoordOrder  = CoordOrder;
-StandardImageProvider.CoordSystem = CoordSystem;
-}
+
+} // namespace StandardImageProvider
+
+
+
+type OrderCoords = ( a: number, b: number, c: number ) => string;
+
 
 
 export default StandardImageProvider;
