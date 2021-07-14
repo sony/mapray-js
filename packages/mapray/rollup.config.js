@@ -2,7 +2,8 @@ import { terser } from 'rollup-plugin-terser'
 import { string } from 'rollup-plugin-string'
 import resolve from 'rollup-plugin-node-resolve'
 import strip from '@rollup/plugin-strip';
-import typescript from '@rollup/plugin-typescript'
+// import typescript from '@rollup/plugin-typescript'
+import typescript from 'rollup-plugin-typescript2';
 
 const extensions = ['**/*.vert', '**/*.frag', '**/*.glsl']
 var outdir = "dist/"
