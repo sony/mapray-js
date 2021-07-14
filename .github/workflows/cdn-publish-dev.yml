@@ -1,0 +1,88 @@
+name: <CDN development> Publish JS files
+
+on:
+  push:
+    tags-ignore:
+      - '[0-9]+.[0-9]+.[0-9]+-dev.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+-alpha.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+-beta.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+'
+    branches:
+       - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      CORE_PACKAGE_DIR: "./packages/mapray"
+      UI_PACKAGE_DIR: "./packages/ui"
+      DEPLOY_DIR: "./_deploy"
+      CORE_DEPLOY_DIR: "./_deploy/public/mapray-js"
+      UI_DEPLOY_DIR: "./_deploy/public/ui"
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14.x'
+      - run:  git fetch --prune --unshallow
+      - name: Setting yarn
+        run: |
+          yarn config set version-tag-prefix ""
+          yarn config set version-sign-git-tag false
+          yarn config set version-git-tag false
+      - name: Increment core patch version to next version
+        run: yarn version --patch
+        working-directory:  ${{ env.CORE_PACKAGE_DIR }}
+      - name: Increment ui patch version to next version
+        run: yarn version --patch
+        working-directory:  ${{ env.UI_PACKAGE_DIR }}
+      - name: Get deploy version
+        run: |
+          NEXT_VERSION=`node -pe "require('./package.json').version"`
+          echo ${NEXT_VERSION}
+          echo "::set-output name=next_version::${NEXT_VERSION}"
+        id: get_version
+        shell: bash
+        working-directory: ${{ env.CORE_PACKAGE_DIR }}
+      - name: Setup
+        run: yarn install
+      - name: Build maprayJS
+        run: yarn build
+      - name: Copy core builded files to dist directory
+        run: |
+          mkdir -p ${{ env.CORE_DEPLOY_DIR }}/v${{ steps.get_version.outputs.next_version }}
+          cp -r ${{ env.CORE_PACKAGE_DIR }}/dist/umd/* ${{ env.CORE_DEPLOY_DIR }}/v${{ steps.get_version.outputs.next_version }}
+      - name: Copy ui builded files to dist directory
+        run: |
+          mkdir -p ${{ env.UI_DEPLOY_DIR }}/v${{ steps.get_version.outputs.next_version }}
+          cp -r ${{ env.UI_PACKAGE_DIR }}/dist/umd/* ${{ env.UI_DEPLOY_DIR }}/v${{ steps.get_version.outputs.next_version }}
+          cp -r ${{ env.UI_PACKAGE_DIR }}/dist/mapray.css ${{ env.DEPLOY_DIR }}/public/styles/v1/
+        shell: bash
+      - name: Archive Production Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: dist
+          path: ${{ env.DEPLOY_DIR }}
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Download Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: dist
+          path: dist
+      - name: Deploy to hosting server for development
+        uses: w9jds/firebase-action@master
+        with:
+          args: deploy
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_DEPLOY_TOKEN }}
+          PROJECT_ID: ${{ secrets.FIREBASE_DEV_PROJECT }}
+          PROJECT_PATH: "./dist"
+

@@ -1,0 +1,41 @@
+name: <NPM release> Publish node packages
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      CORE_PACKAGE_DIR: "./packages/mapray"
+      UI_PACKAGE_DIR: "./packages/ui"
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14.x'
+          registry-url: https://registry.npmjs.org
+          scope: '@mapray'
+      - run:  git fetch --prune --unshal
+      - name: Setup
+        run: yarn install
+      - name: Build maprayJS
+        run: yarn build
+      - name: Packing core package
+        run: yarn pack
+        working-directory: ./packages/mapray
+      - name: Packing ui package
+        run: yarn pack
+        working-directory: ./packages/ui
+      - name: Publish core to npm packages
+        run: npm publish
+        working-directory: ${{ env.CORE_PACKAGE_DIR }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish ui to Github packages
+        run: npm publish
+        working-directory: ${{ env.UI_PACKAGE_DIR }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
