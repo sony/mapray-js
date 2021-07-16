@@ -4,7 +4,6 @@ import TileTextureCache from "./TileTextureCache";
 import surface_vs_code from "./shader/surface.vert";
 import surface_fs_code from "./shader/surface.frag";
 import rid_fs_code from "./shader/rid.frag";
-import { RenderTarget } from "./RenderStage";
 import Layer from "./Layer";
 
 

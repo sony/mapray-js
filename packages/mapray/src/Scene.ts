@@ -1,73 +1,106 @@
+import BindingBlock from "./animation/BindingBlock";
 import EasyBindingBlock from "./animation/EasyBindingBlock";
-import { RenderTarget } from "./RenderStage";
+import RenderStage from "./RenderStage";
+import Viewer from "./Viewer";
+import GLEnv from "./GLEnv";
+import Primitive from "./Primitive";
+import Entity from "./Entity";
+import EntityRegion from "./EntityRegion";
+import Loader from "./Loader";
+import SceneLoader from "./SceneLoader";
 
 
 /**
- * @summary モデルシーン
+ * モデルシーン
  *
- * @classdesc
- * <p>表示するエンティティを管理するクラスである。</p>
- * <p>インスタンスは {@link mapray.Viewer#scene} から得ることができる。</p>
+ * 表示するエンティティを管理するクラスである。
+ * インスタンスは [[mapray.Viewer.scene]] から得ることができる。
  *
- * @hideconstructor
- * @memberof mapray
- * @see mapray.SceneLoader
  */
 class Scene {
 
+    private _viewer: Viewer;
+
+    private _glenv: GLEnv;
+
+    private _enode_list: Scene.ENode[];
+
+    private _loaders: Loader[];
+
+    private _animation: BindingBlock;
+
+    /** @internal */
+    _PinEntity_pin_material?: object;
+    /** @internal */
+    _PinEntity_pin_material_pick?: object;
+
+    /** @internal */
+    _TextEntity_text_material?: object;
+    /** @internal */
+    _TextEntity_text_material_pick?: object;
+
+    /** @internal */
+    _SimpleTextEntity_text_material?: object;
+    /** @internal */
+    _SimpleTextEntity_text_material_pick?: object;
+
+    /** @internal */
+    _ImageEntity_image_material?: object;
+    /** @internal */
+    _ImageEntity_image_material_pick?: object;
+
+    /** @internal */
+    _PolygonEntity_material?: object;
+    /** @internal */
+    _PolygonEntity_material_pick?: object;
+
+
     /**
-     * @param {mapray.Viewer}  viewer  Viewer インスタンス (未構築)
-     * @param {mapray.GLEnv}   glenv   GLEnv インスタンス
+     * @param viewer  Viewer インスタンス (未構築)
+     * @param glenv   GLEnv インスタンス
+     * @internal
      */
-    constructor( viewer, glenv )
+    constructor( viewer: Viewer, glenv: GLEnv )
     {
         this._viewer     = viewer;
         this._glenv      = glenv;
         this._enode_list = [];  // ENode のリスト
         this._loaders    = [];  // 現在読み込み中の SceneLoader (取り消し用)
 
-        // animation.BindingBlock
-        this._animation = new EasyBindingBlock();
-        this._animation.addDescendantUnbinder( () => { this._unbindDescendantAnimations(); } );
+        const animation = new EasyBindingBlock();
+        animation.addDescendantUnbinder( () => { this._unbindDescendantAnimations(); } );
+        // @ts-ignore
+        this._animation = animation;
     }
 
 
     /**
      * WebGL レンダリングコンテキスト情報
-     * @type {mapray.GLEnv}
-     * @readonly
-     * @package
+     * @internal
      */
-    get glenv() { return this._glenv; }
+    get glenv(): GLEnv { return this._glenv; }
 
 
     /**
      * this を保有する親オブジェクト
-     * @type {mapray.Viewer}
-     * @readonly
      */
-    get viewer() { return this._viewer; }
+    get viewer(): Viewer { return this._viewer; }
 
 
     /**
-     * @summary アニメーションパラメータ設定
-     *
-     * @type {mapray.animation.BindingBlock}
-     * @readonly
+     * アニメーションパラメータ設定
      */
-    get animation() { return this._animation; }
+    get animation(): BindingBlock { return this._animation; }
 
 
     /**
      * エンティティ数
-     * @type {number}
-     * @readonly
      */
-    get num_entities() { return this._enode_list.length; }
+    get num_entities(): number { return this._enode_list.length; }
 
 
     /**
-     * @summary すべてのエンティティを削除
+     * すべてのエンティティを削除
      */
     clearEntities()
     {
@@ -76,23 +109,23 @@ class Scene {
 
 
     /**
-     * @summary エンティティを末尾に追加
-     * @param {mapray.Entity} entity  エンティティ
+     * エンティティを末尾に追加
+     * @param entity  エンティティ
      */
-    addEntity( entity )
+    addEntity( entity: Entity )
     {
         if ( entity.scene !== this ) {
             throw new Error( "invalid entity" );
         }
-        this._enode_list.push( new ENode( entity ) );
+        this._enode_list.push( new Scene.ENode( entity ) );
     }
 
 
     /**
-     * @summary エンティティを削除
-     * @param {mapray.Entity} entity  エンティティ
+     * エンティティを削除
+     * @param entity  エンティティ
      */
-    removeEntity( entity )
+    removeEntity( entity: Entity )
     {
         var array = this._enode_list;
 
@@ -106,29 +139,29 @@ class Scene {
 
 
     /**
-     * @summary エンティティを取得
-     * @param  {number} index    インデックス
-     * @return {mapray.Entity}   エンティティ
+     * エンティティを取得
+     * @param  index    インデックス
+     * @return エンティティ
      */
-    getEntity( index )
+    getEntity( index: number ): Entity
     {
         return this._enode_list[index].entity;
     }
 
 
     /**
-     * @summary シーンを描画
-     * @param {mapray.RenderStage} stage  レンダリングステージ
-     * @package
+     * シーンを描画
+     * @param stage  レンダリングステージ
+     * @internal
      */
-    draw( stage )
+    draw( stage: RenderStage )
     {
         this._prepare_entities();
 
         // プリミティブの配列を生成
-        var op_prims = [];  // 不透明プリミティブ
-        var tp_prims = [];  // 半透明プリミティブ
-        var ac_prims = [];  // アンカープリミティブ
+        var op_prims: Primitive[] = [];  // 不透明プリミティブ
+        var tp_prims: Primitive[] = [];  // 半透明プリミティブ
+        var ac_prims: Primitive[] = [];  // アンカープリミティブ
 
         for ( let {entity} of this._enode_list ) {
             if ( !entity.visibility ) continue;
@@ -143,10 +176,9 @@ class Scene {
 
 
     /**
-     * @summary 描画前のエンティティの準備
-     * @private
+     * 描画前のエンティティの準備
      */
-    _prepare_entities()
+    private _prepare_entities()
     {
         var dem_area_updated = this._viewer.globe.dem_area_updated;
 
@@ -159,7 +191,7 @@ class Scene {
                 continue;
             }
 
-            if ( producer.checkToCreateRegions() || enode.regions === null ) {
+            if ( producer.checkToCreateRegions() || !enode.regions ) {
                 // 領域情報が分からない、または領域情報が変化した可能性があるとき
                 enode.regions = producer.createRegions();
                 if ( enode.regions.length > 0 ) {
@@ -174,7 +206,7 @@ class Scene {
                     continue;
                 }
 
-                var regions = [];  // 標高に変化があった領域
+                var regions: EntityRegion[] = [];  // 標高に変化があった領域
 
                 enode.regions.forEach( region => {
                     if ( region.intersectsWith( dem_area_updated ) ) {
@@ -194,9 +226,8 @@ class Scene {
 
     /**
      * 視体積に含まれるプリミティブを追加
-     * @private
      */
-    _add_primitives( stage, entity,  op_prims, tp_prims, ac_prims )
+    private _add_primitives( stage: RenderStage, entity: Entity,  op_prims: Primitive[], tp_prims: Primitive[], ac_prims: Primitive[] )
     {
         let producer = entity.getPrimitiveProducer();
         if ( producer === null ) return;
@@ -217,9 +248,8 @@ class Scene {
 
     /**
      * 不透明プリミティブを整列してから描画
-     * @private
      */
-    _draw_opaque_primitives( stage, primitives )
+    private _draw_opaque_primitives( stage: RenderStage, primitives: Primitive[] )
     {
         // 不透明プリミティブの整列: 近接 -> 遠方 (Z 降順)
         primitives.sort( function( a, b ) { return b.sort_z - a.sort_z; } );
@@ -236,15 +266,14 @@ class Scene {
 
     /**
      * 半透明プリミティブを整列してから描画
-     * @private
      */
-    _draw_translucent_primitives( stage, primitives )
+    private _draw_translucent_primitives( stage: RenderStage, primitives: Primitive[] )
     {
         // 半透明プリミティブの整列: 遠方 -> 近接 (Z 昇順)
         primitives.sort( function( a, b ) { return a.sort_z - b.sort_z; } );
 
         var gl = this._glenv.context;
-        if (stage.getRenderTarget() === RenderTarget.SCENE) {
+        if (stage.getRenderTarget() === RenderStage.RenderTarget.SCENE) {
             gl.enable( gl.BLEND );
         }
         else {
@@ -263,15 +292,14 @@ class Scene {
 
 
     /**
-     * @summary アンカープリミティブを整列してから描画。
-     * <p>{@link mapray.AbstractRenderStage#getRenderTarget} が {@link mapray.AbstractRenderStage.RenderTarget.SCENE} の場合は、
+     * アンカープリミティブを整列してから描画。
+     * [[RenderStage.AbstractRenderStage.getRenderTarget]] が [[mapray.AbstractRenderStage.RenderTarget.SCENE]] の場合は、
      *   隠面処理で隠れてえしまう部分は半透明で描画し、それ以外の部分は通常の描画を行う。結果的にアンカーオブジェクトが隠面において重なった場合は色が混ざった表示となる</p>
-     * <p>{@link mapray.AbstractRenderStage#getRenderTarget} が {@link mapray.AbstractRenderStage.RenderTarget.RID} の場合は、
-     *   隠面処理で隠れてえしまう部分は強制的に描画し、それ以外の部分は通常の描画を行う。結果的にアンカーオブジェクトが隠面において重なった場合はzソートした順番でRIDが上書きされる</p>
-     * @see {@link mapray.Entity#anchor_mode}
-     * @private
+     * [[AbstractRenderStage#getRenderTarget]] が [[mapray.AbstractRenderStage.RenderTarget.RID]] の場合は、
+     *   隠面処理で隠れてえしまう部分は強制的に描画し、それ以外の部分は通常の描画を行う。結果的にアンカーオブジェクトが隠面において重なった場合はzソートした順番でRIDが上書きされる
+     * @see [[mapray.Entity.anchor_mode]]
      */
-    _draw_anchor_primitives( stage, primitives )
+    private _draw_anchor_primitives( stage: RenderStage, primitives: Primitive[] )
     {
         // 不透明プリミティブの整列: 近接 -> 遠方 (Z 降順)
         primitives.sort( function( a, b ) { return b.sort_z - a.sort_z; } );
@@ -279,7 +307,7 @@ class Scene {
         var gl = this._glenv.context;
         gl.disable( gl.DEPTH_TEST );
         gl.depthMask( false );
-        if (stage.getRenderTarget() === RenderTarget.SCENE) {
+        if (stage.getRenderTarget() === RenderStage.RenderTarget.SCENE) {
             stage.setTranslucentMode( true );
             gl.enable( gl.BLEND );
         }
@@ -307,7 +335,7 @@ class Scene {
 
     /**
      * すべての SceneLoader の読み込みを取り消す
-     * @package
+     * @internal
      */
     cancelLoaders()
     {
@@ -321,10 +349,10 @@ class Scene {
 
     /**
      * 読み込み中の SceneLoader を登録
-     * @param {mapray.SceneLoader} loader  登録するローダー
-     * @package
+     * @param loader  登録するローダー
+     * @internal
      */
-    addLoader( loader )
+    addLoader( loader: Loader )
     {
         this._loaders.push( loader );
     }
@@ -332,10 +360,10 @@ class Scene {
 
     /**
      * 読み込み中の SceneLoader を削除
-     * @param {mapray.SceneLoader} loader  削除するローダー
-     * @package
+     * @param loader  削除するローダー
+     * @internal
      */
-    removeLoader( loader )
+    removeLoader( loader: Loader )
     {
         var index = this._loaders.indexOf( loader );
         if ( index >= 0 ) {
@@ -345,13 +373,11 @@ class Scene {
 
 
     /**
-     * @summary FlakePrimitiveProducer の反復可能オブジェクトを取得
+     * FlakePrimitiveProducer の反復可能オブジェクトを取得
      *
-     * @return {iterable.<mapray.Entity.FlakePrimitiveProducer>}
-     *
-     * @package
+     * @internal
      */
-    getFlakePrimitiveProducers()
+    getFlakePrimitiveProducers(): Entity.FlakePrimitiveProducer[]
     {
         let producers = [];
 
@@ -369,45 +395,54 @@ class Scene {
 
     /**
      * EasyBindingBlock.DescendantUnbinder 処理
-     *
-     * @private
      */
-    _unbindDescendantAnimations()
+    private _unbindDescendantAnimations()
     {
         // すべてのエンティティを解除
         for ( let {entity} of this._enode_list ) {
             entity.animation.unbindAllRecursively();
         }
     }
-
 }
+
+
+
+namespace Scene {
+
 
 
 /**
  * エンティティ管理用ノード
- *
- * @memberof mapray.Scene
- * @private
+ * @internal
  */
-class ENode {
+export class ENode {
+
+    entity: Entity;
+
+    regions?: EntityRegion[];
 
     /**
      * @param {mapray.Entity} entity  管理対象のエンティティ
      */
-    constructor( entity )
+    constructor( entity: Entity )
     {
         /**
-         * @summary 管理対象のエンティティ
+         * 管理対象のエンティティ
          * @member mapray.Scene.ENode#entity
          * @type {mapray.Entity}
          * @readonly
          */
         this.entity = entity;
 
-        this.regions = null;
+        this.regions = undefined;
     }
 
 }
+
+
+
+} // namespace Scene
+
 
 
 export default Scene;
