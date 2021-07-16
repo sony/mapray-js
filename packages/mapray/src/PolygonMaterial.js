@@ -3,7 +3,7 @@ import GeoMath from "./GeoMath";
 import polygon_vs_code from "./shader/polygon.vert";
 import polygon_fs_code from "./shader/polygon.frag";
 import rid_fs_code from "./shader/rid.frag";
-import { RenderTarget } from "./RenderStage";
+import RenderStage from "./RenderStage";
 
 
 /**
@@ -48,7 +48,7 @@ class PolygonMaterial extends EntityMaterial {
         this.setObjToClip( stage, primitive );
         this.setObjToView( stage, primitive );
 
-        if (stage.getRenderTarget() === RenderTarget.SCENE) {
+        if (stage.getRenderTarget() === RenderStage.RenderTarget.SCENE) {
             // 基本色
             // vec4 u_color
             var param_color   = (props.color   !== undefined) ? props.color   : PolygonMaterial.DEFAULT_COLOR;

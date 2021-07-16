@@ -3,7 +3,7 @@ import GeoMath from "./GeoMath";
 import line_vs_code from "./shader/line.vert";
 import line_fs_code from "./shader/line.frag";
 import AbstractLineEntity from "./AbstractLineEntity";
-import { RenderTarget } from "./RenderStage";
+import RenderStage from "./RenderStage";
 
 
 /**
@@ -65,7 +65,7 @@ class LineMaterial extends EntityMaterial {
         thickness[1] = param_width / 2;
         this.setVector2( "u_thickness", thickness );
 
-        if (stage.getRenderTarget() === RenderTarget.SCENE) {
+        if (stage.getRenderTarget() === RenderStage.RenderTarget.SCENE) {
             // 線の基本色
             // vec4 u_color
             var param_color   = (props.color   !== undefined) ? props.color   : LineMaterial.DEFAULT_COLOR;

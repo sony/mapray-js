@@ -5,7 +5,7 @@ import Entity from "./Entity";
 import DebugStats from "./DebugStats";
 import RenderCallback from "./RenderCallback";
 import NullRenderCallback from "./NullRenderCallback";
-import RenderStage, { PickStage } from "./RenderStage";
+import RenderStage from "./RenderStage";
 import StandardImageProvider from "./StandardImageProvider";
 import StandardDemProvider from "./StandardDemProvider";
 import Layer from "./Layer";
@@ -610,8 +610,9 @@ class Viewer {
      *
      * @see [[getExistingElevation]]
      */
-    getExistingElevations( num_points: number, src_array: number[], src_offset: number, src_stride: number, dst_array: number[], dst_offset: number, dst_stride: number ): number[]
+    getExistingElevations( num_points: number, src_array: Float64Array|number[], src_offset: number, src_stride: number, dst_array: Float64Array|number[], dst_offset: number, dst_stride: number ): number[]
     {
+        // @ts-ignore
         return this._globe.getExistingElevations( num_points, src_array, src_offset, src_stride, dst_array, dst_offset, dst_stride );
     }
 
@@ -702,7 +703,7 @@ class Viewer {
             this._debug_stats.clearStats();
         }
 
-        var stage = new RenderStage( this );
+        var stage = new RenderStage.SceneRenderStage( this );
         stage.render();
 
         this._postProcess();
@@ -717,7 +718,7 @@ class Viewer {
      * @return ピック結果
      */
     pick( screen_position: Vector2 ): Viewer.PickResult {
-        const stage = new PickStage( this, screen_position );
+        const stage = new RenderStage.PickRenderStage( this, screen_position );
         stage.render();
         return stage.pick_result;
     }
