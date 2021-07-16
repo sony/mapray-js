@@ -3,7 +3,7 @@ import Texture from "./Texture";
 import model_vs_code from "./shader/model.vert";
 import model_fs_code from "./shader/model.frag";
 import rid_fs_code from "./shader/rid.frag";
-import { RenderTarget } from "./RenderStage";
+import RenderStage from "./RenderStage";
 
 /**
  * @summary 基本マテリアル
@@ -49,7 +49,7 @@ class ModelMaterial extends EntityMaterial {
         this.setObjToClip( stage, primitive );
         this.setObjToView( stage, primitive );
 
-        if (stage.getRenderTarget() === RenderTarget.SCENE) {
+        if (stage.getRenderTarget() === RenderStage.RenderTarget.SCENE) {
             // 基本色係数
             var bcf = pbrMR["baseColorFactor"];
             const u_base_color = (

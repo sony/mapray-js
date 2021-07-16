@@ -1,6 +1,6 @@
 import Material from "./Material";
 import GeoMath from "./GeoMath";
-import { RenderTarget } from "./RenderStage";
+import RenderStage from "./RenderStage";
 
 
 /**
@@ -56,7 +56,7 @@ class EntityMaterial extends Material {
      */
     setParameters( stage, primitive )
     {
-        if (stage.getRenderTarget() === RenderTarget.RID) {
+        if (stage.getRenderTarget() === RenderStage.RenderTarget.RID) {
             this._setRenderId( primitive.rid );
         }
     }
