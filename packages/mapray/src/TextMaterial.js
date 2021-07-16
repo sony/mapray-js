@@ -3,7 +3,7 @@ import GeoMath from "./GeoMath";
 import text_vs_code from "./shader/text.vert";
 import text_fs_code from "./shader/text.frag";
 import rid_fs_code from "./shader/rid.frag";
-import { RenderTarget } from "./RenderStage";
+import RenderStage from "./RenderStage";
 
 
 /**
@@ -58,7 +58,7 @@ class TextMaterial extends EntityMaterial {
         sparam[1] = 2 / stage._height;
         this.setVector2( "u_sparam", sparam );
 
-        if (stage.getRenderTarget() === RenderTarget.SCENE) {
+        if (stage.getRenderTarget() === RenderStage.RenderTarget.SCENE) {
             // テクスチャのバインド
             // sampler2D u_image
             var image_tex = props["image"];

@@ -3,7 +3,7 @@ import GeoMath from "./GeoMath";
 import image_icon_vs_code from "./shader/image_icon.vert";
 import image_icon_fs_code from "./shader/image_icon.frag";
 import rid_fs_code from "./shader/rid.frag";
-import { RenderTarget } from "./RenderStage";
+import RenderStage from "./RenderStage";
 
 
 /**
@@ -58,7 +58,7 @@ class ImageIconMaterial extends EntityMaterial {
         sparam[1] = 2 / stage._height;
         this.setVector2( "u_sparam", sparam );
 
-        if (stage.getRenderTarget() === RenderTarget.SCENE) {
+        if (stage.getRenderTarget() === RenderStage.RenderTarget.SCENE) {
             // テクスチャのバインド
             // sampler2D u_image
             var image = props["image"];
