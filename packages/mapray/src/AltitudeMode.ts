@@ -1,32 +1,28 @@
 /**
- * @summary 高度モード
+ * 高度モード
  *
- * @desc
- * <p>{@link mapray.GeoPoint} などの高度値をどのように解釈するかを指定する列挙値の型である。<p>
+ * [[mapray.GeoPoint]] などの高度値をどのように解釈するかを指定する列挙値の型である。
  *
- * @enum {object}
- * @memberof mapray
- * @constant
  * @see mapray.Entity
  */
-var AltitudeMode = {
+enum AltitudeMode {
 
     /**
      * 絶対値
      */
-    ABSOLUTE: { id: "ABSOLUTE" },
+    ABSOLUTE,
 
 
     /**
      * 地表からの相対値
      */
-    RELATIVE: { id: "RELATIVE" },
+    RELATIVE,
 
 
     /**
      * 地表と同じ高さ (高度値を無視)
      */
-    CLAMP: { id: "CLAMP" }
+    CLAMP,
 
 };
 
