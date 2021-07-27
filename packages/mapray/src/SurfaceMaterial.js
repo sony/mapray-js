@@ -97,7 +97,7 @@ class SurfaceMaterial extends FlakeMaterial {
             this.setFloat( "u_opacity", (index == 0) ? 1.0 : layer.opacity );
 
             if ( index > 0 && layer.type === Layer.LayerType.NIGHT ) {
-                this.setVector3( "u_sun_direction", this._viewer.sun_direction );
+                this.setVector3( "u_sun_direction", this._viewer.sun.sun_direction );
                 mesh.mul_flake_to_gocs( this._identity_matrix, this._flake_to_gocs );
                 this.setMatrix( "u_obj_to_gocs", this._flake_to_gocs );
             }
