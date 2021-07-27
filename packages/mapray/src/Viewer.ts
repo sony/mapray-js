@@ -22,6 +22,7 @@ import SceneLoader from "./SceneLoader";
 import EasyBindingBlock from "./animation/EasyBindingBlock";
 import BindingBlock from "./animation/BindingBlock";
 import Util from "./util/Util";
+import Sun from "./Sun";
 
 // マウス・Attribution開発
 import LogoController from "./LogoController";
@@ -77,14 +78,13 @@ class Viewer {
 
     private _is_destroyed: boolean = false;
 
-    private _sun_direction: Vector3 = GeoMath.createVector3( [ 0, 0, 1 ] );
+    private _sun: Sun;
 
     private _postProcesses: Viewer.PostProcess[] = [];
 
     private _logo_controller: LogoController;
 
     private _attribution_controller: AttributionController;
-
 
 
     /**
@@ -132,7 +132,7 @@ class Viewer {
         this._debug_stats        = options.debug_stats || null;
         this._point_cloud_collection = this._createPointCloudCollection( options );
         this._render_callback    = this._createRenderCallback( options );
-        this._sun_direction      = GeoMath.createVector3( [ 0, 0, 1 ] );
+        this._sun                = new Sun();
 
         // マウス・Attribution開発
         this._logo_controller = ( options && options.logo_controller ) || new LogoController( this._container_element );
@@ -451,10 +451,9 @@ class Viewer {
 
 
     /**
-     * 太陽ベクトル。非公開とする。APIでは、メモリー破壊が起こらない Viewer.getSunDirection を公開する。
      * @internal
      */
-    get sun_direction(): Vector3 { return this._sun_direction; }
+    get sun(): Sun { return this._sun; }
 
 
     /**
@@ -801,27 +800,6 @@ class Viewer {
     private _unbindDescendantAnimations()
     {
         this._scene.animation.unbindAllRecursively();
-    }
-
-
-    /**
-     * 太陽ベクトルの情報を設定します
-     * @param direction 方向（GOCS  正規化されていること）
-     */
-    setSunDirection( direction: Vector3 )
-    {
-        GeoMath.copyVector3( direction, this._sun_direction );
-    }
-
-
-    /**
-     * 太陽ベクトルの情報のコピーを取得します
-     * @param dst 方向（GOCS  正規化されていること）
-     * @return ベクトルのコピー（GOCS）
-     */
-    getSunDirection( dst: Vector3 ): Vector3
-    {
-        return GeoMath.copyVector3( this._sun_direction, dst );
     }
 }
 
