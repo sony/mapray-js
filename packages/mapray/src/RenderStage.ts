@@ -65,13 +65,13 @@ abstract class RenderStage {
     // 地形
     protected _flake_list!: RenderFlake[];
 
-    protected _view_to_clip?: Matrix;
+    protected _view_to_clip!: Matrix;
 
-    protected _gocs_to_view?: Matrix;
+    protected _gocs_to_view!: Matrix;
 
-    protected _gocs_to_clip?: Matrix;
+    protected _gocs_to_clip!: Matrix;
 
-    protected _view_to_gocs?: Matrix;
+    protected _view_to_gocs!: Matrix;
 
     // 半透明化モード
     private _translucent_mode: boolean;
@@ -364,9 +364,9 @@ abstract class RenderStage {
     }
 
 
-     _draw_point_cloud()
-     {
-     }
+    _draw_point_cloud()
+    {
+    }
 }
 
 
