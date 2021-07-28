@@ -23,6 +23,8 @@ import EasyBindingBlock from "./animation/EasyBindingBlock";
 import BindingBlock from "./animation/BindingBlock";
 import Util from "./util/Util";
 import Sun from "./Sun";
+import Atmosphere from "./Atmosphere";
+import SunVisualizer from "./SunVisualizer";
 
 // マウス・Attribution開発
 import LogoController from "./LogoController";
@@ -86,6 +88,10 @@ class Viewer {
 
     private _attribution_controller: AttributionController;
 
+    private _atmosphere?: Atmosphere;
+
+    private _sunVisualizer?: SunVisualizer;
+
 
     /**
      * container コンテナ (ID または要素)
@@ -133,6 +139,18 @@ class Viewer {
         this._point_cloud_collection = this._createPointCloudCollection( options );
         this._render_callback    = this._createRenderCallback( options );
         this._sun                = new Sun();
+
+        const atmosphere = options.atmosphere;
+        if ( atmosphere ) {
+            this._atmosphere = atmosphere;
+            atmosphere.init( this );
+        }
+
+        const sunVisualizer = options.sun_visualizer;
+        if ( sunVisualizer ) {
+            this._sunVisualizer = sunVisualizer;
+            sunVisualizer.init( this );
+        }
 
         // マウス・Attribution開発
         this._logo_controller = ( options && options.logo_controller ) || new LogoController( this._container_element );
@@ -456,6 +474,18 @@ class Viewer {
     get sun(): Sun { return this._sun; }
 
 
+    /**
+     * @internal
+     */
+    get atmosphere() { return this._atmosphere; }
+ 
+ 
+    /**
+     * @internal
+     */
+    get sunVisualizer() { return this._sunVisualizer; }
+ 
+ 
     /**
      * 可視性を設定
      *
@@ -839,6 +869,10 @@ export interface Option {
 
     /** 著作権表示制御オブジェクト */
     attribution_controller?: AttributionController;
+
+    atmosphere?: Atmosphere;
+
+    sun_visualizer?: SunVisualizer;
 }
 
 

@@ -58,6 +58,10 @@ export { default as PointCloudCollection } from "./PointCloudCollection";
 
 export { default as Resource, URLResource } from "./Resource";
 
+export { default as Atmosphere } from "./Atmosphere";
+export { default as SunVisualizer } from "./SunVisualizer";
+export { default as TextureSunVisualizer } from "./TextureSunVisualizer";
+
 // マウス・Attribution開発
 export { default as  LogoController } from "./LogoController";
 export { default as  AttributionController } from "./AttributionController";
