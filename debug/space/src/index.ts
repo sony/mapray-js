@@ -1,24 +1,20 @@
 import '../../../packages/ui/dist/mapray.css';
-import App from './app';
+import SpaceApp from './SpaceApp';
 
 // 現在のアプリインスタンス
-var appInstance;
+let appInstance: SpaceApp | undefined;
 
 
 /**
  * アプリを開始
  * @param  {string|Element} container  コンテナ (ID または要素)
  */
-function startApp( container )
+export default function( container: HTMLElement | string )
 {
     if ( appInstance ) {
         // すでに動作していれば停止して消去
         appInstance.destroy();
-        appInstance = null;
+        appInstance = undefined;
     }
-    appInstance = new App( container );
+    appInstance = new SpaceApp( container );
 }
-
-
-// グローバル関数に登録
-window.startApp = startApp;

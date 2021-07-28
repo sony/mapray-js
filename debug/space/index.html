@@ -68,8 +68,14 @@
         }
 
     </style>
+    <script type="text/javascript" src="./dist/bundle.js"></script>
+    <script type="text/javascript">
+        window.addEventListener("load", event => {
+            window.startApp('mapray-container');
+        });
+    </script>
 </head>
-<body onload="window.startApp('mapray-container');">
+<body>
 <div id="contents">
     <div id="mapray-container">
     </div>
@@ -117,6 +123,5 @@
         </table>
     </div>
 </div>
-    </body>
-    <script type="text/javascript" src="./dist/bundle-iife.js"></script>
+</body>
 </html>
