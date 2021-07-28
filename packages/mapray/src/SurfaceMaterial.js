@@ -52,12 +52,22 @@ class SurfaceMaterial extends FlakeMaterial {
     _getPreamble( options )
     {
         const is_night = options.nightMaterial === true;
+        const is_from_space = options.atmosphereFromSpaceMaterial === true;
+        const is_from_atmosphere = options.atmosphereMaterial === true;
 
         const lines = [];
 
         // マクロの定義
         if ( is_night ) {
             lines.push( "#define NIGHTIMAGE" );
+        }
+
+        if ( is_from_space || is_from_atmosphere ) {
+            lines.push( "#define ATMOSPHERE" );
+        }
+
+        if ( is_from_space ) {
+            lines.push( "#define FROMSPACE" );
         }
 
         // lines を文字列にして返す
@@ -100,6 +110,27 @@ class SurfaceMaterial extends FlakeMaterial {
                 this.setVector3( "u_sun_direction", this._viewer.sun.sun_direction );
                 mesh.mul_flake_to_gocs( this._identity_matrix, this._flake_to_gocs );
                 this.setMatrix( "u_obj_to_gocs", this._flake_to_gocs );
+            }
+
+            if ( index === 0 && this._viewer.atmosphere ) {
+                this.setVector3( "u_sun_direction", this._viewer.sun.sun_direction );
+                mesh.mul_flake_to_gocs( this._identity_matrix, this._flake_to_gocs );
+                this.setMatrix( "u_obj_to_gocs", this._flake_to_gocs );
+                this.setVector3( "u_camera_position", [stage._view_to_gocs[12], stage._view_to_gocs[13], stage._view_to_gocs[14]] );
+                const cameraHeight = Math.sqrt(
+                    stage._view_to_gocs[12] * stage._view_to_gocs[12] +
+                    stage._view_to_gocs[13] * stage._view_to_gocs[13] +
+                    stage._view_to_gocs[14] * stage._view_to_gocs[14]
+                );
+                this.setFloat( "u_camera_height", cameraHeight );
+                this.setFloat( "u_camera_height2", cameraHeight * cameraHeight );
+
+                const parameters = this._viewer.atmosphere.parameters;
+                this.setFloat( "u_kr",              parameters.g_kr );
+                this.setFloat( "u_km",              parameters.g_km );
+                this.setFloat( "u_scale_depth",     parameters.g_scale_depth );
+                this.setFloat( "u_esun",            parameters.g_esun );
+                this.setFloat( "u_exposure",        parameters.g_exposure );
             }
 
             this.bindTexture2D( SurfaceMaterial.TEXUNIT_IMAGE_HI, param.image_hi.texture );
