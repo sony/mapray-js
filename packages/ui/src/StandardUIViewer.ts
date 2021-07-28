@@ -213,7 +213,9 @@ class StandardUIViewer extends mapray.RenderCallback
             entity_visibility: ( options && (options.entity_visibility !== undefined)) ? options.entity_visibility : true,
             render_mode: ( options && options.render_mode ) || mapray.Viewer.RenderMode.SURFACE,
             debug_stats: ( options && options.debug_stats ),
-            attribution_controller: ( options && options.attribution_controller )
+            attribution_controller: ( options && options.attribution_controller ),
+            atmosphere: ( options && options.atmosphere ),
+            sun_visualizer: ( options && options.sun_visualizer ),
         }
         );
 
@@ -2011,6 +2013,12 @@ export interface Option extends mapray.Viewer.Option {
 
      /** URL Hash更新 */
      url_update?: boolean;
+
+     /** 大気層表示オプション */
+     atmosphere?: mapray.Atmosphere;
+
+     /** 太陽表示オプション */
+     sun_visualizer?: mapray.SunVisualizer;
 }
 
 
@@ -2142,7 +2150,8 @@ export const MINIMUM_HEIGHT = 2.0;
 export const MINIMUM_NEAR = 1.0;
 
 // 最小遠方平面距離
-export const MINIMUM_FAR = 500000;
+// export const MINIMUM_FAR = 500000;
+export const MINIMUM_FAR = 2870162;
 
 // 高度からの近接平面距離を計算するための係数
 export const NEAR_FACTOR = 0.01;
