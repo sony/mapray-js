@@ -10,6 +10,11 @@ import Option, { DomTool } from "./Option";
 
 const accessToken = "<your access token here>";
 
+const MAPRAY_API_BASE_PATH = "https://cloud.mapray.com";
+const MAPRAY_API_ACCESS_TOKEN = accessToken;
+const MAPRAY_API_USER_ID = "<your api user id here>";
+const POINT_CLOUD_DATASET_ID = "<your point cloud dataset id here>";
+
 const NATS_JSON_URL = "https://firebasestorage.googleapis.com/v0/b/ino-sandbox.appspot.com/o/inousample%2FthreeDModel%2FNATS%2FNATS.json?alt=media&token=081ad161-ad70-449e-b279-c2ea2beb109b";
 const NATS_MARKER_JSON_URL = "https://firebasestorage.googleapis.com/v0/b/ino-sandbox.appspot.com/o/inousample%2Fmarker%2FDemoNATS.json?alt=media&token=ba0298fb-042a-4ae0-b0fd-3427b457cf8a";
 const AED_JSON_URL = "https://firebasestorage.googleapis.com/v0/b/ino-sandbox.appspot.com/o/inousample%2Fmarker%2FDemoAED.json?alt=media&token=04715b01-d890-4f18-b22f-aa831598ab39";
@@ -28,33 +33,166 @@ const RENDER_OPTION_PROPERTIES = [
         value: true,
     },
     {
-        key: "check1",
+        key: "move moon",
         type: "boolean",
-        description: "チェックボックス1",
+        description: "月移動",
+        value: true,
+    },
+    {
+        key: "night layer",
+        type: "boolean",
+        description: "夜間レイヤー",
+        value: true,
+    },
+    {
+        key: "atmosphere",
+        type: "boolean",
+        description: "　大気表現",
         value: false,
     },
     {
-        key: "check2",
+        key: "sun",
         type: "boolean",
-        description: "チェックボックス2",
-        value: false,
+        description: "太陽表示",
+        value: true,
     },
     {
-        key: "check3",
+        key: "moon",
         type: "boolean",
-        description: "チェックボックス3",
-        value: false,
+        description: "月表示",
+        value: true,
     },
     {
-        key: "select1",
-        type: "select",
-        description: "セレクター",
-        options: [
-            "1px", "2px", "3px", "4px", "5px",
-            "10mm", "20mm", "30mm", "40mm", "50mm", "100mm",
-            "Flexible",
-        ],
-        value: "Flexible",
+        key: "sky",
+        type: "boolean",
+        description: "大気圏表示",
+        value: true,
+    },
+    {
+        key: "ground",
+        type: "boolean",
+        description: "地表大気表示",
+        value: true,
+    },
+    {
+        key: "sun speed",
+        type: "range",
+        description: "太陽の速度",
+        min: 0,
+        max: 300,
+        value: 1.0,
+    },
+    {
+        key: "sun radius",
+        type: "range",
+        description: "太陽の径",
+        min: 0.1,
+        max: 5.0,
+        value: 1.0,
+    },
+    {
+        key: "sun intensity",
+        type: "range",
+        description: "太陽の強度",
+        min: 0.5,
+        max: 2.0,
+        value: 1.0,
+    },
+    {
+        key: "moon speed",
+        type: "range",
+        description: "月の速度",
+        min: 0,
+        max: 300,
+        value: 1.0,
+    },
+    {
+        key: "moon radius",
+        type: "range",
+        description: "月の径",
+        min: 0.1,
+        max: 5.0,
+        value: 1.0,
+    },
+    {
+        key: "kr",
+        type: "range",
+        description: "Rayleigh",
+        min: 0.0025,
+        max: 0.015,
+        value: 0.01,
+    },
+    {
+        key: "km",
+        type: "range",
+        description: "Mie",
+        min: 0.0001,
+        max: 0.01,
+        value: 0.001,
+    },
+    {
+        key: "scale depth",
+        type: "range",
+        description: "ScaleDepth",
+        min: 0.08,
+        max: 0.25,
+        value: 0.13,
+    },
+    {
+        key: "eSun",
+        type: "range",
+        description: "eSun",
+        min: 10.0,
+        max: 25.0,
+        value: 17.5,
+    },
+    {
+        key: "exposure",
+        type: "range",
+        description: "Exposure",
+        min: -3.0,
+        max: -0.4,
+        value: -1.4,
+    },
+    {
+        key: "g_kr",
+        type: "range",
+        description: "Rayleigh",
+        min: 0.0025,
+        max: 0.015,
+        value: 0.0025,
+    },
+    {
+        key: "g_km",
+        type: "range",
+        description: "Mie",
+        min: 0.0001,
+        max: 0.01,
+        value: 0.001,
+    },
+    {
+        key: "g_scale depth",
+        type: "range",
+        description: "ScaleDepth",
+        min: 0.08,
+        max: 0.25,
+        value: 0.25,
+    },
+    {
+        key: "g_eSun",
+        type: "range",
+        description: "eSun",
+        min: 10.0,
+        max: 25.0,
+        value: 16.0,
+    },
+    {
+        key: "g_exposure",
+        type: "range",
+        description: "Exposure",
+        min: -3.0,
+        max: -0.4,
+        value: -2.0,
     },
 ];
 
@@ -67,7 +205,17 @@ class SpaceApp extends maprayui.StandardUIViewer {
     constructor( container )
     {
         super( container, accessToken, {
-            debug_stats: new mapray.DebugStats()
+            debug_stats: new mapray.DebugStats(),
+            image_provider: new BingMapsImageProvider( {
+                 uriScheme: "https",
+                 key: "<your Bing Maps Key here>"
+             } ),
+             atmosphere: new mapray.Atmosphere(),
+             sun_visualizer: new mapray.SunVisualizer( 32 )
+             // sun_visualizer: new mapray.SunVisualizer( 5 ),
+             // sun_visualizer: new mapray.TextureSunVisualizer( './data/sun_tex.jpg' ),
+             // moon_visualizer: new mapray.MoonVisualizer( './data/moontest.jpg' )
+             // moon_visualizer: new mapray.MoonVisualizer( './data/moon.jpg' )
         }
         );
 
@@ -100,6 +248,10 @@ class SpaceApp extends maprayui.StandardUIViewer {
         // カメラパラメータ
         this.setCameraParameter( this._init_camera );
 
+        const options = { camera_position: this._init_camera, lookat_position: this._lookat_position, url_update: true };
+
+        this.initCameraParameterFromURL( options );
+
         // コンテンツ制御
         this._isChangedGIS = false;
         this._isChangedBing = false;
@@ -109,12 +261,29 @@ class SpaceApp extends maprayui.StandardUIViewer {
         this._isGIS = false;
         this._isBing = false;
         this._layer_transparency = 10; //layer
+
         this._elapsedTime = 0;
 
         this._moveSun = true;
+        this._sunSpeed = 36;
+
+        this._moonElapsedTime = 0;
+        this._moveMoon = false; //true;
+        this._moonSpeed = 10;
+
+        this._fps = [];
+        this._fps_count = 240;
+        for ( let i=0; i<this._fps_count; i++ ) {
+            this._fps.push(0);
+        }
 
         this._updateDebugUI();
 
+        // PointCloud
+        this._point_cloud_mode = null;
+        this._point_cloud_cache = {
+            bbox_geoms: []
+        };
     }
 
     /**
@@ -145,38 +314,80 @@ class SpaceApp extends maprayui.StandardUIViewer {
     _loadGISInfo()
     {
         // シーンの読み込みを開始
-        // 3D
-        /*  new mapray.SceneLoader( this._viewer.scene, NATS_JSON_URL, {
-              transform: (url, type) => this._onTransform( url, type ),
-              callback: (loader, isSuccess) => {
-                  this._onLoadScene( loader, isSuccess );
-              }
-          } );
 
-          // NATS marker
-          new mapray.SceneLoader( this._viewer.scene, NATS_MARKER_JSON_URL, {
+        const targetPos = new mapray.GeoPoint(137.7238014361, 34.7111256306);
+        var pin = new mapray.PinEntity( this.viewer.scene );
+        pin.addMakiIconPin( "landmark-15", targetPos);
+        this.addEntity(pin);
+
+/*
+        // Point Cloud
+        this._point_cloud_mode = "raw";
+        this._updatePointCloud();
+
+
+        // 3D
+        var scene_File_URL = "./data/yakushiji.json";
+        new mapray.SceneLoader( this._viewer.scene, scene_File_URL, {
               transform: (url, type) => this._onTransform( url, type ),
               callback: (loader, isSuccess) => {
                   this._onLoadScene( loader, isSuccess );
+                  // console.log('loaded');
               }
-          } );
-          // AED
-          new mapray.SceneLoader( this._viewer.scene, AED_JSON_URL, {
-              callback: (loader, isSuccess) => { this._onLoadScene( loader, isSuccess ); }
-          } );
-          // Mountain
-          new mapray.SceneLoader( this._viewer.scene, MOUNTAIN_JSON_URL, {
-              callback: (loader, isSuccess) => { this._onLoadScene( loader, isSuccess ); }
-          } ); */
+          } ).load();
+
+          scene_File_URL = "./data/iss.json";
+          new mapray.SceneLoader( this._viewer.scene, scene_File_URL, {
+                transform: (url, type) => this._onTransform( url, type ),
+                callback: (loader, isSuccess) => {
+                    this._onLoadScene( loader, isSuccess );
+                }
+            } ).load();
 
         // GeoJSON
-        new mapray.GeoJSONLoader( this._viewer.scene, "./shinjuku_linestring.json", {
+        new mapray.GeoJSONLoader( this._viewer.scene, "./data/shinjukulink.geojson", {
             onLoad: ( loader, isSuccess ) => { console.log( "success load geojson" ) },
             getLineColor: d => d.properties && d.properties.color ? d.properties.color : [0, 255, 255, 255],
             getLineWidth: d => d.properties && d.properties.width ? d.properties.width : 3,
             getExtrudedHeight: () => null,
             getAltitude: () => 40
-        } );
+        } ).load();
+*/
+
+        // 直線のエンティティを作成
+        {
+           var line_entity = new mapray.MarkerLineEntity(this._viewer.scene);
+           // 皇居の座標を設定
+           var line_fast_position = { longitude: 139.7528, latitude: 35.685175, height: 50 };
+           // 東京タワーの座標を設定
+           var line_second_position = { longitude: 139.745433, latitude: 35.658581, height: 30 };
+
+           var position_array = [line_fast_position.longitude, line_fast_position.latitude, line_fast_position.height,
+                                 line_second_position.longitude, line_second_position.latitude, line_second_position.height];
+           line_entity.addPoints(position_array);
+           this._viewer.scene.addEntity(line_entity);
+
+           // 文字のエンティティを作成
+           var font_entity = new mapray.TextEntity(this._viewer.scene);
+           var fast_font_position = { longitude: 139.7528, latitude: 35.685175, height: 50 };
+           var fast_font_geopoint = new mapray.GeoPoint(fast_font_position.longitude, fast_font_position.latitude, fast_font_position.height);
+           font_entity.addText("The Imperial Palace", fast_font_geopoint, { color: [1, 1, 0], font_size: 25 });
+           var second_font_position = { longitude: 139.745433, latitude: 35.658581, height: 50 };
+           var second_font_geopoint = new mapray.GeoPoint(second_font_position.longitude, second_font_position.latitude, second_font_position.height);
+           font_entity.addText("Tokyo Tower", second_font_geopoint, { color: [1, 1, 0], font_size: 25 });
+           this._viewer.scene.addEntity(font_entity);
+         }
+
+         {
+           // イメージアイコンのエンティティを作成
+           var imag_icon_entity = new mapray.ImageIconEntity(this._viewer.scene);
+           // 東京タワーの座標を求める
+           var image_icon_Point = new mapray.GeoPoint(139.745340, 35.658694, 100);
+           // イメージアイコンを追加
+           imag_icon_entity.addImageIcon("./data/japan.jpg", image_icon_Point, { size: [300, 200] });
+           // エンティティをシーンに追加
+           this._viewer.scene.addEntity(imag_icon_entity);
+         }
     }
 
     /**
@@ -185,6 +396,65 @@ class SpaceApp extends maprayui.StandardUIViewer {
     _clearGISInfo()
     {
         this._viewer.scene.clearEntities();
+        this._point_cloud_mode = null;
+        this._updatePointCloud();
+    }
+
+    async _updatePointCloud() {
+        if (this._point_cloud_mode === this._point_cloud_cache.mode) {
+            return;
+        }
+
+        const maprayApi = new mapray.MaprayApi({
+            basePath: MAPRAY_API_BASE_PATH,
+            version: "v1",
+            userId: MAPRAY_API_USER_ID,
+            token: MAPRAY_API_ACCESS_TOKEN,
+        });
+
+        const point_cloud_collection = this.viewer.point_cloud_collection;
+
+        if (this._point_cloud_cache.mode) {
+            if (this._point_cloud_cache.pointCloudList) {
+                this._point_cloud_cache.pointCloudList.forEach(pointCloud => {
+                        point_cloud_collection.remove(pointCloud);
+                });
+            }
+            delete this._point_cloud_cache.pointCloudList;
+            if (this._point_cloud_cache.ui) {
+                this._point_cloud_cache.ui.parentElement.removeChild(this._point_cloud_cache.ui);
+                delete this._point_cloud_cache.ui;
+            }
+            delete this._point_cloud_cache.mode;
+            this._point_cloud_cache.bbox_geoms.forEach(bbox_geom => {
+                    this.viewer.scene.removeEntity( bbox_geom );
+            });
+        }
+        this._point_cloud_cache.bbox_geoms = [];
+
+        if ( this._point_cloud_mode ) {
+            const mode = this._point_cloud_mode;
+            const pointCloudList = [];
+            const bbox_geoms = [];
+            if ( mode === "raw" ) {
+                const resource = maprayApi.getPointCloudDatasetAsResource( POINT_CLOUD_DATASET_ID );
+                const point_cloud = point_cloud_collection.add( new mapray.RawPointCloudProvider( resource ) );
+                pointCloudList.push( point_cloud );
+
+                const datasets = await maprayApi.loadPointCloudDatasets();
+                console.log( datasets );
+                const dataset = await maprayApi.loadPointCloudDataset( POINT_CLOUD_DATASET_ID );
+                console.log( dataset );
+            }
+
+            this._point_cloud_cache = {
+                mode: this._point_cloud_mode,
+                pointCloudList: pointCloudList,
+                // ui: ui,
+                bbox_geoms: bbox_geoms
+            };
+        }
+
     }
 
     /**
@@ -238,16 +508,42 @@ class SpaceApp extends maprayui.StandardUIViewer {
         statusbar.updateElements( delta_time );
         statusbar.setLayer( this._layer_transparency );
 
+
         const fps = 1.0 / delta_time;
-        statusbar.setFps( fps );
+        this._fps.shift();
+        this._fps.push(fps);
+        let ave_fps = 0;
+        for ( let i=0; i<this._fps_count; i++ ) {
+            ave_fps += this._fps[i];
+        }
+
+        statusbar.setFps( ave_fps / this._fps_count );
 
 
         if ( this._moveSun ) {
-          this._elapsedTime += delta_time;
-          const theta = - Math.PI / 180.0 * ( this._elapsedTime * 36 );
+          this._elapsedTime += delta_time * this._sunSpeed;
+          const theta = - Math.PI / 180.0 * this._elapsedTime;
           const x = Math.cos(theta);
           const y = Math.sin(theta);
-          this._viewer.setSunDirection( [ x, y, 0 ] );
+          this._viewer.sun.setSunDirection( [ x, y, 0 ] );
+        }
+
+        if ( this._moveMoon ) {
+          this._moonElapsedTime += delta_time * this._moonSpeed;
+          const theta = - Math.PI / 180.0 * this._moonElapsedTime;
+          const x = Math.cos(theta);
+          const y = Math.sin(theta);
+          this._viewer.sun.setMoonDirection( [ x, y, 0 ] );
+/*
+          const moonOrbit = (23.44 + 5.14) * mapray.GeoMath.DEGREE;
+          const sinTheta = Math.sin(moonOrbit);
+          const cosTheta = Math.cos(moonOrbit);
+
+          const mx = x;
+          const my =       y*cosTheta;  // + z*sinTheta;
+          const mz =       y*-sinTheta;  // + z*cosTheta;
+          this._viewer.sun.setMoonDirection( [ mx, my, mz ] );
+*/
         }
 
         this._commander.endFrame();
@@ -419,11 +715,6 @@ class SpaceApp extends maprayui.StandardUIViewer {
 
             const renderOption = new Option( RENDER_OPTION_PROPERTIES );
             top2.appendChild(DomTool.createCheckboxOption(renderOption, "move sun"));
-            /*
-            top2.appendChild(DomTool.createCheckboxOption(renderOption, "check1"));
-            top2.appendChild(DomTool.createCheckboxOption(renderOption, "check2"));
-            top2.appendChild(DomTool.createCheckboxOption(renderOption, "check3"));
-            */
 
             /*
             top2.appendChild(DomTool.createButton("Button", {
@@ -432,16 +723,131 @@ class SpaceApp extends maprayui.StandardUIViewer {
                           console.log('click button');
                         }
             }));
-
-            top2.appendChild(DomTool.createSelectOption(renderOption, "select1"));
             */
+            const kv = document.createElement("table");
+            kv.appendChild(DomTool.createSliderOption(renderOption, "sun speed", { mode: "key-value-table-row" }));
+            kv.appendChild(DomTool.createSliderOption(renderOption, "sun radius", { mode: "key-value-table-row" }));
+            kv.appendChild(DomTool.createSliderOption(renderOption, "sun intensity", { mode: "key-value-table-row" }));
+            kv.style.width = "100%";
+            top2.appendChild(kv);
+/*
+            top2.appendChild(DomTool.createCheckboxOption(renderOption, "move moon"));
+            const kv2 = document.createElement("table");
+            kv2.appendChild(DomTool.createSliderOption(renderOption, "moon speed", { mode: "key-value-table-row" }));
+            kv2.appendChild(DomTool.createSliderOption(renderOption, "moon radius", { mode: "key-value-table-row" }));
+            kv2.style.width = "100%";
+            top2.appendChild(kv2);
+*/
 
-            renderOption.onChange("select1", event => {
-                console.log('select', event.value);
-            });
+            const top3 = document.createElement("div");
+            top3.setAttribute("class", "top");
+            ui.appendChild(top3);
+            const renderOption3 = new Option( RENDER_OPTION_PROPERTIES );
+            top3.appendChild(DomTool.createCheckboxOption(renderOption3, "night layer"));
+
+
+            const top4 = document.createElement("div");
+            top4.setAttribute("class", "top");
+            ui.appendChild(top4);
+            const renderOption4 = new Option( RENDER_OPTION_PROPERTIES );
+            // top4.appendChild(DomTool.createCheckboxOption(renderOption4, "atmosphere"));
+            top4.appendChild(DomTool.createCheckboxOption(renderOption4, "sun"));
+            // top4.appendChild(DomTool.createCheckboxOption(renderOption4, "moon"));
+            top4.appendChild(DomTool.createCheckboxOption(renderOption4, "sky"));
+            top4.appendChild(DomTool.createCheckboxOption(renderOption4, "ground"));
+
+            const top5 = document.createElement("table");
+            top5.setAttribute("class", "top");
+            top5.style.width = "100%";
+            ui.appendChild(top5);
+            const renderOption5 = new Option( RENDER_OPTION_PROPERTIES );
+            top5.appendChild(DomTool.createSliderOption(renderOption5, "kr", { mode: "key-value-table-row" }));
+            top5.appendChild(DomTool.createSliderOption(renderOption5, "km", { mode: "key-value-table-row" }));
+            top5.appendChild(DomTool.createSliderOption(renderOption5, "scale depth", { mode: "key-value-table-row" }));
+            top5.appendChild(DomTool.createSliderOption(renderOption5, "eSun", { mode: "key-value-table-row" }));
+            top5.appendChild(DomTool.createSliderOption(renderOption5, "exposure", { mode: "key-value-table-row" }));
+            top5.appendChild(DomTool.createSliderOption(renderOption5, "g_kr", { mode: "key-value-table-row" }));
+            top5.appendChild(DomTool.createSliderOption(renderOption5, "g_km", { mode: "key-value-table-row" }));
+            top5.appendChild(DomTool.createSliderOption(renderOption5, "g_scale depth", { mode: "key-value-table-row" }));
+            top5.appendChild(DomTool.createSliderOption(renderOption5, "g_eSun", { mode: "key-value-table-row" }));
+            top5.appendChild(DomTool.createSliderOption(renderOption5, "g_exposure", { mode: "key-value-table-row" }));
 
             renderOption.onChange("move sun", event => {
                 this._moveSun = event.value;
+            });
+            renderOption.onChange("sun speed", event => {
+                this._sunSpeed = event.value;
+            });
+            renderOption.onChange("sun radius", event => {
+                this._viewer.sunVisualizer.setRadius( event.value );
+            });
+            renderOption.onChange("sun intensity", event => {
+                this._viewer.sunVisualizer.setIntensity( event.value );
+            });
+
+            renderOption.onChange("move moon", event => {
+                this._moveMoon = event.value;
+            });
+            renderOption.onChange("moon speed", event => {
+                this._moonSpeed = event.value;
+            });
+            renderOption.onChange("moon radius", event => {
+                this._viewer.moonVisualizer.setRadius( event.value );
+            });
+
+            renderOption.onChange("night layer", event => {
+              if (this._viewer.layers && this._viewer.layers.getLayer(0)) {
+                  this._viewer.layers.getLayer(0).setOpacity(event.value);
+              }
+            });
+
+            renderOption.onChange("sun", event => {
+              this._viewer.sunVisualizer.setVisibility( event.value );
+            });
+
+            renderOption.onChange("moon", event => {
+              this._viewer.moonVisualizer.setVisibility( event.value );
+            });
+
+            renderOption.onChange("sky", event => {
+              this._viewer.atmosphere.setSkyVisibility( event.value );
+            });
+
+            renderOption.onChange("ground", event => {
+              this._viewer.atmosphere.setGroundVisibility( event.value );
+            });
+
+
+            renderOption.onChange("kr", event => {
+                this._viewer.atmosphere.setRayleigh( event.value );
+            });
+            renderOption.onChange("km", event => {
+                this._viewer.atmosphere.setMie( event.value );
+            });
+            renderOption.onChange("scale depth", event => {
+                this._viewer.atmosphere.setScaleDepth( event.value );
+            });
+            renderOption.onChange("eSun", event => {
+                this._viewer.atmosphere.setSunRate( event.value );
+            });
+            renderOption.onChange("exposure", event => {
+                this._viewer.atmosphere.setExposure( event.value );
+            });
+
+            renderOption.onChange("g_kr", event => {
+                this._viewer.atmosphere.setGroundRayleigh( event.value );
+            });
+            renderOption.onChange("g_km", event => {
+                this._viewer.atmosphere.setGroundMie( event.value );
+            });
+            renderOption.onChange("g_scale depth", event => {
+                this._viewer.atmosphere.setGroundScaleDepth( event.value );
+            });
+            renderOption.onChange("g_eSun", event => {
+                this._viewer.atmosphere.setGroundSunRate( event.value );
+            });
+            renderOption.onChange("g_exposure", event => {
+                this._viewer.atmosphere.setGroundExposure( event.value );
             });
 
             renderOption.onChangeAny(event => {

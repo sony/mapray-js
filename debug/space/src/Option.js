@@ -146,7 +146,7 @@ class DomTool {
         return pane;
     }
 
-    static createCheckboxOption(option, key) {
+    static createCheckboxOption(option, key, domOption) {
         const property = option.getProperty(key);
         if (property.type !== "boolean") throw new Error("unsupported type: " + property.type);
         const checkbox = this.createCheckbox(key, {
@@ -160,13 +160,13 @@ class DomTool {
                     option.set(key, event.target.checked);
                 }
         });
-        return checkbox;
+        return this.createOuter(checkbox, key, option, domOption);
     }
 
-    static createSelectOption(option, key) {
+    static createSelectOption(option, key, domOption) {
         const property = option.getProperty(key);
         if (property.type !== "select") throw new Error("unsupported type: " + property.type);
-        return this.createSelect(property.options, {
+        const pane = this.createSelect(property.options, {
                 initialValue: property.value,
                 label: key + "\n" + property.description,
                 onui: ui => {
@@ -183,6 +183,77 @@ class DomTool {
                     option.set(key, value);
                 }
         });
+        return this.createOuter(pane, key, option, domOption);
+    }
+
+    static createSlider(option) {
+        const min = option.min;
+        const max = option.max;
+        const N = 100;
+        const sliderToValue = slider => slider * (max - min) / N + min;
+        const valueToSlider = value => (value - min) / (max - min) * N;
+        const pane = document.createElement("div");
+        // console.log(property);
+        const slider = document.createElement("input");
+        slider.style.width = "100%";
+        slider.type = "range";
+        slider.min = 0;
+        slider.max = N;
+        const v = option.initialValue;
+        slider.value = valueToSlider(v)
+        pane.title = option.label ? option.label + ":" + v : v;
+        if (option.onchange) {
+            slider.oninput = event => {
+                const v = sliderToValue(slider.value);
+                option.onchange(v, event);
+                pane.title = option.label ? option.label + ":" + v : v;
+            };
+        }
+        pane.appendChild(slider);
+        if (option.onui) {
+            option.onui(slider, {
+                    sliderToValue, valueToSlider,
+            });
+        }
+        return this.createOuter(pane, option);
+    }
+
+    static createSliderOption(option, key, domOption) {
+        const property = option.getProperty(key);
+        if (property.type !== "range") throw new Error("unsupported type: " + property.type);
+        const pane = this.createSlider({
+                min: property.min,
+                max: property.max,
+                initialValue: property.value,
+                onui: (ui, opt) => {
+                    option.onChange(key, event => {
+                            ui.value = opt.valueToSlider(event.value);
+                    })
+                },
+                onchange: (value, domEvent) => {
+                    option.set(key, value);
+                },
+        });
+        return this.createOuter(pane, key, option, domOption);
+    }
+
+    static createOuter(pane, key, option, domOption = {}) {
+        if (domOption.mode === "key-value-table-row") {
+            const row = document.createElement("tr");
+            const th = document.createElement("th");
+            const td = document.createElement("td");
+            const label  = document.createElement("label");
+            label.innerText = key;
+            th.appendChild(label);
+            th.style.textAlign = "right";
+            th.style.padding = "0 5px 0 0";
+            td.style.padding = "0 5px 0 0";
+            td.appendChild(pane);
+            row.appendChild(th);
+            row.appendChild(td);
+            return row;
+        }
+        return pane;
     }
 }
 
