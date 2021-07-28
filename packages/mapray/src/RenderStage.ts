@@ -130,6 +130,10 @@ abstract class RenderStage {
         if ( !render_cache.surface_pick_material ) {
             render_cache.surface_pick_material = new SurfaceMaterial( viewer, { ridMaterial: true } );
         }
+        if ( !render_cache.surface_ground_space_material ) {
+          render_cache.surface_ground_space_material = new SurfaceMaterial( viewer, { atmosphereFromSpaceMaterial: true } );
+          render_cache.surface_ground_atmosphere_material = new SurfaceMaterial( viewer, { atmosphereMaterial: true } );
+        }
     }
 
 
@@ -246,6 +250,8 @@ abstract class RenderStage {
             this._rendering_cancel = true;
             return;
         }
+
+        this._draw_extras();
 
         gl.enable( gl.CULL_FACE );
         gl.enable( gl.DEPTH_TEST );
@@ -400,6 +406,49 @@ abstract class RenderStage {
     _draw_point_cloud()
     {
     }
+
+
+    _draw_extras()
+    {
+        const gl = this._glenv.context;
+
+        // sun & atmosphere
+        gl.depthMask( false );
+        gl.blendFuncSeparate( gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE );  // FB のα値は変えない
+        // gl.blendFuncSeparate( gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE );  // FB のα値は変えない
+        gl.enable( gl.CULL_FACE );
+        gl.enable( gl.BLEND );
+
+        // sun
+        if ( this._viewer.sunVisualizer && this._viewer.sunVisualizer.visibility ) {
+            this._viewer.sunVisualizer.draw( this, this._gocs_to_clip, this._view_to_gocs );
+        }
+
+        // atmosphere
+        if ( this._viewer.atmosphere && this._viewer.atmosphere.visibility.sky ) {
+            gl.blendFuncSeparate( gl.SRC_ALPHA, gl.ONE, gl.ZERO, gl.ONE );  // 加算 + α
+            // gl.blendFuncSeparate( gl.ONE, gl.ONE, gl.ZERO, gl.ONE );  // FB のα値は変えない
+            this._viewer.atmosphere.draw( this, this._gocs_to_clip, this._view_to_gocs );
+        }
+
+        /*
+        // pattern2
+        // sun
+        if ( this._viewer.sunVisualizer && this._viewer.sunVisualizer.visibility ) {
+            this._viewer.sunVisualizer.draw( this, this._gocs_to_clip, this._view_to_gocs );
+        }
+
+        // atmosphere
+        if ( this._viewer.atmosphere && this._viewer.atmosphere.visibility.sky ) {
+            gl.blendFuncSeparate( gl.ONE_MINUS_DST_COLOR, gl.ONE, gl.ZERO, gl.ONE );  // FB のα値は変えない
+            this._viewer.atmosphere.draw( this, this._gocs_to_clip, this._view_to_gocs );
+        }
+        */
+
+        gl.disable( gl.BLEND );
+        gl.frontFace( gl.CCW );
+        gl.depthMask( true );
+    }
 }
 
 
@@ -427,9 +476,10 @@ export class SceneRenderStage extends RenderStage {
 
         // 地表マテリアルの選択
         this._flake_material = (
-            viewer.render_mode === Viewer.RenderMode.WIREFRAME ?
             // @ts-ignore
-            viewer._render_cache.wireframe_material :
+            viewer.render_mode === Viewer.RenderMode.WIREFRAME ? viewer._render_cache.wireframe_material :
+            // @ts-ignore
+            viewer.atmosphere && viewer.atmosphere.visibility.ground ? viewer.atmosphere.selectGroundShader( this._view_to_gocs ) :
             // @ts-ignore
             viewer._render_cache.surface_material
         );
