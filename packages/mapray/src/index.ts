@@ -61,6 +61,7 @@ export { default as Resource, URLResource } from "./Resource";
 export { default as Atmosphere } from "./Atmosphere";
 export { default as SunVisualizer } from "./SunVisualizer";
 export { default as TextureSunVisualizer } from "./TextureSunVisualizer";
+export { default as MoonVisualizer } from "./MoonVisualizer";
 
 // マウス・Attribution開発
 export { default as  LogoController } from "./LogoController";
