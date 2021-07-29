@@ -25,6 +25,8 @@ import Util from "./util/Util";
 import Sun from "./Sun";
 import Atmosphere from "./Atmosphere";
 import SunVisualizer from "./SunVisualizer";
+import Moon from "./Moon";
+import MoonVisualizer from "./MoonVisualizer";
 
 // マウス・Attribution開発
 import LogoController from "./LogoController";
@@ -82,6 +84,8 @@ class Viewer {
 
     private _sun: Sun;
 
+    private _moon: Moon;
+
     private _postProcesses: Viewer.PostProcess[] = [];
 
     private _logo_controller: LogoController;
@@ -91,6 +95,8 @@ class Viewer {
     private _atmosphere?: Atmosphere;
 
     private _sunVisualizer?: SunVisualizer;
+
+    private _moonVisualizer?: MoonVisualizer;
 
 
     /** @internal */
@@ -143,6 +149,7 @@ class Viewer {
         this._point_cloud_collection = this._createPointCloudCollection( options );
         this._render_callback    = this._createRenderCallback( options );
         this._sun                = new Sun();
+        this._moon               = new Moon();
 
         const atmosphere = options.atmosphere;
         if ( atmosphere ) {
@@ -154,6 +161,12 @@ class Viewer {
         if ( sunVisualizer ) {
             this._sunVisualizer = sunVisualizer;
             sunVisualizer.init( this );
+        }
+
+        const moonVisualizer = options.moon_visualizer;
+        if ( moonVisualizer ) {
+            this._moonVisualizer = moonVisualizer;
+            moonVisualizer.init( this );
         }
 
         // マウス・Attribution開発
@@ -481,6 +494,12 @@ class Viewer {
     /**
      * @internal
      */
+    get moon(): Moon { return this._moon; }
+
+
+    /**
+     * @internal
+     */
     get atmosphere() { return this._atmosphere; }
  
  
@@ -488,8 +507,14 @@ class Viewer {
      * @internal
      */
     get sunVisualizer() { return this._sunVisualizer; }
- 
- 
+
+
+    /**
+     * @internal
+     */
+    get moonVisualizer() { return this._moonVisualizer; }
+
+
     /**
      * 可視性を設定
      *
@@ -877,6 +902,8 @@ export interface Option {
     atmosphere?: Atmosphere;
 
     sun_visualizer?: SunVisualizer;
+
+    moon_visualizer?: MoonVisualizer;
 }
 
 
