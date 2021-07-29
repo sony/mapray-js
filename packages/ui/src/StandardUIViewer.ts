@@ -216,6 +216,7 @@ class StandardUIViewer extends mapray.RenderCallback
             attribution_controller: ( options && options.attribution_controller ),
             atmosphere: ( options && options.atmosphere ),
             sun_visualizer: ( options && options.sun_visualizer ),
+            moon_visualizer: ( options && options.moon_visualizer ),
         }
         );
 
@@ -2019,6 +2020,9 @@ export interface Option extends mapray.Viewer.Option {
 
      /** 太陽表示オプション */
      sun_visualizer?: mapray.SunVisualizer;
+
+     /** 月表示オプション */
+     moon_visualizer?: mapray.MoonVisualizer;
 }
 
 
