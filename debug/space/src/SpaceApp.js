@@ -211,11 +211,11 @@ class SpaceApp extends maprayui.StandardUIViewer {
                  key: "<your Bing Maps Key here>"
              } ),
              atmosphere: new mapray.Atmosphere(),
-             sun_visualizer: new mapray.SunVisualizer( 32 )
+             sun_visualizer: new mapray.SunVisualizer( 32 ),
              // sun_visualizer: new mapray.SunVisualizer( 5 ),
              // sun_visualizer: new mapray.TextureSunVisualizer( './data/sun_tex.jpg' ),
              // moon_visualizer: new mapray.MoonVisualizer( './data/moontest.jpg' )
-             // moon_visualizer: new mapray.MoonVisualizer( './data/moon.jpg' )
+             moon_visualizer: new mapray.MoonVisualizer( './data/moon.jpg' ),
         }
         );
 
@@ -268,7 +268,7 @@ class SpaceApp extends maprayui.StandardUIViewer {
         this._sunSpeed = 36;
 
         this._moonElapsedTime = 0;
-        this._moveMoon = false; //true;
+        this._moveMoon = true;
         this._moonSpeed = 10;
 
         this._fps = [];
@@ -533,7 +533,7 @@ class SpaceApp extends maprayui.StandardUIViewer {
           const theta = - Math.PI / 180.0 * this._moonElapsedTime;
           const x = Math.cos(theta);
           const y = Math.sin(theta);
-          this._viewer.sun.setMoonDirection( [ x, y, 0 ] );
+          this._viewer.moon.setMoonDirection( [ x, y, 0 ] );
 /*
           const moonOrbit = (23.44 + 5.14) * mapray.GeoMath.DEGREE;
           const sinTheta = Math.sin(moonOrbit);
@@ -542,7 +542,7 @@ class SpaceApp extends maprayui.StandardUIViewer {
           const mx = x;
           const my =       y*cosTheta;  // + z*sinTheta;
           const mz =       y*-sinTheta;  // + z*cosTheta;
-          this._viewer.sun.setMoonDirection( [ mx, my, mz ] );
+          this._viewer.moon.setMoonDirection( [ mx, my, mz ] );
 */
         }
 
@@ -730,14 +730,13 @@ class SpaceApp extends maprayui.StandardUIViewer {
             kv.appendChild(DomTool.createSliderOption(renderOption, "sun intensity", { mode: "key-value-table-row" }));
             kv.style.width = "100%";
             top2.appendChild(kv);
-/*
+
             top2.appendChild(DomTool.createCheckboxOption(renderOption, "move moon"));
             const kv2 = document.createElement("table");
             kv2.appendChild(DomTool.createSliderOption(renderOption, "moon speed", { mode: "key-value-table-row" }));
             kv2.appendChild(DomTool.createSliderOption(renderOption, "moon radius", { mode: "key-value-table-row" }));
             kv2.style.width = "100%";
             top2.appendChild(kv2);
-*/
 
             const top3 = document.createElement("div");
             top3.setAttribute("class", "top");
@@ -752,7 +751,7 @@ class SpaceApp extends maprayui.StandardUIViewer {
             const renderOption4 = new Option( RENDER_OPTION_PROPERTIES );
             // top4.appendChild(DomTool.createCheckboxOption(renderOption4, "atmosphere"));
             top4.appendChild(DomTool.createCheckboxOption(renderOption4, "sun"));
-            // top4.appendChild(DomTool.createCheckboxOption(renderOption4, "moon"));
+            top4.appendChild(DomTool.createCheckboxOption(renderOption4, "moon"));
             top4.appendChild(DomTool.createCheckboxOption(renderOption4, "sky"));
             top4.appendChild(DomTool.createCheckboxOption(renderOption4, "ground"));
 
