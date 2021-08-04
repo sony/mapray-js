@@ -6,12 +6,16 @@ import DemProvider from "./DemProvider";
  * @memberof mapray
  * @extends mapray.DemProvider
  */
-class CloudDemProvider extends DemProvider {
+class CloudDemProvider extends DemProvider<AbortController> {
+
+    private _headers: {
+        'X-Api-Key': string;
+    };
 
     /**
      * @param {string} api_key  API キーの文字列
      */
-    constructor( api_key )
+    constructor( api_key: string )
     {
         super();
 
@@ -21,10 +25,7 @@ class CloudDemProvider extends DemProvider {
     }
 
 
-    /**
-     * @override
-     */
-    requestTile( z, x, y, callback )
+    override requestTile( z: number, x: number, y: number, callback: DemProvider.RequestCallback ): AbortController
     {
         var actrl = new AbortController();
 
@@ -40,33 +41,33 @@ class CloudDemProvider extends DemProvider {
             } )
             .catch( () => {
                 // データ取得に失敗または取り消し
-                callback( null );
+                callback( undefined );
             } );
 
         return actrl;
     }
 
 
-    /**
-     * @override
-     */
-    cancelRequest( id )
+    override cancelRequest( id: AbortController )
     {
-        var actrl = id;  // 要求 ID を AbortController に変換
-        actrl.abort();   // 取り消したので要求を中止
+        var actrl = id;
+        actrl.abort();
     }
 
 
     /**
      * URL を作成
-     * @private
+     * @param  z  ズームレベル
+     * @param  x  X タイル座標
+     * @param  y  Y タイル座標
      */
-    _makeURL( z, x, y )
+    private _makeURL( z: number, x: number, y: number )
     {
         return 'https://tiles.mapray.com/dem/' + z + '/' + x + '/' + y + '.bin';
     }
 
 }
+
 
 
 export default CloudDemProvider;

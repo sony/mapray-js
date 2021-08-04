@@ -47,7 +47,7 @@ class Viewer {
 
     private _animation: BindingBlock;
 
-    private _dem_provider: DemProvider;
+    private _dem_provider: DemProvider<any>;
 
     private _image_provider: ImageProvider;
 
@@ -230,7 +230,7 @@ class Viewer {
     /**
      * DemProvider を生成
      */
-    private _createDemProvider( options: Viewer.Option ): DemProvider
+    private _createDemProvider( options: Viewer.Option ): DemProvider<any>
     {
         if ( options.dem_provider )
             return options.dem_provider;
@@ -363,7 +363,7 @@ class Viewer {
     /**
      * DEM データプロバイダ
      */
-    get dem_provider(): DemProvider { return this._dem_provider; }
+    get dem_provider(): DemProvider<any> { return this._dem_provider; }
 
 
     /**
@@ -833,7 +833,7 @@ namespace Viewer {
 
 export interface Option {
      /** DEMプロバイダ */
-    dem_provider?: DemProvider;
+    dem_provider?: DemProvider<any>;
 
     /** 画像プロバイダ */
     image_provider?: ImageProvider;
