@@ -1,6 +1,6 @@
 {
   "name": "@mapray/ui",
-  "version": "0.8.8",
+  "version": "0.8.9-dev.3",
   "description": "UI Engine for mapray-js",
   "keywords": [
     "3D",
