@@ -16,6 +16,7 @@ export { default as LayerCollection } from "./LayerCollection";
 export { default as DemProvider } from "./DemProvider";
 export { default as StandardDemProvider } from "./StandardDemProvider";
 export { default as CloudDemProvider } from "./CloudDemProvider";
+export { default as FlatDemProvider } from "./FlatDemProvider";
 export { default as ImageProvider } from "./ImageProvider";
 export { default as RenderCallback } from "./RenderCallback";
 export { default as StandardImageProvider } from "./StandardImageProvider";
