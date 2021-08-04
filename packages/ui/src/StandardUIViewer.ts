@@ -261,7 +261,7 @@ class StandardUIViewer extends mapray.RenderCallback
      * @param options      生成オプション
      * @returns            DEMプロバイダ
      */
-    private _createDemProvider( access_token: string, options: StandardUIViewer.Option ): mapray.DemProvider
+    private _createDemProvider( access_token: string, options: StandardUIViewer.Option ): mapray.DemProvider<any>
     {
         // @ts-ignore
         return options.dem_provider || new mapray.CloudDemProvider( access_token );
