@@ -7,39 +7,32 @@ import DemProvider from "./DemProvider";
  * @memberof mapray
  * @extends mapray.DemProvider
  */
-class FlatDemProvider extends DemProvider {
+class FlatDemProvider extends DemProvider<null> {
+
+    private _buffer: ArrayBuffer;
+
 
     constructor() {
         super();
+
+        this._buffer = new ArrayBuffer( FlatDemProvider.BUFFERSIZE );
+        this._setZeroData( this._buffer );
     }
 
 
-    /**
-     * @override
-     */
-    requestTile( z, x, y, callback )
+    override requestTile( z: number, x: number, y: number, callback: DemProvider.RequestCallback ): null
     {
-        this._buffer = new ArrayBuffer( FlatDemProvider.BUFFERSIZE );
-        this._setZeroData( this._buffer );
-        new Promise( resolve => { resolve(); } )
-            .then( () => {
-                callback( this._buffer );
-            } )
-            .catch( () => {
-                callback( null );
-            } );
-
+        callback( this._buffer );
         return null;
     }
 
-    /**
-     * @override
-     */
-    cancelRequest()
+
+    override cancelRequest()
     {
     }
 
-    _setZeroData( buffer )
+
+    private _setZeroData( buffer: ArrayBuffer )
     {
         const view = new DataView( buffer );
 
@@ -54,7 +47,8 @@ class FlatDemProvider extends DemProvider {
         this._setHeight( view, offset);
     }
 
-    _setOmegaArray( view )
+
+    private _setOmegaArray( view: DataView )
     {
         const FLT_BYTES = 4;
 
@@ -69,7 +63,8 @@ class FlatDemProvider extends DemProvider {
         return offset;
     }
 
-    _setHeight( view, current )
+
+    private _setHeight( view: DataView, current: number )
     {
         const FLT_BYTES = 4;
 
@@ -81,15 +76,27 @@ class FlatDemProvider extends DemProvider {
     }
 }
 
-FlatDemProvider.OFFSET_QLEVEL_00 = 0;
-FlatDemProvider.OFFSET_QLEVEL_10 = 1;
-FlatDemProvider.OFFSET_QLEVEL_01 = 2;
-FlatDemProvider.OFFSET_QLEVEL_11 = 3;
-FlatDemProvider.OFFSET_HMIN      = 4;
-FlatDemProvider.OFFSET_HMAX      = 8;
-FlatDemProvider.OFFSET_ω        = 12;
-FlatDemProvider.BUFFERSIZE = 264292;
-FlatDemProvider.OMEGA_VALUE = -99.0;
-FlatDemProvider.PIXEL_SIZE = Math.round(Math.pow((1 << 8) + 1, 2));
+
+
+namespace FlatDemProvider {
+
+
+
+export const OFFSET_QLEVEL_00 = 0;
+export const OFFSET_QLEVEL_10 = 1;
+export const OFFSET_QLEVEL_01 = 2;
+export const OFFSET_QLEVEL_11 = 3;
+export const OFFSET_HMIN      = 4;
+export const OFFSET_HMAX      = 8;
+export const OFFSET_ω        = 12;
+export const BUFFERSIZE = 264292;
+export const OMEGA_VALUE = -99.0;
+export const PIXEL_SIZE = Math.round(Math.pow((1 << 8) + 1, 2));
+
+
+
+} // namespace FlatDemProvider
+
+
 
 export default FlatDemProvider;

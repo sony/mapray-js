@@ -13,34 +13,36 @@ import CredentialMode from "./CredentialMode";
  * @memberof mapray
  * @extends mapray.DemProvider
  */
-class StandardDemProvider extends DemProvider {
+class StandardDemProvider extends DemProvider<AbortController> {
+
+    private _prefix: string;
+
+    private _suffix: string;
+
+    private _credentials: CredentialMode;
+
+    private _headers: HeadersInit;
+
 
     /**
-     * @param {string} prefix     URL の先頭文字列
-     * @param {string} suffix     URL の末尾文字列
-     * @param {object} [options]  オプション集合
-     * @param {mapray.CredentialMode} [options.credentials=OMIT]  クレデンシャルモード
-     * @param {object} [options.headers={}]  リクエストに追加するヘッダーの辞書
+     * @param prefix   URL の先頭文字列
+     * @param suffix   URL の末尾文字列
+     * @param options  オプション集合
      */
-    constructor( prefix, suffix, options )
+    constructor( prefix: string, suffix: string, options: StandardDemProvider.Option = {} )
     {
         super();
 
-        var opts = options || {};
-
         this._prefix      = prefix;
         this._suffix      = suffix;
-        this._credentials = (opts.credentials || CredentialMode.OMIT).credentials;
-        this._headers     = Object.assign( {}, opts.headers );
+        this._credentials = options.credentials || CredentialMode.OMIT;
+        this._headers     = Object.assign( {}, options.headers );
     }
 
 
-    /**
-     * @override
-     */
-    requestTile( z, x, y, callback )
+    override requestTile( z: number, x: number, y: number, callback: DemProvider.RequestCallback ): AbortController
     {
-        var actrl = new AbortController();
+        const actrl = new AbortController();
 
         fetch( this._makeURL( z, x, y ), { credentials: this._credentials,
                                            headers:     this._headers,
@@ -55,33 +57,55 @@ class StandardDemProvider extends DemProvider {
             } )
             .catch( () => {
                 // データ取得に失敗または取り消し
-                callback( null );
+                callback( undefined );
             } );
 
         return actrl;
     }
 
 
-    /**
-     * @override
-     */
-    cancelRequest( id )
+    override cancelRequest( id: AbortController )
     {
-        var actrl = id;  // 要求 ID を AbortController に変換
-        actrl.abort();   // 取り消したので要求を中止
+        const actrl = id;
+        actrl.abort();
     }
 
 
     /**
      * URL を作成
-     * @private
+     * @param  z  ズームレベル
+     * @param  x  X タイル座標
+     * @param  y  Y タイル座標
      */
-    _makeURL( z, x, y )
+    private _makeURL( z: number, x: number, y: number )
     {
         return this._prefix + z + '/' + x + '/' + y + this._suffix;
     }
 
 }
+
+
+
+namespace StandardDemProvider {
+
+
+
+export interface Option {
+    /**
+     * クレデンシャルモード
+     */
+    credentials?: CredentialMode;
+
+    /**
+     * リクエストに追加するヘッダーの辞書
+     */
+    headers?: HeadersInit;
+}
+
+
+
+} // namespace StandardDemProvider
+
 
 
 export default StandardDemProvider;
