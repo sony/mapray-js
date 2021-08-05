@@ -89,7 +89,7 @@ jobs:
           args: deploy
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_DEPLOY_TOKEN }}
-          PROJECT_ID: ${{ secrets.FIREBASE_PROD_PROJECT }}
+          PROJECT_ID: ${{ secrets.FIREBASE_PRO_PROJECT }}
           PROJECT_PATH: "./dist"
 
 
