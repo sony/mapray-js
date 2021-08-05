@@ -85,4 +85,12 @@ jobs:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_DEPLOY_TOKEN }}
           PROJECT_ID: ${{ secrets.FIREBASE_STG_PROJECT }}
           PROJECT_PATH: "./dist"
+      - name: Deploy to hosting server for production
+        uses: w9jds/firebase-action@master
+        with:
+          args: deploy
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_DEPLOY_TOKEN }}
+          PROJECT_ID: ${{ secrets.FIREBASE_PROD_PROJECT }}
+          PROJECT_PATH: "./dist"
 
