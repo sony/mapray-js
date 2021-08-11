@@ -1,26 +1,25 @@
 /**
- * @summary 点群データプロバイダ
- * <p>このインスタンスには状態 ({@link mapray.PointCloudProvider.Status}型) があり、{@link mapray.PointCloudProvider.Status.INITIALIZED}以外の状態では新規に読み込み({@link mapray.PointCloudProvider#load})を行うことができない。</p>
+ * 点群データプロバイダ
  *
- * <p>以下の抽象メソッドは既定の動作がないので、利用者はこれらのメソッドをオーバーライドした具象クラスを使用しなければならない。</p>
- * <ul>
- *   <li>{@link mapray.PointCloudProvider#doInit}</li>
- *   <li>{@link mapray.PointCloudProvider#doLoad}</li>
- *   <li>{@link mapray.PointCloudProvider#doDestroy}</li>
- * </ul>
+ * このインスタンスには状態 ([[PointCloudProvider.Status]]型) があり、[[PointCloudProvider.Status.INITIALIZED]] 以外の状態では新規に読み込み([[load]])を行うことができない。
  *
- * @memberof mapray
- * @abstract
- * @protected
+ * 以下の抽象メソッドは既定の動作がないので、利用者はこれらのメソッドをオーバーライドした具象クラスを使用しなければならない。
+ * - [[doInit]]
+ * - [[doLoad]]
+ * - [[doDestroy]]
  */
-class PointCloudProvider {
+abstract class PointCloudProvider {
+
+    private _status: PointCloudProvider.Status;
+
 
     constructor( option={} ) {
         this._status = PointCloudProvider.Status.NOT_INITIALIZED;
     }
 
+
     /**
-     * @summary 初期化。
+     * 初期化します。
      * 継承クラスではdoInit()を継承する
      */
     async init() {
@@ -35,26 +34,25 @@ class PointCloudProvider {
         }
     }
 
+
     /**
-     * @summary リクエスト可能な状態かを返す。
+     * リクエスト可能な状態かを返す。
      * 初期化が完了しているかだけではなく、現在処理中のリクエスト数も考慮した上でリクエスト可能な状態か判断する。
-     * @return {boolean}
-     * @protected
      */
-    isReady() {
+    isReady(): boolean {
         return this._status == PointCloudProvider.Status.INITIALIZED && this.getNumberOfRequests() < 10;
     }
 
+
     /**
-     * @summary 点群を読み込む
-     * 継承クラスではdoLoad()を継承する
-     * @param {number} level レベル
-     * @param {number} x x
-     * @param {number} y y
-     * @param {number} z z
-     * @returns {mapray.PointCloudProvider.Status.Request} request
+     * 点群を読み込む
+     * 継承クラスでは [[doLoad]] を継承する
+     * @param level レベル
+     * @param x x
+     * @param y y
+     * @param z z
      */
-    load( level, x, y, z ) {
+    load( level: number, x: number, y: number, z: number ): PointCloudProvider.Request {
         if ( this._status !== PointCloudProvider.Status.INITIALIZED ) {
             return { id: -1, done: Promise.reject(new Error("invalid status")) };
         }
@@ -65,32 +63,37 @@ class PointCloudProvider {
         }
     }
 
+
     flushQueue() {
     }
+
 
     toString() {
         return "PointCloudProvider";
     }
 
+
     /**
-     * @summary 実行中のリクエストをキャンセルする
-     * @param {number} id リクエストID
+     * 実行中のリクエストをキャンセルする
+     * @param id リクエストID
      */
-    cancel( id ) {
+    cancel( id: number ) {
         if ( this._status !== PointCloudProvider.Status.INITIALIZED ) throw new Error("invalid status");
-        console.log("cancel not implemented");
+        this.doCancel( id );
     }
 
+    protected doCancel( id: number ): void {
+    }
+
+
     /**
-     * @summary 実行中のリクエスト数を返す
-     * @abstract
+     * 実行中のリクエスト数を返す
      */
-    getNumberOfRequests() {
-        throw new Error("not implemented");
-    }
+    abstract getNumberOfRequests(): number;
+
 
     /**
-     * @summary 破棄
+     * 破棄
      * 継承クラスではdoDestroy()を継承する
      */
     async destroy() {
@@ -103,75 +106,99 @@ class PointCloudProvider {
         }
     }
 
-    /**
-     * @summary 初期化を行う
-     * @protected
-     * @abstract
-     */
-    async doInit() {
-        throw new Error("not implemented");
-    }
 
     /**
-     * @summary 読み込みを行う
-     * @protected
-     * @abstract
-     * @param {number} id リクエストid
-     * @param {number} level レベル
-     * @param {number} x x
-     * @param {number} y y
-     * @param {number} z z
+     * 初期化を行う
      */
-    async doLoad( id, level, x, y, z ) {
-        throw new Error("not implemented");
-    }
+    protected abstract doInit(): Promise<void>;
+
 
     /**
-     * @summary 破棄を行う
-     * @protected
-     * @abstract
+     * 読み込みを行う
+     * @param id リクエストid
+     * @param level レベル
+     * @param x x
+     * @param y y
+     * @param z z
      */
-    async doDestroy() {
-        throw new Error("not implemented");
-    }
+    protected abstract doLoad( id: number, level: number, x: number, y: number, z: number ): Promise<PointCloudProvider.Data>;
 
-    static get Status() { return Status; }
+
+    /**
+     * 破棄を行う
+     */
+    protected abstract doDestroy(): Promise<void>;
+
+
+    private static _id_max: number = 0;
 }
 
-PointCloudProvider._id_max = 0;
+
+
+
+namespace PointCloudProvider {
+
+
+export interface Data {
+    header: {
+        childFlags: number;
+        debug1: number;
+        indices: Int32Array;
+        average: Float32Array;
+        eigenVector: [ Float32Array, Float32Array, Float32Array ];
+        eigenVectorLength: [ number, number, number ];
+    };
+    body: Float32Array;
+}
 
 
 /**
- * @typedef {Object} Request
- * @property {number} id リクエストID
- * @property {Promise} done リクエストの完了を示すプロミス
- * @memberof mapray.PointCloudProvider
+ * リクエスト
  */
+export interface Request {
+    /** リクエストID */
+    id: number,
+
+    /** リクエストの完了を示すプロミス */
+    done: Promise<Data>,
+}
+
 
 
 /**
- * @summary 状態の列挙型
- * @enum {object}
- * @memberof mapray.PointCloudProvider
- * @constant
- * @see mapray.PointCloudProvider#status
+ * 状態の列挙型
+ *
+ * ```text
+ * NOT_LOADED ---------> INITIALIZED  ------------> DESTROYED 
+ *              init()                  dispose()      ^      
+ *                |                                    |      
+ *                `------------------------------------'      
+ *                                 error                      
+ * ```
+ *
+ * @see [[PointCloudProvider._status]]
  */
-const Status = {
+export enum Status {
     /**
      * 初期化前 (初期状態)
      */
-    NOT_INITIALIZED: { id: "NOT_INITIALIZED" },
+    NOT_INITIALIZED,
 
     /**
      * 初期化済み（読み込み可能）
      */
-    INITIALIZED: { id: "INITIALIZED" },
+    INITIALIZED,
 
     /**
      * 破棄状態
      */
-    DESTROYED: { id: "DESTROYED" }
+    DESTROYED,
 }
+
+
+
+} // namespace PointCloudProvider
+
 
 
 export default PointCloudProvider;

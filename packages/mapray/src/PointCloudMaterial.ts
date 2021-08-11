@@ -1,5 +1,7 @@
+import Viewer from "./Viewer";
 import Material from "./Material";
-import GeoMath from "./GeoMath";
+import RenderStage from "./RenderStage";
+import GeoMath, { Vector3, Vector4, Matrix } from "./GeoMath";
 import PointCloud from "./PointCloud";
 import point_cloud_vs_code from "./shader/point_cloud.vert";
 import point_cloud_fs_code from "./shader/point_cloud.frag";
@@ -11,17 +13,18 @@ import point_cloud_debug_face_fs_code from "./shader/point_cloud_debug_face.frag
 
 
 /**
- * @summary 点群マテリアル
- * @memberof mapray.RenderStage
- * @extends mapray.RenderStage.Material
- * @private
+ * 点群マテリアル
+ * @internal
  */
 class PointCloudMaterial extends Material {
 
+    private _local_to_clip: Matrix;
+
+
     /**
-     * @param {mapray.Viewer} viewer  所有者である Viewer
+     * @param viewer  所有者である Viewer
      */
-    constructor( viewer, options={} )
+    constructor( viewer: Viewer, options: PointCloudMaterial.Option )
     {
         const preamble = PointCloudMaterial._getPreamble( options );
 
@@ -34,56 +37,169 @@ class PointCloudMaterial extends Material {
         this._local_to_clip = GeoMath.createMatrixf();
     }
 
+
     /**
-     * @summary 点の大きさを設定
-     * @param {number} val 設定する値
+     * 点の大きさを設定
+     * @param val 設定する値
      */
-    setPointSize( val ) {
+    setPointSize( val: number ) {
         this.setFloat( "u_point_size", val );
     }
 
+
     /**
-     * @summary デバッグ値を設定
-     * @param {number} val 設定する値
+     * デバッグ値を設定
+     * @param val 設定する値
      */
-    setDebug( val ) {
+    setDebug( val: number ) {
         this.setFloat( "u_debug", val );
     }
 
+
     /**
-     * @summary 描画位置を設定
-     * @param {number} val 設定する値
+     * 描画位置を設定
+     * @param val 設定する値
      */
-    setDebugBoundsParameter( stage, center )
+    setDebugBoundsParameter( stage: RenderStage, center: Vector3 )
     {
-        mul_local_to_gocs( stage._gocs_to_clip, center, this._local_to_clip );
+        mul_local_to_gocs( stage.gocs_to_clip, center, this._local_to_clip );
         this.setMatrix( "u_obj_to_clip", this._local_to_clip );
         return true;
     }
 
+
     /**
-     * @summary シェーダの前文を取得
-     * @private
+     * シェーダの前文を取得
      */
-    static
-    _getPreamble( options )
+    private static _getPreamble( options: PointCloudMaterial.Option )
     {
         const lines = [];
 
-        const point_shape_type = options.point_shape_type || PointCloud.PointShapeType.CIRCLE;
+        const point_shape_type_code = PointCloudMaterial._getShapeTypeShaderValue( options.point_shape_type );
 
-        lines.push( "#define POINT_SHAPE_TYPE " + point_shape_type.shader_code );
+        lines.push( "#define POINT_SHAPE_TYPE " + point_shape_type_code );
 
         // lines を文字列にして返す
         return lines.join( "\n" ) + "\n\n";
     }
-    
+
+
+    /**
+     * [[PointCloud.PointShapeType]]のシェーダコード内での値
+     */
+    private static _getShapeTypeShaderValue( pointShapeType: PointCloud.PointShapeType ): number
+    {
+        switch( pointShapeType ) {
+            case PointCloud.PointShapeType.RECTANGLE:          return 0;
+            case PointCloud.PointShapeType.CIRCLE:             return 1;
+            case PointCloud.PointShapeType.CIRCLE_WITH_BORDER: return 2;
+            case PointCloud.PointShapeType.GRADIENT_CIRCLE:    return 3;
+        }
+    }
 
 }
 
 
 
-const mul_local_to_gocs = ( mat, center, dst ) => {
+/**
+ * @internal
+ */
+namespace PointCloudMaterial {
+
+
+
+export interface Option {
+    point_shape_type: PointCloud.PointShapeType;
+}
+
+
+
+} // namespace PointCloudMaterial
+
+
+
+/**
+ * デバッグ用点群マテリアル(ワイヤーフレーム)
+ * @internal
+ */
+class PointCloudDebugWireMaterial extends Material {
+
+    private _color: Vector3;
+
+    private _local_to_clip: Matrix;
+
+
+    /**
+     * @param viewer  所有者である Viewer
+     */
+    constructor( viewer: Viewer )
+    {
+        super( viewer.glenv, point_cloud_debug_wire_vs_code, point_cloud_debug_wire_fs_code );
+
+        this.bindProgram();
+        this._color = GeoMath.createVector3([ 0.0, 0.2, 0.4 ]);
+        this.setVector3( "u_color", this._color );
+        this._local_to_clip = GeoMath.createMatrixf();
+    }
+
+    setDebugBoundsParameter( stage: RenderStage, center: Vector3, color: Vector3 )
+    {
+        mul_local_to_gocs( stage.gocs_to_clip, center, this._local_to_clip );
+        this.setMatrix( "u_obj_to_clip", this._local_to_clip );
+        if ( color ) {
+            this._color[0] = color[0];
+            this._color[1] = color[1];
+            this._color[2] = color[2];
+        }
+        this.setVector3( "u_color", this._color );
+        return true;
+    }
+}
+
+
+
+/**
+ * デバッグ用点群マテリアル(サーフェス)
+ * @internal
+ */
+class PointCloudDebugFaceMaterial extends Material {
+
+    private _color: Vector4;
+
+    private _local_to_clip: Matrix;
+
+
+    /**
+     * @param viewer  所有者である Viewer
+     */
+    constructor( viewer: Viewer )
+    {
+        super( viewer.glenv, point_cloud_debug_face_vs_code, point_cloud_debug_face_fs_code );
+
+        this.bindProgram();
+        this._color = GeoMath.createVector4([ 0.3, 0.9, 1.0, 0.5 ]);
+        this.setVector4( "u_color", this._color );
+        this._local_to_clip = GeoMath.createMatrixf();
+    }
+
+    setDebugBoundsParameter( stage: RenderStage, center: Vector3, color: Vector3 )
+    {
+        mul_local_to_gocs( stage.gocs_to_clip, center, this._local_to_clip );
+        this.setMatrix( "u_obj_to_clip", this._local_to_clip );
+        if ( color ) {
+            this._color[0] = color[0];
+            this._color[1] = color[1];
+            this._color[2] = color[2];
+            this._color[3] = color[3] || 0.0;
+        }
+        this.setVector4( "u_color", this._color );
+        return true;
+    }
+}
+
+
+
+const mul_local_to_gocs = ( mat: Matrix, center: Vector3, dst: Matrix ) => {
     const
         m00 = mat[ 0], m01 = mat[ 4], m02 = mat[ 8], m03 = mat[12],
         m10 = mat[ 1], m11 = mat[ 5], m12 = mat[ 9], m13 = mat[13],
@@ -116,81 +232,6 @@ const mul_local_to_gocs = ( mat, center, dst ) => {
     dst[15] = m30*t03 + m31*t13 + m32*t23 + m33;
 
     return dst;
-}
-
-
-
-/**
- * @summary デバッグ用点群マテリアル(ワイヤーフレーム)
- * @memberof mapray.RenderStage
- * @extends mapray.RenderStage.Material
- * @private
- */
-class PointCloudDebugWireMaterial extends Material {
-
-    /**
-     * @param {mapray.Viewer} viewer  所有者である Viewer
-     */
-    constructor( viewer )
-    {
-        super( viewer.glenv, point_cloud_debug_wire_vs_code, point_cloud_debug_wire_fs_code );
-
-        this.bindProgram();
-        this._color = GeoMath.createVector3([ 0.0, 0.2, 0.4 ]);
-        this.setVector3( "u_color", this._color );
-        this._local_to_clip = GeoMath.createMatrixf();
-    }
-
-    setDebugBoundsParameter( stage, center, color )
-    {
-        mul_local_to_gocs( stage._gocs_to_clip, center, this._local_to_clip );
-        this.setMatrix( "u_obj_to_clip", this._local_to_clip );
-        if ( color ) {
-            this._color[0] = color[0];
-            this._color[1] = color[1];
-            this._color[2] = color[2];
-        }
-        this.setVector3( "u_color", this._color );
-        return true;
-    }
-}
-
-
-
-/**
- * @summary デバッグ用点群マテリアル(サーフェス)
- * @memberof mapray.RenderStage
- * @extends mapray.RenderStage.Material
- * @private
- */
-class PointCloudDebugFaceMaterial extends Material {
-
-    /**
-     * @param {mapray.Viewer} viewer  所有者である Viewer
-     */
-    constructor( viewer )
-    {
-        super( viewer.glenv, point_cloud_debug_face_vs_code, point_cloud_debug_face_fs_code );
-
-        this.bindProgram();
-        this._color = GeoMath.createVector4([ 0.3, 0.9, 1.0, 0.5 ]);
-        this.setVector4( "u_color", this._color );
-        this._local_to_clip = GeoMath.createMatrixf();
-    }
-
-    setDebugBoundsParameter( stage, center, color )
-    {
-        mul_local_to_gocs( stage._gocs_to_clip, center, this._local_to_clip );
-        this.setMatrix( "u_obj_to_clip", this._local_to_clip );
-        if ( color ) {
-            this._color[0] = color[0];
-            this._color[1] = color[1];
-            this._color[2] = color[2];
-            this._color[3] = color[3] || 0.0;
-        }
-        this.setVector4( "u_color", this._color );
-        return true;
-    }
 }
 
 

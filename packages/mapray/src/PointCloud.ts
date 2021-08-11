@@ -1,40 +1,77 @@
+import GLEnv from "./GLEnv";
+import Scene from "./Scene";
 import Mesh from "./Mesh";
-import GeoMath from "./GeoMath";
+import RenderStage from "./RenderStage";
+import GeoMath, { Vector3, Vector4 } from "./GeoMath";
 import GeoPoint from "./GeoPoint";
 import PointCloudMaterial, { PointCloudDebugWireMaterial, PointCloudDebugFaceMaterial } from "./PointCloudMaterial";
+import PointCloudProvider from "./PointCloudProvider";
+import PointCloudBoxCollector from "./PointCloudBoxCollector";
 
 
 
 /**
- * @summary 点群データを表現するクラス
- * @example
- * <caption>インスタンスの生成は下記のように行う。</caption>
- * const provider = new {@link mapray.RawPointCloudProvider}({
+ * 点群データを表現するクラス
+ *
+ * ```typescript
+ * const provider = new mapray.RawPointCloudProvider({
  *     resource: {
  *         prefix: "https://..."
  *     }
  * });
  * const point_cloud = viewer.point_cloud_collection.add( provider );
- * point_cloud.setPointShape( {@link mapray.PointCloud.PointShapeType}.GRADIENT_CIRCLE );
+ * point_cloud.setPointShape( mapray.PointCloud.PointShapeType.GRADIENT_CIRCLE );
+ * ```
  *
- * @see mapray.PointCloudProvider
- * @see mapray.PointCloudCollection
- * @memberof mapray
+ * @see [[PointCloudProvider]]
  */
 class PointCloud {
 
+    private _glenv: GLEnv;
+
+    private _scene: Scene;
+
+    private _provider: PointCloudProvider;
+
+    private _root: PointCloud.Box;
+
+    private _points_per_pixel: number;
+
+    private _point_shape: PointCloud.PointShapeType;
+
+    private _point_size_type: PointCloud.PointSizeType;
+
+    private _point_size: number;
+
+    private _point_size_limit: number;
+
+    private _dispersion: boolean;
+
+    // for debug
+
+    private _debug_shader: boolean;
+
+    private _debug_render_box: boolean;
+
+    private _debug_render_ellipsoid: boolean;
+
+    private _debug_render_axis: boolean;
+
+    private _debug_render_section: boolean;
+
+
     /**
-     * @param {mapray.Scene} scene 所属するシーン
-     * @param {mapray.PointCloudProvider} provider プロバイダ
+     * @param scene 所属するシーン
+     * @param provider プロバイダ
      */
-    constructor( scene, provider )
+    constructor( scene: Scene, provider: PointCloudProvider )
     {
         this._glenv = scene.glenv;
         this._scene = scene;
 
         this._provider = provider;
 
-        this._root = Box.createRoot( this );
+        this._root = PointCloud.Box.createRoot( this );
 
         // properties
         this._points_per_pixel = 0.7;
@@ -47,6 +84,7 @@ class PointCloud {
         this._dispersion = true;
         this._debug_shader = false;
 
+        // for debug
         this._debug_render_box = false;
         this._debug_render_ellipsoid = false;
         this._debug_render_axis = false;
@@ -58,53 +96,56 @@ class PointCloud {
     }
 
 
-    static get PointShapeType() { return PointShapeType; }
-
-
-    static get PointSizeType() { return PointSizeType; }
-
-
     /**
-     * @summary 初期化
-     * mapray.PointCloudBoxCollectorへ追加時に自動的に呼ばれる。
-     * @private
+     * 初期化
+     * [[PointCloudBoxCollector]]へ追加時に自動的に呼ばれる。
+     * @internal
      */
     async init() {
         await this._provider.init();
     }
 
     /**
-     * @summary 破棄
-     * mapray.PointCloudBoxCollectorから削除時に自動的に呼ばれる。
-     * @private
+     * 破棄
+     * [[PointCloudBoxCollector]]から削除時に自動的に呼ばれる。
+     * @internal
      */
     async destroy() {
         if (this._provider) {
             await this._provider.destroy();
         }
         if (this._root) {
-            await this._root.dispose(null);
-            this._root = null;
+            await this._root.dispose();
         }
         const index = PointCloud._instances.indexOf( this );
         if ( index !== -1 ) {
             PointCloud._instances.splice( index, 1 );
         }
-        this._provider = null;
     }
 
 
     /**
-     * @summary プロバイダ
-     * @type {mapray.PointCloudProvider}
+     * @internal
+     */
+    get glenv() { return this._glenv }
+
+
+    /**
+     * @internal
+     */
+    get scene() { return this._scene }
+
+
+    /**
+     * プロバイダ
+     * @internal
      */
     get provider() { return this._provider; }
 
 
     /**
-     * @summary ルートBox
-     * @type {Box}
-     * @private
+     * ルートBox
+     * @internal
      */
     get root() { return this._root };
 
@@ -112,77 +153,74 @@ class PointCloud {
     // Properties
 
     /**
-     * @summary 点群Box読み込みを行う際の解像度[points/pixel]
-     * @return {number}
+     * 点群Box読み込みを行う際の解像度[points/pixel]
      */
-    getPointsPerPixel() { return this._points_per_pixel; }
+    getPointsPerPixel(): number { return this._points_per_pixel; }
 
     /**
-     * @summary 点群Box読み込みを行う際の解像度[points/pixel]を設定
-     * @param {number} val 設定する値
+     * 点群Box読み込みを行う際の解像度[points/pixel]を設定
+     * @param val 設定する値
      */
-    setPointsPerPixel( val ) {
+    setPointsPerPixel( val: number ) {
         console.assert( val <= 1 );
         this._points_per_pixel = val;
     }
 
     /**
-     * @summary 点を描画する際の形状
-     * @return {mapray.PointCloud.PointShapeType}
+     * 点を描画する際の形状
+     * @return [[PointCloud.PointShapeType]]
      */
     getPointShape() { return this._point_shape; }
 
     /**
-     * @summary 点を描画する際の形状を設定
-     * @param {mapray.PointCloud.PointShapeType} val 設定する値
+     * 点を描画する際の形状を設定
+     * @param {PointCloud.PointShapeType} val 設定する値
      */
-    setPointShape( val ) {
+    setPointShape( val: PointCloud.PointShapeType ) {
         this._point_shape = val;
     }
 
     /**
-     * @summary 点を描画する際のサイズの指定方法
-     * @return {mapray.PointCloud.PointSizeType}
+     * 点を描画する際のサイズの指定方法
+     * @return {PointCloud.PointSizeType}
      */
     getPointSizeType() { return this._point_size_type; }
 
     /**
-     * @summary 点を描画する際のサイズの指定方法を設定
-     * @param {mapray.PointCloud.PointSizeType} val 設定する値
+     * 点を描画する際のサイズの指定方法を設定
+     * @param val 設定する値
      */
-    setPointSizeType( val ) {
+    setPointSizeType( val: PointCloud.PointSizeType ) {
         this._point_size_type = val;
     }
 
     /**
-     * @summary 点を描画する際のサイズ
+     * 点を描画する際のサイズ
      * point_size_typeにより単位が異なる
-     * @see mapray.PointCloud#getPointSizeType
-     * @return {number}
+     * @see [[PointCloud.getPointSizeType]]
      */
-    getPointSize() { return this._point_size; }
+    getPointSize(): number { return this._point_size; }
 
     /**
-     * @summary 点を描画する際のサイズを設定。
-     * {@link mapray.PointCloud#setPointSizeType}により指定された値によって解釈される単位が異なる。
-     * @param {number} val 設定する値
+     * 点を描画する際のサイズを設定。
+     * [[PointCloud.setPointSizeType]]により指定された値によって解釈される単位が異なる。
+     * @param val 設定する値
      */
-    setPointSize( val ) {
+    setPointSize( val: number ) {
         console.assert( val > 0 );
         this._point_size = val;
     }
 
     /**
-     * @summary 点を描画する際の最大ピクセルサイズ
-     * @return {number}
+     * 点を描画する際の最大ピクセルサイズ
      */
-    getPointSizeLimit() { return this._point_size_limit; }
+    getPointSizeLimit(): number { return this._point_size_limit; }
 
     /**
-     * @summary 点を描画する際の最大ピクセルサイズを設定
-     * @param {number} val 設定する値
+     * 点を描画する際の最大ピクセルサイズを設定
+     * @param val 設定する値
      */
-    setPointSizeLimit( val ) {
+    setPointSizeLimit( val: number ) {
         console.assert( val > 0 );
         this._point_size_limit = val;
     }
@@ -190,49 +228,46 @@ class PointCloud {
 
     // hidden properties
 
-    /**
-     * @private
-     */
+    /** @internal */
     getDispersion() { return this._dispersion }
 
-    /**
-     * @private
-     */
-    setDispersion( val ) { this._dispersion = val; }
+    /** @internal */
+    setDispersion( val: boolean ) { this._dispersion = val; }
 
-    /**
-     * @private
-     */
+
+    // for debug
+
+    /** @internal */
     getDebugShader() { return this._debug_shader; }
 
-    /**
-     * @private
-     */
-    setDebugShader( val ) { this._debug_shader = val; }
+    /** @internal */
+    setDebugShader( val: boolean ) { this._debug_shader = val; }
 
-    /**
-     * @private
-     */
-    setDebugRenderBox( val ) { this._debug_render_box = val; this._updateDebugMesh(); }
+    /** @internal */
+    getDebugRenderBox() { return this._debug_render_box; }
 
-    /**
-     * @private
-     */
-    setDebugRenderEllipsoid( val ) { this._debug_render_ellipsoid = val; this._updateDebugMesh(); }
+    /** @internal */
+    setDebugRenderBox( val: boolean ) { this._debug_render_box = val; this._updateDebugMesh(); }
 
-    /**
-     * @private
-     */
-    setDebugRenderAxis( val ) { this._debug_render_axis = val; this._updateDebugMesh(); }
+    /** @internal */
+    getDebugRenderEllipsoid() { return this._debug_render_ellipsoid }
 
-    /**
-     * @private
-     */
-    setDebugRenderSection( val ) { this._debug_render_section = val; this._updateDebugMesh(); }
+    /** @internal */
+    setDebugRenderEllipsoid( val: boolean ) { this._debug_render_ellipsoid = val; this._updateDebugMesh(); }
 
-    /**
-     * @private
-     */
+    /** @internal */
+    getDebugRenderAxis() { return this._debug_render_axis; }
+
+    /** @internal */
+    setDebugRenderAxis( val: boolean ) { this._debug_render_axis = val; this._updateDebugMesh(); }
+
+    /** @internal */
+    getDebugRenderSection() { return this._debug_render_section; }
+
+    /** @internal */
+    setDebugRenderSection( val: boolean ) { this._debug_render_section = val; this._updateDebugMesh(); }
+
+    /** @internal */
     _updateDebugMesh() {
         if ( this._root ) {
             this._root._updateDebugMeshes();
@@ -240,14 +275,14 @@ class PointCloud {
     }
 
     /**
-     * @summary Traverse結果の統計情報を取得。
-     * リクエストキューに登録し、{@link mapray.RenderStage}が処理を完了するのを待つ。
-     * @return {Promise}
-     * @private
+     * Traverse結果の統計情報を取得。
+     * リクエストキューに登録し、[[RenderStage]]が処理を完了するのを待つ。
+     * @return {Promise<PointCloud.Statistics>}
+     * @internal
      */
-    static async requestTraverseSummary() {
+    private static async requestTraverseSummary(): Promise<PointCloud.Statistics> {
         return new Promise(onSuccess => {
-                const notifier = statistics => {
+                const notifier = (statistics: PointCloud.Statistics) => {
                     onSuccess(statistics);
                     const index = PointCloud.getTraverseDataRequestQueue().indexOf(notifier);
                     if (index !== -1) PointCloud.getTraverseDataRequestQueue().splice(index, 1);
@@ -257,42 +292,38 @@ class PointCloud {
     }
 
     /**
-     * @summary Traverse結果取得用のリクエストキューを取得
-     * @return {Array}
-     * @private
+     * Traverse結果取得用のリクエストキューを取得
+     * @internal
      */
-    static getTraverseDataRequestQueue() {
+    private static getTraverseDataRequestQueue() {
         return PointCloud._traverseDataRequestQueue || (PointCloud._traverseDataRequestQueue=[]);
     }
 
-    /**
-     * @summary 指定された level, x, y, z のURLを生成します
-     * @param {number} level
-     * @param {number} x
-     * @param {number} y
-     * @param {number} z
-     * @return {string}
-     * @private
-     */
-    getURL( level, x, y, z ) {
+    /* *
+     * 指定された level, x, y, z のURLを生成します
+     * @param level
+     * @param x
+     * @param y
+     * @param z
+     * /
+    private getURL( level: number, x: number, y: number, z: number ): string
+    {
         return this._urlGenerator( level, x, y, z );
     }
+    */
 
 
     /**
-     * @private
      */
-    _checkMaterials() {
+    private _checkMaterials() {
         const viewer = this._scene.viewer;
         const render_cache = viewer._render_cache || (viewer._render_cache = {});
         if ( !render_cache.point_cloud_materials ) {
-            render_cache.point_cloud_materials = Object.keys(PointShapeType).reduce((map, key) => {
-                    const point_shape_type = PointShapeType[key];
-                    map[point_shape_type.id] = new PointCloudMaterial( viewer, {
-                            point_shape_type,
-                    });
-                    return map;
-            }, {});
+            const map = new Map<PointCloud.PointShapeType, PointCloudMaterial>();
+            PointCloud.ListOfPointShapeTypes.forEach(point_shape_type => {
+                    map.set(point_shape_type, new PointCloudMaterial( viewer, { point_shape_type }));
+            });
+            render_cache.point_cloud_materials = map;
         }
         if ( !render_cache.point_cloud_debug_wire_material ) {
             render_cache.point_cloud_debug_wire_material = new PointCloudDebugWireMaterial( viewer );
@@ -304,48 +335,105 @@ class PointCloud {
 
 
     /**
-     * @private
+     * @internal
      */
-    _getMaterial( point_shape ) {
-        return this._scene.viewer._render_cache.point_cloud_materials[ point_shape.id ];
+    getMaterial( point_shape: PointCloud.PointShapeType ) {
+        const viewer = this._scene.viewer;
+        const render_cache = viewer._render_cache || (viewer._render_cache = {});
+        return render_cache.point_cloud_materials.get( point_shape );
     }
 
 
     /**
-     * @private
+     * @internal
      */
-    static setStatisticsHandler( statistics_handler ) {
+    static setStatisticsHandler( statistics_handler: PointCloud.StatisticsHandler ) {
         if (statistics_handler) {
             PointCloud._statistics = {
-                statistics_obj: new Statistics(),
+                statistics_obj: new PointCloud.Statistics(),
                 statistics_handler: statistics_handler,
             };
         }
         
     }
 
-    /**
-     * @private
-     */
-    static getStatistics() { return PointCloud._statistics; }
+    /** @internal */
+    private static getStatistics() { return PointCloud._statistics; }
 
-    /**
-     * @private
-     */
-    static getStatisticsHandler() { return PointCloud._statistics_handler; }
+    /** @internal */
+    private static getStatisticsHandler() { return PointCloud._statistics.statistics_handler; }
+
+    /** @internal */
+    private static _statistics: {
+        statistics_obj: PointCloud.Statistics,
+        statistics_handler: PointCloud.StatisticsHandler,
+    };
+
+    /** @internal */
+    private static _instances: PointCloud[] = [];
+
+    /** @internal */
+    private static _traverseDataRequestQueue: any[] = [];
 }
 
-PointCloud._instances = [];
+
+
+namespace PointCloud {
+
 
 
 /**
- * @private
+ * @internal
  */
-class Statistics {
+export class Statistics {
+
+    render_point_count: number;
+
+    total_point_count: number;
+
+    render_boxes: number;
+
+    total_boxes: number;
+
+    loading_boxes: number;
+
+    created_boxes: number;
+
+    disposed_boxes: number;
+
+    total_time: number;
+
+    traverse_time: number;
+
+    render_time: number;
+
+    private _start_time: number;
+
+    private _done_time: number;
+
+    private _done_traverse_time: number;
+
+    _now: () => number;
+
 
     constructor() {
         this._now = performance ? () => performance.now() : () => Date.now();
         this.clear();
+
+        this.render_point_count = 0;
+        this.total_point_count = 0;
+        this.render_boxes = 0;
+        this.total_boxes = 0;
+        this.loading_boxes = 0;
+        this.created_boxes = 0;
+        this.disposed_boxes = 0;
+        this.total_time = 0.0;
+        this.traverse_time = 0.0;
+        this.render_time = 0.0;
+
+        this._start_time = -1;
+        this._done_time = -1;
+        this._done_traverse_time = -1;
     };
 
     start() {
@@ -374,123 +462,225 @@ class Statistics {
         this.total_time = 0.0;
         this.traverse_time = 0.0;
         this.render_time = 0.0;
+
+        this._start_time = -1;
+        this._done_time = -1;
+        this._done_traverse_time = -1;
     }
 }
 
 
 
+export type StatisticsHandler = (statistics_obj: PointCloud.Statistics) => void;
+
+
+
 
 
 /**
- * @summary 点描画の種類
- * @constant
- * @enum {object}
- * @memberof mapray.PointCloud
+ * 点描画の種類
  */
-const PointShapeType = {
+export enum PointShapeType {
     /**
      * 矩形
      */
-    RECTANGLE: { id: "RECTANGLE", shader_code: 0 },
+    RECTANGLE,
 
     /**
      * 円
      */
-    CIRCLE: { id: "CIRCLE", shader_code: 1 },
+    CIRCLE,
 
     /**
      * 境界線付きの円
      */
-    CIRCLE_WITH_BORDER: { id: "CIRCLE_WITH_BORDER", shader_code: 2 },
+    CIRCLE_WITH_BORDER,
 
     /**
      * グラデーションで塗り潰した円
      */
-    GRADIENT_CIRCLE: { id: "GRADIENT_CIRCLE", shader_code: 3 },
+    GRADIENT_CIRCLE,
 };
 
 
 
+export const ListOfPointShapeTypes = [
+    PointShapeType.RECTANGLE,
+    PointShapeType.CIRCLE,
+    PointShapeType.CIRCLE_WITH_BORDER,
+    PointShapeType.GRADIENT_CIRCLE,
+];
+
+
+
 /**
- * @summary 点描画のサイズ指定方法の種類
- * @enum {object}
- * @constant
- * @memberof mapray.PointCloud
+ * 点描画のサイズ指定方法の種類
  */
-const PointSizeType = {
+export enum PointSizeType {
     /**
      * setPointSize()により指定された値をピクセルとして解釈する
      */
-    PIXEL: { id: "PIXEL" },
+    PIXEL,
 
     /**
      * setPointSize()により指定された値をmmとして解釈する
      */
-    MILLIMETERS: { id: "MILLIMETERS" },
+    MILLIMETERS,
 
     /**
      * setPointSize()により指定された値を参照せず、表示位置に応じて適切なサイズを自動的に指定する。
      */
-    FLEXIBLE: { id: "FLEXIBLE" },
+    FLEXIBLE,
 };
 
 
 
 /**
- * @summary 点群ツリーを構成するノード。
+ * 点群ツリーを構成するノード。
  * ルート要素(level === 0) は、Box.createRoot()を用いて作成する。
- * @memberof mapray.PointCloud
- * @private
+ * @internal
  */
-class Box {
+export class Box {
 
     /**
-     * @param {Box|null} parent 親Box(level === 0の場合はnull)
-     * @param {number} level レベル
-     * @param {number} x x
-     * @param {number} y y
-     * @param {number} z z
-     * @private
+     * 親Box
      */
-    constructor( parent, level, x, y, z )
+    private _parent?: Box;
+
+    /**
+     * 所属するPointCloud。
+     * ルート要素の場合は [[Box.createRoot]] で設定される。
+     */
+    private _owner!: PointCloud;
+
+    /** レベル */
+    level: number;
+
+    /** x */
+    x: number;
+
+    /** y */
+    y: number;
+
+    /** z */
+    z: number;
+
+    /**
+     * Box一辺の半分の長さ
+     * @internal
+     */
+    size: number;
+
+    /**
+     * 軸方向に投影した際の面積
+     * @internal
+     */
+    proj_area: number;
+
+
+    /**
+     * GOCS座標系でのBoxの中心位置
+     * @internal
+     */
+    gocs_center: Vector3;
+
+    /**
+     * GOCS座標系でのBoxの最小位置
+     * @internal
+     */
+    gocs_min: Vector3;
+
+    /**
+     * GOCS座標系でのBoxの最大位置
+     * @internal
+     */
+    gocs_max: Vector3;
+
+    /**
+     * 
+     * @internal
+     */
+    private _status: PointCloud.Status;
+
+    /**
+     * 子Box、セルに関する情報
+     */
+    private _metaInfo!: PointCloud.BoxInfo;
+
+    /**
+     * 子Box。
+     * `(u, v, w)` のインデックスは `(u | v << 1 | w << 2)` によって算出される。
+     * @internal
+     */
+    private _children: [ Box?, Box?, Box?, Box?, Box?, Box?, Box?, Box? ];
+
+    /**
+     * @internal
+     */
+    average!: Vector3;
+
+    /**
+     * @internal
+     */
+    eigenVector!: [ Vector3, Vector3, Vector3 ];
+
+    /**
+     * @internal
+     */
+    eigenVectorLength!: [ number, number, number ];
+
+    /**
+     * @internal
+     */
+    private _vertex_buffer!: WebGLBuffer;
+
+    /**
+     * @internal
+     */
+    private _vertex_length!: number;
+
+    /**
+     * @internal
+     */
+    private _vertex_attribs!: object;
+
+    /**
+     * @internal
+     */
+    private debug1!: number;
+
+    /**
+     * @internal
+     */
+    private _loadId?: number;
+
+    private _abort_controller!: AbortController; // @ToDo: 必要性を確認
+
+    private _debugMesh?: Mesh[];
+
+
+    /**
+     * @param parent 親Box(level === 0の場合はnull)
+     * @param level レベル
+     * @param x x
+     * @param y y
+     * @param z z
+     */
+    constructor( parent: Box | undefined, level: number, x: number, y: number, z: number )
     {
-        /**
-         * @summary 親Box
-         * @type {Box}
-         */
         this._parent = parent;
 
-        /**
-         * @summary 所属するPointCloud。
-         * ルート要素の場合は Box.createRoot() で設定される。
-         * @type {mapray.PointCloud}
-         */
-        this._owner = parent ? parent._owner : null;
+        if (parent) {
+            this._owner = parent._owner;
+        }
 
-        /**
-         * @summary レベル
-         * @type {number}
-         */
         this.level = level;
 
-        /**
-         * @summary x
-         * @type {number}
-         */
         this.x = x;
 
-        /**
-         * @summary y
-         * @type {number}
-         */
         this.y = y;
 
-        /**
-         * @summary z
-         * @type {number}
-         */
         this.z = z;
-
 
         /*
         2次元(X,Y)までを下記に図示する。Z軸についても同様。
@@ -512,119 +702,38 @@ class Box {
                       |<--size[m]-->|
         */
 
-        /**
-         * @summary Box一辺の半分の長さ
-         * @type {number}
-         * @private
-         */
         const size = this.size = (
             level ===  0 ? 2147483648: // 2^31
             level  <  31 ? 1 << (31-level):
             Math.pow(0.5, level-31)
         );
 
-        /**
-         * @summary 軸方向に投影した際の面積
-         * @type {number}
-         * @private
-         */
-        this.proj_area = 4.0 * this.size * this.size;
+        this.proj_area = 4.0 * size * size;
 
-        /**
-         * @summary GOCS座標系でのBoxの中心位置
-         * @type {mapray.Vector3}
-         * @private
-         */
         this.gocs_center = GeoMath.createVector3([
                 MIN_INT + (2 * x + 1) * size,
                 MIN_INT + (2 * y + 1) * size,
                 MIN_INT + (2 * z + 1) * size
         ]);
 
-        /**
-         * @summary GOCS座標系でのBoxの最小位置
-         * @type {mapray.Vector3}
-         * @private
-         */
         this.gocs_min = GeoMath.createVector3([
                 this.gocs_center[0] - size,
                 this.gocs_center[1] - size,
                 this.gocs_center[2] - size
         ]);
 
-        /**
-         * @summary GOCS座標系でのBoxの最大位置
-         * @type {mapray.Vector3}
-         * @private
-         */
         this.gocs_max = GeoMath.createVector3([
                 this.gocs_center[0] + size,
                 this.gocs_center[1] + size,
                 this.gocs_center[2] + size
         ]);
 
-        /**
-         * @type {Box.Status}
-         * @private
-         */
         this._status = Box.Status.NOT_LOADED;
 
-
-        // (this._status === Box.Status.LOADED) において有効な値
-
-        /**
-         * @summary 子Box、セルに関する情報
-         * @type {object}
-         * @private
-         */
-        this._metaInfo = null;
-
-        /**
-         * @summary 子Box。
-         * <code>(u, v, w)</code>のインデックスは <code>(u | v << 1 | w << 2)</code> によって算出される。
-         * @type {mapray.Box[]}
-         * @private
-         */
-        this._children = [ null, null, null, null, null, null, null, null ];
-
-        /**
-         * @type {mapray.Vector3}
-         * @private
-         */
-        this.average = null;
-
-        /**
-         * @type {mapray.Vector3}
-         * @private
-         */
-        this.eigenVector = null;
-
-        /**
-         * @type {mapray.Vector3}
-         * @private
-         */
-        this.eigenVectorLength = null;
-
-        /**
-         * @private
-         */
-        this._vertex_buffer = null;
-
-        /**
-         * @private
-         */
-        this._vertex_length = null;
-
-        /**
-         * @private
-         */
-        this._vertex_attribs = null;
-
-        /**
-         * @private
-         */
-        this.debug1 = null;
-
+        this._children = [
+            undefined, undefined, undefined, undefined,
+            undefined, undefined, undefined, undefined,
+        ];
 
         if ( this._owner ) {
             this._updateDebugMesh();
@@ -637,8 +746,9 @@ class Box {
      _updateDebugMeshes() {
         this._updateDebugMesh();
         for (let i=0; i<this._children.length; i++) {
-            if ( this._children[i] ) {
-                this._children[i]._updateDebugMeshes();
+            const child = this._children[i];
+            if ( child ) {
+                child._updateDebugMeshes();
             }
         }
     }
@@ -648,7 +758,7 @@ class Box {
         const indices  = [];
         const tindices = [];
 
-        if ( this._owner._debug_render_box ) {
+        if ( this._owner.getDebugRenderBox() ) {
             /*
             *         4----------5
             *       .´:        .´|
@@ -659,11 +769,11 @@ class Box {
             *    |.´        |.´   
             *    2----------3     
             */
-            for ( let i=0; i<Box.CHILDREN_INDICES.length; i++) {
+            for ( let i=0; i<PointCloud.CHILDREN_INDICES.length; i++) {
                 vertices.push(
-                    this.size * (2 * Box.CHILDREN_INDICES[i][2] - 1),
-                    this.size * (2 * Box.CHILDREN_INDICES[i][1] - 1),
-                    this.size * (2 * Box.CHILDREN_INDICES[i][0] - 1)
+                    this.size * (2 * PointCloud.CHILDREN_INDICES[i][2] - 1),
+                    this.size * (2 * PointCloud.CHILDREN_INDICES[i][1] - 1),
+                    this.size * (2 * PointCloud.CHILDREN_INDICES[i][0] - 1)
                 );
             }
 
@@ -686,7 +796,7 @@ class Box {
         }
 
         if ( this.average && !isNaN( this.eigenVector[0][0] ) ) {
-            if ( this._owner._debug_render_axis ) { // Render Normal
+            if ( this._owner.getDebugRenderAxis() ) { // Render Normal
                 let offset = vertices.length / 3;
                 for ( let i=0; i<3; i++) {
                     const len = Math.max(0.2, this.eigenVectorLength[i]);
@@ -697,12 +807,12 @@ class Box {
                 }
             }
 
-            if ( this._owner._debug_render_section ) {
+            if ( this._owner.getDebugRenderSection() ) {
                 if ( this.level > 20 && this.getPointsLength() > 5000 && this.eigenVectorLength[0] < this.size * 0.2 ) { // = 10% = (2 * s) / 10
                     this._putSectionShapePoints(vertices, indices, tindices); // Render Cross Section
                 }
             }
-            if ( this._owner._debug_render_ellipsoid ) {
+            if ( this._owner.getDebugRenderEllipsoid() ) {
                 this._putVariancePoints(vertices, indices, tindices); // Render Normal Ring
             }
         }
@@ -717,7 +827,7 @@ class Box {
                 vertices: vertices,
                 indices: indices
             };
-            meshes.push( new Mesh( this._owner._glenv, mesh_data ) );
+            meshes.push( new Mesh( this._owner.glenv, mesh_data ) );
         }
         if (tindices.length > 0) {
             const mesh_data = {
@@ -728,42 +838,24 @@ class Box {
                 vertices: vertices,
                 indices: tindices
             };
-            meshes.push( new Mesh( this._owner._glenv, mesh_data ) );
+            meshes.push( new Mesh( this._owner.glenv, mesh_data ) );
         }
 
-        this.debugMesh = meshes;
+        this._debugMesh = meshes;
     }
 
 
     /**
-     * @private
+     * @internal
      */
-    _putVariancePoints(vertices, indices, tindices) {
+    private _putVariancePoints( vertices: number[], indices: number[], tindices: number[] ) {
         const offset = vertices.length / 3;
         const [ e1, e2, e3 ]  = this.eigenVector;
         const [ e1l, e2l, e3l ] = this.eigenVectorLength;
-        const G = 6;
-        const N = 12;
-        const cache = PointCloud._variance_points_cache || (() => {
-                const c = {
-                    cos_ro: [],
-                    sin_ro: [],
-                    cos_th: [],
-                    sin_th: [],
-                };
-                for ( let j=0; j<=G; ++j ) {
-                    const ro = Math.PI * j/G;
-                    c.cos_ro[j] = Math.cos(ro);
-                    c.sin_ro[j] = Math.sin(ro);
-                }
-                for ( let i=0; i<=N; ++i ) {
-                    const th = 2 * Math.PI * i/N;
-                    c.cos_th[i] = Math.cos(th);
-                    c.sin_th[i] = Math.sin(th);
-                }
-                return PointCloud._variance_points_cache = c;
-        })();
-        const putPoint = (ro, th, vs) => {
+        const cache = PointCloud._variance_points_cache;
+        const G = cache.G;
+        const N = cache.N;
+        const putPoint = (ro: number, th: number, vs: number[]) => {
             const cos_ro = cache.cos_ro[ro];
             const sin_ro = cache.sin_ro[ro];
             const cos_th = cache.cos_th[th];
@@ -790,9 +882,9 @@ class Box {
 
 
     /**
-     * @private
+     * @internal
      */
-    _putSectionShapePoints( vertices, indices, tindices ) {
+    private _putSectionShapePoints( vertices: number[], indices: number[], tindices: number[] ) {
         const offset = vertices.length / 3;
         const a = this.average;
         const e = this.eigenVector[0];
@@ -823,7 +915,9 @@ class Box {
             }
         }
 
-        let n, t;
+        let isFirst = true;
+        const n = [0, 0, 0];
+        const t = [0, 0, 0];
         for ( let i=0; i<q.length; i++ ) {
             const p = q[i].p;
             const v = q[i].v;
@@ -832,21 +926,18 @@ class Box {
                 const c  = [p[0]+alpha*v[0], p[1]+alpha*v[1], p[2]+alpha*v[2]];
                 const lp = [c[0]-a[0], c[1]-a[1], c[2]-a[2]];
                 let angle;
-                if (n) {
-                    angle = Math.atan2(t[0]*lp[0]+t[1]*lp[1]+t[2]*lp[2], n[0]*lp[0]+n[1]*lp[1]+n[2]*lp[2]);
+                if ( isFirst ) {
+                    angle = 0;
+                    t[0] = ue[1]*lp[2]-ue[2]*lp[1];
+                    t[1] = ue[2]*lp[0]-ue[0]*lp[2];
+                    t[2] = ue[0]*lp[1]-ue[1]*lp[0];
+                    n[0] = t[1]*ue[2]-t[2]*ue[1];
+                    n[1] = t[2]*ue[0]-t[0]*ue[2];
+                    n[2] = t[0]*ue[1]-t[1]*ue[0];
+                    isFirst = false;
                 }
                 else {
-                    angle = 0;
-                    t = [
-                        ue[1]*lp[2]-ue[2]*lp[1],
-                        ue[2]*lp[0]-ue[0]*lp[2],
-                        ue[0]*lp[1]-ue[1]*lp[0]
-                    ];
-                    n = [
-                        t[1]*ue[2]-t[2]*ue[1],
-                        t[2]*ue[0]-t[0]*ue[2],
-                        t[0]*ue[1]-t[1]*ue[0]
-                    ];
+                    angle = Math.atan2(t[0]*lp[0]+t[1]*lp[1]+t[2]*lp[2], n[0]*lp[0]+n[1]*lp[1]+n[2]*lp[2]);
                 }
                 ps.push([...c, angle, lp[0],lp[1],lp[2], n[0]*lp[0]+n[1]*lp[1]+n[2]*lp[2], t[0]*lp[0]+t[1]*lp[1]+t[2]*lp[2]]);
             }
@@ -867,8 +958,7 @@ class Box {
 
 
     /**
-     * @summary 読み込みステータス
-     * @type {mapray.PointCloud.Box.Status}
+     * 読み込みステータス
      */
     get status() {
         return this._status;
@@ -876,9 +966,7 @@ class Box {
 
 
     /**
-     * @summary 読み込みが完了しているか
-     *
-     * @type {boolean}
+     * 読み込みが完了しているか
      */
     get is_loaded() {
         return this._status === Box.Status.LOADED;
@@ -886,34 +974,33 @@ class Box {
 
 
     /**
-     * @summary 親ノード
-     *
-     * @type {Box}
+     * 親ノード
      */
-    get parent() {
+    get parent(): Box | undefined {
         return this._parent;
     }
 
 
     /**
-     * @summary 子Boxの情報を取得
+     * 子Boxの情報を取得
      * 
-     * @param {number} index 番号
-     * @return {Box}
+     * @param index 番号
      */
-    getChildInfo( index ) {
-        if (!this._metaInfo) return null;
+    getChildInfo( index: number ): PointCloud.ChildInfo | undefined
+    {
+        if (!this._metaInfo) return undefined;
         return this._metaInfo.children[ index ];
     }
 
 
     /**
-     * @summary Box領域を8分割した領域ごとに点が存在するかを調べる。
+     * Box領域を8分割した領域ごとに点が存在するかを調べる。
      * 
-     * @param {number} index 子Boxと同様の順番
-     * @return {boolean} 点が存在する場合に true となる。
+     * @param index 子Boxと同様の順番
+     * @return 点が存在する場合に `true` となる。
      */
-    cellPointsAvailable( index ) {
+    cellPointsAvailable( index: number ): boolean
+    {
         return (
             this._metaInfo &&
             (index === 0 ?
@@ -925,30 +1012,30 @@ class Box {
 
 
     /**
-     * @summary Boxに含まれる点の数
-     * 
-     * @return {number}
+     * Boxに含まれる点の数
      */
-    getPointsLength() {
+    getPointsLength(): number
+    {
         return this._metaInfo ? this._metaInfo.indices[7] : 0;
     }
 
     /**
-     * @summary 子Boxの番号を返します。
-     * @param {Box} child 子Box
-     * @return {number}
+     * 子Boxの番号を返します。
+     * @param child 子Box
      */
-    indexOf( child ) {
+    indexOf( child: Box ): number
+    {
         return this._children.indexOf( child );
     }
 
 
     /**
-     * @summary カリングするか？
-     * @param  {mapray.Vector4[]} clip_planes  クリップ平面配列
-     * @return {boolean}                       見えないとき true, 見えるまたは不明のとき false
+     * カリングするか？
+     * @param  clip_planes  クリップ平面配列
+     * @return 見えないとき `true`, 見えるまたは不明のとき `false`
      */
-    isInvisible( clip_planes ) {
+    isInvisible( clip_planes: Vector4[] ): boolean
+    {
         if ( this.level === 0 ) return false;
 
         const xmin = this.gocs_min[0];
@@ -994,30 +1081,30 @@ class Box {
 
 
     /**
-     * @summary 点群の読み込み処理
-     * 
-     * @return {Promise<void>}
+     * 点群の読み込み処理
      */
-    load() {
-        if ( this._status !== Box.Status.NOT_LOADED ) throw new Error( "illegal status: " + this._status.id );
-        if ( !this._owner._provider.isReady() ) return;
+    async load(): Promise<void> {
+        if ( this._status !== PointCloud.Status.NOT_LOADED ) throw new Error( "illegal sstatus: " + this._status );
+        if ( !this._owner.provider.isReady() ) return;
         this._status = Box.Status.LOADING;
 
-        const task = this._owner._provider.load( this.level, this.x, this.y, this.z, true );
+        const task = this._owner.provider.load( this.level, this.x, this.y, this.z );
         this._loadId = task.id;
         return task.done.then(event => {
-                this._metaInfo = {
-                    children: [],
-                    indices: event.header.indices,
-                };
-
+                const children = [];
                 {
                     let childFlags = event.header.childFlags;
                     for ( let i=7; i>=0; --i ) {
-                        this._metaInfo.children[i] = (childFlags & 1) ? {} : null;
+                        if (childFlags & 1) {
+                            children[i] = {};
+                        }
                         childFlags = childFlags >> 1;
                     }
                 }
+                this._metaInfo = {
+                    children: children,
+                    indices: event.header.indices,
+                };
 
                 this.average = event.header.average;
                 this.eigenVector = event.header.eigenVector;
@@ -1038,9 +1125,11 @@ class Box {
                     }
                 }
 
-                const gl = this._owner._glenv.context;
+                const gl = this._owner.glenv.context;
 
-                this._vertex_buffer = gl.createBuffer();
+                const buffer = gl.createBuffer();
+                if ( !buffer ) throw new Error("failed to create buffer");
+                this._vertex_buffer = buffer;
 
                 this._vertex_length = values.length / 6;
                 gl.bindBuffer(gl.ARRAY_BUFFER, this._vertex_buffer);
@@ -1092,36 +1181,36 @@ class Box {
 
 
     /**
-     * @summary 子Boxを生成。(すでに存在する場合は既存のBoxを返す)
+     * 子Boxを生成。(すでに存在する場合は既存のBoxを返す)
      * LOADED 状態でのみ呼ぶことができる
      * 
-     * @param {number} index 番号
-     * @param {object} [statistics] 統計情報
-     * @return {Box}
+     * @param index 番号
+     * @param statistics 統計情報
      */
-    newChild( index, statistics ) {
-        const [ u, v, w ] = Box.CHILDREN_INDICES[ index ];
+    newChild( index: number, statistics?: PointCloud.Statistics ): Box | undefined
+    {
+        const [ u, v, w ] = PointCloud.CHILDREN_INDICES[ index ];
         return this.newChildAt( u, v, w, statistics );
     }
 
 
     /**
-     * @summary 子Boxを生成。(すでに存在する場合は既存のBoxを返す)
+     * 子Boxを生成。(すでに存在する場合は既存のBoxを返す)
      * LOADED 状態でのみ呼ぶことができる
      * 
-     * @param {number} u x方向-側は0、+側は1
-     * @param {number} v y方向-側は0、+側は1
-     * @param {number} w z方向-側は0、+側は1
-     * @param {object} [statistics] 統計情報
-     * @return {Box}
+     * @param u x方向-側は0、+側は1
+     * @param v y方向-側は0、+側は1
+     * @param w z方向-側は0、+側は1
+     * @param statistics 統計情報
      */
-    newChildAt( u, v, w, statistics ) {
+    newChildAt( u: number, v: number, w: number, statistics?: PointCloud.Statistics ): Box | undefined
+    {
         console.assert( this._status === Box.Status.LOADED );
         const index = u | v << 1 | w << 2;
         const child = this._children[ index ];
         if ( child ) return child;
 
-        if ( !this.getChildInfo( index ) ) return null;
+        if ( !this.getChildInfo( index ) ) return undefined;
 
         if ( statistics ) statistics.created_boxes++;
         return this._children[ index ] = new Box( this,
@@ -1132,6 +1221,7 @@ class Box {
         );
     }
 
+
     /**
      * @summary 子Boxを取得。
      * 存在しない場合は null を返却する。
@@ -1139,7 +1229,7 @@ class Box {
      * @param {number} index 番号
      * @return {Box}
      */
-    getChild( index ) {
+    getChild( index: number ) {
         return this._children[ index ];
     }
 
@@ -1148,17 +1238,19 @@ class Box {
      * 
      * @param {mapray.RenderStage} render_stage レンダリングステージ
      */
-    _drawDebugMesh( render_stage ) {
-        if ( !this.debugMesh ) return;
+    _drawDebugMesh( render_stage: RenderStage ) {
+        if ( !this._debugMesh ) return;
 
-        const gl = render_stage._glenv.context;
-        const color = Box.STATUS_COLOR_TABLE[ this._status.id ];
+        const gl = render_stage.glenv.context;
+        const color = PointCloud.STATUS_COLOR_TABLE.get( this._status );
+        const viewer = this._owner.scene.viewer;
+        const render_cache = viewer._render_cache;
 
         gl.disable( gl.CULL_FACE );
-        for ( let debugMesh of this.debugMesh ) {
+        for ( let debugMesh of this._debugMesh ) {
             const debug_material = (debugMesh._draw_mode === 1 ?
-                this._owner._scene.viewer._render_cache.point_cloud_debug_wire_material:
-                this._owner._scene.viewer._render_cache.point_cloud_debug_face_material
+                render_cache.point_cloud_debug_wire_material:
+                render_cache.point_cloud_debug_face_material
             );
             debug_material.bindProgram();
             debug_material.setDebugBoundsParameter( render_stage, this.gocs_center, color );
@@ -1169,43 +1261,43 @@ class Box {
 
 
     /**
-     * @summary Boxを描画する。
+     * Boxを描画する。
      * Box全体の描画および、Boxの8分割単位での描画に対応。
      * 
-     * @param {mapray.RenderStage} render_stage レンダリングステージ
-     * @param {number[]|null} target_cells 描画対象の子番号の配列。ただしnullは全体を表す。
-     * @param {number[]} points_per_pixels 点の解像度の配列。target_cells同じ順序であり、nullの場合は要素数1となる。
-     * @param {object} statistics 統計情報
+     * @param render_stage レンダリングステージ
+     * @param target_cells 描画対象の子番号の配列。ただしnullは全体を表す。
+     * @param points_per_pixels 点の解像度の配列。target_cells同じ順序であり、nullの場合は要素数1となる。
+     * @param statistics 統計情報
      */
-    draw( render_stage, target_cells, points_per_pixels, statistics )
+    draw( render_stage: RenderStage, target_cells: number[] | undefined, points_per_pixels: number[], statistics: PointCloud.Statistics )
     {
-        if ( this.debugMesh ) {
+        if ( this._debugMesh ) {
             this._drawDebugMesh( render_stage );
         }
 
         if ( this._status !== Box.Status.LOADED ) return;
 
-        const gl = render_stage._glenv.context;
+        const gl = render_stage.glenv.context;
 
-        const point_shape      = this._owner._point_shape;
-        const point_size_type  = this._owner._point_size_type;
-        const point_size       = this._owner._point_size;
-        const point_size_limit = this._owner._point_size_limit;
-        const debug_shader     = this._owner._debug_shader;
+        const point_shape      = this._owner.getPointShape();
+        const point_size_type  = this._owner.getPointSizeType();
+        const point_size       = this._owner.getPointSize();
+        const point_size_limit = this._owner.getPointSizeLimit();
+        const debug_shader     = this._owner.getDebugShader();
 
         if ( this._status === Box.Status.LOADED ) {
-            const material = this._owner._getMaterial( point_shape );
+            const material = this._owner.getMaterial( point_shape );
             material.bindProgram();
             material.setDebugBoundsParameter( render_stage, this.gocs_center );
             material.bindVertexAttribs(this._vertex_attribs);
 
             const overlap_scale = 3;
-            if ( target_cells === null ) {
+            if ( !target_cells ) {
                 // draw whole points
                 const ppp = points_per_pixels[ 0 ];
                 material.setPointSize(
                     point_size_type === PointCloud.PointSizeType.PIXEL       ? point_size:
-                    point_size_type === PointCloud.PointSizeType.MILLIMETERS ? -0.001 * point_size / render_stage._pixel_step:
+                    point_size_type === PointCloud.PointSizeType.MILLIMETERS ? -0.001 * point_size / render_stage.pixel_step:
                     Math.min( point_size_limit, Math.max( 1.0, overlap_scale / ppp ) )
                 );
                 material.setDebug( debug_shader ? 0.5 / ppp : -1.0 );
@@ -1217,7 +1309,7 @@ class Box {
                     const ppp = points_per_pixels[ i ];
                     material.setPointSize(
                         point_size_type === PointCloud.PointSizeType.PIXEL       ? point_size:
-                        point_size_type === PointCloud.PointSizeType.MILLIMETERS ? -0.001 * point_size / render_stage._pixel_step:
+                        point_size_type === PointCloud.PointSizeType.MILLIMETERS ? -0.001 * point_size / render_stage.pixel_step:
                         Math.min( point_size_limit, Math.max( 1.0, overlap_scale / ppp ) )
                     );
                     material.setDebug( debug_shader ? 0.5 / ppp : -1.0 );
@@ -1248,42 +1340,44 @@ class Box {
 
 
     /**
-     * @summary 子孫Boxを全て削除する。
+     * 子孫Boxを全て削除する。
      * 全ての状態でこの関数を呼ぶことができ、複数回呼ぶことができる。
-     * @param {object} [statistics] 統計情報
+     * @param statistics 統計情報
      */
-    disposeChildren( statistics ) {
+    disposeChildren( statistics?: PointCloud.Statistics ) {
         for (let i=0; i<this._children.length; i++) {
-            if (this._children[i]) {
-                this._children[i].dispose( statistics );
-                this._children[i] = null;
+            const child = this._children[i];
+            if ( child ) {
+                child.dispose( statistics );
+                this._children[i] = undefined;
             }
         }
     }
 
 
     /**
-     * @summary Boxを破棄します。子孫Boxも全て削除する。
+     * Boxを破棄します。子孫Boxも全て削除する。
      * 全ての状態でこの関数を呼ぶことができ、複数回呼ぶことができる。
-     * @param {object} [statistics] 統計情報
+     * @param statistics 統計情報
      */
-    dispose( statistics ) {
+    dispose( statistics?: PointCloud.Statistics ) {
         if ( this._status === Box.Status.LOADING ) {
             if ( this._abort_controller ) {
                 this._abort_controller.abort();
             }
-            this._owner._provider.cancel( this._loadId );
+            if ( this._loadId !== undefined ) {
+                this._owner.provider.cancel( this._loadId );
+            }
         }
 
         this.disposeChildren( statistics );
 
         if ( this._vertex_buffer ) {
-            const gl = this._owner._glenv.context;
+            const gl = this._owner.glenv.context;
             gl.deleteBuffer(this._vertex_buffer);
-            this._vertex_buffer = null;
         }
 
-        if ( this.debugMesh ) {
+        if ( this._debugMesh ) {
             // this.debugMesh.dispose();
         }
 
@@ -1293,8 +1387,7 @@ class Box {
 
 
     /**
-     * @summary Boxの文字列表現を返します。
-     * @return {string}
+     * Boxの文字列表現を返します。
      */
     toString() {
         return `Box-${this.level}-${this.x}-${this.y}-${this.z}`;
@@ -1302,11 +1395,11 @@ class Box {
 
 
     /**
-     * @summary Boxのツリー形式の文字列表現を返します。
-     * @param {string} [indent] ルート要素のインデント文字列を指定します。
-     * @return {string}
+     * Boxのツリー形式の文字列表現を返します。
+     * @param indent ルート要素のインデント文字列を指定します。
      */
-    toTreeString( indent = "" ) {
+    toTreeString( indent = "" ): string
+    {
         return this._children.reduce(
             (text, child) => (
                 text +
@@ -1319,11 +1412,11 @@ class Box {
 
     /**
      * ルートBoxを生成します。
-     * @param {mapray.PointCloud} owner
-     * @return {Box}
+     * @param owner
      */
-    static createRoot( owner ) {
-        const box = new Box( null, 0, 0, 0, 0 );
+    static createRoot( owner: PointCloud ): Box
+    {
+        const box = new Box( undefined, 0, 0, 0, 0 );
         box._owner = owner;
         return box;
     }
@@ -1334,7 +1427,17 @@ class Box {
 }
 
 
-Box.CHILDREN_INDICES = [
+export type ChildInfo = object;
+
+
+export interface BoxInfo {
+    children: (ChildInfo | undefined)[];
+    indices: Int32Array;
+}
+
+
+
+export const CHILDREN_INDICES = [
     [0, 0, 0],
     [1, 0, 0],
     [0, 1, 0],
@@ -1347,27 +1450,61 @@ Box.CHILDREN_INDICES = [
 
 
 
+export interface VariancePoints {
+    cos_ro: number[];
+    sin_ro: number[];
+    cos_th: number[];
+    sin_th: number[];
+    G: number;
+    N: number;
+};
+
+
+export const _variance_points_cache: VariancePoints = (() => {
+        const G = 6;
+        const N = 12;
+        const cos_ro = [];
+        const sin_ro = [];
+        const cos_th = [];
+        const sin_th = [];
+        for ( let j=0; j<=G; ++j ) {
+            const ro = Math.PI * j / G;
+            cos_ro[j] = Math.cos(ro);
+            sin_ro[j] = Math.sin(ro);
+        }
+        for ( let i=0; i<=N; ++i ) {
+            const th = 2 * Math.PI * i/N;
+            cos_th[i] = Math.cos(th);
+            sin_th[i] = Math.sin(th);
+        }
+        return {
+            cos_ro, sin_ro,
+            cos_th, sin_th,
+            G, N,
+        };
+})();
+
+
+
 /**
- * @summary Boxの状態。
- * <pre>
- *                                                                      
- *              load()                            dispose()             
- * NOT_LOADED ---------> LOADING -------> LOADED -----------> DESTROYED 
- *                              \                          /            
- *                               `------>-----------------´             
- *                                  error or dispose()                  
- * </pre>
- * @enum {object}
- * @memberof mapray.PointCloud.Box
- * @constant
- * @see mapray.PointCloud.Box#status
+ * Boxの状態。
+ *
+ * ```text
+ * NOT_LOADED ---------> LOADING ---------> LOADED -----------> DESTROYED 
+ *              load()            (async)            dispose()      ^     
+ *                |                                                 |     
+ *                `-------------------------------------------------'     
+ *                                      error                             
+ * ```
+ *
+ * @see Box.status
  */
-const Status = {
+export enum Status {
     /**
      * 準備中 (初期状態)。
      * load()を呼ぶと LOADING へ遷移し読み込み処理が開始される。
      */
-    NOT_LOADED: { id: "NOT_LOADED" },
+    NOT_LOADED,
 
     /**
      * 読み込み中。
@@ -1375,36 +1512,38 @@ const Status = {
      * 正常に処理が完了すると LOADED 、何らかのエラーが発生した場合は DESTROYED となる。
      * また、LOADING 中に dispose() が呼ばれた場合、即座に DESTROYED に遷移する。
      */
-    LOADING: { id: "LOADING" },
+    LOADING,
 
     /**
      * 読み込み完了(描画可能)。
      * dispose()を呼ぶと DESTROYED に遷移する。
      */
-    LOADED: { id: "LOADED" },
+    LOADED,
 
     /**
      * 破棄状態
      * 他の状態に遷移することはない。
      */
-    DESTROYED: { id: "DESTROYED" }
+    DESTROYED,
 };
 
 
 
-Box.STATUS_COLOR_TABLE = {};
+export const STATUS_COLOR_TABLE = new Map<Status, [number, number, number] | [number, number, number, number]>();
 {
-    Box.STATUS_COLOR_TABLE[Box.Status.LOADED.id]     = [0.0, 0.8, 1.0, 0.5];
-    Box.STATUS_COLOR_TABLE[Box.Status.DESTROYED.id]  = [1.0, 0.0, 0.0];
-    Box.STATUS_COLOR_TABLE[Box.Status.LOADING.id]    = [1.0, 1.0, 0.0];
-    Box.STATUS_COLOR_TABLE[Box.Status.NOT_LOADED.id] = [0.0, 1.0, 0.0];
+    PointCloud.STATUS_COLOR_TABLE.set(Status.LOADED,     [0.0, 0.8, 1.0, 0.5]);
+    PointCloud.STATUS_COLOR_TABLE.set(Status.DESTROYED,  [1.0, 0.0, 0.0]);
+    PointCloud.STATUS_COLOR_TABLE.set(Status.LOADING,    [1.0, 1.0, 0.0]);
+    PointCloud.STATUS_COLOR_TABLE.set(Status.NOT_LOADED, [0.0, 1.0, 0.0]);
 };
 
 
-const MIN_INT = 1 << 31;
+export const MIN_INT = 1 << 31;
 
+
+
+} // namespace PointCloud
 
 
 
 export default PointCloud;
-export { Box, Statistics };
