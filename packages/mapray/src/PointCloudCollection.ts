@@ -1,89 +1,98 @@
+import Scene from "./Scene";
+import Viewer from "./Viewer";
 import PointCloud from "./PointCloud";
+import PointCloudProvider from "./PointCloudProvider";
 
 
 
 /**
- * @summary PointCloudを管理するクラス
- * @see mapray.Viewer#point_cloud_collection
- * 
- * @memberof mapray
+ * PointCloudを管理するクラス
+ * @see Viewer.point_cloud_collection
  */
 class PointCloudCollection {
 
+    private _scene: Scene;
+
+    private _items: PointCloud[];
+
+
     /**
-     * @param {mapray.Scene} scene    所属するシーン
+     * @param scene    所属するシーン
      */
-    constructor( scene ) {
+    constructor( scene: Scene ) {
         this._scene = scene;
         this._items = [];
     }
 
 
     /**
-     * @summary 点群オブジェクト数
-     * @type {number}
-     * @readonly
+     * 点群オブジェクト数
      */
-    get length() { return this._items.length; }
+    get length(): number { return this._items.length; }
 
 
     /**
-     * @summary 点群オブジェクトを取得
+     * 点群オブジェクトを取得
      *
-     * @param  {number} index  番号
-     * @return {mapray.PointCloud}  点群
+     * @param index  番号
      */
-    get( index ) {
+    get( index: number ): PointCloud
+    {
         return this._items[index];
     }
 
 
     /**
-     * @summary 点群オブジェクトを追加
+     * 点群オブジェクトを追加
      *
-     * @param  {PointCloudProvider} item 点群プロバイダ
-     * @return {mapray.PointCloud}  点群
+     * @param item 点群プロバイダ
+     * @return 追加された点群
      */
-    add( item ) {
+    add( item: PointCloudProvider ): PointCloud
+    {
         return this.insert( this.length, item );
     }
 
 
     /**
-     * @summary 点群オブジェクトを指定した位置に追加
+     * 点群オブジェクトを指定した位置に追加
      *
-     * @param  {number} index  番号
-     * @param  {PointCloudProvider} item 点群プロバイダ
-     * @return {mapray.PointCloud}  点群
+     * @param index  番号
+     * @param item 点群プロバイダ
+     * @return 追加された点群
      */
-    insert( index, item )
+    insert( index: number, item: PointCloudProvider ): PointCloud
     {
         const point_cloud = new PointCloud( this._scene, item );
         this._items.splice( index, 0, point_cloud );
+        // @ts-ignore
         point_cloud.init();
         return point_cloud;
     }
 
 
     /**
-     * @summary 指定した位置の点群オブジェクトを削除
+     * 指定した位置の点群オブジェクトを削除
      *
-     * @param  {number} index  番号
-     * @return {mapray.PointCloud}  削除された点群
+     * @param  index  番号
+     * @return 削除された点群
      */
-    removeByIndex( index ) {
+    removeByIndex( index: number ): PointCloud
+    {
         const removedItem = this._items.splice( index, 1 )[0];
+        // @ts-ignore
         removedItem.destroy();
         return removedItem;
     }
 
 
     /**
-     * @summary 指定した点群オブジェクトを削除
+     * 指定した点群オブジェクトを削除
      *
-     * @param {mapray.PointCloud} item 削除する点群
+     * @param item 削除する点群
      */
-    remove( item ) {
+    remove( item: PointCloud ): void
+    {
         const index = this._items.indexOf(item);
         if (index === -1) {
             throw new Error("Couldn't find item: " + item);

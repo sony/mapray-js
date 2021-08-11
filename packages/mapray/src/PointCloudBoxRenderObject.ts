@@ -1,23 +1,32 @@
 import Primitive from "./Primitive";
+import RenderStage from "./RenderStage";
 import GeoMath from "./GeoMath";
-import AreaUtil from "./AreaUtil";
+import PointCloud from "./PointCloud";
 
 
 /**
- * @summary Boxをレンダリングするためのオブジェクト
- *
- * @memberof mapray
- * @private
+ * Boxをレンダリングするためのオブジェクト
+ * @internal
  */
 class PointCloudBoxRenderObject {
 
+    private _box: PointCloud.Box;
+
+    private _distance: number;
+
+    private _target_children?: number[];
+
+    private _points_per_pixel: number[];
+
+    private _parent_points_per_pixel: number;
+
 
     /**
-     * @param {mapray.PointCloud.Box} box 描画対象
-     * @param {number} distance 視点からBoxまでの距離
-     * @param {number} parent_points_per_pixel 親Boxの点の細かさ
+     * @param box 描画対象
+     * @param distance 視点からBoxまでの距離
+     * @param parent_points_per_pixel 親Boxの点の細かさ
      */
-    constructor( box, distance, parent_points_per_pixel )
+    constructor( box: PointCloud.Box, distance: number, parent_points_per_pixel: number )
     {
         this._box = box;
         this._distance = distance;
@@ -28,43 +37,40 @@ class PointCloudBoxRenderObject {
 
 
     /**
-     * @summary 描画対象
-     * @type {mapray.PointCloud.Box}
+     * 描画対象
      */
-    get box()
+    get box(): PointCloud.Box
     {
         return this._box;
     }
 
 
     /**
-     * @summary カメラからの距離
-     * @type {number}
+     * カメラからの距離
      */
-    get distance()
+    get distance(): number
     {
         return this._distance;
     }
 
 
     /**
-     * @summary 親Boxの点の解像度
-     * @type {number}
+     * 親Boxの点の解像度
      */
-    get parent_points_per_pixel()
+    get parent_points_per_pixel(): number
     {
         return this._parent_points_per_pixel;
     }
 
 
     /**
-     * @summary 描画対象領域を追加する
-     * @param {number} child 領域
-     * @param {number} points_per_pixel 描画する点の細かさ
+     * 描画対象領域を追加する
+     * @param child 領域
+     * @param points_per_pixel 描画する点の細かさ
      */
-    pushRegion( child, points_per_pixel )
+    pushRegion( child: number, points_per_pixel: number ): void
     {
-        if ( this._target_children !== null ) {
+        if ( this._target_children ) {
             const index = this._target_children.indexOf( child );
             if ( index === -1) {
                 this._target_children.push( child );
@@ -79,22 +85,22 @@ class PointCloudBoxRenderObject {
 
 
     /**
-     * @summary 描画対象を全領域にする
-     * @param {number} points_per_pixel 描画する点の細かさ
+     * 描画対象を全領域にする
+     * @param points_per_pixel 描画する点の細かさ
      */
-    setWholeRegion( points_per_pixel )
+    setWholeRegion( points_per_pixel: number ): void
     {
-        this._target_children = null;
+        this._target_children = undefined;
         this._points_per_pixel = [ points_per_pixel ];
     }
 
 
     /**
-     * @summary 描画
-     * @param {mapray.RenderStage} render_stage レンダリングステージ
-     * @param {object} statistics 統計情報
+     * 描画
+     * @param render_stage レンダリングステージ
+     * @param statistics 統計情報
      */
-    draw( render_stage, statistics )
+    draw( render_stage: RenderStage, statistics: PointCloud.Statistics ): void
     {
         this._box.draw( render_stage, this._target_children, this._points_per_pixel, statistics );
     }
