@@ -11,7 +11,7 @@
     "globe"
   ],
   "scripts": {
-    "build": "run-p mapray ui css jsdoc",
+    "build": "run-s mapray ui css jsdoc",
     "mapray": "yarn workspace @mapray/mapray-js build",
     "mapray-watch": "yarn workspace @mapray/mapray-js build-watch",
     "ui": "yarn workspace @mapray/ui build",
