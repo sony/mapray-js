@@ -1,34 +1,45 @@
+import Type from "./Type";
+import Time from "./Time";
+import Updater from "./Updater";
+import Curve from "./Curve";
 import TypeMismatchError from "./TypeMismatchError";
 
 
 /**
- * @summary アニメーションパラメータの結合
+ * アニメーションパラメータの結合
  *
- * @classdesc
- * <p>パラメータ、Curve インスタンス、Updater インスンタンスを結合する。</p>
+ * パラメータ、Curve インスタンス、Updater インスンタンスを結合する。
  *
- * @see {@link mapray.animation.Curve}
- * @see {@link mapray.animation.Updater}
- *
- * @memberof mapray.animation
+ * @see [[Curve]]
+ * @see [[Updater]]
  */
 class Binder
 {
 
+    private _updater: Updater;
+
+    private _curve: Curve;
+
+    private _type: Type;
+
+    private _setter: Binder.Setter;
+
+
     /**
-     * @desc
-     * <p>パラメータと curve と updater を結合する。</p>
-     * <p>パラメータ値は setter を通して設定される。</p>
-     * <p>setter には type 型の値が渡される。</p>
+     * パラメータと curve と updater を結合する。
      *
-     * @param {mapray.animation.Updater}      updater  アニメーションパラメータの更新管理
-     * @param {mapray.animation.Curve}          curve  アニメーション関数
-     * @param {mapray.animation.Type}            type  パラメータ値の型
-     * @param {mapray.animation.Binder.Setter} setter  パラメータ設定関数
+     * パラメータ値は setter を通して設定される。
      *
-     * @throws {@link mapray.animation.TypeMismatchError}  curve が type 型をサポートしていないとき
+     * setter には type 型の値が渡される。
+     *
+     * @param updater  アニメーションパラメータの更新管理
+     * @param curve  アニメーション関数
+     * @param type  パラメータ値の型
+     * @param setter  パラメータ設定関数
+     *
+     * @throws [[TypeMismatchError]] curve が type 型をサポートしていないとき
      */
-    constructor( updater, curve, type, setter )
+    constructor( updater: Updater, curve: Curve, type: Type, setter: Binder.Setter )
     {
         if ( !curve.isTypeSupported( type ) ) {
             throw new TypeMismatchError( "type mismatch error" );
@@ -45,45 +56,33 @@ class Binder
 
 
     /**
-     * @summary アニメーションパラメータの更新管理
-     *
-     * @type {mapray.animation.Updater}
-     * @readonly
+     * アニメーションパラメータの更新管理
      */
-    get updater() { return this._updater; }
+    get updater(): Updater { return this._updater; }
 
 
     /**
-     * @summary アニメーション関数
-     *
-     * @type {mapray.animation.Curve}
-     * @readonly
+     * アニメーション関数
      */
-    get curve() { return this._curve; }
+    get curve(): Curve { return this._curve; }
 
 
     /**
-     * @summary パラメータ値の型
+     * パラメータ値の型
      *
-     * @type {mapray.animation.Type}
-     * @readonly
-     *
-     * @see {@link mapray.animation.Binder.Setter}
+     * @see [[Binder.Setter]]
      */
-    get type() { return this._type; }
+    get type(): Type { return this._type; }
 
 
     /**
-     * @summary パラメータ設定関数
-     *
-     * @type {mapray.animation.Binder.Setter}
-     * @readonly
+     * パラメータ設定関数
      */
-    get setter() { return this._setter; }
+    get setter(): Binder.Setter { return this._setter; }
 
 
     /**
-     * @summary 結合を解除
+     * 結合を解除
      */
     unbind()
     {
@@ -93,31 +92,23 @@ class Binder
 
 
     /**
-     * @summary アニメーション関数
-     *
-     * @type {mapray.animation.Curve}
-     * @readonly
-     *
-     * @package
+     * アニメーション関数
      */
-    get
-    _$curve()
+    get _$curve(): Curve
     {
         return this._curve;
     }
 
 
     /**
-     * @summary アニメーションパラメータを更新
+     * アニメーションパラメータを更新
      *
-     * @desc
-     * <p>時刻 time でのアニメーション関数値をアニメーションパラメータに設定する。</p>
+     * 時刻 time でのアニメーション関数値をアニメーションパラメータに設定する。
      *
-     * @param {mapray.animation.Time} time  時刻
-     *
-     * @package
+     * @param time 時刻
+     * @internal
      */
-    _$update( time )
+    _$update( time: Time )
     {
         let  value = this._curve.getValue( time, this._type );
         let setter = this._setter;
@@ -127,22 +118,28 @@ class Binder
 }
 
 
+
+namespace Binder {
+
+
+
 /**
- * @summary パラメータ設定関数
+ * パラメータ設定関数
  *
- * @desc
- * <p>Binder インスタンスの type 型のオブジェクトを受け取り、実際のパラメータを設定するための関数である。</p>
+ * Binder インスタンスの type 型のオブジェクトを受け取り、実際のパラメータを設定するための関数である。
  *
- * @param {object} value  type 型のオブジェクト
+ * @param value  type 型のオブジェクト
  *
- * @callback Setter
- *
- * @memberof mapray.animation.Binder
- *
- * @see {@link mapray.animation.Binder}
- * @see {@link mapray.animation.Binder#setter}
- * @see {@link mapray.animation.Binder#type}
+ * @see [[mapray.animation.Binder]]
+ * @see [[mapray.animation.Binder.setter]]
+ * @see [[mapray.animation.Binder.type]]
  */
+export type Setter = (value: any) => void;
+
+
+
+} // namespace Binder
+
 
 
 export default Binder;
