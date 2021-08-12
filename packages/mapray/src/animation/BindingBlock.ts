@@ -1,31 +1,35 @@
+import Binder from "./Binder";
+import Updater from "./Updater";
+import Curve from "./Curve";
+import Type from "./Type";
+
+import AnimationError from "./AnimationError";
+import TypeMismatchError from "./TypeMismatchError";
+
+
 /**
- * @summary アニメーション設定の標準インタフェース
+ * アニメーション設定の標準インタフェース
  *
- * @classdesc
- * <p>オブジェクトのアニメーション可能パラメータにアニメーションを設定 (バインド)
- +    するための標準的なインタフェースを提供する。<p>
+ * オブジェクトのアニメーション可能パラメータにアニメーションを設定 (バインド)
+ * するための標準的なインタフェースを提供する。
  *
- * <p>具体的には内部で各パラメータに適した {@link mapray.animation.Binder Binder}
- *    インスタンスの生成し、ユーザーが簡単にアニメーションを設定できるようにする。<p>
+ * 具体的には内部で各パラメータに適した [[Binder]]
+ * インスタンスの生成し、ユーザーが簡単にアニメーションを設定できるようにする。<p>
  *
- * <p>一般的に、アニメーション可能パラメータを持つオブジェクトの <em>animation</em>
- *    プロパティから、このインタフェースを得ることができる。<p>
+ * 一般的に、アニメーション可能パラメータを持つオブジェクトの <em>animation</em>
+ * プロパティから、このインタフェースを得ることができる。
  *
- * <p>注意: アニメーションを設定しているパラメータは
- *    {@link mapray.animation.Updater Updater} のメソッドを通してのみ更新することができる。
- *    それ以外の手段でパラメータを更新した場合はパラメータ値に矛盾が生じる可能性がある。<p>
+ * 注意: アニメーションを設定しているパラメータは
+ * [[Updater]] のメソッドを通してのみ更新することができる。
+ * それ以外の手段でパラメータを更新した場合はパラメータ値に矛盾が生じる可能性がある。
  *
- * @see {@link mapray.animation.Binder}
- * @see {@link mapray.animation.Updater}
- *
- * @memberof mapray.animation
- * @abstract
+ * @see [[Binder]]
+ * @see [[Updater]]
  */
-class BindingBlock
+abstract class BindingBlock
 {
 
     /**
-     * @protected
      */
     constructor()
     {
@@ -33,220 +37,160 @@ class BindingBlock
 
 
     /**
-     * @summary アニメーション可能パラメータの情報を取得
+     * アニメーション可能パラメータの情報を取得
      *
-     * @desc
-     * <p>アニメーションに対応したパラメータの情報を配列として取得する。</p>
-     * <p>返される配列は 0 個またはそれ以上の要素を含み、要素間のパラメータ ID は重複しない。</p>
-     * <p>this の生存期間中、(順序以外) 常に同じ内容を返す。</p>
+     * アニメーションに対応したパラメータの情報を配列として取得する。
      *
-     * @return {mapray.animation.BindingBlock.Parameter[]}
+     * 返される配列は 0 個またはそれ以上の要素を含み、要素間のパラメータ ID は重複しない。
      *
-     * @abstract
+     * this の生存期間中、(順序以外) 常に同じ内容を返す。
      */
-    enumSupportedParameters()
-    {
-        this._override_error( "enumSupportedParameters" );
-    }
+    abstract enumSupportedParameters(): BindingBlock.Parameter[];
 
 
     /**
-     * @summary パラメータは結合中か？
+     * パラメータは結合中か？
      *
-     * @desc
-     * <p>id が示すパラメータが結合されているとき true, 結合されていないとき false を返す。</p>
-     * <p>ただし id が示すパラメータがアニメーションに対応していないときは false を返す。</p>
+     * id が示すパラメータが結合されているとき true, 結合されていないとき false を返す。
      *
-     * @param {string} id  パラメータ ID
+     * ただし id が示すパラメータがアニメーションに対応していないときは false を返す。
      *
-     * @return {boolean}
-     *
-     * @abstract
+     * @param id  パラメータ ID
      */
-    isBound( id )
-    {
-        this._override_error( "isBound" );
-    }
+    abstract isBound( id: string ): boolean;
 
 
     /**
-     * @summary パラメータに結合されている Updater インスタンスを取得
+     * パラメータに結合されている Updater インスタンスを取得
      *
-     * @desc
-     * <p>id が示すパラメータが結合されている Updater インスタンスを返す。</p>
-     * <p>ただし this.isBound( id ) == false のときは null を返す。</p>
+     * id が示すパラメータが結合されている Updater インスタンスを返す。
+     * ただし this.isBound( id ) == false のときは null を返す。
      *
-     * @param {string} id  パラメータ ID
-     *
-     * @return {?mapray.animation.Updater}
-     *
-     * @abstract
+     * @param id  パラメータ ID
      */
-    getBoundUpdater( id )
-    {
-        this._override_error( "getBoundUpdater" );
-    }
+    abstract getBoundUpdater( id: string ): Updater | undefined;
 
 
     /**
-     * @summary パラメータに結合されている Curve インスタンスを取得
+     * パラメータに結合されている Curve インスタンスを取得
      *
-     * @desc
-     * <p>id が示すパラメータが結合されている Curve インスタンスを返す。</p>
-     * <p>ただし this.isBound( id ) == false のときは null を返す。</p>
+     * id が示すパラメータが結合されている Curve インスタンスを返す。
+     * ただし this.isBound( id ) == false のときは null を返す。
      *
-     * @param {string} id  パラメータ ID
-     *
-     * @return {?mapray.animation.Curve}
-     *
-     * @abstract
+     * @param id  パラメータ ID
      */
-    getBoundCurve( id )
-    {
-        this._override_error( "getBoundCurve" );
-    }
+    abstract getBoundCurve( id: string ): Curve | undefined;
 
 
     /**
-     * @summary パラメータにアニメーションを結合
+     * パラメータにアニメーションを結合
      *
-     * @desc
-     * <p>id が示すパラメータと updater と curve を結びつける。ただし、すでに id
-     *    が示すパラメータに結合があれば、先にその結合を解除してから行う。</p>
+     * id が示すパラメータと updater と curve を結びつける。ただし、すでに id
+     *    が示すパラメータに結合があれば、先にその結合を解除してから行う。
      *
-     * <p>パラメータが結合されている間、updater によりそのパラメータを更新することができる。</p>
+     * パラメータが結合されている間、updater によりそのパラメータを更新することができる。
      *
-     * @param {string}                        id  パラメータ ID
-     * @param {mapray.animation.Updater} updater  アニメーションパラメータ更新管理
-     * @param {mapray.animation.Curve}     curve  アニメーション関数
+     * @param id  パラメータ ID
+     * @param updater  アニメーションパラメータ更新管理
+     * @param curve  アニメーション関数
      *
-     * @throws {@link mapray.animation.AnimationError}
+     * @throws [[AnimationError]]
      *         id が示すパラメータはアニメーションに対応していない
      *
-     * @throws {@link mapray.animation.TypeMismatchError}
+     * @throws [[TypeMismatchError]]
      *         id が示すパラメータの型と curve の型に互換性がないとき
      *
-     * @see {@link mapray.animation.Binder}
+     * @see [[Binder]]
      *
      * @abstract
      */
-    bind( id, updater, curve )
-    {
-        this._override_error( "bind" );
-    }
+    abstract bind( id: string, updater: Updater, curve: Curve ): void;
 
 
     /**
-     * @summary パラメータの結合を解除
+     * パラメータの結合を解除
      *
-     * @desc
-     * <p>id が示すパラメータの結合を解除する。</p>
-     * <p>ただし this.isBound( id ) == false のときは何もしない。</p>
+     * id が示すパラメータの結合を解除する。
      *
-     * @param {string} id  パラメータ ID
+     * ただし this.isBound( id ) == false のときは何もしない。
      *
-     * @abstract
+     * @param id  パラメータ ID
      */
-    unbind( id )
-    {
-        this._override_error( "unbind" );
-    }
+    abstract unbind( id: string ): void;
 
 
     /**
-     * @summary すべてのパラメータの結合を解除
+     * すべてのパラメータの結合を解除
      *
-     * @desc
-     * <p>現在結合されているすべてのパラメータの結合を解除する。</p>
-     *
-     * @abstract
+     * 現在結合されているすべてのパラメータの結合を解除する。
      */
-    unbindAll()
-    {
-        this._override_error( "unbindAll" );
-    }
+    abstract unbindAll(): void;
 
 
     /**
-     * @summary すべてのパラメータの結合を解除 (子孫含む)
+     * すべてのパラメータの結合を解除 (子孫含む)
      *
-     * @desc
-     * <p>現在結合されているすべてのパラメータの結合を解除する。</p>
-     * <p>もしパラメータを持つオブジェクトの子オブジェクトも BindingBlock
-     *    インタフェースを持っていれば、子孫も含めて結合を解除する。</p>
+     * 現在結合されているすべてのパラメータの結合を解除する。
      *
-     * @abstract
+     * もしパラメータを持つオブジェクトの子オブジェクトも BindingBlock
+     *    インタフェースを持っていれば、子孫も含めて結合を解除する。
      */
-    unbindAllRecursively()
-    {
-        this._override_error( "unbindAllRecursively" );
-    }
-
-
-    /**
-     * @summary メソッドがオーバーライドされていない
-     *
-     * arguments.callee と Error#stack は互換性が低いので、関数名の取得に使わなかった
-     *
-     * @param {string} func_name
-     *
-     * @private
-     */
-    _override_error( func_name )
-    {
-        throw new Error( "BindingBlock#" + func_name + "() method has not been overridden in "
-                         + this.constructor.name );
-    }
+    abstract unbindAllRecursively(): void;
 
 }
 
 
+
+namespace BindingBlock {
+
+
+
 /**
- * @summary アニメーション可能パラメータの情報
+ * アニメーション可能パラメータの情報
  *
- * @see {@link mapray.animation.BindingBlock#enumSupportedParameters}
- * @memberof mapray.animation.BindingBlock
+ * @see [[BindingBlock.enumSupportedParameters]]
  */
-class Parameter {
+export class Parameter {
+
+    private _id: string;
+
+    private _types: Type[];
+
 
     /**
-     * @param {string}                     id  パラメータ ID
-     * @param {mapray.animation.Type[]} types  サポートする型のリスト
+     * @param id  パラメータ ID
+     * @param types  サポートする型のリスト
      */
-    constructor( id, types )
+    constructor( id: string, types: Type[] )
     {
-        this._id    = id;
+        this._id  = id;
         this._types = types.concat();  // 複製
     }
 
 
     /**
-     * @summary パラメータ ID
-     *
-     * @type {string}
-     *
-     * @readonly
+     * パラメータ ID
      */
-    get id() { return this._id; }
+    get id(): string { return this._id; }
 
 
     /**
-     * @summary サポートする型のリスト
+     * サポートする型のリスト
      *
-     * @desc
-     * <p>パラメータに結合可能なアニメーション関数の型の配列である。</p>
-     * <p>配列は 1 またはそれ以上の型を含む。</p>
+     * パラメータに結合可能なアニメーション関数の型の配列である。
      *
-     * @type {mapray.animation.Type[]}
+     * 配列は 1 またはそれ以上の型を含む。
      *
-     * @see {@link mapray.animation.Curve#isTypeSupported}
-     *
-     * @readonly
+     * @see [[Curve.isTypeSupported]]
      */
-    get types() { return this._types; }
+    get types(): Type[] { return this._types; }
 
 }
-BindingBlock.Parameter = Parameter;
+
+
+
+} // namespace BindingBlock
+
 
 
 export default BindingBlock;
