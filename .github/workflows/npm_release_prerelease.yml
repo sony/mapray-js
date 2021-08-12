@@ -43,14 +43,12 @@ jobs:
           name: core_pack
           path: |
             ${{ env.CORE_PACKAGE_DIR }}/*.tgz
-            ${{ env.CORE_PACKAGE_DIR }}/package.json
       - name: Upload ui packages
         uses: actions/upload-artifact@v2
         with:
           name: ui_pack
           path: |
             ${{ env.UI_PACKAGE_DIR }}/*.tgz
-            ${{ env.UI_PACKAGE_DIR }}/package.json
 
   deploy:
     needs: build
@@ -75,12 +73,13 @@ jobs:
           name: ui_pack
           path: ${{ env.UI_PACKAGE_DIR }}
       - name: Publish core to npm packages
-        run: npm publish --tag ${{ needs.build.outputs.tag_name }}
+        run: find ./ -name "*.tgz" -type f | xargs npm publish --tag ${{ needs.build.outputs.tag_name }}
         working-directory: ${{ env.CORE_PACKAGE_DIR }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Publish ui to Github packages
-        run: npm publish --tag ${{ needs.build.outputs.tag_name }}
+        run: find ./ -name "*.tgz" -type f | xargs npm publish --tag ${{ needs.build.outputs.tag_name }}
         working-directory: ${{ env.UI_PACKAGE_DIR }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          
