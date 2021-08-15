@@ -1,31 +1,37 @@
+import Type from "./Type";
+import Time from "./Time";
 import Curve from "./Curve";
 import Interval from "./Interval";
 import Invariance from "./Invariance";
 
 
 /**
- * @summary 定数関数
+ * 定数関数
  *
- * @classdesc
- * <p>すべての時刻で同じ値を返す任意型の関数である。</p>
- * <p>関数値の型は構築子のパラメータにより指定する。</p>
+ * すべての時刻で同じ値を返す任意型の関数である。
  *
- * @memberof mapray.animation
- * @extends mapray.animation.Curve
+ * 関数値の型は構築子のパラメータにより指定する。
  */
 class ConstantCurve extends Curve
 {
 
+    private _constant_type: Type;
+
+    private _constant_value: any;
+
+
+
     /**
-     * @desc
-     * <p>type 型の value を定数値とする定数関数を生成する。</p>
-     * <p>type は任意の型を指定することができる。</p>
-     * <p>value を省略したときは type 型の既定値を返す定数関数となる。</p>
+     * type 型の value を定数値とする定数関数を生成する。
      *
-     * @param {mapray.animation.Type} type    関数値の型
-     * @param {object}               [value]  初期定数値 (type 型)
+     * type は任意の型を指定することができる。
+     *
+     * value を省略したときは type 型の既定値を返す定数関数となる。
+     *
+     * @param type    関数値の型
+     * @param 初期定数値 (type 型)
      */
-    constructor( type, value )
+    constructor( type: Type, value?: any )
     {
         super();
 
@@ -40,11 +46,11 @@ class ConstantCurve extends Curve
 
 
     /**
-     * @summary 定数値を設定
+     * 定数値を設定
      *
-     * @param {object} value  定数値 (関数値の型)
+     * @param value  定数値 (関数値の型)
      */
-    setConstantValue( value )
+    setConstantValue( value: any )
     {
         if ( value == this._constant_value ) {
             // 同じ値で変化なし
@@ -60,20 +66,14 @@ class ConstantCurve extends Curve
     }
 
 
-    /**
-     * @override
-     */
-    isTypeSupported( type )
+    override isTypeSupported( type: Type )
     {
         let from_type = this._constant_type;
         return type.isConvertible( from_type );
     }
 
 
-    /**
-     * @override
-     */
-    getValue( time, type )
+    override getValue( time: Time, type: Type )
     {
         let from_type  = this._constant_type;
         let from_value = from_type.getCloneValue( this._constant_value );
@@ -81,10 +81,7 @@ class ConstantCurve extends Curve
     }
 
 
-    /**
-     * @override
-     */
-    getInvariance( interval )
+    override getInvariance( interval: Interval ): Invariance
     {
         // 全時間で一定
         // (UNIVERSAL と非空区間は必ず交差するので interval の参照は不要)

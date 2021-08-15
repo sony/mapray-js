@@ -1,108 +1,94 @@
+import Type from "./Type";
+import Time from "./Time";
+import Interval from "./Interval";
+import Invariance from "./Invariance";
+
+
+
 /**
- * @summary アニメーション関数
+ * アニメーション関数
  *
- * @classdesc
- * <p>指定時刻のアニメーション関数値を取得するための抽象クラスである。</p>
- *
- * @abstract
- * @memberof mapray.animation
+ * 指定時刻のアニメーション関数値を取得するための抽象クラスである。
  */
-class Curve
+abstract class Curve
 {
+    private _value_change_listeners: Set<Curve.ValueChangeListener>;
 
     /**
-     * @protected
      */
-    constructor()
+    protected constructor()
     {
         this._value_change_listeners = new Set();
     }
 
 
     /**
-     * @summary 型はサポートされるか？
+     * 型はサポートされるか？
      *
-     * @desc
-     * <p>type 型がアニメーション関数の返却値の型として使用できるかどうかを返す。</p>
-     * <p>this の生存中、このメソッドの type に対する結果は一定である。</p>
-     * <p>このメソッドが true を返した場合、getValue() により
-     *    アニメーション関数値を type 型で取得することが可能である。</p>
+     * type 型がアニメーション関数の返却値の型として使用できるかどうかを返す。
      *
-     * @param {mapray.animation.Type} type  確認する型
+     * this の生存中、このメソッドの type に対する結果は一定である。
      *
-     * @return {boolean}  type がサポートされるとき true, それ以外は false
+     * このメソッドが true を返した場合、getValue() により
+     *    アニメーション関数値を type 型で取得することが可能である。
      *
-     * @see {@link mapray.animation.Curve#getValue}
+     * @param type  確認する型
      *
-     * @abstract
+     * @return type がサポートされるとき true, それ以外は false
+     *
+     * @see [[Curve.getValue]]
      */
-    isTypeSupported( type )
-    {
-        this._override_error( "isTypeSupported" );
-    }
+    abstract isTypeSupported( type: Type ): boolean;
 
 
     /**
-     * @summary 指定時刻の値を取得
+     * 指定時刻の値を取得
      *
-     * @desc
-     * <p>時刻 time のアニメーション関数値を type 型として取得する。</p>
+     * 時刻 time のアニメーション関数値を type 型として取得する。
      *
-     * <p>事前条件: this.isTypeSupported( type ) == true</p>
+     * 事前条件: this.isTypeSupported( type ) == true
      *
-     * @param {mapray.animation.Time} time  時刻パラメータ
-     * @param {mapray.animation.Type} type  返却値の型
+     * @param time  時刻パラメータ
+     * @param type  返却値の型
      *
-     * @return {object}  時刻 time に対する type 型の値
+     * @return  時刻 time に対する type 型の値
      *
-     * @see {@link mapray.animation.Curve#isTypeSupported}
-     *
-     * @abstract
+     * @see [[mapray.animation.Curve.isTypeSupported]]
      */
-    getValue( time, type )
-    {
-        this._override_error( "getValue" );
-    }
+    abstract getValue( time: Time, type: Type ): any;
 
 
     /**
-     * @summary 不変性情報を取得
+     * 不変性情報を取得
      *
-     * @desc
-     * <p>interval で指定される範囲の不変性情報を返す。</p>
+     * interval で指定される範囲の不変性情報を返す。
      *
-     * <p>不変性情報は interval に内包されるまたは交差する時刻区間を持っている。</p>
-     * <p>一部が interval と交差する時刻区間はクリップしない。</p>
+     * 不変性情報は interval に内包されるまたは交差する時刻区間を持っている。
      *
-     * <p>事前条件: interval.isEmpty() == false</p>
+     * 一部が interval と交差する時刻区間はクリップしない。
      *
-     * @param {mapray.animation.Interval} interval  対象とする時刻区間
+     * 事前条件: interval.isEmpty() == false
      *
-     * @return {mapray.animation.Invariance}  不変性情報
+     * @param interval  対象とする時刻区間
      *
-     * @abstract
+     * @return  不変性情報
      */
-    getInvariance( interval )
-    {
-        this._override_error( "getInvariance" );
-    }
+    abstract getInvariance( interval: Interval ): Invariance;
 
 
     /**
-     * @summary 関数値が変化したことを通知
+     * 関数値が変化したことを通知
      *
-     * @desc
-     * <p>時刻区間 interval の範囲の関数値が変化したことをフレームワークに通知する。</p>
-     * <p>このメソッドは関数値が変化したときにサブクラスの実装者が呼び出す。</p>
+     * 時刻区間 interval の範囲の関数値が変化したことをフレームワークに通知する。
      *
-     * @param {mapray.animation.Interval} interval  関数値が変化した時刻区間
+     * このメソッドは関数値が変化したときにサブクラスの実装者が呼び出す。
      *
-     * @see {@link mapray.animation.Curve#addValueChangeListener}
-     * @see {@link mapray.animation.Curve#removeValueChangeListener}
+     * @param interval  関数値が変化した時刻区間
      *
-     * @protected
+     * @see [[Curve.addValueChangeListener]]
+     * @see [[Curve.removeValueChangeListener]]
      */
-    notifyValueChange( interval )
+    protected notifyValueChange( interval: Interval )
     {
         if ( interval.isEmpty() ) {
             // 空時刻区間なので実際には変化なし
@@ -118,71 +104,63 @@ class Curve
 
 
     /**
-     * @summary 関数値変化リスナーの登録
+     * 関数値変化リスナーの登録
      *
-     * @param {mapray.animation.Curve.ValueChangeListener} vcl  関数値変化リスナー
+     * @param vcl  関数値変化リスナー
      *
-     * @see {@link mapray.animation.Curve#notifyValueChange}
-     * @see {@link mapray.animation.Curve#removeValueChangeListener}
+     * @see [[Curve.notifyValueChange]]
+     * @see [[Curve.removeValueChangeListener]]
      */
-    addValueChangeListener( vcl )
+    addValueChangeListener( vcl: Curve.ValueChangeListener )
     {
         this._value_change_listeners.add( vcl );
     }
 
 
     /**
-     * @summary 関数値変化リスナーの登録解除
+     * 関数値変化リスナーの登録解除
      *
-     * @param {mapray.animation.Curve.ValueChangeListener} vcl  関数値変化リスナー
+     * @param Curve.ValueChangeListener vcl  関数値変化リスナー
      *
-     * @see {@link mapray.animation.Curve#notifyValueChange}
-     * @see {@link mapray.animation.Curve#addValueChangeListener}
+     * @see [[Curve.notifyValueChange]]
+     * @see [[Curve.addValueChangeListener]]
      */
-    removeValueChangeListener( vcl )
+    removeValueChangeListener( vcl: Curve.ValueChangeListener )
     {
         this._value_change_listeners.delete( vcl );
-    }
-
-
-    /**
-     * @summary メソッドがオーバーライドされていない
-     *
-     * arguments.callee と Error#stack は互換性が低いので、関数名の取得に使わなかった
-     *
-     * @param {string} func_name
-     *
-     * @private
-     */
-    _override_error( func_name )
-    {
-        throw new Error( "Curve#" + func_name + "() method has not been overridden in "
-                         + this.constructor.name );
     }
 
 }
 
 
+
+namespace Curve {
+
+
+
 /**
- * @summary アニメーション関数値変化リスナー
+ * アニメーション関数値変化リスナー
  *
- * @desc
- * <p>アニメーション関数値の変化を監視するためのリスナー関数の型である。</p>
- * <p>このリスナーを登録した Curve インスタンスの関数値が変化したときに呼び出される。</p>
- * <p>interval は関数値が変化した Curve インスタンスでの時刻範囲である。</p>
+ * アニメーション関数値の変化を監視するためのリスナー関数の型である。
  *
- * <p>事前条件: interval.isEmpty() == false</p>
+ * このリスナーを登録した Curve インスタンスの関数値が変化したときに呼び出される。
  *
- * @param {mapray.animation.Interval} interval  関数値が変化した時刻区間
+ * interval は関数値が変化した Curve インスタンスでの時刻範囲である。
  *
- * @callback ValueChangeListener
+ * 事前条件: interval.isEmpty() == false
  *
- * @memberof mapray.animation.Curve
+ * @param interval  関数値が変化した時刻区間
  *
- * @see {@link mapray.animation.Curve#notifyValueChange}
- * @see {@link mapray.animation.Curve#addValueChangeListener}
- * @see {@link mapray.animation.Curve#removeValueChangeListener}
+ * @see [[Curve.notifyValueChange]]
+ * @see [[Curve.addValueChangeListener]]
+ * @see [[Curve.removeValueChangeListener]]
  */
+export type ValueChangeListener = (interval: Interval) => void;
+
+
+
+} // namespace Curve
+
 
 
 export default Curve;

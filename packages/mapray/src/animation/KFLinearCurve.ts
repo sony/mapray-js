@@ -1,3 +1,5 @@
+import { Vector2, Vector3, Vector4 } from "../GeoMath";
+
 import Curve from "./Curve";
 import Type from "./Type";
 import Time from "./Time";
@@ -8,41 +10,50 @@ import AnimationError from "./AnimationError";
 
 
 /**
- * @summary キーフレームによる線形関数
+ * キーフレームによる線形関数
  *
- * @classdesc
- * <p>キーフレーム間を数値またはベクトルを線形に補間する関数である。</p>
- * <p>関数値の型は構築子のパラメータにより number, vector2, vector3 または vector4 を指定する。</p>
+ * キーフレーム間を数値またはベクトルを線形に補間する関数である。
  *
- * @memberof mapray.animation
- * @extends mapray.animation.Curve
+ * 関数値の型は構築子のパラメータにより number, vector2, vector3 または vector4 を指定する。
  */
 class KFLinearCurve extends Curve
 {
+    /** number | vector2 | vector3 | vector4 */
+    private _value_type: Type;
+
+    /** 1〜4 */
+    private _dimension: number;
+
+    /** >= 2 */
+    private _num_keyframes!: number;
+
+    private _key_times!: Time[];
+
+    private _key_values!: Float64Array;
+
 
     /**
-     * <p>type 型の関数を keyframes により生成する。</p>
-     * <p>type は number, vector2, vector3 または vector4 を指定することができる。</p>
-     * <p>keyframes を省略したときは type 型の既定値を返す定数関数と同等になる。keyframes の形式に関しては
-     *    {@link mapray.animation.KFLinearCurve#setKeyFrames setKeyFrames()} を参照のこと。</p>
+     * type 型の関数を keyframes により生成する。
      *
-     * @param {mapray.animation.Type} type  関数値の型
+     * type は number, vector2, vector3 または vector4 を指定することができる。
+     *
+     * keyframes を省略したときは type 型の既定値を返す定数関数と同等になる。keyframes の形式に関しては
+     *    [[KFLinearCurve.setKeyFrames setKeyFrames()]] を参照のこと。
+     *
+     * @param type  関数値の型
      * @param {object[]}       [keyframes]  初期キーフレーム
      */
-    constructor( type, keyframes )
+    constructor( type: Type, keyframes?: (Time | number | Vector2 | Vector3 | Vector4)[] )
     {
         super();
 
         const dimension = AnimUtil.getDimension( type );
         if ( dimension == 0 ) {
-            throw AnimationError( "unsupported type" );
+            throw new AnimationError( "unsupported type" );
         }
 
-        this._value_type    = type;       // number | vector2 | vector3 | vector4
-        this._dimension     = dimension;  // 1〜4
-        this._num_keyframes = undefined;  // >= 2
-        this._key_times     = undefined;  // Time[]
-        this._key_values    = undefined;  // Float64Array
+        this._value_type    = type;
+        this._dimension     = dimension;
 
         if ( keyframes !== undefined ) {
             // 初期のキーフレームを設定
@@ -59,20 +70,18 @@ class KFLinearCurve extends Curve
 
 
     /**
-     * @summary キーフレーム設定
+     * キーフレーム設定
      *
-     * @desc
-     * <p>keyframes により、すべてのキーフレームを指定する。</p>
+     * keyframes により、すべてのキーフレームを指定する。
      *
-     * <p>
-     * 条件1: keyframes.length >= 4 (キーフレーム数 >= 2)<br>
-     * 条件2: すべての i, j において、i < j ⇔ 時刻i < 時刻j<br>
-     * 条件3: すべての i において、値i は構築子の type 引数で指定した型のインスタンス
-     * </p>
+     * 条件
+     * - keyframes.length >= 4 (キーフレーム数 >= 2)
+     * -: すべての i, j において、i < j ⇔ 時刻i < 時刻j
+     * -: すべての i において、値i は構築子の type 引数で指定した型のインスタンス
      *
      * @param {object[]} keyframes  [時刻0, 値0, 時刻1, 値1, ...]
      */
-    setKeyFrames( keyframes )
+    setKeyFrames( keyframes: any )
     {
         const dimension = this._dimension;
 
@@ -106,31 +115,22 @@ class KFLinearCurve extends Curve
     }
 
 
-    /**
-     * @override
-     */
-    isTypeSupported( type )
+    override isTypeSupported( type: Type )
     {
-        let from_type = this._value_type;
+        const from_type = this._value_type;
         return type.isConvertible( from_type );
     }
 
 
-    /**
-     * @override
-     */
-    getValue( time, type )
+    override getValue( time: Time, type: Type )
     {
-        let from_type  = this._value_type;
-        let from_value = this._getInterpolatedValue( time );
+        const from_type  = this._value_type;
+        const from_value = this._getInterpolatedValue( time );
         return type.convertValue( from_type, from_value );
     }
 
 
-    /**
-     * @override
-     */
-    getInvariance( interval )
+    override getInvariance( interval: Interval ): Invariance
     {
         const first_time = this._key_times[0];
         const  last_time = this._key_times[this._num_keyframes - 1];
@@ -147,15 +147,13 @@ class KFLinearCurve extends Curve
 
 
     /**
-     * @summary time での補間値を取得
+     * time での補間値を取得
      *
-     * @param {mapray.animation.Time} time
+     * @param time
      *
-     * @return {object}  補間値 (this._value_type に適応した型)
-     *
-     * @private
+     * @return 補間値 (this._value_type に適応した型)
      */
-    _getInterpolatedValue( time )
+    private _getInterpolatedValue( time: Time ): any
     {
         // this._key_times に time より後の時刻が存在すれば、その中で最小のインデックス
         // そのような時刻が存在しなければ this._num_keyframes
@@ -177,15 +175,13 @@ class KFLinearCurve extends Curve
 
 
     /**
-     * @summary キーフレーム値を生成
+     * キーフレーム値を生成
      *
-     * @param {number} index  キーフレームのインデックス
+     * @param index  キーフレームのインデックス
      *
-     * @return {object}  キーフレーム値 (this._value_type に適応した型)
-     *
-     * @private
+     * @return キーフレーム値 (this._value_type に適応した型)
      */
-    _createKeyFrameValue( index )
+    private _createKeyFrameValue( index: number )
     {
         const dimension  = this._dimension;
         const key_values = this._key_values;
@@ -196,8 +192,8 @@ class KFLinearCurve extends Curve
         }
         else {
             // ベクトル
-            let  vi = dimension * index;
-            let vec = new Float64Array( dimension );
+            const  vi = dimension * index;
+            const vec = new Float64Array( dimension );
             for ( let i = 0; i < dimension; ++i ) {
                 vec[i] = key_values[vi + i];
             }
@@ -207,17 +203,15 @@ class KFLinearCurve extends Curve
 
 
     /**
-     * @summary キーフレーム間の補間値を生成
+     * キーフレーム間の補間値を生成
      *
-     * @param {number} i0  先キーフレームのインデックス
-     * @param {number} i1  後キーフレームのインデックス
-     * @param {mapray.animation.Time} time
+     * @param i0  先キーフレームのインデックス
+     * @param i1  後キーフレームのインデックス
+     * @param time
      *
-     * @return {object}  補間値 (this._value_type に適応した型)
-     *
-     * @private
+     * @return 補間値 (this._value_type に適応した型)
      */
-    _createValueBy2Keys( i0, i1, time )
+    private _createValueBy2Keys( i0: number, i1: number, time: Time ): any
     {
         const x0 = this._key_times[i0].toNumber();
         const x1 = this._key_times[i1].toNumber();
