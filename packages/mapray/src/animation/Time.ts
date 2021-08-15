@@ -1,139 +1,124 @@
 /**
- * @summary アニメーション時刻
+ * アニメーション時刻
  *
- * @classdesc
- * <p>アニメーションの時刻を表現するクラスである。</p>
- * <p>このクラスのインスタンスはイミュータブルである。</p>
+ * アニメーションの時刻を表現するクラスである。
  *
- * @memberof mapray.animation
- * @hideconstructor
+ * このクラスのインスタンスはイミュータブルである。
  */
 class Time
 {
 
+    private _ntime: number;
+
     /**
      * 非公開の構築子
      *
-     * @param {number} ntime  数値時刻
+     * @param ntime  数値時刻
      */
-    constructor( ntime )
+    private constructor( ntime: number )
     {
         this._ntime = ntime;
     }
 
 
     /**
-     * @summary 表現可能な最初の時刻
-     *
-     * @type {mapray.animation.Time}
-     * @readonly
+     * 表現可能な最初の時刻
      */
     static get
-    MIN_TIME() { return TIME_MIN_TIME; }
+    MIN_TIME(): Time { return TIME_MIN_TIME; }
 
 
     /**
-     * @summary 表現可能な最後の時刻
-     *
-     * @type {mapray.animation.Time}
-     * @readonly
+     * 表現可能な最後の時刻
      */
     static get
-    MAX_TIME() { return TIME_MAX_TIME; }
+    MAX_TIME(): Time { return TIME_MAX_TIME; }
 
 
     /**
-     * @summary 時刻に対応する数値の最小値
-     *
-     * @type {number}
-     * @readonly
+     * 時刻に対応する数値の最小値
      */
     static get
-    MIN_NTIME() { return TIME_MIN_NTIME; }
+    MIN_NTIME(): number { return TIME_MIN_NTIME; }
 
 
     /**
-     * @summary 時刻に対応する数値の最大値
-     *
-     * @type {number}
-     * @readonly
+     * 時刻に対応する数値の最大値
      */
     static get
-    MAX_NTIME() { return TIME_MAX_NTIME; }
+    MAX_NTIME(): number { return TIME_MAX_NTIME; }
 
 
     /**
-     * @summary 数値を時刻に変換
+     * 数値を時刻に変換
      *
-     * @desc
-     * <p>時刻に対応する数値から Time インスタンスを生成する。</p>
-     * <p>条件: Time.MIN_NTIME <= ntime <= Time.MAX_NTIME</p>
+     * 時刻に対応する数値から Time インスタンスを生成する。
      *
-     * @param {number} ntime  時刻に対応する数値
+     * 条件: Time.MIN_NTIME <= ntime <= Time.MAX_NTIME
      *
-     * @return {mapray.animation.Time}  Time インスタンス
+     * @param ntime  時刻に対応する数値
+     *
+     * @return Time インスタンス
      */
-    static
-    fromNumber( ntime )
+    static fromNumber( ntime: number ): Time
     {
         return new Time( ntime );
     }
 
 
     /**
-     * @summary 時刻を数値に変換
+     * 時刻を数値に変換
      *
-     * @desc
-     * <p>this の時刻に対応する数値を取得する。</p>
+     * this の時刻に対応する数値を取得する。
      *
-     * @return {number}  時刻に対応する数値
+     * @return 時刻に対応する数値
      */
-    toNumber()
+    toNumber(): number
     {
         return this._ntime;
     }
 
 
-    /** @summary 時刻の比較 (==)
+    /** 
+     * 時刻の比較 (==)
      *
-     * @desc
-     * <p>this の時刻と rhs の時刻が同じとき true, それ以外のとき false を返す。</p>
+     * this の時刻と rhs の時刻が同じとき true, それ以外のとき false を返す。
      *
-     * @param {mapray.animation.Time} rhs  時刻
+     * @param rhs  時刻
      *
-     * @return {boolean}  比較結果
+     * @return 比較結果
      */
-    equals( rhs )
+    equals( rhs: Time ): boolean
     {
         return this._ntime == rhs._ntime;
     }
 
 
-    /** @summary 時刻の比較 (<)
+    /**
+     * 時刻の比較 (<)
      *
-     * @desc
-     * <p>this の時刻が rhs の時刻より前のとき true, それ以外のとき false を返す。</p>
+     * this の時刻が rhs の時刻より前のとき true, それ以外のとき false を返す。
      *
-     * @param {mapray.animation.Time} rhs  時刻
+     * @param rhs  時刻
      *
-     * @return {boolean}  比較結果
+     * @return 比較結果
      */
-    lessThan( rhs )
+    lessThan( rhs: Time ): boolean
     {
         return this._ntime < rhs._ntime;
     }
 
 
-    /** @summary 時刻の比較 (<=)
+    /** 
+     * 時刻の比較 (<=)
      *
-     * @desc
-     * <p>this の時刻が rhs の時刻より前または同じとき true, それ以外のとき false を返す。</p>
+     * this の時刻が rhs の時刻より前または同じとき true, それ以外のとき false を返す。
      *
-     * @param {mapray.animation.Time} rhs  時刻
+     * @param rhs  時刻
      *
-     * @return {boolean}  比較結果
+     * @return 比較結果
      */
-    lessEqual( rhs )
+    lessEqual( rhs: Time ): boolean
     {
         return this._ntime <= rhs._ntime;
     }

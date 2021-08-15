@@ -7,15 +7,15 @@ import AnimationError from "./AnimationError";
  * アニメーションする値の型を表現するための抽象クラスである。
  * Binder インスタンスと結合するパラメータ値の型と、Curve インスタンスが返却する値の型を表現する。
  *
- * Type の具象クラスのインスタンスは {@link mapray.animation.Type.register}()
- *    により登録し、{@link mapray.animation.Type.find}() により取得することができる。
+ * Type の具象クラスのインスタンスは [[Type.register Type.register()]]
+ *    により登録し、[[Type.find Type.find()]] により取得することができる。
  *
  * 特定の Type の具象クラスのインスタンスは 1 つしか存在しない。そのため Type インスタンスが表す型の同一性は
- *    === 演算子で判断することができる。
+ *    `===` 演算子で判断することができる。
  */
 abstract class Type
 {
-    _name: string;
+    private _name: string;
 
     /**
      * @param name  型の登録名
@@ -54,8 +54,9 @@ abstract class Type
      * value を this 型へ変換したオブジェクトを返す。
      * 変換結果が value と同じ値の場合、value 自身を返すことも可能である。
      *
-     * - 事前条件1: value は from 型のオブジェクトである
-     * - 事前条件2: this.isConvertible( from ) == true
+     * 事前条件
+     * - value は from 型のオブジェクトである
+     * - this.isConvertible( from ) == true
      *
      * @param from  変換元の型
      * @param value 変換元の値 (from 型)
