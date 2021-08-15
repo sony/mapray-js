@@ -1,54 +1,64 @@
+import Time from "./Time";
+import Binder from "./Binder";
 import Interval from "./Interval";
+import Curve from "./Curve";
 import Invariance from "./Invariance";
 import OrderedMap from "../OrderedMap";
 
 
 /**
- * @summary アニメーションパラメータの更新管理
+ * アニメーションパラメータの更新管理
  *
- * @classdesc
- * <p>アニメーション関数と結合しているアニメーションパラメータを更新するための機能を提供する。</p>
- *
- * @memberof mapray.animation
+ * アニメーション関数と結合しているアニメーションパラメータを更新するための機能を提供する。
  */
 class Updater
 {
+
+    /** 前回更新した時刻 (一度も更新していないときは null) */
+    private _prev_time: Time | null;
+
+    /** Curve -> Tracked 辞書 */
+    private _track_binders: Map<Curve, Tracked>;
+
+    /**
+     * パラメータがまだ更新されていない、またはアニメーション関数値と
+     * 矛盾する可能性のある Binder インスタンス
+     */
+    private _dirty_binders: Set<Binder>;
+
+    /** 関数値が変化した Curve を管理 */
+    private _vary_curves: VaryCurves;
+
 
     /**
      */
     constructor()
     {
-        // 前回更新した時刻 (一度も更新していないときは null)
         this._prev_time = null;
 
-        // Curve -> Tracked 辞書
-        this._track_binders = new Map();
+        this._track_binders = new Map<Curve, Tracked>();
 
-        // パラメータがまだ更新されていない、またはアニメーション関数値と
-        // 矛盾する可能性のある Binder インスタンス
-        this._dirty_binders = new Set();
+        this._dirty_binders = new Set<Binder>();
 
-        // 関数値が変化した Curve を管理
         this._vary_curves = new VaryCurves();
     }
 
 
     /**
-     * @summary アニメーションパラメータを更新
+     * アニメーションパラメータを更新
      *
-     * @desc
-     * <p>時刻 time でのアニメーション関数値をアニメーションパラメータに設定する。</p>
+     * 時刻 time でのアニメーション関数値をアニメーションパラメータに設定する。
      *
-     * @param {mapray.animation.Time} time  時刻
+     * @param time  時刻
      */
-    update( time )
+    update( time: Time )
     {
         this._update_dirty_binders( time );
 
         if ( this._prev_time !== null ) {
             const vary_curves = this._vary_curves.getVaryCurves( this._prev_time, time );
             for ( let curve of vary_curves ) {
-                let tracked = this._track_binders.get( curve );
+                let tracked = this._track_binders.get( curve ) as Tracked;
                 tracked.updateBinders( time );
             }
         }
@@ -61,16 +71,13 @@ class Updater
 
 
     /**
-     * @summary Binder インスタンスの登録
+     * Binder インスタンスの登録
      *
-     * @desc
-     * <p>事前条件: binder は this で管理されていない</p>
+     * 事前条件: binder は this で管理されていない
      *
-     * @param {mapray.animation.Binder} binder
-     *
-     * @package
+     * @internal
      */
-    _$register( binder )
+    _$register( binder: Binder )
     {
         // 最初は dirty_binders に登録
         this._dirty_binders.add( binder );
@@ -78,36 +85,50 @@ class Updater
 
 
     /**
-     * @summary Binder インスタンスの抹消
+     * Binder インスタンスの抹消
      *
-     * @desc
-     * <p>事前条件: binder は this で管理されている</p>
+     * 事前条件: binder は this で管理されている
      *
-     * @param {mapray.animation.Binder} binder
-     *
-     * @package
+     * @internal
      */
-    _$unregister( binder )
+    _$unregister( binder: Binder )
     {
         if ( this._dirty_binders.delete( binder ) ) {
             // binder は dirty_binders 側に存在していた
         }
         else {
             // binder は track_binders 側に存在する
-            let tracked = this._track_binders.get( binder._$curve );
+            let tracked = this._track_binders.get( binder._$curve ) as Tracked;
             tracked.unregister( binder );
         }
     }
 
+    get _$track_binders() {
+        return this._track_binders;
+    }
+
+
+    get _$dirty_binders() {
+        return this._dirty_binders;
+    }
+
+
+    get _$prev_time() {
+        return this._prev_time;
+    }
+
+
+    get _$vary_curves() {
+        return this._vary_curves;
+    }
+
 
     /**
-     * @summary _dirty_binders のすべてのパラメータを更新
+     * _dirty_binders のすべてのパラメータを更新
      *
-     * @param {mapray.animation.Time} time
-     *
-     * @private
+     * @param time
      */
-    _update_dirty_binders( time )
+    private _update_dirty_binders( time: Time )
     {
         for ( let binder of this._dirty_binders ) {
             binder._$update( time );
@@ -116,11 +137,9 @@ class Updater
 
 
     /**
-     * @summary _dirty_binders から _track_binders へ Binder を移動
-     *
-     * @private
+     * _dirty_binders から _track_binders へ Binder を移動
      */
-    _flush_dirty_binders()
+    private _flush_dirty_binders()
     {
         for ( let binder of Array.from( this._dirty_binders ) ) {
             // dirty_binders から binder を削除
@@ -146,23 +165,33 @@ class Updater
 
 
 /**
- * @summary 追跡されたバインダ
+ * 追跡されたバインダ
  *
- * @memberof mapray.animation.Updater
- * @private
+ * @internal
  */
 class Tracked {
 
+    private _updater: Updater;
+
+    private _curve: Curve;
+
+    private _binders: Set<Binder>;
+
+    private _invariance: Invariance;
+
+    private _listener: Curve.ValueChangeListener;
+
+
     /**
-     * @desc
-     * <p>updater._track_binders に追加されるときに呼び出される。</p>
-     * <p>updater._vary_curves も更新する。</p>
+     * updater._track_binders に追加されるときに呼び出される。
      *
-     * @param {mapray.animation.Updater} updater      this を管理する Updater インスタンス
-     * @param {mapray.animation.Curve}   curve        対象とする Curve インスタンス
-     * @param {mapray.animation.Binder}  init_binder  最初の Binder インスタンス
+     * updater._vary_curves も更新する。
+     *
+     * @param updater      this を管理する Updater インスタンス
+     * @param curve        対象とする Curve インスタンス
+     * @param init_binder  最初の Binder インスタンス
      */
-    constructor( updater, curve, init_binder )
+    constructor( updater: Updater, curve: Curve, init_binder: Binder )
     {
         this._updater = updater;
         this._curve   = curve;
@@ -178,16 +207,16 @@ class Tracked {
         curve.addValueChangeListener( this._listener );
 
         // vary_curves に curve を追加
-        updater._vary_curves.addCurve( curve, this._invariance );
+        updater._$vary_curves.addCurve( curve, this._invariance );
     }
 
 
     /**
-     * @summary Curve を持つ Binder を登録
+     * Curve を持つ Binder を登録
      *
-     * @param {mapray.animation.Binder} binder
+     * @param binder
      */
-    register( binder )
+    register( binder: Binder )
     {
         // Assert: !this._binders.has( binder )
         this._binders.add( binder );
@@ -195,15 +224,15 @@ class Tracked {
 
 
     /**
-     * @summary Curve を持つ Binder を抹消
+     * Curve を持つ Binder を抹消
      *
-     * @desc
-     * <p>this が updater._track_binders から削除されることがある。</p>
-     * <p>curve が updater._vary_curves から削除されることがある。</p>
+     * this が updater._track_binders から削除されることがある。
      *
-     * @param {mapray.animation.Binder} binder
+     * curve が updater._vary_curves から削除されることがある。
+     *
+     * @param binder
      */
-    unregister( binder )
+    unregister( binder: Binder )
     {
         // Assert: this._binders.has( binder )
         this._binders.delete( binder );
@@ -216,25 +245,24 @@ class Tracked {
         // this._curve と関連した唯一の Binder インスタンスが this から削除された
 
         // vary_curves から curve を削除
-        this._updater._vary_curves.removeCurve( this._curve, this._invariance );
+        this._updater._$vary_curves.removeCurve( this._curve, this._invariance );
 
         // 変更を追跡する必要はなくなったのでリスナーを削除
         this._curve.removeValueChangeListener( this._listener );
 
         // this を this._updater から削除
-        this._updater._track_binders.delete( this._curve );
+        this._updater._$track_binders.delete( this._curve );
     }
 
 
     /**
-     * @summary アニメーションパラメータを更新
+     * アニメーションパラメータを更新
      *
-     * @desc
-     * <p>時刻 time でのアニメーション関数値をアニメーションパラメータに設定する。</p>
+     * 時刻 time でのアニメーション関数値をアニメーションパラメータに設定する。
      *
-     * @param {mapray.animation.Time} time  時刻
+     * @param time  時刻
      */
-    updateBinders( time )
+    updateBinders( time: Time )
     {
         for ( let binder of this._binders ) {
             binder._$update( time );
@@ -243,18 +271,16 @@ class Tracked {
 
 
     /**
-     * @summary アニメーション間数値が変更された
+     * アニメーション間数値が変更された
      *
-     * @param {mapray.animation.Interval} chg_ival  変更された時刻区間
-     *
-     * @private
+     * @param chg_ival  変更された時刻区間
      */
-    _onValueChange( chg_ival )
+    private _onValueChange( chg_ival: Interval )
     {
         // assert: !chg_ival.isEmpty()
         // assert: this._updater._prev_time != null
 
-        if ( chg_ival.includesTime( this._updater._prev_time ) ) {
+        if ( chg_ival.includesTime( this._updater._$prev_time as Time ) ) {
             // 現在設定されているパラメータ値と矛盾が生じる
             // this._binders を dirty_binders に移動
             this._move_to_dirty_binders();
@@ -262,27 +288,24 @@ class Tracked {
         else {
             // 不変性情報を部分的に更新
             let subinvr = this._curve.getInvariance( chg_ival );
-            this._updater._vary_curves.modifyCurve( this._curve, chg_ival, subinvr, this._invariance );
+            this._updater._$vary_curves.modifyCurve( this._curve, chg_ival, subinvr, this._invariance );
             this._invariance._$modify( subinvr );
         }
     }
 
 
     /**
-     * @summary this を dirty_binders に移動
+     * this を dirty_binders に移動
      *
-     * @desc
-     * <p>this は updater._track_binders, updater._vary_curves から削除される。</p>
-     *
-     * @private
+     * this は updater._track_binders, updater._vary_curves から削除される。
      */
-    _move_to_dirty_binders()
+    private _move_to_dirty_binders()
     {
         for ( let binder of Array.from( this._binders ) ) {
             // this から binder を削除
             this.unregister( binder );
             // dirty_binders に binder を追加
-            this._updater._dirty_binders.add( binder );
+            this._updater._$dirty_binders.add( binder );
         }
     }
 
@@ -290,54 +313,61 @@ class Tracked {
 
 
 /**
- * @summary 時刻間での関数値が変化した Curve を得る
- *
- * @memberof mapray.animation.Updater
- * @private
+ * 時刻間での関数値が変化した Curve を得る
+ * @internal
  */
 class VaryCurves {
+
+    /**
+     * 連続変化の時刻区間 (すべて Proper)
+     * - 外から内部に入る、内部で動くとき変化する
+     * - 下限が '[' のとき、左から下限に入る、下限から左へ出るとき変化する
+     * - 上限が ']' のとき、右から上限に入る、上限から右へ出るとき変化する
+     */
+    private _continuous: OrderedMap<Time, ContCurves>;
+
+    private _oneshot: OrderedMap<Time, Set<Curve>>;
+
+    private _oneshot_L: OrderedMap<Time, Set<Curve>>;
+
+    private _oneshot_R: OrderedMap<Time, Set<Curve>>;
+
 
     /**
      */
     constructor()
     {
-        // 連続変化の時刻区間 (すべて Proper)
-        // OrderedMap<Time, ContCurves>
-        //   外から内部に入る、内部で動くとき変化する
-        //   下限が '[' のとき、左から下限に入る、下限から左へ出るとき変化する
-        //   上限が ']' のとき、右から上限に入る、上限から右へ出るとき変化する
-        this._continuous = createTimeMap();
+        this._continuous = createTimeMap<ContCurves>();
 
         // 単発変化の時刻 []
         // OrderedMap<Time, Set<Curve>>
         //   点を通過、点に入る、点から出るとき変化する
-        this._oneshot = createTimeMap();
+        this._oneshot = createTimeMap<Set<Curve>>();
 
         // 単発変化の時刻 [)
         // OrderedMap<Time, Set<Curve>>
         //   点を通過、左から点に入る、点から左へ出るとき変化する
-        this._oneshot_L = createTimeMap();
+        this._oneshot_L = createTimeMap<Set<Curve>>();
 
         // 単発変化の時刻 (]
         // OrderedMap<Time, Set<Curve>>
         //   点を通過、右から点に入る、点から右へ出るとき変化する
-        this._oneshot_R = createTimeMap();
+        this._oneshot_R = createTimeMap<Set<Curve>>();
     }
 
 
     /**
-     * @summary Curve を追加
+     * Curve を追加
      *
-     * @desc
-     * <p>データベースに不変性が invariance である curve を追加する。</p>
+     * データベースに不変性が invariance である curve を追加する。
      *
-     * <p>事前条件: curve は filter 内に存在しない</p>
+     * 事前条件: curve は filter 内に存在しない
      *
-     * @param {mapray.animation.Curve}        curve     追加する Curve インスタンス
-     * @param {mapray.animation.Invariance} invariance  curve の不変性情報
-     * @param {mapray.animation.Interval}    [filter]   追加する時刻区間 (前回の不変性情報で整列済み)
+     * @param curve     追加する Curve インスタンス
+     * @param invariance  curve の不変性情報
+     * @param filter   追加する時刻区間 (前回の不変性情報で整列済み)
      */
-    addCurve( curve, invariance, filter = Interval.UNIVERSAL )
+    addCurve( curve: Curve, invariance: Invariance, filter: Interval = Interval.UNIVERSAL )
     {
         const invr_ivals = invariance.getNarrowed( filter )._$getArray();
 
@@ -360,10 +390,10 @@ class VaryCurves {
                           !this._hasContiguous_L( invr_ival, curve ) ) {
                     // invr_ival と filter の左が一致して、curve を持った invr_ival の左隣接が存在しない
                     if ( invr_ival.l_open ) {
-                        this._addToOneshotGroup( curve, invr_ival, "_oneshot_R" );
+                        this._addToOneshotGroup( curve, invr_ival, this._oneshot_R );
                     }
                     else if ( !invr_ival.getPrecedings().isEmpty() ) {
-                        this._addToOneshotGroup( curve, invr_ival, "_oneshot_L" );
+                        this._addToOneshotGroup( curve, invr_ival, this._oneshot_L );
                     }
                 }
             }
@@ -377,7 +407,7 @@ class VaryCurves {
                 if ( vary_ival.isEmpty() ) {
                     //  lower と upper に間がない
                     this._addToOneshotGroup( curve, lower, lower.l_open ?
-                                             "_oneshot_R" : "_oneshot_L" );
+                                             this._oneshot_R : this._oneshot_L );
                 }
                 else {
                     // lower と upper に間がある
@@ -395,10 +425,10 @@ class VaryCurves {
                 else if ( isSameInterval_R( filter, invr_ival ) &&
                           !this._hasContiguous_R( invr_ival, curve ) ) {
                     if ( invr_ival.u_open ) {
-                        this._addToOneshotGroup( curve, invr_ival, "_oneshot_L" );
+                        this._addToOneshotGroup( curve, invr_ival, this._oneshot_L );
                     }
                     else if ( !invr_ival.getFollowings().isEmpty() ) {
-                        this._addToOneshotGroup( curve, invr_ival, "_oneshot_R" );
+                        this._addToOneshotGroup( curve, invr_ival, this._oneshot_R );
                     }
                 }
             }
@@ -407,20 +437,15 @@ class VaryCurves {
 
 
     /**
-     * @summary interval の左の隣接する区間は存在するか？
+     * interval の左の隣接する区間は存在するか？
      *
-     * @desc
-     * <p>continuous の中に interval の左に隣接する区間があり、かつ
-     *    curve を持っているものは存在するかどうかを返す。</p>
+     * continuous の中に interval の左に隣接する区間があり、かつ
+     *    curve を持っているものは存在するかどうかを返す。
      *
-     * @param {mapray.animation.Interval} interval (!= Φ)
-     * @param {mapray.animation.Curve}    curve
-     *
-     * @return {boolean}
-     *
-     * @private
+     * @param interval (!= Φ)
+     * @param curve
      */
-    _hasContiguous_L( interval, curve )
+    private _hasContiguous_L( interval: Interval, curve: Curve ): boolean
     {
         const map = this._continuous;
 
@@ -448,20 +473,17 @@ class VaryCurves {
 
 
     /**
-     * @summary interval の右の隣接する区間は存在するか？
+     * interval の右の隣接する区間は存在するか？
      *
-     * @desc
-     * <p>continuous の中に interval の右に隣接する区間があり、かつ
-     *    curve を持っているものは存在するかどうかを返す。</p>
+     * continuous の中に interval の右に隣接する区間があり、かつ
+     *    curve を持っているものは存在するかどうかを返す。
      *
-     * @param {mapray.animation.Interval} interval (!= Φ)
-     * @param {mapray.animation.Curve}    curve
+     * @param  interval (!= Φ)
+     * @param  curve
      *
-     * @return {boolean}
-     *
-     * @private
+     * @return
      */
-    _hasContiguous_R( interval, curve )
+    private _hasContiguous_R( interval: Interval, curve: Curve ): boolean
     {
         const map = this._continuous;
 
@@ -491,21 +513,21 @@ class VaryCurves {
 
 
     /**
-     * @summary Curve を削除
+     * Curve を削除
      *
-     * @desc
-     * <p>filter 範囲の curve を削除する。filter は整列済みを想定しているので区間の分割は行わない。</p>
+     * filter 範囲の curve を削除する。filter は整列済みを想定しているので区間の分割は行わない。
      *
-     * <p>事前条件: curve は invariance と矛盾しない状態で this に存在する</p>
-     * <p>事前条件: !filter.isEmpty()</p>
+     * 事前条件
+     * - curve は invariance と矛盾しない状態で this に存在する
+     * - !filter.isEmpty()</p>
      *
-     * <p>todo: 削除後に隣接区間が同じ集合になったときの統合処理</p>
+     * todo: 削除後に隣接区間が同じ集合になったときの統合処理
      *
-     * @param {mapray.animation.Curve}        curve     削除する Curve インスタンス
-     * @param {mapray.animation.Invariance} invariance  curve の不変性情報
-     * @param {mapray.animation.Interval}    [filter]   削除する時刻区間 (invariance で整列済み)
+     * @param curve     削除する Curve インスタンス
+     * @param invariance  curve の不変性情報
+     * @param filter   削除する時刻区間 (invariance で整列済み)
      */
-    removeCurve( curve, invariance, filter = Interval.UNIVERSAL )
+    removeCurve( curve: Curve, invariance: Invariance, filter: Interval = Interval.UNIVERSAL )
     {
         const invr_ivals = invariance.getNarrowed( filter )._$getArray();
 
@@ -568,14 +590,14 @@ class VaryCurves {
 
 
     /**
-     * @summary Curve を変更
+     * Curve を変更
      *
-     * @param {mapray.animation.Curve}      curve
-     * @param {mapray.animation.Interval}   chg_ival  更新時刻区間 (!= Φ)
-     * @param {mapray.animation.Invariance} sub_invr  更新部分の Invariance
-     * @param {mapray.animation.Invariance} old_invr  以前の Invariance
+     * @param curve
+     * @param chg_ival  更新時刻区間 (!= Φ)
+     * @param sub_invr  更新部分の Invariance
+     * @param old_invr  以前の Invariance
      */
-    modifyCurve( curve, chg_ival, sub_invr, old_invr )
+    modifyCurve( curve: Curve, chg_ival: Interval, sub_invr: Invariance, old_invr: Invariance )
     {
         // old_invr を基にして chg_ival を整列拡張
         const aligned = old_invr._$expandIntervalByAlignment( chg_ival );
@@ -589,18 +611,15 @@ class VaryCurves {
 
 
     /**
-     * @summary 関数値が変化した Curve インスタンス集合を取得
+     * 関数値が変化した Curve インスタンス集合を取得
      *
-     * @desc
-     * <p>時刻が prev_time から time に連続変化したときに、関数値が変化する可能性のある
-     *    Curve インスタンスを得るための列挙可能オブジェクトを返す。</p>
+     * 時刻が prev_time から time に連続変化したときに、関数値が変化する可能性のある
+     *    Curve インスタンスを得るための列挙可能オブジェクトを返す。
      *
-     * @param {mapray.animation.Time} prev_time  始点時刻
-     * @param {mapray.animation.Time} time       終点時刻
-     *
-     * @return {iterable.<mapray.animation.Curve>}
+     * @param prev_time  始点時刻
+     * @param time       終点時刻
      */
-    getVaryCurves( prev_time, time )
+    getVaryCurves( prev_time: Time, time: Time ): Iterable<Curve>
     {
         if ( prev_time.lessThan( time ) ) {
             // 順再生
@@ -618,40 +637,34 @@ class VaryCurves {
 
 
     /**
-     * @summary curve を continuous または oneshot へ追加
+     * curve を continuous または oneshot へ追加
      *
-     * @desc
-     * <p>curve を continuous または oneshot に登録する。
-     *    ただし interval.isEmpty() のときは何もしない。</p>
+     * curve を continuous または oneshot に登録する。
+     *    ただし interval.isEmpty() のときは何もしない。
      *
-     * @param {mapray.animation.Curve}       curve  追加する Curve インスタンス
-     * @param {mapray.animation.Interval} interval  変化する時刻区間
-     *
-     * @private
+     * @param curve  追加する Curve インスタンス
+     * @param interval  変化する時刻区間
      */
-    _addToGeneric( curve, interval )
+    private _addToGeneric( curve: Curve, interval: Interval )
     {
         if ( interval.isProper() ) {
             this._addToContinuous( curve, interval );
         }
         else if ( interval.isSingle() ) {
-            this._addToOneshotGroup( curve, interval, "_oneshot" );
+            this._addToOneshotGroup( curve, interval, this._oneshot );
         }
     }
 
 
     /**
-     * @summary curve を oneshot 族へ追加
+     * curve を oneshot 族へ追加
      *
-     * @param {mapray.animation.Curve}       curve  追加する Curve インスタンス
-     * @param {mapray.animation.Interval} interval  lower が時刻として使われる
-     * @param {string}                       pname  oneshot 族のプロパティ名
-     *
-     * @private
+     * @param curve  追加する Curve インスタンス
+     * @param interval  lower が時刻として使われる
+     * @param pname  oneshot 族のプロパティ名
      */
-    _addToOneshotGroup( curve, interval, pname )
+    private _addToOneshotGroup( curve: Curve, interval: Interval, map: OrderedMap<Time, Set<Curve>> )
     {
-        let  map = this[pname];  // OrderedMap<Time, Set<Curve>>
         let time = interval.lower;
 
         let item = map.findEqual( time );
@@ -666,17 +679,14 @@ class VaryCurves {
 
 
     /**
-     * @summary curve を continuous へ追加
+     * curve を continuous へ追加
      *
-     * @desc
-     * <p>事前条件: interval.isProper()</p>
+     * 事前条件: interval.isProper()
      *
-     * @param {mapray.animation.Curve}       curve  追加する Curve インスタンス
-     * @param {mapray.animation.Interval} interval  変化する時刻区間
-     *
-     * @private
+     * @param curve  追加する Curve インスタンス
+     * @param interval  変化する時刻区間
      */
-    _addToContinuous( curve, interval )
+    private _addToContinuous( curve: Curve, interval: Interval )
     {
         // assert: interval.isProper()
 
@@ -779,21 +789,18 @@ class VaryCurves {
 
 
     /**
-     * @summary 最初に interval と交差する要素を削除
+     * 最初に interval と交差する要素を削除
      *
-     * @desc
-     * <p></p>
-     * <p>this._continuous 内の時刻区間の中から、最初に interval と交差する要素を削除しする。
-     *    その交差区間と要素が持っていた ContCurves インスタンスを返す。</p>
-     * <p>ただし、交差する区間が存在しなければ null を返す。</p>
+     * this._continuous 内の時刻区間の中から、最初に interval と交差する要素を削除しする。
+     *    その交差区間と要素が持っていた ContCurves インスタンスを返す。
      *
-     * @param {mapray.animation.Interval} interval  時刻区間
+     * ただし、交差する区間が存在しなければ null を返す。
+     *
+     * @param interval  時刻区間
      *
      * @return {!object}  { cc: ContCurves, cross: Interval }
-     *
-     * @private
      */
-    _removeFirstCrossInContinuous( interval )
+    private _removeFirstCrossInContinuous( interval: Interval )
     {
         let map = this._continuous;  // 各区間は Proper 前提
 
@@ -824,20 +831,18 @@ class VaryCurves {
 
 
     /**
-     * @summary curves を continuous または oneshot へ追加
+     * curves を continuous または oneshot へ追加
      *
-     * @desc
-     * <p>interval.isSingle() のときは curves を this._oneshot の Curve 集合に追加する。</p>
-     * <p>interval.isProper() のときは ContCurves インスタンスを新規に this._continuous へ追加する。</p>
+     * interval.isSingle() のときは curves を this._oneshot の Curve 集合に追加する。
      *
-     * <p>事前条件: !interval.isEmpty()</p>
+     * interval.isProper() のときは ContCurves インスタンスを新規に this._continuous へ追加する。
      *
-     * @param {mapray.animation.Interval} interval  時刻区間、または時刻 (lower を時刻とする)
-     * @param {mapray.animation.Curve|Set}  curves  追加する Curve インスタンス、またはその集合
+     * 事前条件: !interval.isEmpty()
      *
-     * @private
+     * @param interval  時刻区間、または時刻 (lower を時刻とする)
+     * @param curves  追加する Curve インスタンス、またはその集合
      */
-    _addForContinuous( interval, curves )
+    private _addForContinuous( interval: Interval, curves: Curve | Set<Curve> )
     {
         let time = interval.lower;  // 時刻へ変換
 
@@ -871,18 +876,15 @@ class VaryCurves {
 
 
     /**
-     * @summary curve を continuous または oneshot から削除
+     * curve を continuous または oneshot から削除
      *
-     * @desc
-     * <p>curve を continuous または oneshot から削除するe。
-     *    ただし interval.isEmpty() のときは何もしない。</p>
+     * curve を continuous または oneshot から削除するe。
+     *    ただし interval.isEmpty() のときは何もしない。
      *
-     * @param {mapray.animation.Curve}       curve  削除する Curve インスタンス
-     * @param {mapray.animation.Interval} interval  変化する時刻区間
-     *
-     * @private
+     * @param curve  削除する Curve インスタンス
+     * @param interval  変化する時刻区間
      */
-    _removeForGeneric( curve, interval )
+    private _removeForGeneric( curve: Curve, interval: Interval )
     {
         if ( interval.isProper() ) {
             this._removeForContinuous( curve, interval );
@@ -894,23 +896,19 @@ class VaryCurves {
 
 
     /**
-     * @summary curve を oneshot 族から削除
+     * curve を oneshot 族から削除
      *
-     * @desc
-     * <p>ある oneshot 族の時刻 interval.lower に curve
-     *    が存在すれば削除し、存在しなければ何もしない。</p>
+     * ある oneshot 族の時刻 interval.lower に curve
+     *    が存在すれば削除し、存在しなければ何もしない。
      *
-     * @param {mapray.animation.Curve}       curve  削除する Curve インスタンス
-     * @param {mapray.animation.Interval} interval  lower が時刻として使われる
-     *
-     * @private
+     * @param curve  削除する Curve インスタンス
+     * @param interval  lower が時刻として使われる
      */
-    _removeForOneshotGroup( curve, interval )
+    private _removeForOneshotGroup( curve: Curve, interval: Interval )
     {
         const time = interval.lower;
 
-        for ( const pname of ["_oneshot", "_oneshot_L", "_oneshot_R"] ) {
-            const  map = this[pname];  // OrderedMap<Time, Set<Curve>>
+        for ( const map of [ this._oneshot, this._oneshot_L, this._oneshot_R ] ) {
             const item = map.findEqual( time );
 
             if ( item !== null ) {
@@ -932,30 +930,30 @@ class VaryCurves {
 
 
     /**
-     * @summary curves を continuous または oneshot から削除
+     * curves を continuous または oneshot から削除
      *
-     * @desc
-     * <p>interval 区間にある continuous と oneshot の curve を削除する。</p>
-     * <p>事前条件: interval.isProper()</p>
+     * interval 区間にある continuous と oneshot の curve を削除する。
      *
-     * @param {mapray.animation.Curve}       curve  削除する Curve インスタンス
-     * @param {mapray.animation.Interval} interval  時刻区間
+     * 事前条件: interval.isProper()
      *
-     * @private
+     * @param curve  削除する Curve インスタンス
+     * @param interval  時刻区間
      */
-    _removeForContinuous( curve, interval )
+    private _removeForContinuous( curve: Curve, interval: Interval )
     {
         // this._continuous
         {
-            let map = this._continuous;  // 各区間は Proper 前提
-            let it1 = map.findUpper( interval.lower );
-            let it0 = (it1 !== null) ? it1.findPredecessor() : map.findLast();
-            let end = map.findUpper( interval.upper );
+            const map = this._continuous;  // 各区間は Proper 前提
+            const it1 = map.findUpper( interval.lower );
+            const it0 = (it1 !== null) ? it1.findPredecessor() : map.findLast();
+            const end = map.findUpper( interval.upper );
 
             for ( let it = (it0 || it1); it !== end; ) {
+                // @ts-ignore
                 let curves = it.value.curves;
                 curves.delete( curve );
-                it = (curves.size == 0) ? map.remove( it ) : it.findSuccessor();
+                // @ts-ignore
+                it = ((curves.size == 0) ? map.remove( it ) : it.findSuccessor()) as OrderedMap.Item<Time, ContCurves>;
             }
         }
 
@@ -966,8 +964,10 @@ class VaryCurves {
             let end = map.findUpper( interval.upper );
 
             for ( let it = it0; it !== end; ) {
+                // @ts-ignore
                 let curves = it.value;
                 curves.delete( curve );
+                // @ts-ignore
                 it = (curves.size == 0) ? map.remove( it ) : it.findSuccessor();
             }
         }
@@ -975,44 +975,37 @@ class VaryCurves {
 
 
     /**
-     * @summary Curve インスタンスを収集
+     * Curve インスタンスを収集
      *
-     * @desc
      * 事前条件: t1.lessThan( t2 )
      *
-     * @param {mapray.animation.Time} t1
-     * @param {mapray.animation.Time} t2
-     *
-     * @return {iterable.<mapray.animation.Curve>}
-     *
-     * @private
+     * @param t1
+     * @param t2
      */
-    _collectCurves( t1, t2 )
+    private _collectCurves( t1: Time, t2: Time ): Iterable<Curve>
     {
-        let curves = new Set();  // Set<Curve>
+        let curves = new Set<Curve>();  // Set<Curve>
 
         this._collectContinuousCurves( t1, t2, curves );
-        this._collectOneshotCurves( t1, t2, "_oneshot",   true,  true,  curves );
-        this._collectOneshotCurves( t1, t2, "_oneshot_L", false, true,  curves );
-        this._collectOneshotCurves( t1, t2, "_oneshot_R", true,  false, curves );
+
+        this._collectOneshotCurves( t1, t2, this._oneshot,   true,  true,  curves );
+        this._collectOneshotCurves( t1, t2, this._oneshot_L, false, true,  curves );
+        this._collectOneshotCurves( t1, t2, this._oneshot_R, true,  false, curves );
 
         return curves;
     }
 
 
     /**
-     * @summary continuous から Curve インスタンスを収集
+     * continuous から Curve インスタンスを収集
      *
-     * @desc
      * 事前条件: t1.lessThan( t2 )
      *
-     * @param {mapray.animation.Time}        t1
-     * @param {mapray.animation.Time}        t2
-     * @param {Set.<mapray.animation.Curve>} curves
-     *
-     * @private
+     * @param t1
+     * @param t2
+     * @param curves
      */
-    _collectContinuousCurves( t1, t2, curves )
+    private _collectContinuousCurves( t1: Time, t2: Time, curves: Set<Curve> )
     {
         // 時刻区間 [t1, ∞) と交差する最初の時刻区間
         let it_A = this._continuous.findLower( t1 );
@@ -1050,7 +1043,9 @@ class VaryCurves {
         // assert: it_A != null || it_Z == null
 
         // Curve インスタンスを収集
+        // @ts-ignore
         for ( let it = it_A; it !== it_Z; it = it.findSuccessor() ) {
+            // @ts-ignore
             for ( let curve of it.value.curves ) {
                 curves.add( curve );
             }
@@ -1059,24 +1054,19 @@ class VaryCurves {
 
 
     /**
-     * @summary oneshot から Curve インスタンスを収集
+     * oneshot から Curve インスタンスを収集
      *
-     * @desc
      * 事前条件: t1.lessThan( t2 )
      *
-     * @param {mapray.animation.Time}        t1
-     * @param {mapray.animation.Time}        t2
-     * @param {string}                       pname
-     * @param {boolean}                      closed1
-     * @param {boolean}                      closed2
-     * @param {Set.<mapray.animation.Curve>} curves
-     *
-     * @private
+     * @param t1
+     * @param t2
+     * @param pname
+     * @param closed1
+     * @param closed2
+     * @param curves
      */
-    _collectOneshotCurves( t1, t2, pname, closed1, closed2, curves )
+    private _collectOneshotCurves( t1: Time, t2: Time, map: OrderedMap<Time, Set<Curve>>, closed1: boolean, closed2: boolean, curves: Set<Curve> )
     {
-        let map = this[pname];  // OrderedMap<Time, Set<Curve>>
-
         // 時刻区間 [t1, ∞) に含まれる最初の時刻
         let it_A = closed1 ? map.findLower( t1 ) : map.findUpper( t1 );
 
@@ -1086,7 +1076,9 @@ class VaryCurves {
         // assert: it_A != null || it_Z == null
 
         // Curve インスタンスを収集
+        // @ts-ignore
         for ( let it = it_A; it !== it_Z; it = it.findSuccessor() ) {
+            // @ts-ignore
             for ( let curve of it.value ) {
                 curves.add( curve );
             }
@@ -1097,18 +1089,21 @@ class VaryCurves {
 
 
 /**
- * summary VaryCurves#continuous の値
+ * VaryCurves#continuous の値
  *
- * @memberof mapray.animation.Updater.VaryCurves
- * @private
+ * @internal
  */
 class ContCurves {
 
+    interval: Interval;
+
+    curves: Set<Curve>;
+
     /**
-     * @param {mapray.animation.Interval} interval  継続的に変化する時刻区間
-     * @param {mapray.animation.Curve|Set}  curves  初期の Curve インスタンス、またはその集合
+     * @param interval  継続的に変化する時刻区間
+     * @param curves  初期の Curve インスタンス、またはその集合
      */
-    constructor( interval, curves )
+    constructor( interval: Interval, curves: Curve | Set<Curve> )
     {
         // assert: interval.isProper()
         this.interval = interval;
@@ -1119,42 +1114,36 @@ class ContCurves {
 
 
 /**
- * @summary Time を昇順に順序付ける辞書を生成
- *
- * @private
+ * Time を昇順に順序付ける辞書を生成
  */
 function
-createTimeMap()
+createTimeMap<T>(): OrderedMap<Time, T>
 {
-    return new OrderedMap( (a, b) => a.lessThan( b ) );
+    return new OrderedMap<Time, T>( (a: Time, b: Time) => a.lessThan( b ) );
 }
 
 
 /**
- * @summary a と b の左側は同じか？
+ * a と b の左側は同じか？
  *
- * @param {mapray.animation.Interval} a
- * @param {mapray.animation.Interval} b
- *
- * @private
+ * @param a
+ * @param b
  */
 function
-isSameInterval_L( a, b )
+isSameInterval_L( a: Interval, b: Interval ): boolean
 {
     return a.lower.equals( b.lower ) && (a.l_open && b.l_open || !a.l_open && !b.l_open);
 }
 
 
 /**
- * @summary a と b の右側は同じか？
+ * a と b の右側は同じか？
  *
- * @param {mapray.animation.Interval} a
- * @param {mapray.animation.Interval} b
- *
- * @private
+ * @param a
+ * @param b
  */
 function
-isSameInterval_R( a, b )
+isSameInterval_R( a: Interval, b: Interval ): boolean
 {
     return a.upper.equals( b.upper ) && (a.u_open && b.u_open || !a.u_open && !b.u_open);
 }

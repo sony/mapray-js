@@ -2,105 +2,95 @@ import Time from "./Time";
 
 
 /**
- * @summary アニメーション時刻の区間
+ * アニメーション時刻の区間
  *
- * @classdesc
- * <p>アニメーション時刻の区間を表現するクラスである。</p>
- * <p>このクラスのインスタンスはイミュータブルである。</p>
+ * アニメーション時刻の区間を表現するクラスである。
  *
- * @memberof mapray.animation
+ * このクラスのインスタンスはイミュータブルである。
  */
 class Interval
 {
 
+    private _lower: Time;
+
+    private _upper: Time;
+
+    private _l_open: boolean;
+
+    private _u_open: boolean;
+
+
     /**
-     * @desc
-     * <p>下限 lower と上限 upper の時刻区間を生成する。</p>
-     * <p>端点である lower と upper が区間に含まれるかどうかは l_open と u_open により指定する。</p>
+     * 下限 lower と上限 upper の時刻区間を生成する。
      *
-     * <pre>
-     *  interval       | l_open  u_open
-     * ----------------+----------------
-     *  [lower, upper] | false   false
-     *  [lower, upper) | false   true
-     *  (lower, upper] | true    false
-     *  (lower, upper) | true    true
-     * </pre>
+     * 端点である lower と upper が区間に含まれるかどうかは l_open と u_open により指定する。
      *
-     * @param {mapray.animation.Time} lower  区間の下限時刻
-     * @param {mapray.animation.Time} upper  区間の上限時刻
-     * @param {boolean}      [l_open=false]  lower が区間にが含まれるとき false, 含まれないとき true
-     * @param {boolean}      [u_open=false]  upper が区間にが含まれるとき false, 含まれないとき true
+     * | interval       | l_open | u_open |
+     * |----------------|--------|--------|
+     * | [lower, upper] | false  | false  |
+     * | [lower, upper) | false  | true   |
+     * | (lower, upper] | true   | false  |
+     * | (lower, upper) | true   | true   |
+     *
+     * @param lower  区間の下限時刻
+     * @param upper  区間の上限時刻
+     * @param lower が区間にが含まれるとき false, 含まれないとき true
+     * @param upper が区間にが含まれるとき false, 含まれないとき true
      */
-    constructor( lower, upper, l_open, u_open )
+    constructor( lower: Time, upper: Time, l_open: boolean = false, u_open: boolean = false )
     {
         this._lower  = lower;
         this._upper  = upper;
-        this._l_open = (l_open === undefined) ? false : l_open;
-        this._u_open = (u_open === undefined) ? false : u_open;
+        this._l_open = l_open;
+        this._u_open = u_open;
     }
 
 
     /**
-     * @summary 全時刻区間
-     *
-     * @type {mapray.animation.Interval}
-     * @readonly
+     * 全時刻区間
      */
     static get
     UNIVERSAL() { return INTERVAL_UNIVERSAL; }
 
 
     /**
-     * @summary 下限時刻
-     *
-     * @type {mapray.animation.Time}
-     * @readonly
+     * 下限時刻
      */
     get
     lower() { return this._lower; }
 
 
     /**
-     * @summary 上限時刻
-     *
-     * @type {mapray.animation.Time}
-     * @readonly
+     * 上限時刻
      */
     get
     upper() { return this._upper; }
 
 
     /**
-     * @summary 下限時刻は除外されるか？
-     *
-     * @type {boolean}
-     * @readonly
+     * 下限時刻は除外されるか？
      */
     get
     l_open() { return this._l_open; }
 
 
     /**
-     * @summary 上限時刻は除外されるか？
-     *
-     * @type {boolean}
-     * @readonly
+     * 上限時刻は除外されるか？
      */
     get
     u_open() { return this._u_open; }
 
 
     /**
-     * @summary 空時刻区間か？
+     * 空時刻区間か？
      *
-     * @desc
-     * <p>this が空の時刻区間かどうかを返す。</p>
-     * <p>空時刻区間の場合、区間内に 1 つも時刻が存在しない。</p>
+     * this が空の時刻区間かどうかを返す。
      *
-     * @return {boolean}  空時刻区間のとき true, それ以外のとき false
+     * 空時刻区間の場合、区間内に 1 つも時刻が存在しない。
+     *
+     * @return 空時刻区間のとき true, それ以外のとき false
      */
-    isEmpty()
+    isEmpty(): boolean
     {
         let lower = this._lower;
         let upper = this._upper;
@@ -110,49 +100,51 @@ class Interval
 
 
     /**
-     * @summary 単一時刻区間か？
+     * 単一時刻区間か？
      *
-     * @desc
-     * <p>this が単一時刻の時刻区間かどうかを返す。</p>
-     * <p>単一時刻区間の場合、区間内にただ 1 つの時刻が存在する。</p>
-     * <p>単一時刻区間であるなら lower == upper であり、逆は必ずしも成り立たない。</p>
+     * this が単一時刻の時刻区間かどうかを返す。
      *
-     * @return {boolean}  単一時刻区間のとき true, それ以外のとき false
+     * 単一時刻区間の場合、区間内にただ 1 つの時刻が存在する。
+     *
+     * 単一時刻区間であるなら lower == upper であり、逆は必ずしも成り立たない。
+     *
+     * @return 単一時刻区間のとき true, それ以外のとき false
      */
-    isSingle()
+    isSingle(): boolean
     {
         return this._lower.equals( this._upper ) && !(this._l_open || this._u_open);
     }
 
 
     /**
-     * @summary 通常時刻区間か？
+     * 通常時刻区間か？
      *
-     * @desc
-     * <p>this が通常の時刻区間かどうかを返す。</p>
-     * <p>通常時刻区間の場合、区間内に無限個の時刻が存在する。</p>
-     * <p>通常時刻区間であるなら lower < upper であり、逆も成り立つ。</p>
+     * this が通常の時刻区間かどうかを返す。
      *
-     * @return {boolean}  通常時刻区間のとき true, それ以外のとき false
+     * 通常時刻区間の場合、区間内に無限個の時刻が存在する。
+     *
+     * 通常時刻区間であるなら lower < upper であり、逆も成り立つ。
+     *
+     * @return 通常時刻区間のとき true, それ以外のとき false
      */
-    isProper()
+    isProper(): boolean
     {
         return this._lower.lessThan( this._upper );
     }
 
 
     /**
-     * @summary 先行しているか？
+     * 先行しているか？
      *
-     * @desc
-     * <p>this のすべての時刻が rhs のすべての時刻より先行しているときに true, それ以外のときは false を返す。</p>
-     * <p>this または rhs のどちらか、または両方が空時刻区間のときは true を返す。</p>
+     * this のすべての時刻が rhs のすべての時刻より先行しているときに true, それ以外のときは false を返す。
      *
-     * @param {mapray.animation.Interval} rhs  時刻区間
+     * this または rhs のどちらか、または両方が空時刻区間のときは true を返す。
      *
-     * @return {boolean}  this が rhs に先行しているとき true, それ以外のとき false
+     * @param rhs  時刻区間
+     *
+     * @return this が rhs に先行しているとき true, それ以外のとき false
      */
-    precedes( rhs )
+    precedes( rhs: Interval ): boolean
     {
         if ( this.isEmpty() || rhs.isEmpty() ) {
             // this または rhs のどちらか、または両方が空時刻区間のときの仕様
@@ -169,18 +161,19 @@ class Interval
 
 
     /**
-     * @summary 包含しているか？
+     * 包含しているか？
      *
-     * @desc
-     * <p>rhs のすべての時刻が this に含まれるとき true, それ以外のときは false を返す。</p>
-     * <p>rhs が空時刻区間のときは true を返す。</p>
-     * <p>これは rhs ⊆ this と等価である。</p>
+     * rhs のすべての時刻が this に含まれるとき true, それ以外のときは false を返す。
      *
-     * @param {mapray.animation.Interval} rhs  時刻区間
+     * rhs が空時刻区間のときは true を返す。
      *
-     * @return {boolean}  this が rhs を包含しているとき true, それ以外のとき false
+     * これは rhs ⊆ this と等価である。
+     *
+     * @param rhs  時刻区間
+     *
+     * @return this が rhs を包含しているとき true, それ以外のとき false
      */
-    includes( rhs )
+    includes( rhs: Interval ): boolean
     {
         if ( rhs.isEmpty() ) {
             // rhs が空時刻区間のときの仕様
@@ -205,17 +198,17 @@ class Interval
 
 
     /**
-     * @summary 時刻を包含しているか？
+     * 時刻を包含しているか？
      *
-     * @desc
-     * <p>rhs の時刻が this に含まれるとき true, それ以外のときは false を返す。</p>
-     * <p>このメソッドは this.includes( new Interval( rhs, rhs ) ) と同等である。</p>
+     * rhs の時刻が this に含まれるとき true, それ以外のときは false を返す。
      *
-     * @param {mapray.animation.Time} rhs  時刻
+     * このメソッドは this.includes( new Interval( rhs, rhs ) ) と同等である。
      *
-     * @return {boolean}  this が rhs を包含しているとき true, それ以外のとき false
+     * @param rhs  時刻
+     *
+     * @return this が rhs を包含しているとき true, それ以外のとき false
      */
-    includesTime( rhs )
+    includesTime( rhs: Time ): boolean
     {
         let lower = this._lower;
         let inc_l = lower.lessThan( rhs ) || lower.equals( rhs ) && !this._l_open;
@@ -228,18 +221,17 @@ class Interval
 
 
     /**
-     * @summary 共通時刻区間は存在するか？
+     * 共通時刻区間は存在するか？
      *
-     * @desc
-     * <p>!this.getIntersection( rhs ).isEmpty() と同じである。</p>
+     * !this.getIntersection( rhs ).isEmpty() と同じである。
      *
-     * @param {mapray.animation.Interval} rhs  時刻区間
+     * @param rhs  時刻区間
      *
-     * @return {boolean}  共通時刻区間
+     * @return 共通時刻区間
      *
-     * @see {@link mapray.animation.Interval#getIntersection}
+     * @see [[Interval.getIntersection]]
      */
-    hasIntersection( rhs )
+    hasIntersection( rhs: Interval ): boolean
     {
         // todo: オブジェクトを生成しないように最適化
         return !this.getIntersection( rhs ).isEmpty();
@@ -247,17 +239,18 @@ class Interval
 
 
     /**
-     * @summary 先行時刻区間を取得
+     * 先行時刻区間を取得
      *
-     * @desc
-     * <p>this のすべての時刻に対して、先の時刻となるすべての時刻を含む先行時刻区間を返す。</p>
-     * <p>this が空時刻区間のときは全時刻区間を返し、this
-     *    に表現可能な最初の時刻が含まれるときは空時刻区間を返す。</p>
-     * <p>this.getPrecedings().precedes( this ) は常に true を返す。</p>
+     * this のすべての時刻に対して、先の時刻となるすべての時刻を含む先行時刻区間を返す。
      *
-     * @return {mapray.animation.Interval}  先行時刻区間
+     * this が空時刻区間のときは全時刻区間を返し、this
+     *    に表現可能な最初の時刻が含まれるときは空時刻区間を返す。
+     *
+     * this.getPrecedings().precedes( this ) は常に true を返す。
+     *
+     * @return 先行時刻区間
      */
-    getPrecedings()
+    getPrecedings(): Interval
     {
         if ( this.isEmpty() ) {
             // 空時刻区間のときは全時刻区間を返す仕様
@@ -270,17 +263,18 @@ class Interval
 
 
     /**
-     * @summary 後続時刻区間を取得
+     * 後続時刻区間を取得
      *
-     * @desc
-     * <p>this のすべての時刻に対して、後の時刻となるすべての時刻を含む後続時刻区間を返す。</p>
-     * <p>this が空時刻区間のときは全時刻区間を返し、this
-     *    に表現可能な最後の時刻が含まれるときは空時刻区間を返す。</p>
-     * <p>this.precedes( this.getFollowings() ) は常に true を返す。</p>
+     * this のすべての時刻に対して、後の時刻となるすべての時刻を含む後続時刻区間を返す。
      *
-     * @return {mapray.animation.Interval}  後続時刻区間
+     * this が空時刻区間のときは全時刻区間を返し、this
+     *    に表現可能な最後の時刻が含まれるときは空時刻区間を返す。
+     *
+     * this.precedes( this.getFollowings() ) は常に true を返す。
+     *
+     * @return 後続時刻区間
      */
-    getFollowings()
+    getFollowings(): Interval
     {
         if ( this.isEmpty() ) {
             // 空時刻区間のときは全時刻区間を返す仕様
@@ -293,19 +287,19 @@ class Interval
 
 
     /**
-     * @summary 共通時刻区間を取得
+     * 共通時刻区間を取得
      *
-     * @desc
-     * <p>this と rhs の共通時刻区間 (this ∩ rhs) を返す。</p>
-     * <p>this と rhs に共通の時刻が存在しなければ空時刻区間を返す。</p>
+     * this と rhs の共通時刻区間 (this ∩ rhs) を返す。
      *
-     * @param {mapray.animation.Interval} rhs  時刻区間
+     * this と rhs に共通の時刻が存在しなければ空時刻区間を返す。
      *
-     * @return {mapray.animation.Interval}  共通時刻区間
+     * @param rhs  時刻区間
      *
-     * @see {@link mapray.animation.Interval#hasIntersection}
+     * @return 共通時刻区間
+     *
+     * @see [[Interval.hasIntersection]]
      */
-    getIntersection( rhs )
+    getIntersection( rhs: Interval ): Interval
     {
         // B = Lb ∩ Ub とするとき
         // A ∩ B = A ∩ Lb ∩ Ub
@@ -318,19 +312,19 @@ class Interval
 
 
     /**
-     * @summary 合併時刻区間を取得
+     * 合併時刻区間を取得
      *
-     * @desc
-     * <p>this と rhs を合併した時刻集合 (this ∪ rhs) を時刻区間の配列として返す。</p>
-     * <p>0 から 2 個の時刻区間を含む配列を返す。配列の要素に空時刻区間は含まれない。</p>
-     * <p>2 要素の配列 v が返されたとき、v[0] と v[1] の間に時刻が存在し、さらに
-     *    v[0].precedes( v[1] ) は true となる。</p>
+     * this と rhs を合併した時刻集合 (this ∪ rhs) を時刻区間の配列として返す。
+     * 0 から 2 個の時刻区間を含む配列を返す。配列の要素に空時刻区間は含まれない。
      *
-     * @param {mapray.animation.Interval} rhs  時刻区間
+     * 2 要素の配列 v が返されたとき、v[0] と v[1] の間に時刻が存在し、さらに
+     *    v[0].precedes( v[1] ) は true となる。
      *
-     * @return {mapray.animation.Interval[]}  合併時刻区間
+     * @param rhs  時刻区間
+     *
+     * @return 合併時刻区間
      */
-    getUnion( rhs )
+    getUnion( rhs: Interval ): Interval[]
     {
         if ( this.isEmpty() ) {
             return rhs.isEmpty() ? [] : [rhs];
@@ -374,19 +368,20 @@ class Interval
 
 
     /**
-     * @summary 時刻区間の差を取得
+     * 時刻区間の差を取得
      *
-     * @desc
-     * <p>this から rhs を差し引いた時刻集合 (this - rhs) を時刻区間の配列として返す。</p>
-     * <p>0 から 2 個の時刻区間を含む配列を返す。配列の要素に空時刻区間は含まれない。</p>
-     * <p>2 要素の配列 v が返されたとき、v[0] と v[1] の間に時刻が存在し、さらに
-     *    v[0].precedes( v[1] ) は true となる。</p>
+     * this から rhs を差し引いた時刻集合 (this - rhs) を時刻区間の配列として返す。
      *
-     * @param {mapray.animation.Interval} rhs  時刻区間
+     * 0 から 2 個の時刻区間を含む配列を返す。配列の要素に空時刻区間は含まれない。
      *
-     * @return {mapray.animation.Interval[]}  時刻区間の差
+     * 2 要素の配列 v が返されたとき、v[0] と v[1] の間に時刻が存在し、さらに
+     *    v[0].precedes( v[1] ) は true となる。
+     *
+     * @param rhs 時刻区間
+     *
+     * @return 時刻区間の差
      */
-    getDifference( rhs )
+    getDifference( rhs: Interval ): Interval[]
     {
         // B = Lb ∩ Ub とするとき
         // A - B = A ∩ ~B
@@ -402,36 +397,34 @@ class Interval
 
 
     /**
-     * @summary 補時刻区間を取得
+     * 補時刻区間を取得
      *
-     * @desc
-     * <p>全時刻区間 から this を差し引いた時刻集合を時刻区間の配列として返す。</p>
-     * <p>0 から 2 個の時刻区間を含む配列を返す。配列の要素に空時刻区間は含まれない。</p>
-     * <p>2 要素の配列 v が返されたとき、v[0] と v[1] の間に時刻が存在し、さらに
-     *    v[0].precedes( v[1] ) は true となる。</p>
+     * 全時刻区間 から this を差し引いた時刻集合を時刻区間の配列として返す。
      *
-     * @return {mapray.animation.Interval[]}  補時刻区間
+     * 0 から 2 個の時刻区間を含む配列を返す。配列の要素に空時刻区間は含まれない。
+     *
+     * 2 要素の配列 v が返されたとき、v[0] と v[1] の間に時刻が存在し、さらに
+     *    v[0].precedes( v[1] ) は true となる。
+     *
+     * @return 補時刻区間
      */
-    getComplement()
+    getComplement(): Interval[]
     {
         return INTERVAL_UNIVERSAL.getDifference( this );
     }
 
 
     /**
-     * @summary 下限時刻区間との共通時刻区間を取得
+     * 下限時刻区間との共通時刻区間を取得
      *
-     * @desc
-     * <p>this ∩ Lower(bound, open) → Interval<p>
+     * this ∩ Lower(bound, open) → Interval
      *
-     * @param {mapray.animation.Time} bound
-     * @param {boolean}               open
+     * @param bound
+     * @param open
      *
-     * @return {mapray.animation.Interval}  共通時刻区間
-     *
-     * @private
+     * @return 共通時刻区間
      */
-    _getIntersectionByLower( bound, open )
+    private _getIntersectionByLower( bound: Time, open: boolean ): Interval
     {
         if ( bound.lessThan( this._lower ) || bound.equals( this._lower ) && this._l_open ) {
             return this;
@@ -443,19 +436,16 @@ class Interval
 
 
     /**
-     * @summary 上限時刻区間との共通時刻区間を取得
+     * 上限時刻区間との共通時刻区間を取得
      *
-     * @desc
-     * <p>this ∩ Upper(bound, open) → Interval<p>
+     * this ∩ Upper(bound, open) → Interval
      *
-     * @param {mapray.animation.Time} bound
-     * @param {boolean}               open
+     * @param bound
+     * @param open
      *
-     * @return {mapray.animation.Interval}  共通時刻区間
-     *
-     * @private
+     * @return 共通時刻区間
      */
-    _getIntersectionByUpper( bound, open )
+    private _getIntersectionByUpper( bound: Time, open: boolean ): Interval
     {
         if ( this._upper.lessThan( bound ) || this._upper.equals( bound ) && this._u_open ) {
             return this;

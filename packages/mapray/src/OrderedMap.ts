@@ -4,35 +4,43 @@
 
 
 /**
- * @summary 2色木の番兵 (T.nil)
+ * 2色木の番兵 (T.nil)
  *
- * @desc
- * <p>根の親、葉の子、または空辞書の root を表現する。</p>
+ * 根の親、葉の子、または空辞書の root を表現する。
  *
  * @see IA3/13.1 2色木の性質
- *
- * @private
  */
-let T_nil;
+let T_nil: Item<any, any>;
+
+
+
+type Item<Key, Value> = OrderedMap.Item<Key, Value>;
+
 
 
 /**
- * @summary 順序あり辞書
+ * 順序あり辞書
  *
- * @classdesc
- * <p>キーの値により順序付けされる辞書である。</p>
- * <p>等価 (equivalent) キーを持つ複数のアイテムは存在できない。</p>
- * <p>this はキーと値の参照を保有している。保有しているキーのインスタンスを変更すると動作は保証されない。</p>
+ * キーの値により順序付けされる辞書である。
  *
- * @memberof mapray
- * @private
+ * 等価 (equivalent) キーを持つ複数のアイテムは存在できない。
+ *
+ * this はキーと値の参照を保有している。保有しているキーのインスタンスを変更すると動作は保証されない。
+ * @internal
  */
-class OrderedMap {
+class OrderedMap<Key, Value> {
+
+    private _compare: any;
+
+    private _root: any;
+
+    private _size: number;
+
 
     /**
-     * @param {mapray.OrderedMap.Compare} compare  キー比較関数
+     * @param compare  キー比較関数
      */
-    constructor( compare )
+    constructor( compare: OrderedMap.Compare<Key> )
     {
         this._compare = compare;
         this._root    = T_nil;
@@ -41,27 +49,23 @@ class OrderedMap {
 
 
     /**
-     * @summary 要素数
-     *
-     * @type {number}
-     * @readonly
+     * 要素数
      */
-    get size() { return this._size; }
+    get size(): number { return this._size; }
 
 
     /**
-     * @summary インスタンスを複製
+     * インスタンスを複製
      *
-     * @desc
-     * <p>キー比較関数、キー、値はシャローコピーされる。<p>
+     * キー比較関数、キー、値はシャローコピーされる。
      *
-     * <p>計算量: 要素数 n に対して O(n)</p>
+     * 計算量: 要素数 n に対して O(n)<
      *
-     * @return {mapray.OrderedMap}  this の複製
+     * @return this の複製
      */
-    clone()
+    clone(): OrderedMap<Key, Value>
     {
-        let cloned = new OrderedMap( this._compare );
+        let cloned = new OrderedMap<Key, Value>( this._compare );
 
         if ( this._root !== T_nil ) {
             cloned._root = this._root._clone( T_nil );
@@ -74,29 +78,28 @@ class OrderedMap {
 
 
     /**
-     * @summary 要素は存在しないか？
+     * 要素は存在しないか？
      *
-     * <p>計算量: 要素数 n に対して O(1)</p>
+     * 計算量: 要素数 n に対して O(1)
      *
-     * @return {boolean}  要素が存在しないとき true, そうでないとき false
+     * @return 要素が存在しないとき true, そうでないとき false
      */
-    isEmpty()
+    isEmpty(): boolean
     {
         return this._root === T_nil;
     }
 
 
     /**
-     * @summary 先頭要素を検索
+     * 先頭要素を検索
      *
-     * @desc
-     * <p>順序が最初の要素を検索する。</p>
+     * 順序が最初の要素を検索する。
      *
-     * <p>計算量: 要素数 n に対して O(log n)</p>
+     * 計算量: 要素数 n に対して O(log n)
      *
-     * @return {!mapray.OrderedMap.Item}  検索されたアイテム (this が空なら null)
+     * @return 検索されたアイテム (this が空なら null)
      */
-    findFirst()
+    findFirst(): Item<Key, Value> | null
     {
         if ( this._root !== T_nil ) {
             return this._root._findMinimum();
@@ -108,16 +111,15 @@ class OrderedMap {
 
 
     /**
-     * @summary 末尾要素を検索
+     * 末尾要素を検索
      *
-     * @desc
-     * <p>順序が最後の要素を検索する。</p>
+     * 順序が最後の要素を検索する。
      *
-     * <p>計算量: 要素数 n に対して O(log n)</p>
+     * 計算量: 要素数 n に対して O(log n)
      *
-     * @return {!mapray.OrderedMap.Item}  検索されたアイテム (this が空なら null)
+     * @return 検索されたアイテム (this が空なら null)
      */
-    findLast()
+    findLast(): Item<Key, Value> | null
     {
         if ( this._root !== T_nil ) {
             return this._root._findMaximum();
@@ -129,69 +131,68 @@ class OrderedMap {
 
 
     /**
-     * @summary 下限要素を検索
+     * 下限要素を検索
      *
-     * @desc
-     * <p>bound と同じまたは後になるキーが存在すれば、その中で最初の要素を返す。</p>
-     * <p>そのような要素が存在しない場合は null を返す。</p>
+     * bound と同じまたは後になるキーが存在すれば、その中で最初の要素を返す。
      *
-     * <p>計算量: 要素数 n に対して O(log n)</p>
+     * そのような要素が存在しない場合は null を返す。
      *
-     * @param {mapray.OrderedMap.Key} bound  境界キー
+     * 計算量: 要素数 n に対して O(log n)
      *
-     * @return {?mapray.OrderedMap.Item}  検索された要素、存在しなければ null
+     * @param bound  境界キー
+     *
+     * @return 検索された要素、存在しなければ null
      */
-    findLower( bound )
+    findLower( bound: Key ): Item<Key, Value> | null
     {
         return this._root._findLowerBound( bound, this._compare );
     }
 
 
     /**
-     * @summary 上限要素を検索
+     * 上限要素を検索
      *
-     * @desc
-     * <p>bound より後になるキーが存在すれば、その中で最初の要素を返す。</p>
-     * <p>そのような要素が存在しない場合は null を返す。</p>
+     * bound より後になるキーが存在すれば、その中で最初の要素を返す。
      *
-     * <p>計算量: 要素数 n に対して O(log n)</p>
+     * そのような要素が存在しない場合は null を返す。
      *
-     * @param {mapray.OrderedMap.Key} bound  境界キー
+     * 計算量: 要素数 n に対して O(log n)
      *
-     * @return {?mapray.OrderedMap.Item}  検索された要素、存在しなければ null
+     * @param bound  境界キー
+     *
+     * @return 検索された要素、存在しなければ null
      */
-    findUpper( bound )
+    findUpper( bound: Key ): Item<Key, Value> | null
     {
         return this._root._findUpperBound( bound, this._compare );
     }
 
 
     /**
-     * @summary 要素を検索
+     * 要素を検索
      *
-     * @desc
-     * <p>key と同じキーの要素が存在すれば返す。</p>
-     * <p>そのような要素が存在しない場合は null を返す。</p>
+     * key と同じキーの要素が存在すれば返す。
      *
-     * <p>計算量: 要素数 n に対して O(log n)</p>
+     * そのような要素が存在しない場合は null を返す。
      *
-     * @param {mapray.OrderedMap.Key} key  キー
+     * 計算量: 要素数 n に対して O(log n)
      *
-     * @return {?mapray.OrderedMap.Item}  検索された要素、存在しなければ null
+     * @param key  キー
+     *
+     * @return 検索された要素、存在しなければ null
      */
-    findEqual( key )
+    findEqual( key: Key ): Item<Key, Value> | null
     {
         return this._root._findEqual( key, this._compare );
     }
 
 
     /**
-     * @summary すべての要素を削除
+     * すべての要素を削除
      *
-     * @desc
-     * <p>計算量: 要素数 n に対して O(1)</p>
+     * 計算量: 要素数 n に対して O(1)
      */
-    clear()
+    clear(): void
     {
         this._root = T_nil;
         this._size = 0;
@@ -199,19 +200,18 @@ class OrderedMap {
 
 
     /**
-     * @summary 要素を挿入
+     * 要素を挿入
      *
-     * @desc
-     * <p>キーを key として value を挿入し、そのアイテムを返す。</p>
+     * キーを key として value を挿入し、そのアイテムを返す。</p>
      *
-     * <p>計算量: 要素数 n に対して O(log n)</p>
+     * 計算量: 要素数 n に対して O(log n)
      *
-     * @param {mapray.OrderedMap.Key}   key    キー
-     * @param {mapray.OrderedMap.Value} value  値
+     * @param key    キー
+     * @param value  値
      *
-     * @return {mapray.OrderedMap.Item}  挿入された要素
+     * @return 挿入された要素
      */
-    insert( key, value )
+    insert( key: Key, value: Value ): Item<Key, Value>
     {
         // 参照: IA3/13.3 挿入
 
@@ -237,7 +237,7 @@ class OrderedMap {
         }
 
         // 新しいアイテムを追加
-        const item = new Item( parent, key, value );
+        const item = new OrderedMap.Item<Key, Value>( parent, key, value );
         item._is_red = true;  // 黒 → 赤
 
         if ( parent === T_nil ) {
@@ -260,18 +260,15 @@ class OrderedMap {
 
 
     /**
-     * @summary 挿入後に2色木条件を満たすように木を修正
+     * 挿入後に2色木条件を満たすように木を修正
      *
-     * @desc
-     * <p>計算量: 要素数 n に対して最悪 O(log n)</p>
+     * 計算量: 要素数 n に対して最悪 O(log n)
      *
-     * @param {mapray.OrderedMap.Item} item  挿入されたアイテム
+     * @param item  挿入されたアイテム
      *
      * @see IA3/13.3 挿入
-     *
-     * @private
      */
-    _insert_fixup( item )
+    private _insert_fixup( item: Item<Key, Value> )
     {
         let trail = item;
 
@@ -331,36 +328,33 @@ class OrderedMap {
 
 
     /**
-     * @summary 要素を削除
+     * 要素を削除
      *
-     * @desc
-     * <p>last を省略したときは first を削除して、first の後続を返す。このとき first に null
-     *    を指定することはできない。</p>
+     * last を省略したときは first を削除して、first の後続を返す。このとき first に null
+     *    を指定することはできない。
      *
-     * <p>last を指定したときは first から last の前までの要素を削除して last を返す。last は
-     *    first と同じか後の要素でなければならない。</p>
+     * last を指定したときは first から last の前までの要素を削除して last を返す。last は
+     *    first と同じか後の要素でなければならない。
      *
-     * <p>null は this の末尾要素の次の要素を表す。</p>
+     * null は this の末尾要素の次の要素を表す。
      *
-     * <p>計算量: 1 要素の削除の場合、要素数 n に対して O(log n)</p>
+     * 計算量: 1 要素の削除の場合、要素数 n に対して O(log n)
      *
      * todo: 複数要素の削除の計算量を分析
      *
-     * @param {?mapray.OrderedMap.Item} first   削除する先頭の要素
-     * @param {?mapray.OrderedMap.Item} [last]  削除する最後の要素の次
+     * @param first 削除する先頭の要素
+     * @param last  削除する最後の要素の次
      *
-     * @return {?mapray.OrderedMap.Item}  削除された要素の次の要素
-     *
-     * @private
+     * @return 削除された要素の次の要素
      */
-    remove( first, last )
+    remove( first: Item<Key, Value>, last?: Item<Key, Value> ): Item<Key, Value> | null
     {
         if ( last === undefined ) {
             return this._remove( first );
         }
         else {
             for ( let item = first; item != last; ) {
-                item = this._remove( item );
+                item = this._remove( item ) as Item<Key, Value>; // null にならない
             }
             return last;
         }
@@ -368,27 +362,24 @@ class OrderedMap {
 
 
     /**
-     * @summary アイテムを削除
+     * アイテムを削除
      *
-     * @desc
-     * <p>計算量: 全体ツリーのアイテム数 n に対して最悪 O(log n)</p>
+     * 計算量: 全体ツリーのアイテム数 n に対して最悪 O(log n)</p>
      *
-     * @param {mapray.OrderedMap.Item} item  削除対象
+     * @param item  削除対象
      *
-     * @return {?mapray.OrderedMap.Item}  item の後続、存在しなければ null
+     * @return item の後続、存在しなければ null
      *
      * @see IA3/13.4 削除
-     *
-     * @private
      */
-    _remove( item )
+    private _remove( item: Item<Key, Value> ): Item<Key, Value> | null
     {
         // item の後続 (無ければ null)
         const succ = item.findSuccessor();
 
         let orgY_is_red;
         let x_item;
-        
+
         if ( item._child_L === T_nil ) {
             // (a) 左側なし
             orgY_is_red = item._is_red;
@@ -402,27 +393,28 @@ class OrderedMap {
             this._replace( item._child_L, item );
         }
         else {
-            // 左右あり
-            orgY_is_red = succ._is_red;
-            x_item      = succ._child_R;
+            // 左右あり (succ は null ではない)
+            const _succ = succ as Item<Key, Value>;
+            orgY_is_red = _succ._is_red;
+            x_item      = _succ._child_R;
 
-            if ( succ._parent === item ) {
+            if ( _succ._parent === item ) {
                 // (c) item の後続が item の右の子
                 // x_item が T_nil であっても親を設定
-                x_item._parent = succ;
+                x_item._parent = _succ;
             }
             else {
                 // (d) item の後続が item の右の子の左側
-                this._replace( succ._child_R, succ );
-                succ._child_R         = item._child_R;
-                succ._child_R._parent = succ;
+                this._replace( _succ._child_R, _succ );
+                _succ._child_R         = item._child_R;
+                _succ._child_R._parent = _succ;
             }
 
             // (c), (d)
-            this._replace( succ, item );
-            succ._child_L         = item._child_L;
-            succ._child_L._parent = succ;
-            succ._is_red          = item._is_red;
+            this._replace( _succ, item );
+            _succ._child_L         = item._child_L;
+            _succ._child_L._parent = _succ;
+            _succ._is_red          = item._is_red;
         }
         
         // 要素数を減少
@@ -438,15 +430,13 @@ class OrderedMap {
 
 
     /**
-     * @summary 削除後に2色木条件を満たすように木を修正
+     * 削除後に2色木条件を満たすように木を修正
      *
-     * @param {mapray.OrderedMap.Item} x_item
+     * @param x_item
      *
      * @see IA3/13.4 削除
-     *
-     * @private
      */
-    _remove_fixup( x_item )
+    private _remove_fixup( x_item: Item<Key, Value> )
     {
         let trail = x_item;
 
@@ -528,19 +518,17 @@ class OrderedMap {
 
 
     /**
-     * @summary アイテムの置き換え
+     * アイテムの置き換え
      *
-     * @desc
-     * <p>dst の場所を src アイテムで置き換える。src が T_nil のときは dst の場所は葉になる。</p>
-     * <p>dst の親の左または右の子供 (または this._root) と src._parent は変更されるが、dst
-     *    自身の内容は変更されない。</p>
+     * dst の場所を src アイテムで置き換える。src が T_nil のときは dst の場所は葉になる。
      *
-     * @param {mapray.OrderedMap.Item} src
-     * @param {mapray.OrderedMap.Item} dst
+     * dst の親の左または右の子供 (または this._root) と src._parent は変更されるが、dst
+     *    自身の内容は変更されない。
      *
-     * @private
+     * @param {Item} src
+     * @param {Item} dst
      */
-    _replace( src, dst )
+    private _replace( src: Item<Key, Value>, dst: Item<Key, Value> )
     {
         let dp = dst._parent;
 
@@ -565,17 +553,15 @@ class OrderedMap {
 
 
     /**
-     * @summary アイテムを左回転
+     * アイテムを左回転
      *
      * 計算量: O(1)
      *
      * @see IA3/13.2 回転
      *
-     * @param {mapray.OrderedMap.Item} pivot  回転中心のアイテム
-     *
-     * @private
+     * @param pivot  回転中心のアイテム
      */
-    _rotate_L( pivot )
+    private _rotate_L( pivot: Item<Key, Value> )
     {
         // next は回転後に pivot の位置になる
         let next = pivot._child_R;
@@ -607,17 +593,15 @@ class OrderedMap {
 
 
     /**
-     * @summary アイテムを右回転
+     * アイテムを右回転
      *
      * 計算量: O(1)
      *
      * @see IA3/13.2 回転
      *
-     * @param {mapray.OrderedMap.Item} pivot  回転中心のアイテム
-     *
-     * @private
+     * @param pivot  回転中心のアイテム
      */
-    _rotate_R( pivot )
+    private _rotate_R( pivot: Item<Key, Value> )
     {
         // next は回転後に pivot の位置になる
         let next = pivot._child_L;
@@ -650,69 +634,75 @@ class OrderedMap {
 }
 
 
+
+namespace OrderedMap {
+
+
+
 /**
- * @summary OrderedMap のアイテム
+ * OrderedMap のアイテム
  *
- * @classdesc
- * <p>すべての this._child_L のアイテム L に対して Compare( L._key, this._key ) が成り立つ。</p>
- * <p>すべての this._child_R のアイテム R に対して Compare( this._key, R._key ) が成り立つ。</p>
+ * すべての this._child_L のアイテム L に対して Compare( L._key, this._key ) が成り立つ。
  *
- * @memberof mapray.OrderedMap
- * @private
+ * すべての this._child_R のアイテム R に対して Compare( this._key, R._key ) が成り立つ。
+ *
+ * @internal
  */
-class Item {
+export class Item<Key, Value> {
+
+    _parent: Item<Key, Value>;
+
+    // 左側ツリー
+    _child_L: Item<Key, Value>;
+
+    // 右側ツリー
+    _child_R: Item<Key, Value>;
+
+    // 色: 黒=false, 赤=true
+    _is_red: boolean;
+
+    private _key: Key;
+
+    private _value: Value;
+
 
     /**
-     * @desc
-     * <p>色は黒に設定される。</p>
+     * 色は黒に設定される。
      *
-     * @param {mapray.OrderedMap.Item}  parent  親アイテム
-     * @param {mapray.OrderedMap.Key}   key     アイテムのキー
-     * @param {mapray.OrderedMap.Value} value   アイテムの値
+     * @param parent  親アイテム
+     * @param key     アイテムのキー
+     * @param value   アイテムの値
      */
-    constructor( parent, key, value )
+    constructor( parent: Item<Key, Value>, key: Key, value: Value )
     {
         this._parent  = parent;
-        this._child_L = T_nil;  // 左側ツリー
-        this._child_R = T_nil;  // 右側ツリー
-        this._is_red  = false;  // 色: 黒=false, 赤=true
+        this._child_L = T_nil;
+        this._child_R = T_nil;
+        this._is_red  = false;
 
         this._key   = key;
         this._value = value;
     }
 
 
-    /**
-     * @summary キー
-     *
-     * @type {mapray.OrderedMap.Key}
-     * @readonly
-     */
-    get key() { return this._key; }
+    /** キー */
+    get key(): Key { return this._key; }
+
+
+    /** 値 */
+    get value(): Value { return this._value; }
 
 
     /**
-     * @summary 値
+     * インスタンスを複製
      *
-     * @type {mapray.OrderedMap.Value}
-     * @readonly
+     * キー、値はシャローコピーされる。
+     *
+     * @param parant  親アイテム (this が根のときは T_nil)
+     *
+     * @return this の複製
      */
-    get value() { return this._value; }
-
-
-    /**
-     * @summary インスタンスを複製
-     *
-     * @desc
-     * <p>キー、値はシャローコピーされる。<p>
-     *
-     * @param {mapray.OrderedMap.Item} parant  親アイテム (this が根のときは T_nil)
-     *
-     * @return {mapray.OrderedMap.Item}  this の複製
-     *
-     * @private
-     */
-    _clone( parent )
+    private _clone( parent: Item<Key, Value> ): Item<Key, Value>
     {
         // 子孫と色以外を複製
         let cloned = new Item( parent, this._key, this._value );
@@ -735,20 +725,17 @@ class Item {
 
 
     /**
-     * @summary 先頭アイテムの検索
+     * 先頭アイテムの検索
      *
-     * @desc
-     * <p>this ツリーの中で最も先の順序のアイテムを検索する。</p>
+     * this ツリーの中で最も先の順序のアイテムを検索する。
      *
-     * <p>計算量: this ツリーのアイテム数 n に対して O(log n)</p>
+     * 計算量: this ツリーのアイテム数 n に対して O(log n)
      *
-     * @return {mapray.OrderedMap.Item}  検索されたアイテム
-     *
-     * @private
+     * @return 検索されたアイテム
      */
-    _findMinimum()
+    private _findMinimum(): OrderedMap.Item<Key, Value>
     {
-        let item = this;  // 追跡ポインタ
+        let item: Item<Key, Value> = this;  // 追跡ポインタ
 
         while ( item._child_L !== T_nil ) {
             item = item._child_L;
@@ -759,20 +746,17 @@ class Item {
 
 
     /**
-     * @summary 後尾アイテムの検索
+     * 後尾アイテムの検索
      *
-     * @desc
-     * <p>this ツリーの中で最も後の順序のアイテムを検索する。</p>
+     * this ツリーの中で最も後の順序のアイテムを検索する。
      *
-     * <p>計算量: this ツリーのアイテム数 n に対して O(log n)</p>
+     * 計算量: this ツリーのアイテム数 n に対して O(log n)
      *
-     * @return {mapray.OrderedMap.Item}  検索されたアイテム
-     *
-     * @private
+     * @return 検索されたアイテム
      */
-    _findMaximum()
+    private _findMaximum(): OrderedMap.Item<Key, Value>
     {
-        let item = this;  // 追跡ポインタ
+        let item: Item<Key, Value> = this;  // 追跡ポインタ
 
         while ( item._child_R !== T_nil ) {
             item = item._child_R;
@@ -783,17 +767,17 @@ class Item {
 
 
     /**
-     * @summary 前のアイテムの検索
+     * 前のアイテムの検索
      *
-     * @desc
-     * <p>root ツリーから this の前の順序のアイテムを検索する。this が先頭なら null を返す。</p>
+     * root ツリーから this の前の順序のアイテムを検索する。this が先頭なら null を返す。
      *
-     * <p>計算量: 辞書の要素数 n に対して最悪 O(log n)</p>
-     * <p>todo: 平均計算量を分析する</p>
+     * 計算量: 辞書の要素数 n に対して最悪 O(log n)
      *
-     * @return {?mapray.OrderedMap.Item}  検索されたアイテム、存在しなければ null
+     * todo: 平均計算量を分析する
+     *
+     * @return 検索されたアイテム、存在しなければ null
      */
-    findPredecessor()
+    findPredecessor(): OrderedMap.Item<Key, Value> | null
     {
         // 左側子孫がいれば、左側子孫の後尾
         if ( this._child_L !== T_nil ) {
@@ -802,7 +786,7 @@ class Item {
 
         // 左側子孫がいなければ、this を右側子孫として持つ最も近い祖先
         // それがなければ this は全体ツリーの先頭なので検索失敗
-        let item   = this;
+        let item:Item<Key, Value> = this;
         let parent = item._parent;
 
         while ( parent !== T_nil && item === parent._child_L ) {
@@ -815,17 +799,17 @@ class Item {
 
 
     /**
-     * @summary 次のアイテムの検索
+     * 次のアイテムの検索
      *
-     * @desc
-     * <p>root ツリーから this の次の順序のアイテムを検索する。this が後尾なら null を返す。</p>
+     * root ツリーから this の次の順序のアイテムを検索する。this が後尾なら null を返す。
      *
-     * <p>計算量: 辞書の要素数 n に対して最悪 O(log n)</p>
-     * <p>todo: 平均計算量を分析する</p>
+     * 計算量: 辞書の要素数 n に対して最悪 O(log n)
      *
-     * @return {?mapray.OrderedMap.Item}  検索されたアイテム、存在しなければ null
+     * todo: 平均計算量を分析する
+     *
+     * @return 検索されたアイテム、存在しなければ null
      */
-    findSuccessor()
+    findSuccessor(): OrderedMap.Item<Key, Value> | null
     {
         // 右側子孫がいれば、右側子孫の先頭
         if ( this._child_R !== T_nil ) {
@@ -834,7 +818,7 @@ class Item {
 
         // 右側子孫がいなければ、this を左側子孫として持つ最も近い祖先
         // それがなければ this は全体ツリーの後尾なので検索失敗
-        let item   = this;
+        let item: Item<Key, Value> = this;
         let parent = item._parent;
 
         while ( parent !== T_nil && item === parent._child_R ) {
@@ -847,26 +831,26 @@ class Item {
 
 
     /**
-     * @summary 下限アイテムを検索
+     * 下限アイテムを検索
      *
-     * @desc
-     * <p>this ツリーの中で !comp(item.key, bkey) となる最初のアイテムを検索する。</p>
-     * <p>つまり bkey と同じまたは後になるキーが this ツリーに存在すれば、その中で最初のアイテムを返す。</p>
-     * <p>そのようなアイテムが存在しない場合は null を返す。</p>
-     * <p>this が T_nil の場合は null を返す。</p>
+     * this ツリーの中で !comp(item.key, bkey) となる最初のアイテムを検索する。
      *
-     * <p>計算量: this ツリーのアイテム数 n に対して最悪 O(log n)</p>
+     * つまり bkey と同じまたは後になるキーが this ツリーに存在すれば、その中で最初のアイテムを返す。
      *
-     * @param {mapray.OrderedMap.Key}     bkey  境界キー
-     * @param {mapray.OrderedMap.Compare} comp  キー比較関数
+     * そのようなアイテムが存在しない場合は null を返す。
      *
-     * @return {?mapray.OrderedMap.Item}  検索されたアイテム、存在しなければ null
+     * this が T_nil の場合は null を返す。
      *
-     * @private
+     * 計算量: this ツリーのアイテム数 n に対して最悪 O(log n)
+     *
+     * @param bkey  境界キー
+     * @param comp  キー比較関数
+     *
+     * @return 検索されたアイテム、存在しなければ null
      */
-    _findLowerBound( bkey, comp )
+    private _findLowerBound( bkey: Key, comp: OrderedMap.Compare<Key> ): Item<Key, Value> | null
     {
-        let item = this;
+        let item: Item<Key, Value> = this;
 
         while ( item !== T_nil ) {
             if ( comp( bkey, item._key ) ) {
@@ -892,26 +876,26 @@ class Item {
 
 
     /**
-     * @summary 上限アイテムを検索
+     * 上限アイテムを検索
      *
-     * @desc
-     * <p>this ツリーの中で comp(bkey, item.key) となる最初のアイテムを検索する。</p>
-     * <p>つまり bkey より後になるキーが this ツリーに存在すれば、その中で最初のアイテムを返す。</p>
-     * <p>そのようなアイテムが存在しない場合は null を返す。</p>
-     * <p>this が T_nil の場合は null を返す。</p>
+     * this ツリーの中で comp(bkey, item.key) となる最初のアイテムを検索する。
      *
-     * <p>計算量: this ツリーのアイテム数 n に対して最悪 O(log n)</p>
+     * つまり bkey より後になるキーが this ツリーに存在すれば、その中で最初のアイテムを返す。
      *
-     * @param {mapray.OrderedMap.Key}     bkey  境界キー
-     * @param {mapray.OrderedMap.Compare} comp  キー比較関数
+     * そのようなアイテムが存在しない場合は null を返す。
      *
-     * @return {?mapray.OrderedMap.Item}  検索されたアイテム、存在しなければ null
+     * this が T_nil の場合は null を返す。
      *
-     * @private
+     * 計算量: this ツリーのアイテム数 n に対して最悪 O(log n)
+     *
+     * @param bkey  境界キー
+     * @param comp  キー比較関数
+     *
+     * @return 検索されたアイテム、存在しなければ null
      */
-    _findUpperBound( bkey, comp )
+    private _findUpperBound( bkey: Key, comp: OrderedMap.Compare<Key> ): Item<Key, Value> | null
     {
-        let item = this;
+        let item: Item<Key, Value> = this;
 
         while ( item !== T_nil ) {
             if ( comp( bkey, item._key ) ) {
@@ -933,25 +917,24 @@ class Item {
 
 
     /**
-     * @summary 等価キーのアイテムを検索
+     * 等価キーのアイテムを検索
      *
-     * @desc
-     * <p>this ツリーの中で !comp(key, item.key) かつ !comp(item.key, key) となるアイテムを検索する。</p>
-     * <p>そのようなアイテムが存在しない場合は null を返す。</p>
-     * <p>this == T_nil の場合は null を返す。</p>
+     * this ツリーの中で !comp(key, item.key) かつ !comp(item.key, key) となるアイテムを検索する。
      *
-     * <p>計算量: this ツリーのアイテム数 n に対して最悪 O(log n)</p>
+     * そのようなアイテムが存在しない場合は null を返す。
      *
-     * @param {mapray.OrderedMap.Key}     key   キー
-     * @param {mapray.OrderedMap.Compare} comp  キー比較関数
+     * this == T_nil の場合は null を返す。
+     *
+     * 計算量: this ツリーのアイテム数 n に対して最悪 O(log n)
+     *
+     * @param key   キー
+     * @param comp  キー比較関数
      *
      * @return {?mapray.OrderedMap.Item}  検索されたアイテム、存在しなければ null
-     *
-     * @private
      */
-    _findEqual( key, comp )
+    private _findEqual( key: Key, comp: OrderedMap.Compare<Key> )
     {
-        let item = this;
+        let item: Item<Key, Value> = this;
 
         while ( item !== T_nil ) {
             if ( comp( key, item._key ) ) {
@@ -973,25 +956,24 @@ class Item {
 
 
     /**
-     * @summary 下限アイテムを検索 (検討中)
+     * 下限アイテムを検索 (検討中)
      *
-     * @desc
-     * <p>root ツリーの中で !comp(item.key, bkey) となる最初のアイテムを検索する。</p>
-     * <p>つまり bkey と同じまたは後になるキーが root ツリーに存在すれば、その中で最初のアイテムを返す。</p>
-     * <p>そのようなアイテムが存在しない場合は null を返す。</p>
+     * root ツリーの中で !comp(item.key, bkey) となる最初のアイテムを検索する。
      *
-     * <p>計算量: root ツリーのアイテム数 n に対して最悪 O(log^2 n)</p>
+     * つまり bkey と同じまたは後になるキーが root ツリーに存在すれば、その中で最初のアイテムを返す。
      *
-     * @param {mapray.OrderedMap.Key}     bkey  境界キー
-     * @param {mapray.OrderedMap.Compare} comp  キー比較関数
+     * そのようなアイテムが存在しない場合は null を返す。
      *
-     * @return {?mapray.OrderedMap.Item}  検索されたアイテム、存在しなければ null
+     * 計算量: root ツリーのアイテム数 n に対して最悪 O(log^2 n)
      *
-     * @private
+     * @param bkey  境界キー
+     * @param comp  キー比較関数
+     *
+     * @return 検索されたアイテム、存在しなければ null
      */
-    _findLowerBoundR( bkey, comp )
+    private _findLowerBoundR( bkey: Key, comp: OrderedMap.Compare<Key> ): OrderedMap.Item<Key, Value> | null
     {
-        let item = this;
+        let item: Item<Key, Value> = this;
 
         if ( item._parent !== T_nil ) {
             // item == root
@@ -1029,30 +1011,36 @@ class Item {
 }
 
 
-// 番兵を生成
-T_nil = new Item();
+
+// @ts-ignore
+T_nil = new Item<any, any>();
+
 
 
 /**
- * @summary キー比較関数
+ * キー比較関数
  *
- * @desc
- * <p>a が b より順序が先なら true を返す。そうでないなら false を返す。</p>
- * <p>すべての x について !Compare(x, x) であること。</p>
- * <p>Compare(x, y) && Compare(y, z) なら Compare(x, z) であること。</p>
- * <p>equiv(a, b) を !Compare(a, b) && !Compare(b, a) と定義するとき、
- *    equiv(x, y) && equiv(y, z) なら equiv(x, z) であること。</p>
+ * a が b より順序が先なら true を返す。そうでないなら false を返す。
  *
- * @param {mapray.OrderedMap.Key} a  キー値 a
- * @param {mapray.OrderedMap.Key} b  キー値 b
+ * すべての x について !Compare(x, x) であること。
  *
- * @return {boolean}  a が b より順序が先なら true, そうでないなら false
+ * Compare(x, y) && Compare(y, z) なら Compare(x, z) であること。
  *
- * @callback Compare
+ * equiv(a, b) を !Compare(a, b) && !Compare(b, a) と定義するとき、
+ *    equiv(x, y) && equiv(y, z) なら equiv(x, z) であること。
  *
- * @memberof mapray.OrderedMap
- * @private
+ * @param a  キー値 a
+ * @param b  キー値 b
+ *
+ * @return a が b より順序が先なら true, そうでないなら false
+ * @internal
  */
+export type Compare<Key> = (a: Key, b: Key) => boolean;
+
+
+
+} // namespace OrderedMap
+
 
 
 export default OrderedMap;
