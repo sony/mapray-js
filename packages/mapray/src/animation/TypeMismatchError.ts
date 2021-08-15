@@ -1,20 +1,18 @@
 import AnimationError from "./AnimationError";
+import Binder from "./Binder";
 
 
 /**
- * @summary 型不一致エラー
+ * 型不一致エラー
  *
- * @memberof mapray.animation
- * @extends mapray.animation.AnimationError
- *
- * @see {@link mapray.animation.Binder}
+ * @see [[Binder]]
  */
 class TypeMismatchError extends AnimationError {
 
     /**
-     * @param {string} message  エラーの説明
+     * @param message  エラーの説明
      */
-    constructor( message )
+    constructor( message: string )
     {
         super( message );
         this.name = "mapray.animation.TypeMismatchError";

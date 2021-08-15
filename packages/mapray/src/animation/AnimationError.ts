@@ -1,17 +1,16 @@
+import Binder from "./Binder";
+
 /**
- * @summary アニメーション共通のエラー
+ * アニメーション共通のエラー
  *
- * @memberof mapray.animation
- * @extends Error
- *
- * @see {@link mapray.animation.Binder}
+ * @see [[Binder]]
  */
 class AnimationError extends Error {
 
     /**
-     * @param {string} message  エラーの説明
+     * @param message  エラーの説明
      */
-    constructor( message )
+    constructor( message: string )
     {
         super( message );
         this.name = "mapray.animation.AnimationError";
