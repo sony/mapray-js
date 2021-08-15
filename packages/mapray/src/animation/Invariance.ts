@@ -1,19 +1,21 @@
+import Time from "./Time";
+import Curve from "./Curve";
 import Interval from "./Interval";
 import OrderedMap from "../OrderedMap";
 
 
 /**
- * @summary アニメーション関数値の不変性情報
+ * アニメーション関数値の不変性情報
  *
- * @classdesc
- * <p>Curve のサブクラスの実装者が、アニメーション関数値が一定となる時刻区間を表明するために利用するクラスである。</p>
+ * Curve のサブクラスの実装者が、アニメーション関数値が一定となる時刻区間を表明するために利用するクラスである。
  *
- * @see {@link mapray.animation.Curve#getInvariance}
- *
- * @memberof mapray.animation
+ * @see [[Curve.getInvariance]]
  */
 class Invariance
 {
+
+    private _imap: OrderedMap<Time, Interval>;
+
 
     constructor()
     {
@@ -22,10 +24,9 @@ class Invariance
 
 
     /**
-     * @summary 複製を取得
+     * 複製を取得
      *
-     * @desc
-     * <p>this と同じ内容のインスタンスを生成する。</p>
+     * this と同じ内容のインスタンスを生成する。
      *
      * <p>計算量: 時刻区間数 n に対して O(n)</p>
      *
@@ -43,18 +44,17 @@ class Invariance
 
 
     /**
-     * @summary 同一値の時刻区間を上書き
+     * 同一値の時刻区間を上書き
      *
-     * @desc
-     * <p>this が持っているすべての同一値時刻区間に interval の時刻区間部分を上書きする。</p>
+     * this が持っているすべての同一値時刻区間に interval の時刻区間部分を上書きする。
      *
-     * <p>イメージ的には interval 部分に毎回新しい色を重ねていく。最終的にできた各色の区間を同一値の時刻区間と見なす。</p>
+     * イメージ的には interval 部分に毎回新しい色を重ねていく。最終的にできた各色の区間を同一値の時刻区間と見なす。
      *
-     * @param {mapray.animation.Interval} interval  同一値を持つ時刻区間
+     * @param interval  同一値を持つ時刻区間
      *
-     * @return {mapray.animation.Invariance}  this
+     * @return this
      */
-    write( interval )
+    write( interval: Interval ): Invariance
     {
         // todo: 計算量を分析 (remove() に依存)
 
@@ -66,19 +66,18 @@ class Invariance
 
 
     /**
-     * @summary 時刻区間の消去
+     * 時刻区間の消去
      *
-     * @desc
-     * <p>this が持っているすべての同一値時刻区間から interval の時刻区間部分を消去する。</p>
+     * this が持っているすべての同一値時刻区間から interval の時刻区間部分を消去する。
      *
-     * <p>イメージ的には {@link mapray.animation.Invariance#write write()} で重ねた色の
-     *    interval 部分を透明にする。</p>
+     * イメージ的には {@link mapray.animation.Invariance#write write()} で重ねた色の
+     *    interval 部分を透明にする。
      *
-     * @param {mapray.animation.Interval} interval  時刻区間
+     * @param interval  時刻区間
      *
-     * @return {mapray.animation.Invariance}  this
+     * @return this
      */
-    remove( interval )
+    remove( interval: Interval ): Invariance
     {
         // todo: 計算量を分析 (OrderMap#remove() に依存)
 
@@ -105,13 +104,13 @@ class Invariance
                 this._imap.findUpper( interval.upper );
 
             // it2 の先行 (非 null)
-            let it1 = (it2 !== null) ? it2.findPredecessor() : this._imap.findLast();
+            let it1 = ((it2 !== null) ? it2.findPredecessor() : this._imap.findLast()) as OrderedMap.Item<Time, Interval>;
 
             // fit の後続で interval に内包されない最初の要素 (無ければ null)
             let lit = interval.includes( it1.value ) ? it2 : it1;
 
             // interval に内包される要素をすべて削除
-            this._imap.remove( fit, lit );
+            this._imap.remove( fit, lit || undefined );
 
             // lit は interval と交差している可能性がある
             this._chopItem( lit, interval );
@@ -128,16 +127,15 @@ class Invariance
 
 
     /**
-     * @summary 選択範囲に絞った不変性情報を取得
+     * 選択範囲に絞った不変性情報を取得
      *
-     * @desc
-     * <p>interval で指定した選択範囲と交差する一定値時刻区間を選択して、新しい不変性情報のインスタンスを返す。</p>
+     * interval で指定した選択範囲と交差する一定値時刻区間を選択して、新しい不変性情報のインスタンスを返す。
      *
-     * @param {mapray.animation.Interval} narrow  選択範囲
+     * @param narrow  選択範囲
      *
-     * @return {mapray.animation.Invariance}  範囲を狭めた不変性情報
+     * @return 範囲を狭めた不変性情報
      */
-    getNarrowed( narrow )
+    getNarrowed( narrow: Interval ): Invariance
     {
         const invr = new Invariance();
 
@@ -156,7 +154,9 @@ class Invariance
               this._imap.findUpper( narrow.upper );
 
         // invr へ [lower, upper) を追加
+        // @ts-ignore
         for ( let it = lower; it !== upper; it = it.findSuccessor() ) {
+            // @ts-ignore
             invr._imap.insert( it.key, it.value );
         }
 
@@ -165,17 +165,15 @@ class Invariance
 
 
     /**
-     * @summary 複数の Invariance を統合
+     * 複数の Invariance を統合
      *
-     * @desc
-     * <p>invariances のすべての同一値時刻区間の共通区間を持った Invariance インスタンスを生成する。</p>
+     * invariances のすべての同一値時刻区間の共通区間を持った Invariance インスタンスを生成する。
      *
-     * @param {mapray.animation.Invariance[]} invariances  統合元のリスト
+     * @param invariances  統合元のリスト
      *
-     * @return {mapray.animation.Invariance}  統合結果
+     * @return 統合結果
      */
-    static
-    merge( invariances )
+    static merge( invariances: Invariance[] ): Invariance
     {
         let result = new Invariance();
         result.write( Interval.UNIVERSAL );
@@ -189,16 +187,15 @@ class Invariance
 
 
     /**
-     * @summary 時刻区間の配列を取得
+     * 時刻区間の配列を取得
      *
-     * @desc
-     * <p>Proper の時刻区間が時刻順で格納された配列を返す。</p>
+     * Proper の時刻区間が時刻順で格納された配列を返す。
      *
-     * @return {mapray.animation.Interval[]}  時刻区間の配列
+     * @return  時刻区間の配列
      *
-     * @package
+     * @internal
      */
-    _$getArray()
+    _$getArray(): Interval[]
     {
         let array = [];
 
@@ -211,17 +208,17 @@ class Invariance
 
 
     /**
-     * @summary 不変性情報を修正
+     * 不変性情報を修正
      *
-     * @desc
-     * <p>Curve#getInvariance() で得た一部の不変性情報 subinvr を元に this を更新する。</p>
-     * <p>更新後の this は Curve インスタンス全体の不変性情報と一致することが期待される。</p>
+     * [[Curve.getInvariance Curve.getInvariance()]] で得た一部の不変性情報 subinvr を元に this を更新する。
      *
-     * @param {mapray.animation.Invariance} subinvr  更新部分
+     * 更新後の this は Curve インスタンス全体の不変性情報と一致することが期待される。
      *
-     * @package
+     * @param subinvr  更新部分
+     *
+     * @internal
      */
-    _$modify( subinvr )
+    _$modify( subinvr: Invariance )
     {
         // subinvr の最初と最後
         let ita = subinvr._imap.findFirst();
@@ -229,7 +226,7 @@ class Invariance
             // subinvr は空なので変化なし
             return;
         }
-        let itb = subinvr._imap.findLast();
+        let itb = subinvr._imap.findLast() as OrderedMap.Item<Time, Interval>;
 
         // subinvr の全範囲をくりぬく
         let ai = ita.value;
@@ -238,6 +235,7 @@ class Invariance
 
         // subinvr のすべての時刻区間を挿入
         // 計算量: this の要素数 n, subinvr の要素数 m に対して O(m log n)
+        // @ts-ignore
         for ( let it = ita; it !== null; it = it.findSuccessor() ) {
             this._insert( it.value );
         }
@@ -245,20 +243,18 @@ class Invariance
 
 
     /**
-     * @summary 時刻区間を整列により拡張
+     * 時刻区間を整列により拡張
      *
-     * @desc
-     * <p>interval の端が this のある区間内にないなら、前または次の区間の境界まで拡大する。</p>
+     * interval の端が this のある区間内にないなら、前または次の区間の境界まで拡大する。
      *
-     * <p>事前条件: !interval.isEmpty()</p>
+     * 事前条件: !interval.isEmpty()
      *
-     * @param {mapray.animation.Interval} interval  拡大対象の時刻区間
+     * @param interval  拡大対象の時刻区間
      *
-     * @return {mapray.animation.Interval}  拡大された時刻区間
-     *
-     * @package
+     * @return 拡大された時刻区間
+     * @internal
      */
-    _$expandIntervalByAlignment( interval )
+    _$expandIntervalByAlignment( interval: Interval ): Interval
     {
         const map = this._imap;
 
@@ -326,19 +322,18 @@ class Invariance
 
 
     /**
-     * @summary item から interval 部分を削り取る
+     * item から interval 部分を削り取る
      *
-     * @desc
-     * <p>item の時刻区間から interval 部分を消去する。</p>
-     * <p>ただし item が null のときは何もしない。</p>
-     * <p>最後に item は無効になる。</p>
+     * item の時刻区間から interval 部分を消去する。
      *
-     * @param {?mapray.OrderedMap.Item}   item
-     * @param {mapray.animation.Interval} interval
+     * ただし item が null のときは何もしない。
      *
-     * @private
+     * 最後に item は無効になる。
+     *
+     * @param item
+     * @param interval
      */
-    _chopItem( item, interval )
+    private _chopItem( item: OrderedMap.Item<Time, Interval> | null, interval: Interval )
     {
         if ( item === null ) {
             // 何もしない
@@ -359,18 +354,15 @@ class Invariance
 
 
     /**
-     * @summary 時刻区間を挿入
+     * 時刻区間を挿入
      *
-     * @desc
-     * <p>条件: this._imap に interval と交差する区間が存在しない</p>
+     * 条件: this._imap に interval と交差する区間が存在しない
      *
-     * <p>計算量: 時刻区間数 n に対して最悪 O(log n)</p>
+     * 計算量: 時刻区間数 n に対して最悪 O(log n)
      *
-     * @param {mapray.animation.Interval} interval  時刻区間
-     *
-     * @private
+     * @param interval  時刻区間
      */
-    _insert( interval )
+    private _insert( interval: Interval )
     {
         if ( !interval.isProper() ) {
             // Empty と Single の時刻区間は保持しない
@@ -382,7 +374,7 @@ class Invariance
 
 
     /**
-     * @summary Invariance を統合
+     * Invariance を統合
      *
      * 計算量:
      *   this の時刻区間数 k
@@ -393,11 +385,9 @@ class Invariance
      * findSuccessor() を O(1) と考えたとき
      *   O(k * (m * log p + log n))
      *
-     * @param {mapray.animation.Invariance} source
-     *
-     * @private
+     * @param source
      */
-    _merge_from_invariance( source )
+    private _merge_from_invariance( source: Invariance )
     {
         let merged_imap = createEmptyMap();
 
@@ -412,7 +402,7 @@ class Invariance
 
 
 /**
- * @summary _merge_from_invariance() の一部
+ * _merge_from_invariance() の一部
  *
  * 計算量:
  *   source の時刻区間数 n
@@ -422,15 +412,14 @@ class Invariance
  * findSuccessor() を O(1) と考えたとき
  *   O(m * log p + log n)
  *   
- * @param {mapray.animation.Interval}    tgtIv  時刻区間
- * @param {mapray.animation.Invariance} source
- * @param {mapray.OrderedMap}      merged_imap
- *
- * @private
+ * @param tgtIv  時刻区間
+ * @param source
+ * @param merged_imap
  */
 function
-mergeIntervalInvariance( tgtIv, source, merged_imap )
+mergeIntervalInvariance( tgtIv: Interval, source: Invariance, merged_imap: OrderedMap<Time, Interval> )
 {
+    // @ts-ignore
     let src_imap = source._imap;
 
     // tgtIv の範囲の source 内の時刻区間を決定
@@ -445,7 +434,9 @@ mergeIntervalInvariance( tgtIv, source, merged_imap )
     // fit から lit までの時刻区間と tgtIv との交差を merged_imap へ追加
     // 計算量: merged_imap の時刻区間数 p, tgtIv 範囲内の source 時刻区間数 m
     // に対して最悪 O(m * log n * log p)
+    // @ts-ignore
     for ( let it = fit; it !== lit; it = it.findSuccessor() ) {
+        // @ts-ignore
         let srcIv = it.value;
         let cross = tgtIv.getIntersection( srcIv );
         if ( cross.isProper() ) {
@@ -456,20 +447,15 @@ mergeIntervalInvariance( tgtIv, source, merged_imap )
 
 
 /** 
- * @summary 空の時刻区間マップを生成
+ * 空の時刻区間マップを生成
  *
- * @desc
  * Proper 時刻区間が交差せず、時刻順に並んでいる
  * この条件では時刻区間の下限時刻をキーとして整列できる
- *
- * @return {mapray.OrderedMap}
- *
- * @private
  */
 function
 createEmptyMap()
 {
-    return new OrderedMap( (a, b) => a.lessThan( b ) );
+    return new OrderedMap<Time, Interval>( (a: Time, b: Time) => a.lessThan( b ) );
 }
 
 
