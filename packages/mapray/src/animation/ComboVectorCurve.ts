@@ -1,3 +1,4 @@
+import Time from "./Time";
 import Curve from "./Curve";
 import Interval from "./Interval";
 import Invariance from "./Invariance";
@@ -8,32 +9,43 @@ import AnimUtil from "./AnimUtil";
 
 
 /**
- * @summary 複合ベクトル関数
+ * 複合ベクトル関数
  *
- * @classdesc
- * <p>複数の数値関数から構成されるベクトル関数である。</p>
- * <p>関数値の型は構築子のパラメータにより vector2, vector3 または vector4 を指定する。</p>
- * <p>子関数は number または number へ変換可能な型でなければならない。</p>
+ * 複数の数値関数から構成されるベクトル関数である。
  *
- * @memberof mapray.animation
- * @extends mapray.animation.Curve
+ * 関数値の型は構築子のパラメータにより vector2, vector3 または vector4 を指定する。
+ *
+ * 子関数は number または number へ変換可能な型でなければならない。
  */
 class ComboVectorCurve extends Curve
 {
 
+    private _vector_type: Type;
+
+    /** 2〜4 */
+    private _dimension: number;
+
+    /** 子関数の配列 */
+    private _children: Curve[];
+
+    /** 子関数に対応した */
+    private _listeners: Curve.ValueChangeListener[];
+
+
+
+
     /**
-     * @desc
-     * <p>type 型のベクトル関数を生成する。ベクトルの各要素の値は子関数の値になる。</p>
+     * type 型のベクトル関数を生成する。ベクトルの各要素の値は子関数の値になる。
      *
-     * <p>children を省略したときは、ベクトルの全要素が 0 となる定数関数と同等になる。children の形式に関しては
-     *    {@link mapray.animation.ComboVectorCurve#setChildren setChildren()} を参照のこと。</p>
+     * children を省略したときは、ベクトルの全要素が 0 となる定数関数と同等になる。children の形式に関しては
+     *    [[ComboVectorCurve.setChildren setChildren()]] を参照のこと。
      *
-     * @param {mapray.animation.Type}       type     関数値の型 (ベクトル型)
-     * @param {mapray.animation.Curve[]} [children]  初期の全子関数
+     * @param type     関数値の型 (ベクトル型)
+     * @param children  初期の全子関数
      *
-     * @throws {@link mapray.animation.TypeMismatchError}  type または children に非対応の型が存在するとき
+     * @throws [[TypeMismatchError]]  type または children に非対応の型が存在するとき
      */
-    constructor( type, children )
+    constructor( type: Type, children?: Curve[] )
     {
         super();
 
@@ -44,9 +56,9 @@ class ComboVectorCurve extends Curve
         }
 
         this._vector_type = type;
-        this._dimension   = dimension;  // 2〜4
-        this._children    = new Array( dimension );  // 子関数の配列
-        this._listeners   = new Array( dimension );  // 子関数に対応した ValueChangeListener
+        this._dimension   = dimension;
+        this._children    = new Array( dimension );
+        this._listeners   = new Array( dimension );
 
         this._setupInitialChildren();
 
@@ -58,17 +70,16 @@ class ComboVectorCurve extends Curve
 
 
     /**
-     * @summary 子関数を設定 (個別)
+     * 子関数を設定 (個別)
      *
-     * @desc
-     * <p>index の要素のみの子関数を設定する。その他の要素は変更されない。</p>
+     * index の要素のみの子関数を設定する。その他の要素は変更されない。
      *
-     * @param {number}                 index  要素インデックス
-     * @param {mapray.animation.Curve} curve  子関数
+     * @param index  要素インデックス
+     * @param curve  子関数
      *
-     * @throws {@link mapray.animation.TypeMismatchError}  curve が非対応の型のとき
+     * @throws [[TypeMismatchError]]  curve が非対応の型のとき
      */
-    setChild( index, curve )
+    setChild( index: number, curve: Curve )
     {
         this._setChildCommon( index, curve );
 
@@ -78,16 +89,15 @@ class ComboVectorCurve extends Curve
 
 
     /**
-     * @summary 子関数を設定 (一括)
+     * 子関数を設定 (一括)
      *
-     * @desc
-     * <p>curves にすべての子関数を指定する。curves の要素数はベクトルの次数と同数である。</p>
+     * curves にすべての子関数を指定する。curves の要素数はベクトルの次数と同数である。
      *
-     * @param {mapray.animation.Curve[]} curves  全子関数
+     * @param curves  全子関数
      *
-     * @throws {@link mapray.animation.TypeMismatchError}  curves に非対応の型が存在するとき
+     * @throws [[TypeMismatchError]]  curves に非対応の型が存在するとき
      */
-    setChildren( curves )
+    setChildren( curves: Curve[] )
     {
         for ( let i = 0; i < this._dimension; ++i ) {
             this._setChildCommon( i, curves[i] );
@@ -98,20 +108,14 @@ class ComboVectorCurve extends Curve
     }
 
 
-    /**
-     * @override
-     */
-    isTypeSupported( type )
+    override isTypeSupported( type: Type )
     {
         let from_type = this._vector_type;
         return type.isConvertible( from_type );
     }
 
 
-    /**
-     * @override
-     */
-    getValue( time, type )
+    override getValue( time: Time, type: Type )
     {
         let from_type  = this._vector_type;
         let from_value = this._getCompoundValue( time );
@@ -119,28 +123,24 @@ class ComboVectorCurve extends Curve
     }
 
 
-    /**
-     * @override
-     */
-    getInvariance( interval )
+    override getInvariance( interval: Interval ): Invariance
     {
         // すべての子関数の不変性情報の交差
         const invariances = this._children.map( child => child.getInvariance( interval ) );
+        // @ts-ignore
         return Invariance.merge( invariances );
     }
 
 
     /**
      * 初期の子関数とリスナーを設定
-     *
-     * @private
      */
-    _setupInitialChildren()
+    private _setupInitialChildren()
     {
         const init_child = new ConstantCurve( vec_compo_type );
 
         for ( let i = 0; i < this._dimension; ++i ) {
-            const listener = interval => { this.notifyValueChange( interval ); };
+            const listener = (interval: Interval) => { this.notifyValueChange( interval ); };
             init_child.addValueChangeListener( listener );
 
             this._children[i]  = init_child;
@@ -150,16 +150,14 @@ class ComboVectorCurve extends Curve
 
 
     /**
-     * @summary 子要素を設定 (共通ルーチン)
+     * 子要素を設定 (共通ルーチン)
      *
-     * @param {number}                 index
-     * @param {mapray.animation.Curve} curve
+     * @param index
+     * @param curve
      *
-     * @throws {@link mapray.animation.TypeMismatchError}
-     *
-     * @private
+     * @throws [[TypeMismatchError]]
      */
-    _setChildCommon( index, curve )
+    private _setChildCommon( index: number, curve: Curve )
     {
         if ( !curve.isTypeSupported( vec_compo_type ) ) {
             // curve の型をベクトルの要素の型に変換できない
@@ -172,7 +170,7 @@ class ComboVectorCurve extends Curve
         old_child.removeValueChangeListener( old_listener );
 
         // 新しい子のリスナーを設定
-        let listener = interval => { this.notifyValueChange( interval ); };
+        let listener = (interval: Interval) => { this.notifyValueChange( interval ); };
         curve.addValueChangeListener( listener );
 
         // 新しい子を設定
@@ -182,15 +180,13 @@ class ComboVectorCurve extends Curve
 
 
     /**
-     * @summary time での複合値を取得
+     * time での複合値を取得
      *
-     * @param {mapray.animation.Time} time
+     * @param Time time
      *
-     * @return {number[]}  複合値 (this._vector_type に適応した型)
-     *
-     * @private
+     * @return 複合値 (this._vector_type に適応した型)
      */
-    _getCompoundValue( time )
+    private _getCompoundValue( time: Time ): Float64Array
     {
         const dimension = this._dimension;
 

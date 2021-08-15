@@ -1,3 +1,5 @@
+import { Vector2, Vector3, Vector4 } from "../GeoMath";
+
 import Curve from "./Curve";
 import Type from "./Type";
 import Time from "./Time";
@@ -7,36 +9,42 @@ import AnimUtil from "./AnimUtil";
 
 
 /**
- * @summary キーフレームによる階段関数
+ * キーフレームによる階段関数
  *
- * @classdesc
- * <p>あるキーフレームから次のキーフレームの直前まで一定の値を返す階段関数である。</p>
- * <p>構築子により任意の関数値の型を指定することができる。</p>
+ * あるキーフレームから次のキーフレームの直前まで一定の値を返す階段関数である。
  *
- * @memberof mapray.animation
- * @extends mapray.animation.Curve
+ * 構築子により任意の関数値の型を指定することができる。
  */
 class KFStepCurve extends Curve
 {
 
+    /** number | vector2 | vector3 | vector4 */
+    private _value_type: Type;
+
+    /** >= 1 */
+    private _num_keyframes!: number;
+
+    private _key_times!: Time[];
+
+    private _key_values!: object[];
+
+
     /**
-     * @desc
-     * <p>type 型の階段関数を keyframes により生成する。</p>
-     * <p>type は任意の型を指定することができる。</p>
-     * <p>keyframes を省略したときは type 型の既定値を返す定数関数と同等になる。keyframes の形式に関しては
-     *    {@link mapray.animation.KFStepCurve#setKeyFrames setKeyFrames()} を参照のこと。</p>
+     * type 型の階段関数を keyframes により生成する。
+     *
+     * type は任意の型を指定することができる。
+     *
+     * keyframes を省略したときは type 型の既定値を返す定数関数と同等になる。keyframes の形式に関しては
+     *    [[KFStepCurve.setKeyFrames setKeyFrames()]] を参照のこと。
      *
      * @param {mapray.animation.Type} type  関数値の型
      * @param {object[]}       [keyframes]  初期キーフレーム
      */
-    constructor( type, keyframes )
+    constructor( type: Type, keyframes?: (Time | number | Vector2 | Vector3 | Vector4)[] )
     {
         super();
 
-        this._value_type    = type;       // any type
-        this._num_keyframes = undefined;  // >= 1
-        this._key_times     = undefined;  // Time[]
-        this._key_values    = undefined;  // object[]
+        this._value_type    = type;
 
         if ( keyframes !== undefined ) {
             // 初期のキーフレームを設定
@@ -52,20 +60,18 @@ class KFStepCurve extends Curve
 
 
     /**
-     * @summary キーフレーム設定
+     * キーフレーム設定
      *
-     * @desc
-     * <p>keyframes により、すべてのキーフレームを指定する。</p>
+     * keyframes により、すべてのキーフレームを指定する。
      *
-     * <p>
-     * 条件1: keyframes.length >= 2 (キーフレーム数 >= 1)<br>
-     * 条件2: すべての i, j において、i < j ⇔ 時刻i < 時刻j<br>
-     * 条件3: すべての i において、値i は構築子の type 引数で指定した型のインスタンス
-     * </p>
+     * 条件
+     * - keyframes.length >= 2 (キーフレーム数 >= 1)<br>
+     * - すべての i, j において、i < j ⇔ 時刻i < 時刻j<br>
+     * - すべての i において、値i は構築子の type 引数で指定した型のインスタンス
      *
-     * @param {object[]} keyframes  [時刻0, 値0, 時刻1, 値1, ...]
+     * @param keyframes  [時刻0, 値0, 時刻1, 値1, ...]
      */
-    setKeyFrames( keyframes )
+    setKeyFrames( keyframes: (Time | any)[] )
     {
         this._num_keyframes = keyframes.length / 2;
         this._key_times     = new Array( this._num_keyframes );
@@ -85,20 +91,14 @@ class KFStepCurve extends Curve
     }
 
 
-    /**
-     * @override
-     */
-    isTypeSupported( type )
+    override isTypeSupported( type: Type )
     {
         const from_type = this._value_type;
         return type.isConvertible( from_type );
     }
 
 
-    /**
-     * @override
-     */
-    getValue( time, type )
+    override getValue( time: Time, type: Type )
     {
         const from_type  = this._value_type;
         const from_value = this._getInterpolatedValue( time );
@@ -106,10 +106,7 @@ class KFStepCurve extends Curve
     }
 
 
-    /**
-     * @override
-     */
-    getInvariance( interval )
+    override getInvariance( interval: Interval ): Invariance
     {
         if ( this._num_keyframes == 1 ) {
             // キーフレームが 1 個のときは ConstantCurve と同じく、全時間で一定値
@@ -136,15 +133,13 @@ class KFStepCurve extends Curve
 
 
     /**
-     * @summary time での補間値を取得
+     * time での補間値を取得
      *
-     * @param {mapray.animation.Time} time
+     * @param time
      *
-     * @return {object}  補間値 (this._value_type に適応した型)
-     *
-     * @private
+     * @return 補間値 (this._value_type に適応した型)
      */
-    _getInterpolatedValue( time )
+    private _getInterpolatedValue( time: Time ): any
     {
         // this._key_times に time より後の時刻が存在すれば、その中で最小のインデックス
         // そのような時刻が存在しなければ this._num_keyframes
