@@ -1,5 +1,5 @@
 import Type from "./Type_impl.js";
-import GeoMath from "../GeoMath";
+import GeoMath, { Vector3 } from "../GeoMath";
 
 
 /**
@@ -16,6 +16,7 @@ class BooleanType extends Type
     private _convertibles: Set<Type> = new Set( [this] );
 
     /**
+     * @internal
      */
     constructor()
     {
@@ -24,28 +25,22 @@ class BooleanType extends Type
 
 
     /**
-     * @private
+     * @internal
      */
-    _postinit()
+    postinit()
     {
         this._number_type = Type.find( "number" );
         this._convertibles.add( this._number_type );
     }
 
 
-    /**
-     * @override
-     */
-    isConvertible( from: Type )
+    override isConvertible( from: Type )
     {
         return this._convertibles.has( from );
     }
 
 
-    /**
-     * @override
-     */
-    convertValue( from: Type, value: any )
+    override convertValue( from: Type, value: any )
     {
         if ( from === this ) {
             // 同一型
@@ -58,19 +53,13 @@ class BooleanType extends Type
     }
 
 
-    /**
-     * @override
-     */
-    getDefaultValue()
+    override getDefaultValue()
     {
         return false;
     }
 
 
-    /**
-     * @override
-     */
-    getCloneValue( value: any )
+    override getCloneValue( value: any )
     {
         return value;
     }
@@ -79,16 +68,11 @@ class BooleanType extends Type
 
 
 /**
- * @summary 数値型
+ * 数値型
  *
- * @classdesc
- * <p>登録名: "number"</p>
- * <p>実装型: number</p>
- * <p>次の型へ変換可能: {@link mapray.animation.BooleanType}</p>
- *
- * @memberof mapray.animation
- * @extends mapray.animation.Type
- * @hideconstructor
+ * | 登録名 | "number" |
+ * | 実装型 | number |
+ * | 次の型へ変換可能 | [[BooleanType]] |
  */
 class NumberType extends Type
 {
@@ -97,6 +81,7 @@ class NumberType extends Type
     private _convertibles: Set<Type> = new Set( [this] );
 
     /**
+     * @internal
      */
     constructor()
     {
@@ -105,28 +90,22 @@ class NumberType extends Type
 
 
     /**
-     * @private
+     * @internal
      */
-    _postinit()
+    postinit()
     {
         this._boolean_type = Type.find( "boolean" );
         this._convertibles.add( this._boolean_type );
     }
 
 
-    /**
-     * @override
-     */
-    isConvertible( from: Type )
+    override isConvertible( from: Type )
     {
         return this._convertibles.has( from );
     }
 
 
-    /**
-     * @override
-     */
-    convertValue( from: Type, value: any )
+    override convertValue( from: Type, value: any )
     {
         if ( from === this ) {
             // 同一型
@@ -139,19 +118,13 @@ class NumberType extends Type
     }
 
 
-    /**
-     * @override
-     */
-    getDefaultValue()
+    override getDefaultValue()
     {
         return 0;
     }
 
 
-    /**
-     * @override
-     */
-    getCloneValue( value: any )
+    override getCloneValue( value: any )
     {
         return value;
     }
@@ -160,20 +133,16 @@ class NumberType extends Type
 
 
 /**
- * @summary 文字列型
+ * 文字列型
  *
- * @classdesc
- * <p>登録名: "string"</p>
- * <p>実装型: string</p>
- *
- * @memberof mapray.animation
- * @extends mapray.animation.Type
- * @hideconstructor
+ * - 登録名: "string"
+ * - 実装型: string
  */
 class StringType extends Type
 {
 
     /**
+     * @internal
      */
     constructor()
     {
@@ -182,44 +151,32 @@ class StringType extends Type
 
 
     /**
-     * @private
+     * @internal
      */
-    _postinit()
+    postinit()
     {
     }
 
 
-    /**
-     * @override
-     */
-    isConvertible( from: Type ): boolean
+    override isConvertible( from: Type ): boolean
     {
         return from === this;
     }
 
 
-    /**
-     * @override
-     */
-    convertValue( from: Type, value: any )
+    override convertValue( from: Type, value: any )
     {
         return value;
     }
 
 
-    /**
-     * @override
-     */
-    getDefaultValue()
+    override getDefaultValue()
     {
         return "";
     }
 
 
-    /**
-     * @override
-     */
-    getCloneValue( value: any )
+    override getCloneValue( value: any )
     {
         return value;
     }
@@ -228,20 +185,16 @@ class StringType extends Type
 
 
 /**
- * @summary 2 次ベクトル型
+ * 2 次ベクトル型
  *
- * @classdesc
- * <p>登録名: "vector2"</p>
- * <p>実装型: {@link mapray.Vector2}</p>
- *
- * @memberof mapray.animation
- * @extends mapray.animation.Type
- * @hideconstructor
+ * | 登録名 | "vector2" |
+ * | 実装型 | [[Vector2]] |
  */
 class Vector2Type extends Type
 {
 
     /**
+     * @internal
      */
     constructor()
     {
@@ -250,44 +203,32 @@ class Vector2Type extends Type
 
 
     /**
-     * @private
+     * @internal
      */
-    _postinit()
+    postinit()
     {
     }
 
 
-    /**
-     * @override
-     */
-    isConvertible( from: Type ): boolean
+    override isConvertible( from: Type ): boolean
     {
         return from === this;
     }
 
 
-    /**
-     * @override
-     */
-    convertValue( from: Type, value: any )
+    override convertValue( from: Type, value: any )
     {
         return value;
     }
 
 
-    /**
-     * @override
-     */
-    getDefaultValue()
+    override getDefaultValue()
     {
         return GeoMath.createVector2();
     }
 
 
-    /**
-     * @override
-     */
-    getCloneValue( value: any )
+    override getCloneValue( value: any )
     {
         return GeoMath.createVector2( value );
     }
@@ -296,20 +237,16 @@ class Vector2Type extends Type
 
 
 /**
- * @summary 3 次ベクトル型
+ * 3 次ベクトル型
  *
- * @classdesc
- * <p>登録名: "vector3"</p>
- * <p>実装型: {@link mapray.Vector3}</p>
- *
- * @memberof mapray.animation
- * @extends mapray.animation.Type
- * @hideconstructor
+ * | 登録名 | "vector3" |
+ * | 実装型 | [[Vector3]] |
  */
 class Vector3Type extends Type
 {
 
     /**
+     * @internal
      */
     constructor()
     {
@@ -318,44 +255,32 @@ class Vector3Type extends Type
 
 
     /**
-     * @private
+     * @internal
      */
-    _postinit()
+    postinit()
     {
     }
 
 
-    /**
-     * @override
-     */
-    isConvertible( from: Type ): boolean
+    override　isConvertible( from: Type ): boolean
     {
         return from === this;
     }
 
 
-    /**
-     * @override
-     */
-    convertValue( from: Type, value: any )
+    override convertValue( from: Type, value: any )
     {
         return value;
     }
 
 
-    /**
-     * @override
-     */
-    getDefaultValue()
+    override getDefaultValue()
     {
         return GeoMath.createVector3();
     }
 
 
-    /**
-     * @override
-     */
-    getCloneValue( value: any )
+    override getCloneValue( value: any )
     {
         return GeoMath.createVector3( value );
     }
@@ -364,20 +289,16 @@ class Vector3Type extends Type
 
 
 /**
- * @summary 4 次ベクトル型
+ * 4 次ベクトル型
  *
- * @classdesc
- * <p>登録名: "vector4"</p>
- * <p>実装型: {@link mapray.Vector4}</p>
- *
- * @memberof mapray.animation
- * @extends mapray.animation.Type
- * @hideconstructor
+ * | 登録名 | "vector4" |
+ * | 実装型 | {@link mapray.Vector4} |
  */
 class Vector4Type extends Type
 {
 
     /**
+     * @internal
      */
     constructor()
     {
@@ -386,44 +307,32 @@ class Vector4Type extends Type
 
 
     /**
-     * @private
+     * @internal
      */
-    _postinit()
+    postinit()
     {
     }
 
 
-    /**
-     * @override
-     */
-    isConvertible( from: Type ): boolean
+    override isConvertible( from: Type ): boolean
     {
         return from === this;
     }
 
 
-    /**
-     * @override
-     */
-    convertValue( from: Type, value: any )
+    override convertValue( from: Type, value: any )
     {
         return value;
     }
 
 
-    /**
-     * @override
-     */
-    getDefaultValue()
+    override getDefaultValue()
     {
         return GeoMath.createVector4();
     }
 
 
-    /**
-     * @override
-     */
-    getCloneValue( value: any )
+    override getCloneValue( value: any )
     {
         return GeoMath.createVector4( value );
     }
@@ -432,20 +341,16 @@ class Vector4Type extends Type
 
 
 /**
- * @summary 行列型
+ * 行列型
  *
- * @classdesc
- * <p>登録名: "matrix"</p>
- * <p>実装型: {@link mapray.Matrix}</p>
- *
- * @memberof mapray.animation
- * @extends mapray.animation.Type
- * @hideconstructor
+ * | 登録名 | "matrix" |
+ * | 実装型 | [[Matrix]] |
  */
 class MatrixType extends Type
 {
 
     /**
+     * @internal
      */
     constructor()
     {
@@ -454,44 +359,32 @@ class MatrixType extends Type
 
 
     /**
-     * @private
+     * @internal
      */
-    _postinit()
+    postinit()
     {
     }
 
 
-    /**
-     * @override
-     */
-    isConvertible( from: Type ): boolean
+    override isConvertible( from: Type ): boolean
     {
         return from === this;
     }
 
 
-    /**
-     * @override
-     */
-    convertValue( from: Type, value: any )
+    override convertValue( from: Type, value: any )
     {
         return value;
     }
 
 
-    /**
-     * @override
-     */
-    getDefaultValue()
+    override getDefaultValue()
     {
         return GeoMath.setIdentity( GeoMath.createMatrix() );
     }
 
 
-    /**
-     * @override
-     */
-    getCloneValue( value: any )
+    override getCloneValue( value: any )
     {
         return GeoMath.createMatrix( value );
     }
@@ -500,9 +393,7 @@ class MatrixType extends Type
 
 
 /**
- * @summary 事前定義型を登録
- *
- * @private
+ * 事前定義型を登録
  */
 export function
 registerPredefinedTypes()
@@ -528,6 +419,6 @@ registerPredefinedTypes()
 
     // 登録後の処理
     for ( let type of type_instances ) {
-        type._postinit();
+        type.postinit();
     }
 }
