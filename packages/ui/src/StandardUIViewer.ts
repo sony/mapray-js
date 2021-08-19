@@ -45,9 +45,9 @@ var GeoPoint = mapray.GeoPoint;
 class StandardUIViewer extends mapray.RenderCallback
 {
 
-    private _camera_parameter: StandardUIViewer.CameraParameterProps & mapray.GeoPointData;
+    private _camera_parameter: StandardUIViewer.CameraParameter & StandardUIViewer.RollPitchYawData & mapray.GeoPointData;
 
-    private _last_camera_parameter: StandardUIViewer.CameraParameterProps & mapray.GeoPointData;
+    private _last_camera_parameter: StandardUIViewer.CameraParameter & StandardUIViewer.RollPitchYawData & mapray.GeoPointData;
 
     private _operation_mode: StandardUIViewer.OperationMode;
 
@@ -197,27 +197,27 @@ class StandardUIViewer extends mapray.RenderCallback
      * @param access_token                            アクセストークン
      * @param options                                 生成オプション
      */
-    private createViewer( container: string | HTMLElement, access_token: string, options: StandardUIViewer.Option = {} ) {
-        if ( this._viewer )
-        {
+    protected createViewer( container: string | HTMLElement, access_token: string, options: StandardUIViewer.Option = {} )
+    {
+        if ( this._viewer ) {
             this.destroy();
         }
 
         const viewer = this._viewer = new mapray.Viewer(
             container, {
-            dem_provider: this._createDemProvider( access_token, options ),
-            image_provider: this._createImageProvider( options ),
-            layers: options.layers,
-            render_callback: this,
-            ground_visibility: ( options && (options.ground_visibility !== undefined)) ? options.ground_visibility : true,
-            entity_visibility: ( options && (options.entity_visibility !== undefined)) ? options.entity_visibility : true,
-            render_mode: ( options && options.render_mode ) || mapray.Viewer.RenderMode.SURFACE,
-            debug_stats: ( options && options.debug_stats ),
-            attribution_controller: ( options && options.attribution_controller ),
-            atmosphere: ( options && options.atmosphere ),
-            sun_visualizer: ( options && options.sun_visualizer ),
-            moon_visualizer: ( options && options.moon_visualizer ),
-        }
+                dem_provider: this.createDemProvider( access_token, options ),
+                image_provider: this.createImageProvider( options ),
+                layers: options.layers,
+                render_callback: this,
+                ground_visibility: ( options && (options.ground_visibility !== undefined)) ? options.ground_visibility : true,
+                entity_visibility: ( options && (options.entity_visibility !== undefined)) ? options.entity_visibility : true,
+                render_mode: ( options && options.render_mode ) || mapray.Viewer.RenderMode.SURFACE,
+                debug_stats: ( options && options.debug_stats ),
+                attribution_controller: ( options && options.attribution_controller ),
+                atmosphere: ( options && options.atmosphere ),
+                sun_visualizer: ( options && options.sun_visualizer ),
+                moon_visualizer: ( options && options.moon_visualizer ),
+            }
         );
 
         // 右クリックメニューの無効化
@@ -246,7 +246,6 @@ class StandardUIViewer extends mapray.RenderCallback
         this._removeEventListener()
 
         this._viewer.destroy();
-        this._viewer = undefined;
     }
 
     /**
@@ -264,7 +263,7 @@ class StandardUIViewer extends mapray.RenderCallback
      * @param options      生成オプション
      * @returns            DEMプロバイダ
      */
-    private _createDemProvider( access_token: string, options: StandardUIViewer.Option ): mapray.DemProvider<any>
+    protected createDemProvider( access_token: string, options: StandardUIViewer.Option ): mapray.DemProvider<any>
     {
         // @ts-ignore
         return options.dem_provider || new mapray.CloudDemProvider( access_token );
@@ -276,7 +275,7 @@ class StandardUIViewer extends mapray.RenderCallback
      * @param options 生成オプション
      * @returns       画像プロバイダ
      */
-    private _createImageProvider( options: StandardUIViewer.Option ): mapray.ImageProvider
+    protected createImageProvider( options: StandardUIViewer.Option ): mapray.ImageProvider
     {
         // @ts-ignore
         return options.image_provider || new mapray.StandardImageProvider( "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", ".jpg", 256, 2, 18 );
@@ -303,7 +302,7 @@ class StandardUIViewer extends mapray.RenderCallback
         this.setCameraParameter( camera_parameter );
 
         // カメラ姿勢の確定
-        this._updateViewerCamera();
+        this.updateCamera();
     }
 
 
@@ -342,9 +341,9 @@ class StandardUIViewer extends mapray.RenderCallback
         this.setCameraParameter( camera_parameter );
 
         // カメラ姿勢の確定
-        this._updateViewerCamera();
-
+        this.updateCamera();
     }
+
 
     /**
      * URLのパラメータの抽出と、カメラパラメータの算出
@@ -523,19 +522,28 @@ class StandardUIViewer extends mapray.RenderCallback
     /**
      * フレームレンダリング前の処理
      *
+     * - 値の計算
+     *   - [[updateTranslation]]：longitude, latitude, heightの計算
+     *   - [[updateRotation]]：roll, pitch, yawの計算
+     * - 値の適用
+     *   - [[updateClipPlane]]：near, farの更新
+     *   - [[updateCamera]]：カメラ姿勢を
+     *
+     * ただし、フライカメラが動作している間は上記処理は停止されます。
+     *
      * @param delta_time  全フレームからの経過時間（秒）
      */
     override onUpdateFrame( delta_time: number )
     {
-        if(this._viewerCameraMode === StandardUIViewer.CameraMode.CAMERA_FLY) {
+        if (this._viewerCameraMode === StandardUIViewer.CameraMode.CAMERA_FLY) {
             this.updateFlyCamera( delta_time );
 
         } else {
             // 平行移動
-            this._translation( delta_time );
+            this.updateTranslation( delta_time );
 
             // 回転
-            this._rotation();
+            this.updateRotation( delta_time );
 
             // 自由回転
             this._freeRotation( delta_time )
@@ -553,20 +561,19 @@ class StandardUIViewer extends mapray.RenderCallback
             this._correctAltitude();
 
             // クリップ範囲の更新
-            this._updateClipPlane();
+            this.updateClipPlane();
 
             // カメラ姿勢の確定
-            this._updateViewerCamera();
+            this.updateCamera();
         }
     }
 
     /**
      * カメラの位置・向きの更新
      */
-    private _updateViewerCamera()
+    protected updateCamera()
     {
-        // @ts-ignore
-        var camera = this._viewer.camera;
+        var camera = this.viewer.camera;
 
         var camera_geoPoint = new GeoPoint( this._camera_parameter.longitude, this._camera_parameter. latitude, this._camera_parameter.height );
         var camera_matrix = camera_geoPoint.getMlocsToGocsMatrix( GeoMath.createMatrix() );
@@ -674,7 +681,7 @@ class StandardUIViewer extends mapray.RenderCallback
     /**
      * クリップ範囲の更新
      */
-    private _updateClipPlane()
+    protected updateClipPlane()
     {
         const viewer = this._viewer;
         if ( !viewer ) return;
@@ -1081,7 +1088,7 @@ class StandardUIViewer extends mapray.RenderCallback
     /**
      * カメラの平行移動
      */
-    private _translation( delta_time: number )
+    protected updateTranslation( delta_time: number )
     {
         const viewer = this._viewer;
         if ( !viewer ) return;
@@ -1154,7 +1161,7 @@ class StandardUIViewer extends mapray.RenderCallback
     /**
      * カメラの回転（回転中心指定）
      */
-    private _rotation()
+    protected updateRotation( delta_time: number )
     {
         const viewer = this._viewer;
         if ( !viewer ) return;
@@ -1355,6 +1362,21 @@ class StandardUIViewer extends mapray.RenderCallback
         this._fovy_key = 0;
     }
 
+
+    /**
+     * カメラ位置の取得
+     */
+    getCameraPosition(): mapray.GeoPointData
+    {
+        const parameter = this._camera_parameter;
+        return {
+            longitude: parameter.longitude,
+            latitude: parameter.latitude,
+            height: parameter.height,
+        };
+    }
+
+
     /**
      * カメラ位置の設定
      *
@@ -1372,6 +1394,35 @@ class StandardUIViewer extends mapray.RenderCallback
             this._camera_parameter.height = StandardUIViewer.MINIMUM_HEIGHT
         }
     }
+
+
+
+    /**
+     * カメラ方向の取得
+     */
+    getCameraAngle(): StandardUIViewer.RollPitchYawData
+    {
+        const parameter = this._camera_parameter;
+        return {
+            roll: parameter.roll,
+            pitch: parameter.pitch,
+            yaw: parameter.yaw,
+        };
+    }
+
+    /**
+     * カメラ方向の設定
+     */
+    setCameraAngle( angle: StandardUIViewer.RollPitchYawData ): void
+    {
+        const parameter = this._camera_parameter;
+        parameter.roll = angle.roll;
+        parameter.pitch = angle.pitch;
+        parameter.yaw = angle.yaw;
+    }
+
+
+
 
     /**
      * 閾値のある同一判定
@@ -1450,10 +1501,28 @@ class StandardUIViewer extends mapray.RenderCallback
         this._camera_parameter.pitch = GeoMath.clamp( Math.abs( this._calculateAngle( rotate_axis, current_camera_direction, target_camera_direction ) ), 0, 90 );
     }
 
+
+
+    /**
+     * カメラパラメータの取得
+     */
+    getCameraParameter(): StandardUIViewer.CameraParameter
+    {
+        const parameter = this._camera_parameter;
+        return {
+            fov: parameter.fov,
+            near: parameter.near,
+            far: parameter.far,
+            speed_factor: parameter.speed_factor,
+        };
+    }
+
+
+
     /**
      * カメラパラメータの設定
      *
-     * @param parameter               カメラパラメータ
+     * @param parameter  カメラパラメータ
      */
     setCameraParameter( parameter: StandardUIViewer.CameraParameterOption )
     {
@@ -1466,6 +1535,8 @@ class StandardUIViewer extends mapray.RenderCallback
         if ( parameter.far ) { this._camera_parameter.far = parameter.far; }
         if ( parameter.speed_factor ) { this._camera_parameter.speed_factor = parameter.speed_factor; }
     }
+
+
 
     /**
      * レイヤの取得
@@ -1930,7 +2001,7 @@ class StandardUIViewer extends mapray.RenderCallback
         block.addEntry( "orientation", [vector3], null, (value: mapray.Vector3) => {
             this._camera_parameter.yaw = value[0];
             this._camera_parameter.pitch = value[1];
-            this._updateViewerCamera();
+            this.updateCamera();
         } );
     }
 
@@ -2076,7 +2147,7 @@ export interface HeadingTilt {
 
 
 
-export interface CameraParameterProps {
+export interface CameraParameter {
     /** 画角（度） */
     fov: number;
 
@@ -2088,12 +2159,6 @@ export interface CameraParameterProps {
 
     /** 移動速度係数 */
     speed_factor: number;
-
-    roll: number;
-
-    pitch: number;
-
-    yaw: number;
 }
 
 
@@ -2109,7 +2174,21 @@ export interface CameraParameterOption {
 
     /** 移動速度係数 */
     speed_factor?: number;
+}
 
+
+
+export interface RollPitchYawData {
+    roll: number;
+
+    pitch: number;
+
+    yaw: number;
+}
+
+
+
+export interface RollPitchYawOption {
     roll?: number;
 
     pitch?: number;
