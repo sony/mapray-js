@@ -6,7 +6,7 @@ import Scene from "./Scene";
 import Texture from "./Texture";
 import TextMaterial from "./TextMaterial";
 import SimpleTextMaterial from "./SimpleTextMaterial";
-import GeoMath, { Vector3, Matrix } from "./GeoMath";
+import GeoMath, { Vector3, Vector4, Matrix } from "./GeoMath";
 import GeoPoint from "./GeoPoint";
 import RenderStage from "./RenderStage";
 import AltitudeMode from "./AltitudeMode";
@@ -42,10 +42,10 @@ class TextEntity extends AbstractPointEntity<TextEntity.TextEntry> {
             font_weight:  "normal",
             font_size:    TextEntity.DEFAULT_FONT_SIZE,
             font_family:  TextEntity.DEFAULT_FONT_FAMILY,
-            color:        Color.generateOpacityColor( TextEntity.DEFAULT_COLOR as Vector3 ),
-            stroke_color: Color.generateOpacityColor( TextEntity.DEFAULT_STROKE_COLOR as Vector3 ),
+            color:        TextEntity.DEFAULT_COLOR,
+            stroke_color: TextEntity.DEFAULT_STROKE_COLOR,
             stroke_width: TextEntity.DEFAULT_STROKE_WIDTH,
-            bg_color:     Color.generateOpacityColor( TextEntity.DEFAULT_BG_COLOR as Vector3 ),
+            bg_color:     TextEntity.DEFAULT_BG_COLOR,
             enable_stroke: false,
             enable_bg: false
         };
@@ -188,7 +188,7 @@ class TextEntity extends AbstractPointEntity<TextEntity.TextEntry> {
      * テキストの色を設定
      * @param color  テキストの色
      */
-    setColor( color: Vector3 )
+    setColor( color: Vector3 | Vector4 )
     {
         this._setColorProperty( "color", color );
     }
@@ -197,7 +197,7 @@ class TextEntity extends AbstractPointEntity<TextEntity.TextEntry> {
      * テキスト縁の色を設定
      * @param color  縁の色
      */
-    setStrokeColor( color: Vector3 )
+    setStrokeColor( color: Vector3 | Vector4 )
     {
         this._setColorProperty( "stroke_color", color );
     }
@@ -225,7 +225,7 @@ class TextEntity extends AbstractPointEntity<TextEntity.TextEntry> {
      * テキスト背景の色を設定
      * @param color  テキストの色
      */
-    setBackgroundColor( color: Vector3 )
+    setBackgroundColor( color: Vector3 | Vector4 )
     {
         this._setColorProperty( "bg_color", color );
     }
@@ -319,11 +319,11 @@ class TextEntity extends AbstractPointEntity<TextEntity.TextEntry> {
     }
 
 
-    private _setColorProperty( name: string, value: any )
+    private _setColorProperty( name: string, value: Vector3 | Vector4 )
     {
-        var dst = this._text_parent_props[name] as Color;
-        if ( dst.r != value[0] || dst.g != value[1] || dst.b != value[2] ) {
-            Color.setOpacityColor( value, dst );
+        var dst = this._text_parent_props[name] as Vector4;
+        if ( dst[0] !== value[0] || dst[1] !== value[1] || dst[2] !== value[2] ) {
+            Color.premultiply( value, dst );
             if ( this._primitive_producer ) {
               this._primitive_producer.onChangeParentProperty();
             }
@@ -396,13 +396,13 @@ export interface Json extends Entity.Json {
 
     font_family?: string;
 
-    stroke_color?: Vector3;
+    stroke_color?: Vector3 | Vector4;
 
     stroke_width?: number;
 
-    color?: Vector3;
+    color?: Vector3 | Vector4;
 
-    bg_color?: Vector3;
+    bg_color?: Vector3 | Vector4;
 
     enable_bg?: boolean;
 
@@ -429,11 +429,11 @@ export interface ParentProps {
     font_weight: FontWeight;
     font_size: number;
     font_family: string;
-    color: Color,
-    stroke_color: Color,
-    stroke_width: number,
-    bg_color: Color;
-    enable_stroke: boolean,
+    color: Vector4;
+    stroke_color: Vector4;
+    stroke_width: number;
+    bg_color: Vector4;
+    enable_stroke: boolean;
     enable_bg: boolean,
     [name: string]: any,
 }
@@ -446,10 +446,10 @@ export type FontWeight = "normal" | "bold";
 
 export const DEFAULT_FONT_SIZE    = 16;
 export const DEFAULT_FONT_FAMILY  = "sans-serif";
-export const DEFAULT_COLOR        = [1, 1, 1];
-export const DEFAULT_STROKE_COLOR = [0.0, 0.0, 0.0];
+export const DEFAULT_COLOR        = Color.createColor([1.0, 1.0, 1.0]);
+export const DEFAULT_STROKE_COLOR = Color.createColor([0.0, 0.0, 0.0]);
 export const DEFAULT_STROKE_WIDTH = 0.48;
-export const DEFAULT_BG_COLOR     = [0.3, 0.3, 0.3];
+export const DEFAULT_BG_COLOR     = Color.createColor([0.3, 0.3, 0.3]);
 
 export const DEFAULT_TEXT_UPPER  = 1.1;
 export const DEFAULT_TEXT_LOWER  = 0.38;
@@ -871,7 +871,7 @@ export class TextEntry extends AbstractPointEntity.Entry {
 
     private _position: GeoPoint;
 
-    private _props: EntryOption;
+    private _props: EntryProps;
 
     private _animation: BindingBlock;
 
@@ -893,7 +893,7 @@ export class TextEntry extends AbstractPointEntity.Entry {
 
         this._setupAnimationBindingBlock();
 
-        this._props = Object.assign( {}, props );   // props の複製
+        this._props = Object.assign( {}, props ) as TextEntity.EntryProps; // props の複製
         this._copyColorProperty( "color" );         // deep copy
         this._copyColorProperty( "stroke_color" );  // deep copy
         this._copyColorProperty( "bg_color" );      // deep copy
@@ -953,7 +953,7 @@ export class TextEntry extends AbstractPointEntity.Entry {
      * テキストの色
      * @internal
      */
-    get color(): Color
+    get color(): Vector4
     {
         var props  = this._props;
         // @ts-ignore
@@ -985,7 +985,7 @@ export class TextEntry extends AbstractPointEntity.Entry {
      * テキスト縁の色
      * @internal
      */
-    get stroke_color(): Color
+    get stroke_color(): Vector4
     {
         var props  = this._props;
         // @ts-ignore
@@ -1025,7 +1025,7 @@ export class TextEntry extends AbstractPointEntity.Entry {
      * @readonly
      * @package
      */
-    get bg_color(): Color
+    get bg_color(): Vector4
     {
         var props  = this._props;
         // @ts-ignore
@@ -1034,10 +1034,8 @@ export class TextEntry extends AbstractPointEntity.Entry {
     }
 
     /**
-     * @summary 背景描画するか
-     * @type {boolean}
-     * @readonly
-     * @package
+     * 背景描画するか
+     * @internal
      */
     get enable_background(): boolean
     {
@@ -1050,10 +1048,8 @@ export class TextEntry extends AbstractPointEntity.Entry {
 
     /**
      * アニメーションの BindingBlock を初期化
-     *
-     * @private
      */
-    _setupAnimationBindingBlock()
+    private _setupAnimationBindingBlock()
     {
         // @ts-ignore
         const block = this.animation as EasyBindingBlock;  // 実体は EasyBindingBlock
@@ -1177,7 +1173,7 @@ export class TextEntry extends AbstractPointEntity.Entry {
      * テキストの色を設定
      * @param color  テキストの色
      */
-    setColor( color: Vector3 )
+    setColor( color: Vector3 | Vector4 )
     {
         this._setColorProperty( "color", color );
     }
@@ -1187,7 +1183,7 @@ export class TextEntry extends AbstractPointEntity.Entry {
      * テキスト縁の色を設定
      * @param color  縁の色
      */
-    setStrokeColor( color: Vector3 )
+    setStrokeColor( color: Vector3 | Vector4 )
     {
         this._setColorProperty( "stroke_color", color );
     }
@@ -1235,7 +1231,7 @@ export class TextEntry extends AbstractPointEntity.Entry {
     {
         var props = this._props;
         if ( props.hasOwnProperty( name ) ) {
-            props[name] = Color.generateOpacityColor( props[name] );
+            props[name] = Color.createColor( props[name] );
         }
     }
 
@@ -1253,13 +1249,13 @@ export class TextEntry extends AbstractPointEntity.Entry {
     }
 
 
-    private _setColorProperty( name: string, value: Vector3 )
+    private _setColorProperty( name: string, value: Vector3 | Vector4 )
     {
         var dst = this._props[name];
         if ( dst )
         {
-            if ( dst.r != value[0] || dst.g != value[1] || dst.b != value[2] ) {
-                Color.setOpacityColor( value, dst );
+            if ( dst[0] != value[0] || dst[1] != value[1] || dst[2] != value[2] ) {
+                Color.premultiply( value, dst );
                 const primitiveProducer = this._owner.getPrimitiveProducer()
                 if ( primitiveProducer ) {
                     primitiveProducer.onChangeChildProperty();
@@ -1268,7 +1264,7 @@ export class TextEntry extends AbstractPointEntity.Entry {
         }
         else
         {
-            this._props[name] = Color.generateOpacityColor( value );
+            this._props[name] = Color.premultiply( value, Color.createColor() );
             const primitiveProducer = this._owner.getPrimitiveProducer()
             if ( primitiveProducer ) {
                 primitiveProducer.onChangeChildProperty();
@@ -1293,13 +1289,13 @@ export interface EntryOption {
     font_family?: string;
 
     /** テキストの色 */
-    color?: Color;
+    color?: Vector3 | Vector4;
 
     /** テキスト縁の色 */
-    stroke_color?: Color;
+    stroke_color?: Vector3 | Vector4;
 
     /** 背景色 */
-    bg_color?: Color;
+    bg_color?: Vector3 | Vector4;
 
     /** テキスト縁の幅 */
     stroke_width?: number;
@@ -1315,7 +1311,37 @@ export interface EntryOption {
 
 
 export interface EntryProps {
-    
+    /** フォントスタイル */
+    font_style?: FontStyle;
+
+    /** フォントの太さ */
+    font_weight?: FontWeight;
+
+    /** フォントの大きさ (Pixels) */
+    font_size?: number;
+
+    /** フォントファミリー */
+    font_family?: string;
+
+    /** テキストの色 */
+    color?: Vector4;
+
+    /** テキスト縁の色 */
+    stroke_color?: Vector4;
+
+    /** 背景色 */
+    bg_color?: Vector4;
+
+    /** テキスト縁の幅 */
+    stroke_width?: number;
+
+    /** テキストの縁取りを有効にするか */
+    enable_stroke?: boolean;
+
+    /** Entryを識別するID */
+    id?: string;
+
+    [name: string]: any;
 }
 
 
@@ -1622,7 +1648,7 @@ class Layout {
             var entry = item.entry;
 
             // テキストの色
-            var color = entry.color.toVector4();
+            var color = entry.color;
 
             // テキストの位置 (モデル座標系)
             var ibase = 3 * i;
@@ -1919,7 +1945,7 @@ class LItem {
         var entry = this._entry;
 
         context.font = entry.font;
-        context.fillStyle =  entry.color.toRGBString();
+        context.fillStyle =  Color.toRGBString( entry.color );
         context.fillText( entry.text, this._pos_x, this._pos_y );
     }
 
@@ -1957,7 +1983,7 @@ class LItem {
         var entry = this._entry;
 
         context.font = entry.font;
-        context.strokeStyle = entry.stroke_color.toRGBString();
+        context.strokeStyle = Color.toRGBString( entry.stroke_color );
         context.lineWidth = entry.stroke_width * 2;
         context.lineJoin = "round";
         context.strokeText( entry.text, this._pos_x, this._pos_y );
@@ -1975,8 +2001,13 @@ class LItem {
     {
         var entry = this._entry;
 
-        context.fillStyle = entry.bg_color.toRGBString();
-        context.fillRect( this._pos_x - TextEntity.SAFETY_PIXEL_MARGIN, this._pos_y - this._upper - TextEntity.SAFETY_PIXEL_MARGIN, this.width_pixel + TextEntity.SAFETY_PIXEL_MARGIN, this.height_pixel + TextEntity.SAFETY_PIXEL_MARGIN );
+        context.fillStyle = Color.toRGBString( entry.bg_color );
+        context.fillRect(
+            this._pos_x - TextEntity.SAFETY_PIXEL_MARGIN,
+            this._pos_y - TextEntity.SAFETY_PIXEL_MARGIN - this._upper,
+            this.width_pixel  + TextEntity.SAFETY_PIXEL_MARGIN,
+            this.height_pixel + TextEntity.SAFETY_PIXEL_MARGIN
+        );
     }
 }
 
