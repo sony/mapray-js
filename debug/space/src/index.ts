@@ -9,8 +9,8 @@ let appInstance: SpaceApp | undefined;
  * アプリを開始
  * @param  {string|Element} container  コンテナ (ID または要素)
  */
-export default function( container: HTMLElement | string )
-{
+ function startApp( container: HTMLElement | string )
+ {
     if ( appInstance ) {
         // すでに動作していれば停止して消去
         appInstance.destroy();
@@ -18,3 +18,7 @@ export default function( container: HTMLElement | string )
     }
     appInstance = new SpaceApp( container );
 }
+
+// グローバル関数に登録
+// @ts-ignore
+window.startApp = startApp;

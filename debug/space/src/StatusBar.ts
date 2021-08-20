@@ -3,15 +3,43 @@ var GeoMath = mapray.GeoMath;
 
 
 /**
- * @summary ステータスバーの更新
+ * ステータスバーの更新
  */
 class StatusBar {
+    private _position: mapray.GeoPointData;
+    private _elevation: number;
+    private _direction:  mapray.Vector3;
+    private _pitch_angle: number;
+    private _fov_angle: number;
+    private _layer_mode: number;
+    private _fps: number;
+
+    private _elem_latitude: HTMLElement;
+    private _elem_longitude: HTMLElement;
+    private _elem_height: HTMLElement;
+    private _elem_elevation: HTMLElement;
+    private _elem_yaw_angle: HTMLElement;
+    private _elem_pitch_angle: HTMLElement;
+    private _elem_fov_angle: HTMLElement;
+    private _elem_layer: HTMLElement;
+    private _elem_fps: HTMLElement;
+
+    private _elem_cnt_mesh: HTMLElement;
+    private _elem_cnt_vert: HTMLElement;
+    private _elem_reqs_dem: HTMLElement;
+    private _elem_reqs_img: HTMLElement;
+    private _elem_provider: HTMLElement;
+
+    private _debug_stats: mapray.DebugStats;
+    private _time: number;
+
+    private _debug_console_count: number;
 
     /**
-     * @param {Inou.Viewer} viewer
-     * @param {string}      provider_name  データプロバイダ名
+     * @param viewer
+     * @param provider_name  データプロバイダ名
      */
-    constructor( viewer, provider_name )
+    constructor( viewer: mapray.Viewer, provider_name: string )
     {
         this._position    = { latitude: 0, longitude: 0, height: 0 }; // カメラ位置
         this._elevation   = 0;  // 地表面の標高
@@ -21,36 +49,35 @@ class StatusBar {
         this._layer_mode  = 0;
         this._fps         = 0;
 
-        this._elem_latitude    = document.getElementById( "latitude" );
-        this._elem_longitude   = document.getElementById( "longitude" );
-        this._elem_height      = document.getElementById( "cam-height" );
-        this._elem_elevation   = document.getElementById( "elevation" );
-        this._elem_yaw_angle   = document.getElementById( "yaw-angle" );
-        this._elem_pitch_angle = document.getElementById( "pitch-angle" );
-        this._elem_fov_angle   = document.getElementById( "fov-angle" );
-        this._elem_layer       = document.getElementById( "layer" );
-        this._elem_fps         = document.getElementById( "fps" );
+        this._elem_latitude    = document.getElementById( "latitude" )!;
+        this._elem_longitude   = document.getElementById( "longitude" )!;
+        this._elem_height      = document.getElementById( "cam-height" )!;
+        this._elem_elevation   = document.getElementById( "elevation" )!;
+        this._elem_yaw_angle   = document.getElementById( "yaw-angle" )!;
+        this._elem_pitch_angle = document.getElementById( "pitch-angle" )!;
+        this._elem_fov_angle   = document.getElementById( "fov-angle" )!;
+        this._elem_layer       = document.getElementById( "layer" )!;
+        this._elem_fps         = document.getElementById( "fps" )!;
 
-        this._elem_cnt_mesh = document.getElementById( "cnt-mesh" );
-        this._elem_cnt_vert = document.getElementById( "cnt-vert" );
-        this._elem_reqs_dem = document.getElementById( "reqs-dem" );
-        this._elem_reqs_img = document.getElementById( "reqs-img" );
-        this._elem_provider = document.getElementById( "provider" );
+        this._elem_cnt_mesh = document.getElementById( "cnt-mesh" )!;
+        this._elem_cnt_vert = document.getElementById( "cnt-vert" )!;
+        this._elem_reqs_dem = document.getElementById( "reqs-dem" )!;
+        this._elem_reqs_img = document.getElementById( "reqs-img" )!;
+        this._elem_provider = document.getElementById( "provider" )!;
 
         this._elem_provider.innerHTML = provider_name;
 
-        this._debug_stats = viewer.debug_stats;
+        this._debug_stats = viewer.debug_stats!;
         this._time        = StatusBar.UPDATE_INTERVAL;
         this._debug_console_count = 0;
     }
 
 
     /**
-     * @summary カメラの位置を設定
-     * @param {object} position  標高 0 面上でのカメラ位置
-     * @param {number}       height    カメラの高度
+     * カメラの位置を設定
+     * @param position  標高 0 面上でのカメラ位置
      */
-    setCameraPosition( position)
+    setCameraPosition( position: mapray.GeoPointData )
     {
         this._position.latitude = position.latitude;
         this._position.longitude = position.longitude;
@@ -59,21 +86,21 @@ class StatusBar {
 
 
     /**
-     * @summary カメラ直下の標高を設定
-     * @param {number} elevation  カメラ直下の標高
+     * カメラ直下の標高を設定
+     * @param elevation  カメラ直下の標高
      */
-    setElevation( elevation )
+    setElevation( elevation: number )
     {
         this._elevation = elevation;
     }
 
 
     /**
-     * @summary カメラの方向を設定
-     * @param {Inou.Vector3} direction  方位ベクトル (GOCS)
-     * @param {number}       pitch      仰俯角
+     * カメラの方向を設定
+     * @param direction  方位ベクトル (GOCS)
+     * @param pitch      仰俯角
      */
-    setDirection( direction, pitch )
+    setDirection( direction: mapray.Vector3, pitch: number )
     {
         GeoMath.copyVector3( direction, this._direction );
         this._pitch_angle = pitch;
@@ -81,36 +108,36 @@ class StatusBar {
 
 
     /**
-     * @summary カメラの画角を設定
-     * @param {number} fov      画角
+     * カメラの画角を設定
+     * @param fov      画角
      */
-    setFovAngle( fov )
+    setFovAngle( fov: number )
     {
         this._fov_angle = fov;
     }
 
     /**
-     * @summary Layerを設定
-     * @param {number} layer
+     * Layerを設定
+     * @param layer
      */
-    setLayer( layer_mode )
+    setLayer( layer_mode: number )
     {
         this._layer_mode = layer_mode;
     }
 
     /**
-     * @summary Fpsを設定
-     * @param {number} fps
+     * Fpsを設定
+     * @param fps
      */
-    setFps( fps )
+    setFps( fps: number )
     {
         this._fps = fps;
     }
 
     /**
-     * @summary ステータスバーの要素を更新
+     *  ステータスバーの要素を更新
      */
-    updateElements( delta_time )
+    updateElements( delta_time: number )
     {
         // 更新間隔の制御
         this._time -= delta_time;
@@ -132,10 +159,18 @@ class StatusBar {
 
         var debug_stats = this._debug_stats;
 
-        this._updateElement( this._elem_cnt_mesh, debug_stats.num_drawing_flakes );
-        this._updateElement( this._elem_cnt_vert, debug_stats.num_drawing_flake_vertices );
-        this._updateElement( this._elem_reqs_dem, debug_stats.num_wait_reqs_dem );
-        this._updateElement( this._elem_reqs_img, debug_stats.num_wait_reqs_img );
+        if( debug_stats.num_drawing_flakes !== undefined ) {
+            this._updateElement( this._elem_cnt_mesh, debug_stats.num_drawing_flakes.toString() );
+        }
+        if( debug_stats.num_drawing_flake_vertices !== undefined ) {
+            this._updateElement( this._elem_cnt_vert, debug_stats.num_drawing_flake_vertices.toString() );
+        }
+        if( debug_stats.num_wait_reqs_dem !== undefined ) {
+            this._updateElement( this._elem_reqs_dem, debug_stats.num_wait_reqs_dem.toString() );
+        }
+        if( debug_stats.num_wait_reqs_img !== undefined ) {
+            this._updateElement( this._elem_reqs_img, debug_stats.num_wait_reqs_img.toString() );
+        }
 
         // デバッグコンソール
         ++this._debug_console_count;
@@ -150,9 +185,9 @@ class StatusBar {
 
 
     /**
-     * @private
+     * Element更新 
      */
-    _updateElement( element, text )
+     private _updateElement( element: HTMLElement, text: string )
     {
         if ( element.innerHTML != text ) {
             element.innerHTML = text;
@@ -160,10 +195,9 @@ class StatusBar {
     }
 
     /**
-     * @summary 数値を指定の正確度に整形
-     * @private
+     * 数値を指定の正確度に整形
      */
-    _formatNumber( value, accuracy )
+     private _formatNumber( value: number, accuracy: number )
     {
         var sval = Math.round( Math.abs( value ) * Math.pow( 10, accuracy ) ) + '';
         if ( sval.length <= accuracy ) {
@@ -185,13 +219,11 @@ class StatusBar {
 
 
     /**
-     * @summary 方位角を計算
+     *  方位角を計算
      *
      *  yaw = ArcTan[dz Cos[φ] - (dx Cos[λ] + dy Sin[λ]) Sin[φ], dy Cos[λ] - dx Sin[λ]]
-     *
-     * @private
      */
-    _calcYawAngle( lat, lon )
+    private _calcYawAngle( lat:number, lon: number )
     {
         var    λ = lon * GeoMath.DEGREE;
         var    φ = lat * GeoMath.DEGREE;
@@ -213,8 +245,12 @@ class StatusBar {
 }
 
 
-StatusBar.UPDATE_INTERVAL     = 0.15;
-StatusBar.DEBUG_CONSOLE_CYCLE = 10;
 
+namespace StatusBar {
+
+    export const UPDATE_INTERVAL     = 0.15;
+    export const DEBUG_CONSOLE_CYCLE = 10;
+
+} // namespace StatusBar
 
 export default StatusBar;

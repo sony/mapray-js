@@ -1,12 +1,22 @@
+import mapray from "@mapray/mapray-js";
+import { MaprayApi } from "../../../packages/mapray/dist/es/@type";
+
 /**
  * @summary 操作コマンドの発行
  */
 class Commander {
 
+    private _rmode_chg: boolean;
+    private _layer_up: boolean;
+    private _layer_dn: boolean;
+    private _gis_chg: boolean;
+    private _bing_chg: boolean;
+    private _capture: boolean;
+
     /**
-     * @param {Inou.Viewer} viewer
+     * @param viewer
      */
-    constructor( viewer )
+    constructor( viewer: mapray.Viewer )
     {
         var element = viewer.canvas_element;
         var    self = this;
@@ -71,7 +81,7 @@ class Commander {
         return this._capture;
     }
 
-    OnKeyDown( event )
+    OnKeyDown( event: KeyboardEvent )
     {
         switch ( event.key ) {
             case "m": case "M":
@@ -104,7 +114,7 @@ class Commander {
      * @summary フォーカスを失った
      * @private
      */
-    _onBlur( event )
+    _onBlur( event: FocusEvent )
     {
         this._rmode_chg  = false;
         this._layer_up   = false;

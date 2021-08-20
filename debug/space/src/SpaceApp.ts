@@ -196,13 +196,59 @@ const RENDER_OPTION_PROPERTIES = [
     },
 ];
 
+interface InitCamera {
+    latitude: number,
+    longitude: number,
+    height: number,
+    fov: number
+}
 
-class SpaceApp extends maprayui.StandardUIViewer {
+
+export default class SpaceApp extends maprayui.StandardUIViewer {
+
+    private _commander: Commander;
+    private _statusbar: StatusBar;
+    private _container: HTMLElement | string;
+
+    private _init_camera: InitCamera;
+
+    private _lookat_position: mapray.GeoPointData;
+
+    private _isChangedGIS: boolean;
+    private _isChangedBing: boolean;
+    private _layerUpParameter: number;
+
+    private _isGIS: boolean;
+    private _isBing: boolean;
+    private _layer_transparency: number;
+
+    private _elapsedTime: number;
+
+    private _moveSun: boolean;
+    private _sunSpeed: number;
+
+    private _moonElapsedTime: number;
+    private _moveMoon: boolean;
+    private _moonSpeed: number;
+
+    private _fps: number[];
+    private _fps_count: number;
+
+    private _point_cloud_mode?: string;
+
+    private _point_cloud_cache: {
+        mode?: string;
+        bbox_geoms: mapray.MarkerLineEntity[];
+        pointCloudList?: mapray.PointCloud[];
+        ui?: HTMLElement;
+    };
+
+
 
     /**
-     * @param {string|Element} container  コンテナ (ID または要素)
+     * @param container  コンテナ (ID または要素)
      */
-    constructor( container )
+    constructor( container: HTMLElement | string )
     {
         super( container, accessToken, {
             debug_stats: new mapray.DebugStats(),
@@ -220,8 +266,8 @@ class SpaceApp extends maprayui.StandardUIViewer {
         );
 
         this.addLayer( { image_provider: this._createLayerImageProvider(), opacity: 1.0, type: mapray.Layer.LayerType.NIGHT } );
-        this._commander = new Commander( this._viewer );
-        this._statusbar = new StatusBar( this._viewer, DEM_ATTRIBUTE + ", " + GSI_ATTRIBUTE );
+        this._commander = new Commander( this.viewer );
+        this._statusbar = new StatusBar( this.viewer, DEM_ATTRIBUTE + ", " + GSI_ATTRIBUTE );
         this._container = container;
 
         // カメラの初期設定
@@ -280,20 +326,18 @@ class SpaceApp extends maprayui.StandardUIViewer {
         this._updateDebugUI();
 
         // PointCloud
-        this._point_cloud_mode = null;
+        this._point_cloud_mode = undefined;
         this._point_cloud_cache = {
-            bbox_geoms: []
+            bbox_geoms: [],
         };
     }
 
     /**
      * Viewerを閉じる
      */
-    _closeViewer()
+    private _closeViewer()
     {
         this.destroy();
-        this._commander = null;
-        this._statusBar = null;
         this._isGIS = false;
         this._layer_transparency = 10;
     }
@@ -301,7 +345,7 @@ class SpaceApp extends maprayui.StandardUIViewer {
     /**
      * Layer用の画像プロバイダを生成
      */
-    _createLayerImageProvider()
+     private _createLayerImageProvider()
     {
       return new mapray.StandardImageProvider("https://storage.googleapis.com/inou-dev-mapray-additional-resources/image-tile/night/", ".png", 256, 0, 8);
       // return new mapray.StandardImageProvider("https://cyberjapandata.gsi.go.jp/xyz/std/", ".png", 256, 2, 8);
@@ -311,7 +355,7 @@ class SpaceApp extends maprayui.StandardUIViewer {
     /**
      * GIS情報の表示
      */
-    _loadGISInfo()
+     private _loadGISInfo()
     {
         // シーンの読み込みを開始
 
@@ -356,7 +400,7 @@ class SpaceApp extends maprayui.StandardUIViewer {
 
         // 直線のエンティティを作成
         {
-           var line_entity = new mapray.MarkerLineEntity(this._viewer.scene);
+           var line_entity = new mapray.MarkerLineEntity(this.viewer.scene);
            // 皇居の座標を設定
            var line_fast_position = { longitude: 139.7528, latitude: 35.685175, height: 50 };
            // 東京タワーの座標を設定
@@ -365,38 +409,38 @@ class SpaceApp extends maprayui.StandardUIViewer {
            var position_array = [line_fast_position.longitude, line_fast_position.latitude, line_fast_position.height,
                                  line_second_position.longitude, line_second_position.latitude, line_second_position.height];
            line_entity.addPoints(position_array);
-           this._viewer.scene.addEntity(line_entity);
+           this.viewer.scene.addEntity(line_entity);
 
            // 文字のエンティティを作成
-           var font_entity = new mapray.TextEntity(this._viewer.scene);
+           var font_entity = new mapray.TextEntity(this.viewer.scene);
            var fast_font_position = { longitude: 139.7528, latitude: 35.685175, height: 50 };
            var fast_font_geopoint = new mapray.GeoPoint(fast_font_position.longitude, fast_font_position.latitude, fast_font_position.height);
-           font_entity.addText("The Imperial Palace", fast_font_geopoint, { color: [1, 1, 0], font_size: 25 });
+           font_entity.addText("The Imperial Palace", fast_font_geopoint, { color: mapray.Color.createOpaqueColor([ 1, 1, 0 ]), font_size: 25 });
            var second_font_position = { longitude: 139.745433, latitude: 35.658581, height: 50 };
            var second_font_geopoint = new mapray.GeoPoint(second_font_position.longitude, second_font_position.latitude, second_font_position.height);
-           font_entity.addText("Tokyo Tower", second_font_geopoint, { color: [1, 1, 0], font_size: 25 });
-           this._viewer.scene.addEntity(font_entity);
+           font_entity.addText("Tokyo Tower", second_font_geopoint, { color: mapray.Color.createOpaqueColor([ 1, 1, 0 ]), font_size: 25 });
+           this.viewer.scene.addEntity(font_entity);
          }
 
          {
            // イメージアイコンのエンティティを作成
-           var imag_icon_entity = new mapray.ImageIconEntity(this._viewer.scene);
+           var imag_icon_entity = new mapray.ImageIconEntity(this.viewer.scene);
            // 東京タワーの座標を求める
            var image_icon_Point = new mapray.GeoPoint(139.745340, 35.658694, 100);
            // イメージアイコンを追加
            imag_icon_entity.addImageIcon("./data/japan.jpg", image_icon_Point, { size: [300, 200] });
            // エンティティをシーンに追加
-           this._viewer.scene.addEntity(imag_icon_entity);
+           this.viewer.scene.addEntity(imag_icon_entity);
          }
     }
 
     /**
      * GIS情報の非表示
      */
-    _clearGISInfo()
+     private _clearGISInfo()
     {
-        this._viewer.scene.clearEntities();
-        this._point_cloud_mode = null;
+        this.viewer.scene.clearEntities();
+        this._point_cloud_mode = undefined;
         this._updatePointCloud();
     }
 
@@ -422,7 +466,9 @@ class SpaceApp extends maprayui.StandardUIViewer {
             }
             delete this._point_cloud_cache.pointCloudList;
             if (this._point_cloud_cache.ui) {
-                this._point_cloud_cache.ui.parentElement.removeChild(this._point_cloud_cache.ui);
+                if ( this._point_cloud_cache.ui.parentElement ) {
+                    this._point_cloud_cache.ui.parentElement.removeChild(this._point_cloud_cache.ui);
+                }
                 delete this._point_cloud_cache.ui;
             }
             delete this._point_cloud_cache.mode;
@@ -435,7 +481,7 @@ class SpaceApp extends maprayui.StandardUIViewer {
         if ( this._point_cloud_mode ) {
             const mode = this._point_cloud_mode;
             const pointCloudList = [];
-            const bbox_geoms = [];
+            const bbox_geoms: mapray.MarkerLineEntity[] = [];
             if ( mode === "raw" ) {
                 const resource = maprayApi.getPointCloudDatasetAsResource( POINT_CLOUD_DATASET_ID );
                 const point_cloud = point_cloud_collection.add( new mapray.RawPointCloudProvider( resource ) );
@@ -460,7 +506,7 @@ class SpaceApp extends maprayui.StandardUIViewer {
     /**
      * シーンを読み込み終わったときの処理
      */
-    _onLoadScene( loader, isSuccess )
+     private _onLoadScene( loader: mapray.SceneLoader, isSuccess: boolean )
     {
 
     }
@@ -468,7 +514,7 @@ class SpaceApp extends maprayui.StandardUIViewer {
     /**
      * リソース要求関数
      */
-    _onTransform( url, type )
+     private _onTransform( url: string, type: mapray.Resource.Type.JSON )
     {
         return {
             url: url,
@@ -477,9 +523,9 @@ class SpaceApp extends maprayui.StandardUIViewer {
         };
     }
 
-    onUpdateFrame( delta_time )
+    onUpdateFrame( delta_time: number )
     {
-        if (!this._viewer) {
+        if (!this.viewer) {
             return;
         }
         super.onUpdateFrame( delta_time );
@@ -493,18 +539,22 @@ class SpaceApp extends maprayui.StandardUIViewer {
         this._updateBingLayerParams();
         this._updateCapture();
 
-        var elevation = this._viewer.getElevation( this._camera_parameter.latitude, this._camera_parameter.longitude );
+        const camera_position = this.getCameraPosition();
+        const camera_roll_pitch_yaw = this.getCameraAngle();
+        const camera_parameter = this.getCameraParameter();
 
-        var camera_matrix = this._viewer.camera.view_to_gocs
-        var direction = [camera_matrix[4], camera_matrix[5], camera_matrix[6] ];
-        var pitch = this._camera_parameter.pitch - 90;
+        var elevation = this.viewer.getElevation( camera_position.latitude, camera_position.longitude );
+
+        var camera_matrix = this.viewer.camera.view_to_gocs
+        var direction = mapray.GeoMath.createVector3( [ camera_matrix[4], camera_matrix[5], camera_matrix[6] ]);
+        var pitch = camera_roll_pitch_yaw.pitch - 90;
 
         // ステータスバーを更新
         var statusbar = this._statusbar;
-        statusbar.setCameraPosition( this._camera_parameter );
+        statusbar.setCameraPosition( camera_position );
         statusbar.setElevation( elevation );
         statusbar.setDirection( direction, pitch );
-        statusbar.setFovAngle( this._camera_parameter.fov );
+        statusbar.setFovAngle( camera_parameter.fov );
         statusbar.updateElements( delta_time );
         statusbar.setLayer( this._layer_transparency );
 
@@ -525,7 +575,7 @@ class SpaceApp extends maprayui.StandardUIViewer {
           const theta = - Math.PI / 180.0 * this._elapsedTime;
           const x = Math.cos(theta);
           const y = Math.sin(theta);
-          this._viewer.sun.setSunDirection( [ x, y, 0 ] );
+          this.viewer.sun.setSunDirection( [ x, y, 0 ] );
         }
 
         if ( this._moveMoon ) {
@@ -533,7 +583,7 @@ class SpaceApp extends maprayui.StandardUIViewer {
           const theta = - Math.PI / 180.0 * this._moonElapsedTime;
           const x = Math.cos(theta);
           const y = Math.sin(theta);
-          this._viewer.moon.setMoonDirection( [ x, y, 0 ] );
+          this.viewer.moon.setMoonDirection( [ x, y, 0 ] );
 /*
           const moonOrbit = (23.44 + 5.14) * mapray.GeoMath.DEGREE;
           const sinTheta = Math.sin(moonOrbit);
@@ -549,21 +599,20 @@ class SpaceApp extends maprayui.StandardUIViewer {
         this._commander.endFrame();
     }
 
-    _onKeyDown( event )
+    override onKeyDown( event: KeyboardEvent )
     {
-        super._onKeyDown( event );
+        super.onKeyDown( event );
         this._commander.OnKeyDown( event );
     }
 
     /**
-     * @summary Viewer のレンダリングモードを更新
-     * @private
+     * Viewer のレンダリングモードを更新
      */
-    _updateRenderMode()
+    private _updateRenderMode()
     {
         if ( this._commander.isRenderModeChanged() ) {
             var RenderMode = mapray.Viewer.RenderMode;
-            var     viewer = this._viewer;
+            var     viewer = this.viewer;
             var      rmode = viewer.render_mode;
             if ( rmode === RenderMode.SURFACE ) {
                 viewer.render_mode = RenderMode.WIREFRAME;
@@ -575,21 +624,10 @@ class SpaceApp extends maprayui.StandardUIViewer {
     }
 
     /**
-     * @summary Layerパラメータ更新
-     * @desc
-     * <p>入力パラメータ</p>
-     * <pre>
-     * this._layer  Layer
-     * layer      layer更新
-     * </pre>
-     * <p>出力パラメータ</p>
-     * <pre>
-     * this._fov  画角
-     * </pre>
-     * @param {number} value 増減値
-     * @private
+     * Layerパラメータ更新
+     * @param value 増減値
      */
-    _updateLayerParams(value)
+    private _updateLayerParams(value: number)
     {
         if ( value != 0 ){
             this._layer_transparency = this._layer_transparency + value;
@@ -599,8 +637,8 @@ class SpaceApp extends maprayui.StandardUIViewer {
                 this._layer_transparency = 0;
             }
             var d = ( this._layer_transparency ) / 10.0;
-            if (this._viewer.layers && this._viewer.layers.getLayer(0)) {
-                this._viewer.layers.getLayer(0).setOpacity(d);
+            if (this.viewer.layers && this.viewer.layers.getLayer(0)) {
+                this.viewer.layers.getLayer(0).setOpacity(d);
             }
         }
     }
@@ -610,7 +648,7 @@ class SpaceApp extends maprayui.StandardUIViewer {
         if ( this._commander.isBingModeChanged() ) {
             if ( this._isBing ) {
                 this._isBing = false;
-                this._viewer = this.createViewer(
+                this.createViewer(
                     this._container,
                     accessToken,
                     {
@@ -618,11 +656,11 @@ class SpaceApp extends maprayui.StandardUIViewer {
                     }
                 );
                 this.addLayer( { image_provider: this._createLayerImageProvider(), opacity: 1.0, type: mapray.Layer.LayerType.NIGHT } );
-                this._commander = new Commander( this._viewer );
-                this._statusbar = new StatusBar( this._viewer, DEM_ATTRIBUTE + ", " + GSI_ATTRIBUTE);
+                this._commander = new Commander( this.viewer );
+                this._statusbar = new StatusBar( this.viewer, DEM_ATTRIBUTE + ", " + GSI_ATTRIBUTE);
             } else {
                 this._isBing = true;
-                this._viewer = this.createViewer(
+                this.createViewer(
                     this._container,
                     accessToken,
                     {
@@ -631,17 +669,16 @@ class SpaceApp extends maprayui.StandardUIViewer {
                     }
                 );
                 this.addLayer( { image_provider: this._createLayerImageProvider(), opacity: 1.0, type: mapray.Layer.LayerType.NIGHT } );
-                this._commander = new Commander( this._viewer );
-                this._statusbar = new StatusBar( this._viewer, DEM_ATTRIBUTE + ", " + BING_ATTRIBUTE);
+                this._commander = new Commander( this.viewer );
+                this._statusbar = new StatusBar( this.viewer, DEM_ATTRIBUTE + ", " + BING_ATTRIBUTE);
             }
         }
     }
 
     /**
-     * @summary Viewer のレンダリングモードを更新
-     * @private
+     * Viewer のレンダリングモードを更新
      */
-    _updateGISMode()
+     private _updateGISMode()
     {
         if ( this._commander.isGISModeChanged() ) {
             if ( this._isGIS ) {
@@ -668,7 +705,7 @@ class SpaceApp extends maprayui.StandardUIViewer {
       }
     }
 
-    _createBingImageProvider()
+    private _createBingImageProvider()
     {
         return new BingMapsImageProvider( {
             uriScheme: "https",
@@ -676,7 +713,7 @@ class SpaceApp extends maprayui.StandardUIViewer {
         } );
     }
 
-    _updateDebugUI() {
+    private _updateDebugUI() {
 
         // if ( this._point_cloud_mode ) {
             // const tools = document.getElementById("tools");
@@ -684,7 +721,9 @@ class SpaceApp extends maprayui.StandardUIViewer {
                     const maprayContainer = document.getElementById("mapray-container");
                     const tools = document.createElement("div");
                     tools.setAttribute("id", "tools");
-                    maprayContainer.appendChild(tools);
+                    if ( maprayContainer ) {
+                        maprayContainer.appendChild(tools);
+                    }
                     return tools;
             })();
             const ui = document.createElement("div");
@@ -741,35 +780,31 @@ class SpaceApp extends maprayui.StandardUIViewer {
             const top3 = document.createElement("div");
             top3.setAttribute("class", "top");
             ui.appendChild(top3);
-            const renderOption3 = new Option( RENDER_OPTION_PROPERTIES );
-            top3.appendChild(DomTool.createCheckboxOption(renderOption3, "night layer"));
+            top3.appendChild(DomTool.createCheckboxOption(renderOption, "night layer"));
 
 
             const top4 = document.createElement("div");
             top4.setAttribute("class", "top");
             ui.appendChild(top4);
-            const renderOption4 = new Option( RENDER_OPTION_PROPERTIES );
-            // top4.appendChild(DomTool.createCheckboxOption(renderOption4, "atmosphere"));
-            top4.appendChild(DomTool.createCheckboxOption(renderOption4, "sun"));
-            top4.appendChild(DomTool.createCheckboxOption(renderOption4, "moon"));
-            top4.appendChild(DomTool.createCheckboxOption(renderOption4, "sky"));
-            top4.appendChild(DomTool.createCheckboxOption(renderOption4, "ground"));
+            top4.appendChild(DomTool.createCheckboxOption(renderOption, "sun"));
+            top4.appendChild(DomTool.createCheckboxOption(renderOption, "moon"));
+            top4.appendChild(DomTool.createCheckboxOption(renderOption, "sky"));
+            top4.appendChild(DomTool.createCheckboxOption(renderOption, "ground"));
 
             const top5 = document.createElement("table");
             top5.setAttribute("class", "top");
             top5.style.width = "100%";
             ui.appendChild(top5);
-            const renderOption5 = new Option( RENDER_OPTION_PROPERTIES );
-            top5.appendChild(DomTool.createSliderOption(renderOption5, "kr", { mode: "key-value-table-row" }));
-            top5.appendChild(DomTool.createSliderOption(renderOption5, "km", { mode: "key-value-table-row" }));
-            top5.appendChild(DomTool.createSliderOption(renderOption5, "scale depth", { mode: "key-value-table-row" }));
-            top5.appendChild(DomTool.createSliderOption(renderOption5, "eSun", { mode: "key-value-table-row" }));
-            top5.appendChild(DomTool.createSliderOption(renderOption5, "exposure", { mode: "key-value-table-row" }));
-            top5.appendChild(DomTool.createSliderOption(renderOption5, "g_kr", { mode: "key-value-table-row" }));
-            top5.appendChild(DomTool.createSliderOption(renderOption5, "g_km", { mode: "key-value-table-row" }));
-            top5.appendChild(DomTool.createSliderOption(renderOption5, "g_scale depth", { mode: "key-value-table-row" }));
-            top5.appendChild(DomTool.createSliderOption(renderOption5, "g_eSun", { mode: "key-value-table-row" }));
-            top5.appendChild(DomTool.createSliderOption(renderOption5, "g_exposure", { mode: "key-value-table-row" }));
+            top5.appendChild(DomTool.createSliderOption(renderOption, "kr", { mode: "key-value-table-row" }));
+            top5.appendChild(DomTool.createSliderOption(renderOption, "km", { mode: "key-value-table-row" }));
+            top5.appendChild(DomTool.createSliderOption(renderOption, "scale depth", { mode: "key-value-table-row" }));
+            top5.appendChild(DomTool.createSliderOption(renderOption, "eSun", { mode: "key-value-table-row" }));
+            top5.appendChild(DomTool.createSliderOption(renderOption, "exposure", { mode: "key-value-table-row" }));
+            top5.appendChild(DomTool.createSliderOption(renderOption, "g_kr", { mode: "key-value-table-row" }));
+            top5.appendChild(DomTool.createSliderOption(renderOption, "g_km", { mode: "key-value-table-row" }));
+            top5.appendChild(DomTool.createSliderOption(renderOption, "g_scale depth", { mode: "key-value-table-row" }));
+            top5.appendChild(DomTool.createSliderOption(renderOption, "g_eSun", { mode: "key-value-table-row" }));
+            top5.appendChild(DomTool.createSliderOption(renderOption, "g_exposure", { mode: "key-value-table-row" }));
 
             renderOption.onChange("move sun", event => {
                 this._moveSun = event.value;
@@ -778,10 +813,14 @@ class SpaceApp extends maprayui.StandardUIViewer {
                 this._sunSpeed = event.value;
             });
             renderOption.onChange("sun radius", event => {
-                this._viewer.sunVisualizer.setRadius( event.value );
+                if ( this.viewer.sunVisualizer ) {
+                    this.viewer.sunVisualizer.setRadius( event.value );
+                }
             });
             renderOption.onChange("sun intensity", event => {
-                this._viewer.sunVisualizer.setIntensity( event.value );
+                if ( this.viewer.sunVisualizer ) {
+                    this.viewer.sunVisualizer.setIntensity( event.value );
+                }
             });
 
             renderOption.onChange("move moon", event => {
@@ -791,62 +830,92 @@ class SpaceApp extends maprayui.StandardUIViewer {
                 this._moonSpeed = event.value;
             });
             renderOption.onChange("moon radius", event => {
-                this._viewer.moonVisualizer.setRadius( event.value );
+                if ( this.viewer.moonVisualizer ) {
+                    this.viewer.moonVisualizer.setRadius( event.value );
+                }
             });
 
             renderOption.onChange("night layer", event => {
-              if (this._viewer.layers && this._viewer.layers.getLayer(0)) {
-                  this._viewer.layers.getLayer(0).setOpacity(event.value);
+              if (this.viewer.layers && this.viewer.layers.getLayer(0)) {
+                  this.viewer.layers.getLayer(0).setOpacity(event.value);
               }
             });
 
             renderOption.onChange("sun", event => {
-              this._viewer.sunVisualizer.setVisibility( event.value );
+                if ( this.viewer.sunVisualizer ) {
+                    this.viewer.sunVisualizer.setVisibility( event.value );
+                }
             });
 
             renderOption.onChange("moon", event => {
-              this._viewer.moonVisualizer.setVisibility( event.value );
+                if ( this.viewer.moonVisualizer ) {
+                    this.viewer.moonVisualizer.setVisibility( event.value );
+                }
             });
 
             renderOption.onChange("sky", event => {
-              this._viewer.atmosphere.setSkyVisibility( event.value );
+                if ( this.viewer.atmosphere ) {
+                    this.viewer.atmosphere.setSkyVisibility( event.value );
+                }
             });
 
             renderOption.onChange("ground", event => {
-              this._viewer.atmosphere.setGroundVisibility( event.value );
+                if ( this.viewer.atmosphere ) {
+                    this.viewer.atmosphere.setGroundVisibility( event.value );
+                }
             });
 
 
             renderOption.onChange("kr", event => {
-                this._viewer.atmosphere.setRayleigh( event.value );
+                if ( this.viewer.atmosphere ) {
+                    this.viewer.atmosphere.setRayleigh( event.value );
+                }
             });
             renderOption.onChange("km", event => {
-                this._viewer.atmosphere.setMie( event.value );
+                if ( this.viewer.atmosphere ) {
+                    this.viewer.atmosphere.setMie( event.value );
+                }
             });
             renderOption.onChange("scale depth", event => {
-                this._viewer.atmosphere.setScaleDepth( event.value );
+                if ( this.viewer.atmosphere ) {
+                    this.viewer.atmosphere.setScaleDepth( event.value );
+                }
             });
             renderOption.onChange("eSun", event => {
-                this._viewer.atmosphere.setSunRate( event.value );
+                if ( this.viewer.atmosphere ) {
+                    this.viewer.atmosphere.setSunRate( event.value );
+                }
             });
             renderOption.onChange("exposure", event => {
-                this._viewer.atmosphere.setExposure( event.value );
+                if ( this.viewer.atmosphere ) {
+                    this.viewer.atmosphere.setExposure( event.value );
+                }
             });
 
             renderOption.onChange("g_kr", event => {
-                this._viewer.atmosphere.setGroundRayleigh( event.value );
+                if ( this.viewer.atmosphere ) {
+                    this.viewer.atmosphere.setGroundRayleigh( event.value );
+                }
             });
             renderOption.onChange("g_km", event => {
-                this._viewer.atmosphere.setGroundMie( event.value );
+                if ( this.viewer.atmosphere ) {
+                    this.viewer.atmosphere.setGroundMie( event.value );
+                }
             });
             renderOption.onChange("g_scale depth", event => {
-                this._viewer.atmosphere.setGroundScaleDepth( event.value );
+                if ( this.viewer.atmosphere ) {
+                    this.viewer.atmosphere.setGroundScaleDepth( event.value );
+                }
             });
             renderOption.onChange("g_eSun", event => {
-                this._viewer.atmosphere.setGroundSunRate( event.value );
+                if ( this.viewer.atmosphere ) {
+                    this.viewer.atmosphere.setGroundSunRate( event.value );
+                }
             });
             renderOption.onChange("g_exposure", event => {
-                this._viewer.atmosphere.setGroundExposure( event.value );
+                if ( this.viewer.atmosphere ) {
+                    this.viewer.atmosphere.setGroundExposure( event.value );
+                }
             });
 
             renderOption.onChangeAny(event => {
@@ -872,4 +941,5 @@ class SpaceApp extends maprayui.StandardUIViewer {
 
 }
 
-export default SpaceApp;
+// @ts-ignore
+window.mapray = mapray;
