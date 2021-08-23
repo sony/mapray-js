@@ -5,6 +5,7 @@ import Scene from "./Scene";
 import ModelContainer from "./ModelContainer";
 import RenderStage from "./RenderStage";
 import Mesh from "./Mesh";
+import Globe from "./Globe";
 import GeoRegion from "./GeoRegion";
 import Primitive from "./Primitive";
 import EntityRegion from "./EntityRegion";
@@ -414,7 +415,7 @@ export abstract class FlakePrimitiveProducer {
      * @param dem  DEM バイナリ
      * @return
      */
-    createMesh( area: AreaUtil.Area, dpows: number[], dem: any ): Mesh | null // DemBinary
+    createMesh( area: AreaUtil.Area | Globe.Flake, dpows: number[], dem: any ): Mesh | null // DemBinary
     {
         return null;
     }
