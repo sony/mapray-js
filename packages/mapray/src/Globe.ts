@@ -1,10 +1,14 @@
-import GeoMath from "./GeoMath";
+import GeoMath, { Vector3, Vector4 } from "./GeoMath";
+import GLEnv from "./GLEnv";
+import Ray from "./Ray";
+import DemProvider from "./DemProvider";
 import DemBinary from "./DemBinary";
 import FlakeMesh from "./FlakeMesh";
 import FlakeRenderObject from "./FlakeRenderObject";
 import UpdatedTileArea from "./UpdatedTileArea";
 import Mesh from "./Mesh";
 import Entity from "./Entity";
+import AvgHeightMaps from "./AvgHeightMaps";
 
 
 /**
@@ -14,22 +18,69 @@ import Entity from "./Entity";
  */
 class Globe {
 
+    private _glenv: GLEnv;
+
+    private _dem_provider: DemProvider<any>;
+
+    private _status: Globe.Status;
+
+    private _dem_area_updated: UpdatedTileArea;
+
+    private _prev_producers: Set<Entity.FlakePrimitiveProducer>;
+
+    private _rho: number;
+
+    private _dem_zbias: number;
+
+    private _hist_stats: Globe.HistStats;
+
+    private _flake_reduce_thresh: number;
+
+    private _flake_reduce_factor: number;
+
+    private _num_cache_flakes: number;
+
+    private _num_touch_flakes: number;
+
+    private _mesh_reduce_lower: number;
+
+    private _mesh_reduce_thresh: number;
+
+    private _mesh_reduce_factor: number;
+
+    private _num_cache_meshes: number;
+
+    private _num_touch_meshes: number;
+
+    private _max_dem_requesteds: number;
+
+    private _num_dem_requesteds: number;
+
+    private _frame_counter: number;
+
+    private _root_flake!: Globe.Flake;
+
+    private _avg_height!: AvgHeightMaps;
+
+    private _root_cancel_id?: any;
+
+
     /**
-     * @param {mapray.GLEnv}       glenv         WebGL 環境
-     * @param {mapray.DemProvider} dem_provider  DEM プロバイダ
+     * @param glenv         WebGL 環境
+     * @param dem_provider  DEM プロバイダ
      */
-    constructor( glenv, dem_provider )
+    constructor( glenv: GLEnv, dem_provider: DemProvider<any> )
     {
         this._glenv        = glenv;
         this._dem_provider = dem_provider;
-        this._status = Status.NOT_READY;
+        this._status = Globe.Status.NOT_READY;
         this._dem_area_updated = new UpdatedTileArea();
-        this._prev_producers = new Set();
+        this._prev_producers = new Set<Entity.FlakePrimitiveProducer>();
 
-        this._ρ        = dem_provider.getResolutionPower();
-        this._dem_zbias = GeoMath.LOG2PI - this._ρ + 1;  // b = log2(π) - ρ + 1
+        this._rho = dem_provider.getResolutionPower();
+        this._dem_zbias = GeoMath.LOG2PI - this._rho + 1;  // b = log2(π) - ρ + 1
 
-        this._hist_stats = new HistStats();
+        this._hist_stats = new Globe.HistStats();
 
         this._flake_reduce_thresh = 1.5;  // Flake 削減比率閾値
         this._flake_reduce_factor = 1.2;  // Flake 削減比率係数
@@ -47,9 +98,6 @@ class Globe {
 
         this._frame_counter = 0;  // 現行フレーム番号
 
-        this._root_flake = null;
-        this._avg_height = null;
-        this._root_cancel_id = null;
         this._requestRoot();
     }
 
@@ -58,17 +106,17 @@ class Globe {
      */
     cancel()
     {
-        if ( this._status === Status.READY ) {
+        if ( this._status === Globe.Status.READY ) {
             // root の真子孫を破棄 (リクエストをキャンセル)
-            var children = this._root_flake._children;
+            const children = (this._root_flake as Globe.Flake).children;
             for ( var i = 0; i < 4; ++i ) {
-                children[i].dispose();
+                (children[i] as Globe.Flake).dispose();
             }
         }
-        else if ( this._status === Status.NOT_READY ) {
+        else if ( this._status === Globe.Status.NOT_READY ) {
             // リクエスト中の root をキャンセル
             this._dem_provider.cancelRequest( this._root_cancel_id );
-            this._root_cancel_id = null;
+            this._root_cancel_id = undefined;
         }
 
         // assert: this._num_dem_requesteds == 0
@@ -76,10 +124,8 @@ class Globe {
 
     /**
      * WebGL 環境
-     * @type {mapray.GLEnv}
-     * @readonly
      */
-    get glenv()
+    get glenv(): GLEnv
     {
         return this._glenv;
     }
@@ -119,23 +165,116 @@ class Globe {
      * @type {mapray.Globe.Flake}
      * @readonly
      */
-    get root_flake()
+    get root_flake(): Globe.Flake
     {
-        var flake = this._root_flake;
+        const flake = this._root_flake;
         flake.touch();
         return flake;
     }
 
-    /**
-     * @summary エンティティ情報を更新
-     *
-     * <p>getRenderObject() の前にエンティティの情報を更新する。</p>
-     *
-     * @param {iterable.<mapray.Entity.FlakePrimitiveProducer>} producers
-     */
-    putNextEntityProducers( producers )
+    /** @internal */
+    get rho(): number
     {
-        let next_producers = new Set();
+        return this._rho;
+    }
+
+    /** @internal */
+    get dem_zbias(): number
+    {
+        return this._dem_zbias;
+    }
+
+    /**
+     * フレーム番号
+     * @internal
+     */
+    get frame_counter(): number
+    {
+        return this._frame_counter;
+    }
+
+    /** @internal*/
+    get num_touch_flakes(): number
+    {
+        return this._num_touch_flakes;
+    }
+
+    /** @internal*/
+    set num_touch_flakes( value: number )
+    {
+        this._num_touch_flakes = value;
+    }
+
+    /** @internal*/
+    get num_cache_flakes(): number
+    {
+        return this._num_cache_flakes;
+    }
+
+    /** @internal*/
+    set num_cache_flakes( value: number )
+    {
+        this._num_cache_flakes = value;
+    }
+
+    /** @internal*/
+    get num_cache_meshes(): number
+    {
+        return this._num_cache_meshes;
+    }
+
+    /** @internal*/
+    set num_cache_meshes( value: number )
+    {
+        this._num_cache_meshes = value;
+    }
+
+    /** @internal*/
+    get num_touch_meshes(): number
+    {
+        return this._num_touch_meshes;
+    }
+
+    /** @internal*/
+    set num_touch_meshes( value: number )
+    {
+        this._num_touch_meshes = value;
+    }
+
+    /** @internal*/
+    get max_dem_requesteds(): number
+    {
+        return this._max_dem_requesteds;
+    }
+
+    /** @internal */
+    get num_dem_requesteds(): number
+    {
+        return this._num_dem_requesteds;
+    }
+
+    /** @internal */
+    set num_dem_requesteds( value: number )
+    {
+        this._num_dem_requesteds = value;
+    }
+
+    /** @internal */
+    get avg_height(): AvgHeightMaps
+    {
+        return this._avg_height;
+    }
+
+    /**
+     * エンティティ情報を更新
+     *
+     * getRenderObject() の前にエンティティの情報を更新する。
+     *
+     * @param producers
+     */
+    putNextEntityProducers( producers: Iterable<Entity.FlakePrimitiveProducer> )
+    {
+        let next_producers = new Set<Entity.FlakePrimitiveProducer>();
 
         // 追加、削除、更新のリストを作成
         let   added_producers = [];
@@ -187,18 +326,19 @@ class Globe {
     }
 
     /**
-     * @summary 正確度が最も高い DEM タイルデータを検索
-     * @desc
-     * <p>基底タイル座標 (左上(0, 0)、右下(1, 1)) [xt, yt] の標高データを取得することができる、正確度が最も高い DEM タイルデータを検索する。</p>
-     * <p>サーバーにさらに正確度が高い DEM タイルデータが存在すれば、それをリクエストする。</p>
-     * @param  {number}         xt  X 座標 (基底タイル座標系)
-     * @param  {number}         yt  Y 座標 (基底タイル座標系)
-     * @return {?mapray.DemBinary}  DEM タイルデータ (存在しなければ null)
+     * 正確度が最も高い DEM タイルデータを検索
+     *
+     * 基底タイル座標 (左上(0, 0)、右下(1, 1)) [xt, yt] の標高データを取得することができる、正確度が最も高い DEM タイルデータを検索する。
+     *
+     * サーバーにさらに正確度が高い DEM タイルデータが存在すれば、それをリクエストする。
+     * @param  xt  X 座標 (基底タイル座標系)
+     * @param  yt  Y 座標 (基底タイル座標系)
+     * @return DEM タイルデータ (存在しなければ null)
      */
-    findHighestAccuracy( xt, yt )
+    findHighestAccuracy( xt: number, yt: number ): DemBinary | null
     {
         var flake = this._root_flake;
-        if ( flake === null ) {
+        if ( !flake ) {
             // まだ基底タイルが読み込まれていない
             return null;
         }
@@ -211,15 +351,15 @@ class Globe {
         for (;;) {
             var     u = GeoMath.clamp( Math.floor( xf ), 0, size - 1 ) % 2;
             var     v = GeoMath.clamp( Math.floor( yf ), 0, size - 1 ) % 2;
-            var child = flake._children[u + 2*v];
+            var child = flake.children[u + 2*v];
 
             flake.touch();
 
-            if ( child === null ) {
+            if ( !child ) {
                 // これ以上のレベルは存在しない
                 break;
             }
-            else if ( flake._dem_state === DemState.LOADED ) {
+            else if ( flake.dem_state === Globe.DemState.LOADED ) {
                 // より正確度が高い DEM を持つ地表断片に更新
                 dem_flake = flake;
             }
@@ -230,37 +370,37 @@ class Globe {
             yf   *= 2;
         }
 
-        dem_flake._requestHighestAccuracy( xt, yt );
+        dem_flake.requestHighestAccuracy( xt, yt );
 
-        return dem_flake._dem_data;
+        return dem_flake.dem_data;
     }
 
     /**
-     * @summary 現行の標高 (複数) を取得
+     * 現行の標高 (複数) を取得
      *
-     * @desc
-     * <p>現在メモリーにある最高精度の標高値を一括で取得する。</p>
-     * <p>まだ DEM データが存在しない、または経度, 緯度が範囲外の場所は標高を 0 とする。</p>
+     * 現在メモリーにある最高精度の標高値を一括で取得する。
      *
-     * <p>このメソッドは DEM のリクエストは発生しない。また DEM のキャッシュには影響を与えない。</p>
+     * まだ DEM データが存在しない、または経度, 緯度が範囲外の場所は標高を 0 とする。
      *
-     * <p>一般的に画面に表示されていない場所は標高の精度が低い。</p>
+     * このメソッドは DEM のリクエストは発生しない。また DEM のキャッシュには影響を与えない。
      *
-     * @param  {number}   num_points  入出力データ数
-     * @param  {number[]} src_array   入力配列 (経度, 緯度, ...)
-     * @param  {number}   src_offset  入力データの先頭インデックス
-     * @param  {number}   src_stride  入力データのストライド
-     * @param  {number[]} dst_array   出力配列 (標高, ...)
-     * @param  {number}   dst_offset  出力データの先頭インデックス
-     * @param  {number}   dst_stride  出力データのストライド
-     * @return {number[]}             dst_array
+     * 一般的に画面に表示されていない場所は標高の精度が低い。
      *
-     * @see mapray.Viewer#getExistingElevations
+     * @param  num_points  入出力データ数
+     * @param  src_array   入力配列 (経度, 緯度, ...)
+     * @param  src_offset  入力データの先頭インデックス
+     * @param  src_stride  入力データのストライド
+     * @param  dst_array   出力配列 (標高, ...)
+     * @param  dst_offset  出力データの先頭インデックス
+     * @param  dst_stride  出力データのストライド
+     * @return dst_array
+     *
+     * @see [[Viewer.getExistingElevations]]
      */
-    getExistingElevations( num_points, src_array, src_offset, src_stride, dst_array, dst_offset, dst_stride )
+    getExistingElevations( num_points: number, src_array: number[], src_offset: number, src_stride: number, dst_array: number[], dst_offset: number, dst_stride: number ): number[]
     {
         var dPI = 2 * Math.PI;
-        var demSize = 1 << this._ρ;  // 2^ρ
+        var demSize = 1 << this._rho;  // 2^ρ
 
         var src_index = src_offset;
         var dst_index = dst_offset;
@@ -286,7 +426,7 @@ class Globe {
             if ( yt >= 0 && yt <= 1 ) {
                 // 通常範囲のとき
                 var dem = this._findHighestAccuracy2( xt, yt );
-                if ( dem !== null ) {
+                if ( dem ) {
                     var pow = Math.pow( 2, dem.z );  // 2^ze
                     var  uf = demSize * (pow * xt - dem.x);
                     var  vf = demSize * (pow * yt - dem.y);
@@ -327,16 +467,14 @@ class Globe {
      * @desc
      * <p>基底タイル座標 (左上(0, 0)、右下(1, 1)) [xt, yt] の標高データを取得することができる、正確度が最も高い DEM タイルデータを検索する。</p>
      *
-     * @param  {number}         xt  X 座標 (基底タイル座標系)
-     * @param  {number}         yt  Y 座標 (基底タイル座標系)
-     * @return {?mapray.DemBinary}  DEM タイルデータ (存在しなければ null)
-     *
-     * @private
+     * @param  xt  X 座標 (基底タイル座標系)
+     * @param  yt  Y 座標 (基底タイル座標系)
+     * @return DEM タイルデータ (存在しなければ null)
      */
-    _findHighestAccuracy2( xt, yt )
+    private _findHighestAccuracy2( xt: number, yt: number ): DemBinary | null
     {
         var flake = this._root_flake;
-        if ( flake === null ) {
+        if ( !flake  ) {
             // まだ基底タイルが読み込まれていない
             return null;
         }
@@ -349,13 +487,13 @@ class Globe {
         for (;;) {
             var     u = GeoMath.clamp( Math.floor( xf ), 0, size - 1 ) % 2;
             var     v = GeoMath.clamp( Math.floor( yf ), 0, size - 1 ) % 2;
-            var child = flake._children[u + 2*v];
+            var child = flake.children[u + 2*v];
 
-            if ( child === null ) {
+            if ( !child ) {
                 // これ以上のレベルは存在しない
                 break;
             }
-            else if ( flake._dem_state === DemState.LOADED ) {
+            else if ( flake.dem_state === Globe.DemState.LOADED ) {
                 // より正確度が高い DEM を持つ地表断片に更新
                 dem_flake = flake;
             }
@@ -366,7 +504,7 @@ class Globe {
             yf   *= 2;
         }
 
-        return dem_flake._dem_data;
+        return dem_flake.dem_data;
     }
 
     /**
@@ -403,26 +541,24 @@ class Globe {
 
         this._root_cancel_id = this._dem_provider.requestTile( z, x, y, data => {
             if ( data ) {
-                var dem = new DemBinary( z, x, y, this._ρ, data );
+                var dem = new DemBinary( z, x, y, this.rho, data );
                 this._avg_height = dem.newAvgHeightMaps();
                 this._root_flake = new Flake( null, z, x, y );
                 this._root_flake.setupRoot( this, dem );
-                this._status = Status.READY;
+                this._status = Globe.Status.READY;
                 this._dem_area_updated.addTileArea( dem );
             }
             else { // データ取得に失敗
-                this._status = Status.FAILED;
+                this._status = Globe.Status.FAILED;
             }
-            this._root_cancel_id = null;
+            this._root_cancel_id = undefined;
             --this._num_dem_requesteds;
         } );
         ++this._num_dem_requesteds;
     }
 
-    /**
-     * @private
-     */
-    _reduceFlakes( max_touch_flakes )
+
+    private _reduceFlakes( max_touch_flakes: number )
     {
         // Flake を集めて、優先度で整列
         var flat_flakes = this._root_flake.flattenFlakes();
@@ -435,10 +571,8 @@ class Globe {
         // assert: this._num_cache_flakes == num_cache_flakes
     }
 
-    /**
-     * @private
-     */
-    _reduceMeshes()
+
+    private _reduceMeshes()
     {
         var flat_meshes = this._root_flake.flattenMeshes();
         // assert: flat_meshes.length == this._num_cache_meshes
@@ -452,51 +586,103 @@ class Globe {
 }
 
 
+
+namespace Globe {
+
+
+
 /**
- * @summary Globe 状態の列挙型
- * @enum {object}
- * @memberof mapray.Globe
- * @constant
- * @see mapray.Globe#status
+ * Globe 状態の列挙型
+ * @see [[Globe.status]]
  */
-var Status = {
+export enum Status {
     /**
      * 準備中 (初期状態)
      */
-    NOT_READY: { id: "NOT_READY" },
+    NOT_READY,
 
     /**
      * 準備完了
      */
-    READY: { id: "READY" },
+    READY,
 
     /**
      * 失敗状態
      */
-    FAILED: { id: "FAILED" }
-};
-Globe.Status = Status;
+    FAILED,
+}
+
 
 
 /**
- * @summary 地表断片
- * @memberof mapray.Globe
- * @private
+ * 地表断片
+ * @internal
  */
-class Flake {
+export class Flake {
+
+    private z: number;
+
+    private x: number;
+
+    private y: number;
+
+    private _parent: Flake | null;
+
+    private _children: [Flake | null, Flake | null, Flake | null, Flake | null];
+
+    private _globe!: Globe;
+
+    /* DEM バイナリ、または取り消しオブジェクト */
+    private _dem_data!: DemBinary;
+
+    private _dem_state: DemState;
+
+    /** エンティティ辞書 */
+    private _entity_map!: Map<Entity.FlakePrimitiveProducer, boolean>;
+
+    private _meshes: MeshNode[];
+
+    /** 
+     * 標高代表値
+     * 前回の Za (DemBinary) だだし、標高代表が決定しているときは this
+     */
+    private _prev_Za_dem!: DemBinary | Flake;
+
+    /** 
+     * 標高代表値
+     * 前回の Zr (DemBinary)
+     */
+    private _prev_Zr_dem!: DemBinary;
+
+    private _base_height: number;
+
+    private _height_min: number;
+
+    private _height_max: number;
+
+    private _dem_zlimit: number;
+
+    private _gocs_x_min: number;
+    private _gocs_x_max: number;
+    private _gocs_y_min: number;
+    private _gocs_y_max: number;
+    private _gocs_z_min: number;
+    private _gocs_z_max: number;
+
+    private _aframe: number;
+
+
 
     /**
-     * @param {mapray.Globe.Flake} parent
-     * @param {number}             z
-     * @param {number}             x
-     * @param {number}             y
+     * @param parent
+     * @param z
+     * @param x
+     * @param y
      */
-    constructor( parent, z, x, y )
+    constructor( parent: Flake | null, z: number, x: number, y: number )
     {
         /**
-         * @summary 地表分割レベル
-         * @member mapray.Globe.Flake#z
-         * @type {number}
+         * 地表分割レベル
          */
         this.z = z;
 
@@ -517,21 +703,15 @@ class Flake {
         // Flake 階層
         this._parent    = parent;
         this._children  = [null, null, null, null];
-        this._globe     = (parent !== null) ? parent._globe : null;
+        if ( parent ) {
+            this._globe = parent._globe;
+        }
 
         // DEM データ
-        this._dem_data  = null;  // DEM バイナリ、または取り消しオブジェクト
         this._dem_state = DemState.NONE;
-
-        // エンティティ辞書  Map.<mapray.Entity.FlakePrimitiveProducer, boolean>
-        this._entity_map = null;
 
         // MeshNode
         this._meshes = [];
-
-        // 標高代表値
-        this._prev_Za_dem = null;  // 前回の Za (DemBinary) だだし、標高代表が決定しているときは this
-        this._prev_Zr_dem = null;  // 前回の Zr (DemBinary)
 
         this._base_height = 0;     // 平均標高 (h~)
         this._height_min  = 0;     // 最大標高 (h⇓)
@@ -548,9 +728,31 @@ class Flake {
 
         // キャッシュ管理
         this._aframe = -1;
-        if ( this._globe !== null ) {
-            this._globe._num_cache_flakes += 1;
+        if ( this._globe ) {
+            this._globe.num_cache_flakes += 1;
         }
+    }
+
+
+    get globe(): Globe {
+        return this._globe;
+    }
+
+
+    get children(): [Flake | null, Flake | null, Flake | null, Flake | null] {
+        return this._children;
+    }
+
+    /** @inner */
+    get dem_data(): DemBinary
+    {
+        return this._dem_data;
+    }
+
+    /** @inner */
+    get dem_state(): DemState
+    {
+        return this._dem_state;
     }
 
     /**
@@ -565,50 +767,51 @@ class Flake {
 
     /**
      * 最小の標高
-     * @type {number}
-     * @readonly
      */
-    get height_min()
+    get height_min(): number
     {
         return this._height_min;
     }
 
     /**
      * 最大の標高
-     * @type {number}
-     * @readonly
      */
-    get height_max()
+    get height_max(): number
     {
         return this._height_max;
     }
 
+    get meshes(): MeshNode[]
+    {
+        return this._meshes;
+    }
+
     /**
-     * @summary 基底 Flake 専用の設定
-     * @package
+     * 基底 Flake 専用の設定
+     * @internal
      */
-    setupRoot( globe, dem )
+    setupRoot( globe: Globe, dem: DemBinary )
     {
         this._globe     = globe;
         this._dem_data  = dem;
         this._dem_state = DemState.LOADED;
         this._entity_map = new Map();
         this._estimate();
-        globe._num_cache_flakes += 1;
+        globe.num_cache_flakes += 1;
     }
 
     /**
-     * @summary 子 Flake を取得または生成
-     * @param  {number} u            子 Flake U 座標 (0 または 1)
-     * @param  {number} v            子 Flake V 座標 (0 または 1)
-     * @return {mapray.Globe.Flake}  子 Flake インスタンス
+     * 子 Flake を取得または生成
+     * @param  u 子 Flake U 座標 (0 または 1)
+     * @param  v 子 Flake V 座標 (0 または 1)
+     * @return 子 Flake インスタンス
      */
-    newChild( u, v )
+    newChild( u: number, v: number ): Globe.Flake
     {
         var index = u + 2*v;
         var child = this._children[index];
 
-        if ( child === null ) {
+        if ( !child ) {
             // 存在しないときは Flake を生成する
             child = new Flake( this, this.z + 1, 2*this.x + u, 2*this.y + v );
             this._children[index] = child;
@@ -620,11 +823,11 @@ class Flake {
     }
 
     /**
-     * @summary カリングするか？
-     * @param  {mapray.Vector4[]} clip_planes  クリップ平面配列
-     * @return {boolean}                       見えないとき true, 見えるまたは不明のとき false
+     * カリングするか？
+     * @param  clip_planes  クリップ平面配列
+     * @return 見えないとき true, 見えるまたは不明のとき false
      */
-    isInvisible( clip_planes )
+    isInvisible( clip_planes: Vector4[] ): boolean
     {
         switch ( this.z ) {
         case 0:  return this._isInvisible_0( clip_planes );
@@ -633,13 +836,11 @@ class Flake {
     }
 
     /**
-     * @summary レンダリングオブジェクトを検索
+     * レンダリングオブジェクトを検索
      *
-     * @param {number} lod  地表詳細レベル (LOD)
-     *
-     * @return {mapray.FlakeRenderObject}
+     * @param lod  地表詳細レベル (LOD)
      */
-    getRenderObject( lod )
+    getRenderObject( lod: number ): FlakeRenderObject
     {
         var η = Math.pow( 2, -lod ) * Flake.ε;  // 2^-lod ε
 
@@ -678,16 +879,17 @@ class Flake {
     }
 
     /**
-     * @summary Flake ツリーに producer を追加
+     * Flake ツリーに producer を追加
      *
      * 事前条件:
      *   - this._entity_map !== null
      *   - this と this の子孫に producer が存在しない
      *
-     * @param {mapray.Entity.FlakePrimitiveProducer} producer
+     * @param producer
      */
-    addEntityProducer( producer )
+    addEntityProducer( producer: Entity.FlakePrimitiveProducer )
     {
+        // @ts-ignore
         switch ( producer.getAreaStatus( this ) ) {
 
         case Entity.AreaStatus.PARTIAL: {
@@ -696,7 +898,7 @@ class Flake {
 
             // this の子孫も同様の処理
             for ( let child of this._children ) {
-                if ( child !== null && child._entity_map !== null ) {
+                if ( child && child._entity_map ) {
                     child.addEntityProducer( producer );
                 }
             }
@@ -712,41 +914,39 @@ class Flake {
     }
 
     /**
-     * @summary Flake ツリーに producer を追加
+     * Flake ツリーに producer を追加
      *
      * 事前条件:
      *   - producer.getAreaStatus( this ) === Entity.AreaStatus.FULL
      *   - this._entity_map !== null
      *   - this と this の子孫に producer が存在しない
      *
-     * @param {mapray.Entity.FlakePrimitiveProducer} producer
-     *
-     * @private
+     * @param producer
      */
-    _addEntityFullProducer( producer )
+    private _addEntityFullProducer( producer: Entity.FlakePrimitiveProducer )
     {
         // エントリに producer を追加
         this._entity_map.set( producer, true );
 
         // this の子孫も同様の処理
         for ( let child of this._children ) {
-            if ( child !== null && child._entity_map !== null ) {
+            if ( child && child._entity_map ) {
                 child._addEntityFullProducer( producer );
             }
         }
     }
 
     /**
-     * @summary Flake ツリーから producer を削除
+     * Flake ツリーから producer を削除
      *
      * 事前条件:
      *   - this._entity_map !== null
      * 事後条件:
      *   - this と this の子孫に producer が存在しない
      *
-     * @param {mapray.Entity.FlakePrimitiveProducer} producer
+     * @param producer
      */
-    removeEntityProducer( producer )
+    removeEntityProducer( producer: Entity.FlakePrimitiveProducer )
     {
         if ( !this._entity_map.has( producer ) ) {
             // もともと producer は this と this の子孫に存在しない
@@ -761,50 +961,54 @@ class Flake {
 
         // this の子孫も同様の処理
         for ( let child of this._children ) {
-            if ( child !== null && child._entity_map !== null ) {
+            if ( child && child._entity_map ) {
                 child.removeEntityProducer( producer );
             }
         }
     }
 
     /**
-     * @summary Flake ツリーの producer を更新
+     * Flake ツリーの producer を更新
      *
      * 事前条件:
      *   - this._entity_map !== null
      *
-     * @param {mapray.Entity.FlakePrimitiveProducer} producer
+     * @param producer
      */
-    updateEntityProducer( producer )
+    updateEntityProducer( producer: Entity.FlakePrimitiveProducer )
     {
         this.removeEntityProducer( producer );
         this.addEntityProducer( producer );
     }
 
     /**
-     * @summary 地表断片とレイの交点までの距離を検索
-     * <p>地表断片 this と線分 (ray.position を始点とし、そこから ray.direction 方向に limit 距離未満にある点) との交点の中で、始点から最も近い交点までの距離を返す。</p>
-     * <p>ただし地表断片と線分が交差しないときは limit を返す。</p>
-     * <p>事前条件: this._globe.status === Status.READY</p>
-     * @param  {mapray.Ray} ray    ray.position を始点として ray.direction 方向に伸びる半直線
-     * @param  {number}     limit  この距離までの交点を検索
-     * @return {number}            ray.position から交点までの距離、ただし交差しなかったときは limit
+     * 地表断片とレイの交点までの距離を検索
+     *
+     * 地表断片 this と線分 (ray.position を始点とし、そこから ray.direction 方向に limit 距離未満にある点) との交点の中で、始点から最も近い交点までの距離を返す。
+     *
+     * ただし地表断片と線分が交差しないときは limit を返す。
+     *
+     * 事前条件: this._globe.status === Status.READY
+     *
+     * @param  ray    ray.position を始点として ray.direction 方向に伸びる半直線
+     * @param  limit  この距離までの交点を検索
+     * @return ray.position から交点までの距離、ただし交差しなかったときは limit
      */
-    findRayDistance( ray, limit )
+    findRayDistance( ray: Ray, limit: number ): number
     {
-        var dem_flake;
-        for ( dem_flake = this; dem_flake._dem_state !== DemState.LOADED; dem_flake = dem_flake._parent ) {}
+        let dem_flake: Flake;
+        for ( dem_flake = this; dem_flake._dem_state !== DemState.LOADED; dem_flake = dem_flake._parent as Flake ) {}
 
-        if ( this.z - dem_flake.z === this._globe._ρ ) {
+        if ( this.z - dem_flake.z === this._globe.rho ) {
             return this._findQuadRayDistance( ray, limit, dem_flake );
         }
         else if ( this._cullForRayDistance( ray, limit ) ) {
             return limit;
         }
         else {
-            var dmin = limit;
-            for ( var v = 0; v < 2; ++ v ) {
-                for ( var u = 0; u < 2; ++ u ) {
+            let dmin = limit;
+            for ( let v = 0; v < 2; ++ v ) {
+                for ( let u = 0; u < 2; ++ u ) {
                     dmin = this.newChild( u, v ).findRayDistance( ray, dmin );
                 }
             }
@@ -820,7 +1024,7 @@ class Flake {
         var i;
 
         var parent = this._parent;
-        if ( parent === null ) {
+        if ( !parent ) {
             // すでに破棄済み
             return;
         }
@@ -837,7 +1041,7 @@ class Flake {
         var children = this._children;
         for ( i = 0; i < 4; ++i ) {
             var child = children[i];
-            if ( child !== null ) {
+            if ( child ) {
                 child.dispose();
             }
         }
@@ -854,45 +1058,43 @@ class Flake {
 
         // DEM リクエストの取り消し
         if ( this._dem_state === DemState.REQUESTED ) {
-            globe._dem_provider.cancelRequest( this._dem_data );
-            --globe._num_dem_requesteds;
+            globe.dem_provider.cancelRequest( this._dem_data );
+            --globe.num_dem_requesteds;
         }
 
         // Flake 数を減らす
-        globe._num_cache_flakes -= 1;
+        globe.num_cache_flakes -= 1;
     }
 
     /**
-     * @summary 自己と子孫の Flake リストを取得
-     * @return {array}
-     * @package
+     * 自己と子孫の Flake リストを取得
+     * @internal
      */
-    flattenFlakes()
+    flattenFlakes(): Flake[]
     {
-        var list = [];
+        const list: Flake[] = [];
         this._flattenFlakes( list );
         return list;
     }
 
     /**
-     * @summary 自己と子孫の MeshNode リストを取得
-     * @return {array}
-     * @package
+     * 自己と子孫の MeshNode リストを取得
+     * @internal
      */
-    flattenMeshes()
+    flattenMeshes(): MeshNode[]
     {
-        var list = [];
+        const list: MeshNode[] = [];
         this._flattenMeshes( list );
         return list;
     }
 
     /**
-     * @summary 削減用の Flake 比較
-     * @param  {mapray.Globe.Flake} other  比較対象
-     * @return {number}                    比較値
+     * 削減用の Flake 比較
+     * @param  other  比較対象
+     * @return 比較値
      * @package
      */
-    compareForReduce( other )
+    compareForReduce( other: Globe.Flake ): number
     {
         // 最近アクセスしたものを優先
         // 同じなら Z レベルが小さい方を優先
@@ -902,31 +1104,25 @@ class Flake {
         return (aframe !== 0) ? aframe : a.z - b.z;
     }
 
-    /**
-     * @private
-     */
-    _flattenFlakes( list )
+    private _flattenFlakes( list: Flake[] )
     {
         list.push( this );
         var children = this._children;
         for ( var i = 0; i < 4; ++i ) {
             var child = children[i];
-            if ( child !== null ) {
+            if ( child ) {
                 child._flattenFlakes( list );
             }
         }
     }
 
-    /**
-     * @private
-     */
-    _flattenMeshes( list )
+    private _flattenMeshes( list: MeshNode[] )
     {
         Array.prototype.push.apply( list, this._meshes );
         var children = this._children;
         for ( var i = 0; i < 4; ++i ) {
             var child = children[i];
-            if ( child !== null ) {
+            if ( child ) {
                 child._flattenMeshes( list );
             }
         }
@@ -939,24 +1135,22 @@ class Flake {
     touch()
     {
         var globe = this._globe;
-        if ( this._aframe !== globe._frame_counter ) {
-            this._aframe = globe._frame_counter;
-            globe._num_touch_flakes += 1;
+        if ( this._aframe !== globe.frame_counter ) {
+            this._aframe = globe.frame_counter;
+            globe.num_touch_flakes += 1;
         }
     }
 
     /**
-     * @summary メッシュノードを取得
+     * メッシュノードを取得
      *
-     * @param {number} lod  地表詳細レベル (LOD)
-     * @param {number} cu   水平球面分割レベル
-     * @param {number} cv   垂直球面分割レベル
+     * @param lod  地表詳細レベル (LOD)
+     * @param cu   水平球面分割レベル
+     * @param cv   垂直球面分割レベル
      *
-     * @return {mapray.Globe.MeshNode}  メッシュノード
-     *
-     * @private
+     * @return メッシュノード
      */
-    _getMeshNode( lod, cu, cv )
+    private _getMeshNode( lod: number, cu: number, cv: number ): Globe.MeshNode
     {
         var   dem = this._getMeshDemBinary( lod );
         var dpows = dem.getDivisionPowers( this, lod, cu, cv );
@@ -978,14 +1172,13 @@ class Flake {
     }
 
     /**
-     * @summary メッシュ用の DEM バイナリを取得
-     * @param  {number} lod        地表詳細レベル (LOD)
-     * @return {mapray.DemBinary}  DEM タイルデータ
-     * @private
+     * メッシュ用の DEM バイナリを取得
+     * @param  lod        地表詳細レベル (LOD)
+     * @return DEM タイルデータ
      */
-    _getMeshDemBinary( lod )
+    private _getMeshDemBinary( lod: number ): DemBinary
     {
-        var zDesired = GeoMath.clamp( Math.round( lod + this._globe._dem_zbias ),
+        var zDesired = GeoMath.clamp( Math.round( lod + this._globe.dem_zbias ),
                                       0, this._dem_zlimit );
 
         var dem = this._findNearestDemTile( zDesired );
@@ -1002,25 +1195,26 @@ class Flake {
     }
 
     /**
-     * @summary 先祖 DEM タイルデータを検索
-     * @desc
-     * <p>this の (レベルが zlimit またはそれ以下の) 祖先の中で、現在キャッシュに存在する最大レベルの DEM タイルデータを検索する。</p>
-     * @param  {number} zlimit     先祖レベルの上限
-     * @return {mapray.DemBinary}  先祖 DEM タイルデータ
+     * 先祖 DEM タイルデータを検索
+     *
+     * this の (レベルが zlimit またはそれ以下の) 祖先の中で、現在キャッシュに存在する最大レベルの DEM タイルデータを検索する。
+     *
+     * @param  zlimit     先祖レベルの上限
+     * @return 先祖 DEM タイルデータ
      */
-    _findNearestDemTile( zlimit )
+    _findNearestDemTile( zlimit: number ): DemBinary
     {
-        var flake = this;
+        let flake: Flake = this;
 
         // zlimit の地表断片を検索
-        var count = this.z - zlimit;
-        for ( var i = 0; i < count; ++i ) {
-            flake = flake._parent;
+        const count = this.z - zlimit;
+        for ( let i = 0; i < count; ++i ) {
+            flake = flake._parent as Flake;
         }
 
         // 次の DemBinary を持つ地表断片を検索
         while ( flake._dem_state !== DemState.LOADED ) {
-            flake = flake._parent;
+            flake = flake._parent as Flake;
         }
 
         // 見つけた地表断片の DemBinary を返す
@@ -1028,29 +1222,32 @@ class Flake {
     }
 
     /**
-     * @summary 地表断片を包含する DEM タイルデータを要求
-     * @desc
-     * <p>this を包含または this と一致する、ズームレベル ze の DEM タイルをサーバーに要求する。</p>
-     * <p>ただしすでにキャッシュにその DEM タイルが存在、または REQUESTED 状態のときは要求しない。</p>
-     * <p>FAILED 状態かつ ze > 0 のときは、再帰的に ze - 1 を要求する。</p>
-     * <p>要求が最大数に達しているときは無視する。</p>
-     * @param {number} ze  DEM ズームレベル
+     * 地表断片を包含する DEM タイルデータを要求
+     *
+     * this を包含または this と一致する、ズームレベル ze の DEM タイルをサーバーに要求する。
+     *
+     * ただしすでにキャッシュにその DEM タイルが存在、または REQUESTED 状態のときは要求しない。
+     *
+     * FAILED 状態かつ ze > 0 のときは、再帰的に ze - 1 を要求する。
+     *
+     * 要求が最大数に達しているときは無視する。
+     * @param ze  DEM ズームレベル
      */
-    _requestAncestorDemTile( ze )
+    private _requestAncestorDemTile( ze: number )
     {
         var globe = this._globe;
 
-        if ( globe._num_dem_requesteds >= globe._max_dem_requesteds ) {
+        if ( globe.num_dem_requesteds >= globe.max_dem_requesteds ) {
             // 要求が最大数に達しているので受け入れない
             return;
         }
 
-        var flake = this;
+        var flake: Flake = this;
 
         // zlimit の地表断片を検索
         var count = this.z - ze;
         for ( var i = 0; i < count; ++i ) {
-            flake = flake._parent;
+            flake = flake._parent as Flake;
         }
 
         while ( true ) {
@@ -1061,42 +1258,42 @@ class Flake {
             }
             else if ( state === DemState.FAILED ) {
                 // 親でリトライ
-                flake = flake._parent;
+                flake = flake._parent as Flake;
                 continue;
             }
             else {
                 // DEM タイルデータを要求
                 // assert: state === DemState.NONE
-                var provider = globe._dem_provider;
+                var provider = globe.dem_provider;
 
                 flake._dem_data = provider.requestTile( flake.z, flake.x, flake.y, data => {
-                    if ( flake._parent === null ) {
+                    if ( !flake._parent ) {
                         // すでに破棄済みなので無視
                         return;
                     }
                     if ( data ) {
-                        flake._dem_data  = new DemBinary( flake.z, flake.x, flake.y, globe._ρ, data );
+                        flake._dem_data  = new DemBinary( flake.z, flake.x, flake.y, globe.rho, data );
                         flake._dem_state = DemState.LOADED;
-                        globe._dem_area_updated.addTileArea( flake );
+                        // @ts-ignore
+                        globe.dem_area_updated.addTileArea( flake );
                     }
                     else { // データ取得に失敗
-                        flake._dem_data  = null;
+                        // @ts-ignore
+                        flake._dem_data  = undefined;
                         flake._dem_state = DemState.FAILED;
                     }
-                    --globe._num_dem_requesteds;
+                    --globe.num_dem_requesteds;
                 } );
 
                 flake._dem_state = DemState.REQUESTED;
-                ++globe._num_dem_requesteds;
+                ++globe.num_dem_requesteds;
                 break;
             }
         }
     }
 
-    /**
-     * @private
-     */
-    _isInvisible_0( clip_planes )
+
+    private _isInvisible_0( clip_planes: Vector4[] )
     {
         var r = GeoMath.EARTH_RADIUS + this._height_max;
 
@@ -1111,10 +1308,8 @@ class Flake {
         return false;  // 見えている可能性がある
     }
 
-    /**
-     * @private
-     */
-    _isInvisible_N( clip_planes )
+
+    private _isInvisible_N( clip_planes: Vector4[] )
     {
         var xmin = this._gocs_x_min;
         var xmax = this._gocs_x_max;
@@ -1180,10 +1375,9 @@ class Flake {
     }
 
     /**
-     * @summary 標高代表値と境界箱を更新
-     * @private
+     * 標高代表値と境界箱を更新
      */
-    _estimate()
+    private _estimate()
     {
         if ( this._prev_Za_dem === this ) {
             // 代表値は決定済みなので何もしない
@@ -1191,10 +1385,10 @@ class Flake {
         }
 
         var zg = this.z;
-        var ρ = this._globe._ρ;
-        var zr_dem;
+        var rho = this._globe.rho;
+        var zr_dem: DemBinary;
 
-        if ( zg < ρ ) {
+        if ( zg < rho ) {
             zr_dem = this._findNearestDemTile( zg );
             if ( zr_dem === this._prev_Zr_dem ) {
                 // 前回と代表値が変わらないので何もしない
@@ -1205,13 +1399,13 @@ class Flake {
             this._dem_zlimit  = zg;
         }
         else {
-            var za_dem = this._findNearestDemTile( zg - ρ );
+            var za_dem = this._findNearestDemTile( zg - rho );
 
             if ( za_dem.isLeaf( zg, this.x, this.y ) ) {
                 this._estimate_leaf( za_dem );
             }
             else {
-                zr_dem = this._findNearestDemTile( za_dem.z + ρ );
+                zr_dem = this._findNearestDemTile( za_dem.z + rho );
                 if ( za_dem === this._prev_Za_dem && zr_dem === this._prev_Zr_dem ) {
                     // 前回と代表値が変わらないので何もしない
                     return;
@@ -1220,7 +1414,7 @@ class Flake {
                 this._prev_Zr_dem = zr_dem;
                 this._estimate_high( za_dem, zr_dem );
             }
-            this._dem_zlimit = za_dem.z + ρ;
+            this._dem_zlimit = za_dem.z + rho;
         }
 
         // 境界箱の更新
@@ -1232,18 +1426,17 @@ class Flake {
     }
 
     /**
-     * @summary 標高代表値を計算 (Zg < ρ)
-     * @param {mapray.DemBinary} zr_dem  レベルが Zr の DEM
-     * @private
+     * 標高代表値を計算 (Zg < ρ)
+     * @param zr_dem  レベルが Zr の DEM
      */
-    _estimate_low( zr_dem )
+    private _estimate_low( zr_dem: DemBinary )
     {
         var zg = this.z;
         var xg = this.x;
         var yg = this.y;
         var α = this._calcAlpha();
 
-        this._base_height = this._globe._avg_height.sample( zg, xg, yg );
+        this._base_height = this._globe.avg_height.sample( zg, xg, yg );
         this._height_min  = Math.max( this._base_height + α * Flake.Fm, zr_dem.height_min );
         this._height_max  = Math.min( this._base_height + α * Flake.Fp, zr_dem.height_max );
 
@@ -1254,12 +1447,11 @@ class Flake {
     }
 
     /**
-     * @summary 標高代表値を計算 (Zg >= ρ && !L(Za))
-     * @param {mapray.DemBinary} za_dem  レベルが Za の DEM
-     * @param {mapray.DemBinary} zr_dem  レベルが Zr の DEM
-     * @private
+     * 標高代表値を計算 (Zg >= ρ && !L(Za))
+     * @param za_dem  レベルが Za の DEM
+     * @param zr_dem  レベルが Zr の DEM
      */
-    _estimate_high( za_dem, zr_dem )
+    private _estimate_high( za_dem: DemBinary, zr_dem: DemBinary )
     {
         var globe = this._globe;
         var zg = this.z;
@@ -1270,9 +1462,9 @@ class Flake {
         var xe = za_dem.x;
         var ye = za_dem.y;
 
-        var   ρ = globe._ρ;
+        var  rho = globe.rho;
         var  pow = Math.pow( 2, ze - zg );
-        var size = 1 << ρ;
+        var size = 1 << rho;
 
         var    u = Math.floor( size * ((xg + 0.5) * pow - xe) );
         var    v = Math.floor( size * ((yg + 0.5) * pow - ye) );
@@ -1299,11 +1491,11 @@ class Flake {
         this._height_min  = Math.max( this._base_height + α * Flake.Fm, zr_dem.height_min );
         this._height_max  = Math.min( this._base_height + α * Flake.Fp, zr_dem.height_max );
 
-        if ( ze < zg - ρ ) {
+        if ( ze < zg - rho ) {
             // 上のレベルの DEM をリクエスト
             var qlevel = za_dem.getQuadLevel( zg, xg, yg );
             // assert: qlevel > 0
-            this._requestAncestorDemTile( Math.min( ze + qlevel, zg - ρ ) );
+            this._requestAncestorDemTile( Math.min( ze + qlevel, zg - rho ) );
         }
         else if ( zr_dem.z == zg || zr_dem.isLeaf( zg, xg, yg ) ) {
             // 標高代表値が確定した
@@ -1313,11 +1505,10 @@ class Flake {
     }
 
     /**
-     * @summary 標高代表値を計算 (Zg >= ρ && L(Za))
-     * @param {mapray.DemBinary} za_dem  レベルが Za の DEM
-     * @private
+     * 標高代表値を計算 (Zg >= ρ && L(Za))
+     * @param za_dem  レベルが Za の DEM
      */
-    _estimate_leaf( za_dem )
+    private _estimate_leaf( za_dem: DemBinary )
     {
         var zg = this.z;
         var xg = this.x;
@@ -1328,7 +1519,7 @@ class Flake {
         var ye = za_dem.y;
 
         var  pow = Math.pow( 2, ze - zg );
-        var size = 1 << this._globe._ρ;
+        var size = 1 << this._globe.rho;
 
         var    u = Math.floor( size * ((xg + 0.5) * pow - xe) );
         var    v = Math.floor( size * ((yg + 0.5) * pow - ye) );
@@ -1542,11 +1733,11 @@ class Flake {
 
     /**
      * サーバーにさらに正確度が高い DEM タイルデータが存在すれば、それをリクエストする。
-     * @param  {number} xt  X 座標 (基底タイル座標系)
-     * @param  {number} yt  Y 座標 (基底タイル座標系)
-     * @private
+     * @param xt X 座標 (基底タイル座標系)
+     * @param yt Y 座標 (基底タイル座標系)
+     * @internal
      */
-    _requestHighestAccuracy( xt, yt )
+    requestHighestAccuracy( xt: number, yt: number )
     {
         var qlevel = this._dem_data.getQuadLevelDirect( xt, yt );
         if ( qlevel == 0 ) {
@@ -1554,7 +1745,7 @@ class Flake {
             return;
         }
 
-        var flake = this;
+        var flake: Flake = this;
         var  size = Math.round( Math.pow( 2, this.z + 1 ) );
         var    xf = size * xt;
         var    yf = size * yt;
@@ -1572,12 +1763,13 @@ class Flake {
     }
 
     /**
-     * @summary 地表断片とレイの交点までの距離を検索
-     * <p>地表断片 this と線分 (ray.position を始点とし、そこから ray.direction 方向に limit 距離未満にある点) との交点までの距離を返す。</p>
-     * <p>ただし地表断片と線分が交差しないときは limit を返す。</p>
-     * @private
+     * 地表断片とレイの交点までの距離を検索
+     *
+     * 地表断片 this と線分 (ray.position を始点とし、そこから ray.direction 方向に limit 距離未満にある点) との交点までの距離を返す。
+     *
+     * ただし地表断片と線分が交差しないときは limit を返す。
      */
-    _findQuadRayDistance( ray, limit, dem_flake )
+    private _findQuadRayDistance( ray: Ray, limit: number, dem_flake: Flake )
     {
         var  pts = this._getQuadPositions( dem_flake, Flake._temp_positions );
         var dist = Flake._findTriRayDistance( ray, limit, pts[0], pts[2], pts[1] );
@@ -1590,7 +1782,7 @@ class Flake {
      * <p>ただし地表断片と線分が交差しないときは limit を返す。</p>
      * @private
      */
-    static _findTriRayDistance( ray, limit, p0, p1, p2 )
+    static _findTriRayDistance( ray: Ray, limit: number, p0: Vector3, p1: Vector3, p2: Vector3 )
     {
         var v = ray.direction;
 
@@ -1665,19 +1857,18 @@ class Flake {
 
     /**
      * @summary 四隅の位置を取得
-     * @param  {mapray.Globe.Flake} dem_flake  DEM の地表断片
-     * @param  {array}              positions  結果の格納先
-     * @return {array}                         positions = [左上, 右上, 左下, 右下]
-     * @private
+     * @param  dem_flake  DEM の地表断片
+     * @param  positions  結果の格納先
+     * @return [左上, 右上, 左下, 右下]
      */
-    _getQuadPositions( dem_flake, positions )
+    private _getQuadPositions( dem_flake: Flake, positions: [Vector3, Vector3, Vector3, Vector3] ): [Vector3, Vector3, Vector3, Vector3]
     {
         var xg = this.x;
         var yg = this.y;
         var xe = dem_flake.x;
         var ye = dem_flake.y;
 
-        var    size = 1 << this._globe._ρ;
+        var    size = 1 << this._globe.rho;
         var heights = dem_flake._dem_data.getHeights( xg - size * xe, yg - size * ye );
 
         var msize = Math.pow( 2, 1 - this.z ) * Math.PI;
@@ -1706,11 +1897,11 @@ class Flake {
     }
 
     /**
-     * @summary 地表断片とレイの交点までの距離を検索
-     * <p>地表断片 this と線分 (ray.position を始点とし、そこから ray.direction 方向に limit 距離未満にある点) が交差しないときは true, 交差するまたは不明のとき false を返す。
-     * @private
+     * 地表断片とレイの交点までの距離を検索
+     *
+     * 地表断片 this と線分 (ray.position を始点とし、そこから ray.direction 方向に limit 距離未満にある点) が交差しないときは true, 交差するまたは不明のとき false を返す。
      */
-    _cullForRayDistance( ray, limit )
+    private _cullForRayDistance( ray: Ray, limit: number )
     {
         var q  = ray.position;
         var qx = q[0];
@@ -1825,13 +2016,11 @@ class Flake {
 
 
     /**
-     * @summary エンティティのメッシュを削除
+     * エンティティのメッシュを削除
      *
-     * @param {mapray.Entity.FlakePrimitiveProducer} producer
-     *
-     * @private
+     * @param producer
      */
-    _removeEntityMeshes( producer )
+    private _removeEntityMeshes( producer: Entity.FlakePrimitiveProducer ): void
     {
         for ( let node of this._meshes ) {
             node.removeEntityMesh( producer );
@@ -1840,18 +2029,14 @@ class Flake {
 
 
     /**
-     * @summary エンティティ辞書を取得
-     *
-     * @return {Map.<mapray.Entity.FlakePrimitiveProducer, boolean>}
-     *
-     * @private
+     * エンティティ辞書を取得
      */
-    _getEntityMap()
+    private _getEntityMap(): Map<Entity.FlakePrimitiveProducer, boolean>
     {
-        if ( this._entity_map === null ) {
+        if ( !this._entity_map ) {
             // 存在しないので新たに生成する
 
-            let parent_map = this._parent._getEntityMap();  // 親の辞書
+            let parent_map = (this._parent as Flake)._getEntityMap();  // 親の辞書
             let entity_map = new Map();
 
             for ( let [producer, isfull] of parent_map ) {
@@ -1860,6 +2045,7 @@ class Flake {
                     entity_map.set( producer, true );
                 }
                 else {
+                    // @ts-ignore
                     switch ( producer.getAreaStatus( this ) ) {
                     case Entity.AreaStatus.PARTIAL:
                         entity_map.set( producer, false );
@@ -1878,58 +2064,72 @@ class Flake {
 
         return this._entity_map;
     }
-
 }
 
 
-/**
- * @summary 球面分割数の係数
- * @type {number}
- * @constant
- */
-Flake.ε = 0.0625;
 
-/**
- * @summary 標高下限係数
- * @type {number}
- * @constant
- */
-Flake.Fm = -2.0;
+export namespace Flake {
 
-/**
- * @summary 標高上限係数
- * @type {number}
- * @constant
- */
-Flake.Fp = 2.0;
-
-
-Flake.πr = Math.PI * GeoMath.EARTH_RADIUS;
-
-Flake._temp_positions = function() {
-    var p = [];
-    for ( var i = 0; i < 4; ++i ) { p.push( GeoMath.createVector3() ); }
-    return p;
-}();
-Flake._temp_ray_1  = GeoMath.createVector3();
-Flake._temp_ray_2  = GeoMath.createVector3();
-Flake._temp_ray_3  = GeoMath.createVector3();
-Flake._temp_ray_4  = GeoMath.createVector3();
-Flake._temp_ray_5  = GeoMath.createVector3();
-Flake._temp_ray_6  = GeoMath.createVector3();
-Flake._temp_ray_7  = GeoMath.createVector3();
-Flake._temp_ray_8  = GeoMath.createVector3();
-Flake._temp_ray_9  = GeoMath.createVector3();
-Flake._temp_ray_10 = GeoMath.createVector3();
-Flake._temp_ray_11 = GeoMath.createVector3();
 
 
 /**
- * @summary 履歴統計
- * @memberof mapray.Globe
- * @private
+ * 球面分割数の係数
  */
-class HistStats {
+export const ε: number = 0.0625;
+
+
+/**
+ * 標高下限係数
+ */
+export const Fm: number = -2.0;
+
+
+/**
+ * 標高上限係数
+ */
+export const Fp: number = 2.0;
+
+
+/**
+ * @internal
+ */
+export const πr: number = Math.PI * GeoMath.EARTH_RADIUS;
+
+
+export const _temp_positions: [ Vector3, Vector3, Vector3, Vector3 ] = [
+    GeoMath.createVector3(),
+    GeoMath.createVector3(),
+    GeoMath.createVector3(),
+    GeoMath.createVector3(),
+];
+
+export const _temp_ray_1  = GeoMath.createVector3();
+export const _temp_ray_2  = GeoMath.createVector3();
+export const _temp_ray_3  = GeoMath.createVector3();
+export const _temp_ray_4  = GeoMath.createVector3();
+export const _temp_ray_5  = GeoMath.createVector3();
+export const _temp_ray_6  = GeoMath.createVector3();
+export const _temp_ray_7  = GeoMath.createVector3();
+export const _temp_ray_8  = GeoMath.createVector3();
+export const _temp_ray_9  = GeoMath.createVector3();
+export const _temp_ray_10 = GeoMath.createVector3();
+export const _temp_ray_11 = GeoMath.createVector3();
+
+
+
+} // namespace Flake
+
+
+
+/**
+ * 履歴統計
+ * @internal
+ */
+export class HistStats {
+
+    private _history: number[];
+    private _max_value: number;
+    private _hsize: number;
 
     constructor()
     {
@@ -1939,9 +2139,9 @@ class HistStats {
     }
 
     /**
-     * @summary 最大値を取得
+     * 最大値を取得
      */
-    getMaxValue( value )
+    getMaxValue( value: number )
     {
         var history = this._history;
         var old_max = this._max_value;
@@ -1975,14 +2175,13 @@ class HistStats {
         return this._max_value;
     }
 
-    static
-    _find_max( history )
+    static　_find_max( history: number[] ): number
     {
-        var max_value = history[0];
+        let max_value = history[0];
 
-        var length = history.length;
-        for ( var i = 1; i < length; ++i ) {
-            var value = history[i];
+        const length = history.length;
+        for ( let i = 1; i < length; ++i ) {
+            const value = history[i];
             if ( value > max_value ) {
                 max_value = value;
             }
@@ -1995,19 +2194,31 @@ class HistStats {
 
 
 /**
- * @summary メッシュ管理ノード
- * @memberof mapray.Globe
- * @private
+ * メッシュ管理ノード
+ * @internal
  */
-class MeshNode {
+export class MeshNode {
+
+    private _flake: Flake;
+
+    private _dem: DemBinary;
+
+    private _dpows: number[];
+
+    private _aframe: number;
+
+    private _base_mesh: FlakeMesh;
+
+    private _entity_meshes: Map<Entity.FlakePrimitiveProducer, Mesh | object>;
+
 
     /**
-     * @summary 初期化
-     * @param  {mapray.Globe.Flake} flake  所有者
-     * @param  {mapray.DemBinary}   dem    DEM バイナリ
-     * @param  {number[]}           dpows  分割指数
+     * 初期化
+     * @param flake  所有者
+     * @param dem    DEM バイナリ
+     * @param dpows  分割指数
      */
-    constructor( flake, dem, dpows )
+    constructor( flake: Flake, dem: DemBinary, dpows: number[] )
     {
         this._flake  = flake;
         this._dem    = dem;
@@ -2015,15 +2226,15 @@ class MeshNode {
         this._aframe = -1;
 
         // 地表のメッシュ
-        this._base_mesh = new FlakeMesh( flake._globe.glenv, flake, dpows, dem );
+        this._base_mesh = new FlakeMesh( flake.globe.glenv, flake, dpows, dem );
 
         // エンティティのメッシュ
         //   key:   FlakePrimitiveProducer
         //   value: Mesh | CACHED_EMPTY_MESH
-        this._entity_meshes = new Map();
+        this._entity_meshes = new Map<Entity.FlakePrimitiveProducer, Mesh | object>(); 
 
         // メッシュ数をカウントアップ
-        flake._globe._num_cache_meshes += 1;
+        flake.globe.num_cache_meshes += 1;
     }
 
     /**
@@ -2034,7 +2245,7 @@ class MeshNode {
     getRenderObject()
     {
         let flake = this._flake;
-        let   fro = new FlakeRenderObject( flake, flake._globe.glenv, this._base_mesh );
+        let   fro = new FlakeRenderObject( flake, flake.globe.glenv, this._base_mesh );
 
         // fro にエンティティ毎のデータを追加
         for ( let producer of flake.getEntityProducers() ) {
@@ -2046,12 +2257,12 @@ class MeshNode {
                 continue;
             }
 
-            if ( mesh === null ) {
+            if ( !mesh ) {
                 // メッシュがキャッシュに存在しないので、メッシュを生成してキャッシュする
                 mesh = producer.createMesh( flake, this._dpows, this._dem );
                 this._setEntityMesh( producer, mesh );
 
-                if ( mesh === null ) {
+                if ( !mesh ) {
                     // 空メッシュとしてキャッシュされた --> fro に追加しない
                     continue;
                 }
@@ -2065,34 +2276,34 @@ class MeshNode {
     }
 
     /**
-     * @summary 一致するか？
-     * @param  {mapray.DemBinary} dem    DEM バイナリ
-     * @param  {number[]}         dpows  分割指数
-     * @return {boolean}                 一致するとき true, 一致しないとき false
+     * 一致するか？
+     * @param  dem    DEM バイナリ
+     * @param  dpows  分割指数
+     * @return 一致するとき true, 一致しないとき false
      */
-    match( dem, dpows )
+    match( dem: DemBinary, dpows: number[] ): boolean
     {
         return (this._dem === dem) && (this._dpows[0] === dpows[0]) && (this._dpows[1] === dpows[1]);
     }
 
     /**
-     * @summary アクセスフレームを更新
+     * アクセスフレームを更新
      */
     touch()
     {
-        var globe = this._flake._globe;
-        if ( this._aframe !== globe._frame_counter ) {
-            this._aframe = globe._frame_counter;
-            globe._num_touch_meshes += 1;
+        const globe = this._flake.globe;
+        if ( this._aframe !== globe.frame_counter ) {
+            this._aframe = globe.frame_counter;
+            globe.num_touch_meshes += 1;
         }
     }
 
     /**
-     * @summary ノードを破棄
+     * ノードを破棄
      */
     dispose()
     {
-        if ( this._base_mesh === null ) {
+        if ( !this._base_mesh ) {
             // すでに破棄されている
             return;
         }
@@ -2100,7 +2311,7 @@ class MeshNode {
         var flake = this._flake;
 
         // Flake から this ノードを削除
-        var meshes = flake._meshes;
+        var meshes = flake.meshes;
         var length = meshes.length;
         for ( var i = 0; i < length; ++i ) {
             if ( meshes[i] === this ) {
@@ -2111,6 +2322,7 @@ class MeshNode {
 
         // メッシュを破棄
         this._base_mesh.dispose();
+        // @ts-ignore
         this._base_mesh = null;
 
         for ( let mesh of this._entity_meshes.values() ) {
@@ -2120,16 +2332,16 @@ class MeshNode {
         }
 
         // メッシュ数をカウントダウン
-        flake._globe._num_cache_meshes -= 1;
+        flake.globe.num_cache_meshes -= 1;
     }
 
     /**
-     * @summary 削減用の MeshNode 比較
-     * @param  {mapray.Globe.MeshNode} other  比較対象
-     * @return {number}                       比較値
-     * @package
+     * 削減用の MeshNode 比較
+     * @param  other  比較対象
+     * @return 比較値
+     * @internal
      */
-    compareForReduce( other )
+    compareForReduce( other: Globe.MeshNode ): number
     {
         // 最近アクセスしたものを優先
         var a = this;
@@ -2139,55 +2351,48 @@ class MeshNode {
 
 
     /**
-     * @summary エンティティのメッシュを削除
+     * エンティティのメッシュを削除
      *
-     * @desc
-     * <p>producer に対応するメッシュが存在すれば削除する。</p>
+     * producer に対応するメッシュが存在すれば削除する。
      *
-     * @param {mapray.Entity.FlakePrimitiveProducer} producer
+     * @param  producer
      */
-    removeEntityMesh( producer )
+    removeEntityMesh( producer: Entity.FlakePrimitiveProducer )
     {
         this._entity_meshes.delete( producer );
     }
 
 
     /**
-     * @summary エンティティのメッシュを取得
+     * エンティティのメッシュを取得
      *
-     * @desc
-     * <p>producer に対応するメッシュを取得する。</p>
-     * <p>ただし存在しないとき null, 空メッシュが設定されているときは CACHED_EMPTY_MESH を返す。</p>
+     * producer に対応するメッシュを取得する。
      *
-     * @param {mapray.Entity.FlakePrimitiveProducer} producer
+     * ただし存在しないとき null, 空メッシュが設定されているときは CACHED_EMPTY_MESH を返す。
      *
-     * @return {?(mapray.Mesh|CACHED_EMPTY_MESH)}
-     *
-     * @private
+     * @param producer
      */
-    _getEntityMesh( producer )
+    private _getEntityMesh( producer: Entity.FlakePrimitiveProducer ): Mesh | object | null
     {
         let mesh = this._entity_meshes.get( producer );
 
-        return (mesh !== undefined) ? mesh : null;
+        return mesh ? mesh : null;
     }
 
 
     /**
-     * @summary エンティティのメッシュを設定
+     * エンティティのメッシュを設定
      *
-     * @desc
-     * <p>producer に対応するメッシュを設定する。</p>
-     * <p>空メッシュを設定するときは mesh に null を指定する。</p>
+     * producer に対応するメッシュを設定する。
      *
-     * @param {mapray.Entity.FlakePrimitiveProducer} producer
-     * @param {?mapray.Mesh}                         mesh
+     * 空メッシュを設定するときは mesh に null を指定する。
      *
-     * @private
+     * @param producer
+     * @param mesh
      */
-    _setEntityMesh( producer, mesh )
+    private _setEntityMesh( producer: Entity.FlakePrimitiveProducer, mesh: Mesh | object | null )
     {
-        let value = (mesh !== null) ? mesh : CACHED_EMPTY_MESH;
+        const value = mesh ? mesh : CACHED_EMPTY_MESH;
 
         this._entity_meshes.set( producer, value );
     }
@@ -2196,31 +2401,28 @@ class MeshNode {
 
 
 /**
- * @summary DEM 状態の列挙型
- * @enum {object}
- * @memberof mapray.Globe
- * @constant
+ * DEM 状態の列挙型
  */
-var DemState = {
+export enum DemState {
     /**
      * DEM タイルが存在しない
      */
-    NONE: { id: "NONE" },
+    NONE,
 
     /**
      * DEM タイルが存在する
      */
-    LOADED: { id: "LOADED" },
+    LOADED,
 
     /**
      * DEM タイルをリクエスト中
      */
-    REQUESTED: { id: "REQUESTED" },
+    REQUESTED,
 
     /**
      * DEM タイルのリクエストに失敗
      */
-    FAILED: { id: "FAILED" }
+    FAILED,
 };
 
 
@@ -2233,4 +2435,10 @@ var DemState = {
 const CACHED_EMPTY_MESH = { id: "CACHED_EMPTY_MESH" };
 
 
+
+} // namespace Globe
+
+
+const Flake = Globe.Flake;
+export { Flake };
 export default Globe;
