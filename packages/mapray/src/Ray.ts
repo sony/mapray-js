@@ -1,41 +1,41 @@
-import GeoMath from "./GeoMath";
+import GeoMath, { Vector3 } from "./GeoMath";
+import Viewer from "./Viewer";
+import Camera from "./Camera";
 
 
 /**
- * @summary 始点と方向
- * @classdesc
- * <p>始点と方向で表現される半直線である。</p>
- * @memberof mapray
- * @see mapray.Viewer#getRayIntersection
- * @see mapray.Camera#getCanvasRay
+ * 始点と方向
+ *
+ * 始点と方向で表現される半直線である。
+ * @see [[Viewer.getRayIntersection]]
+ * @see [[Camera.getCanvasRay]]
  */
 class Ray {
 
     /**
-     * @desc
-     * <p>pos の参照を {@link mapray.Ray#position}, dir の参照を {@link mapray.Ray#direction} に代入する。</p>
-     * <p>ただし引数を省略したとき、対応するメンバーには新たに生成されたベクトルが代入される。</p>
-     * @param {mapray.Vector3} [pos]  レイの始点
-     * @param {mapray.Vector3} [dir]  レイの方向
+     * レイの始点
      */
-    constructor( pos, dir )
+    position: Vector3;
+
+    /**
+     * レイの方向
+     *
+     * 非零ベクトルでなければならない。
+     */
+    direction: Vector3;
+
+
+    /**
+     * pos の参照を [[position]], dir の参照を [[direction]] に代入する。
+     *
+     * ただし引数を省略したとき、対応するメンバーには新たに生成されたベクトルが代入される。
+     * @param pos レイの始点（default[0, 0, 0]）
+     * @param dir レイの方向（default [0, 0, -1]）
+     */
+    constructor( pos?: Vector3, dir?: Vector3 )
     {
-        /**
-         *  @summary レイの始点
-         *  @member mapray.Ray#position
-         *  @type {mapray.Vector3}
-         *  @default [0, 0, 0]
-         */
         this.position = pos || GeoMath.createVector3();
 
-        /**
-         *  @summary レイの方向
-         *  @desc
-         *  <p>非零ベクトルでなければならない。</p>
-         *  @member mapray.Ray#direction
-         *  @type {mapray.Vector3}
-         *  @default [0, 0, -1]
-         */
         this.direction = dir || GeoMath.createVector3( [0, 0, -1] );
     }
 
