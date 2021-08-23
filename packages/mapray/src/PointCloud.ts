@@ -1090,13 +1090,16 @@ export class Box {
      * 点群の読み込み処理
      */
     async load(): Promise<void> {
-        if ( this._status !== PointCloud.Status.NOT_LOADED ) throw new Error( "illegal sstatus: " + this._status );
+        if ( this._status !== PointCloud.Status.NOT_LOADED ) throw new Error( "illegal status: " + this._status );
         if ( !this._owner.provider.isReady() ) return;
         this._status = Box.Status.LOADING;
 
         const task = this._owner.provider.load( this.level, this.x, this.y, this.z );
         this._loadId = task.id;
         return task.done.then(event => {
+                if ( this._status === PointCloud.Status.DESTROYED ) {
+                    return;
+                }
                 const children = [];
                 {
                     let childFlags = event.header.childFlags;
