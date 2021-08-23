@@ -1,109 +1,107 @@
+import GLEnv from "./GLEnv";
+import Viewer from "./Viewer";
 import Layer from "./Layer";
 import ImageProvider from "./ImageProvider";
 
 
 /**
- * @summary 地図レイヤー管理
- * @classdesc
- * <p>地図レイヤーを管理するオブジェクトである。</p>
- * <p>インスタンスは {@link mapray.Viewer#layers} から得ることができる。</p>
+ * 地図レイヤー管理
  *
- * @hideconstructor
- * @memberof mapray
- * @see mapray.Layer
+ * 地図レイヤーを管理するオブジェクトである。
+ * インスタンスは {@link mapray.Viewer#layers} から得ることができる。
+ *
+ * @see [[Layer]]
  */
 class LayerCollection {
 
+    private _viewer: Viewer;
+
+    private _glenv: GLEnv;
+
+    private _layers: Layer[];
+
+    private _draw_layers?: Layer[];
+
+
     /**
-     * @param {mapray.Viewer} viewer  Viewer
-     * @param {array}         layers  初期化プロパティ配列
+     * @param viewer  Viewer
+     * @param layers  初期化プロパティ配列
      */
-    constructor( viewer, layers )
+    constructor( viewer: Viewer, layers?: (Layer.Option | ImageProvider)[] )
     {
         this._viewer      = viewer;
-        this._glenv       = viewer._glenv;
+        this._glenv       = viewer.glenv;
         this._layers      = [];
-        this._draw_layers = null;
 
         // 初期レイヤーを追加
-        for ( var i = 0; i < layers.length; ++i ) {
-            this.add( layers[i] );
+        if ( layers ) {
+            for ( let i = 0; i < layers.length; ++i ) {
+                this.add( layers[i] );
+            }
         }
     }
 
 
     /**
-     * @summary Viewerを取得
-     * @type {mapray.Viewer}
-     * @readonly
-     * @package
+     * Viewerを取得
+     * @internal
      */
-    get viewer() { return this._viewer; }
+    get viewer(): Viewer { return this._viewer; }
 
     /**
-     * @summary WebGL 環境を取得
-     * @type {mapray.GLEnv}
-     * @readonly
-     * @package
+     * WebGL 環境を取得
+     * @internal
      */
-    get glenv() { return this._glenv; }
+    get glenv(): GLEnv { return this._glenv; }
 
 
     /**
-     * @summary レイヤー数
-     * @type {number}
-     * @readonly
+     * レイヤー数
      */
-    get num_layers() { return this._layers.length; }
+    get num_layers(): number { return this._layers.length; }
 
 
     /**
-     * @summary レイヤーを取得
+     * レイヤーを取得
      *
-     * @param  {number} index  レイヤーの場所
-     * @return {mapray.Layer}    レイヤー
+     * @param  index  レイヤーの場所
+     * @return Layer  レイヤー
      */
-    getLayer( index )
+    getLayer( index: number )
     {
         return this._layers[index];
     }
 
 
     /**
-     * @summary すべてのレイヤーを削除
+     * すべてのレイヤーを削除
      */
     clear()
     {
-        while ( this.num_layers() > 0 ) {
+        while ( this.num_layers > 0 ) {
             this.remove( 0 );
         }
     }
 
 
     /**
-     * @summary レイヤーを末尾に追加
+     * レイヤーを末尾に追加
      *
-     * @param {object|mapray.ImageProvider} layer          レイヤーのプロパティ
-     * @param {mapray.ImageProvider} layer.image_provider  画像プロバイダ
-     * @param {boolean}              [layer.visibility]    可視性フラグ
-     * @param {number}               [layer.opacity]       不透明度
+     * @param layer          レイヤーのプロパティ
      */
-    add( layer )
+    add( layer: Layer.Option | ImageProvider )
     {
         this.insert( this.num_layers, layer );
     }
 
 
     /**
-     * @summary レイヤーを末尾に追加
+     * レイヤーを末尾に追加
      *
-     * @param {number}                      index          挿入場所
-     * @param {object|mapray.ImageProvider} layer          レイヤーのプロパティ
-     * @param {mapray.ImageProvider} layer.image_provider  画像プロバイダ
-     * @param {boolean}              [layer.visibility]    可視性フラグ
-     * @param {number}               [layer.opacity]       不透明度
+     * @param index          挿入場所
+     * @param layer  レイヤーのプロパティ
      */
-    insert( index, layer )
+    insert( index: number, layer: Layer.Option | ImageProvider )
     {
         this._layers.splice( index, 0, new Layer( this, layer ) );
         this.dirtyDrawingLayers();
@@ -111,11 +109,11 @@ class LayerCollection {
 
 
     /**
-     * @summary 特定のレイヤーを削除
+     * 特定のレイヤーを削除
      *
-     * @param {number} index  削除場所
+     * @param index  削除場所
      */
-    remove( index )
+    remove( index: number )
     {
         this._layers.splice( index, 1 );
         this.dirtyDrawingLayers();
@@ -123,91 +121,88 @@ class LayerCollection {
 
 
     /**
-     * @summary 描画レイヤー数を取得
+     * 描画レイヤー数を取得
      *
-     * @return {number}  描画レイヤー数
-     * @package
+     * @return 描画レイヤー数
      */
-    numDrawingLayers()
+    get num_drawing_layers(): number
     {
-        if ( this._draw_layers === null ) {
-            this._updataDrawingLayers();
+        if ( !this._draw_layers ) {
+            this._draw_layers = this._updateDrawingLayers();
         }
         return this._draw_layers.length;
     }
 
 
     /**
-     * @summary 描画レイヤーを取得
+     * 描画レイヤーを取得
      *
-     * @param  {number} index  レイヤーの場所
-     * @return {mapray.Layer}  レイヤー
-     * @package
+     * @param  index  レイヤーの場所
+     * @return Layer  レイヤー
      */
-    getDrawingLayer( index )
+    getDrawingLayer( index: number ): Layer
     {
-        if ( this._draw_layers === null ) {
-            this._updataDrawingLayers();
+        if ( !this._draw_layers ) {
+            this._draw_layers = this._updateDrawingLayers();
         }
         return this._draw_layers[index];
     }
 
 
     /**
-     * @summary フレームの最後の処理
-     * @package
+     * フレームの最後の処理
+     * @internal
      */
     endFrame()
     {
-        var layers = this._layers;
+        const layers = this._layers;
 
-        for ( var i = 0; i < layers.length; ++i ) {
+        for ( let i = 0; i < layers.length; ++i ) {
             layers[i].tile_cache.endFrame();
         }
     }
 
 
     /**
-     * @summary 取り消し処理
-     * @package
+     * 取り消し処理
+     * @internal
      */
     cancel()
     {
-        var layers = this._layers;
+        const layers = this._layers;
 
-        for ( var i = 0; i < layers.length; ++i ) {
+        for ( let i = 0; i < layers.length; ++i ) {
             layers[i].tile_cache.cancel();
         }
     }
 
 
     /**
-     * @summary 描画レイヤー配列を無効化
-     * @package
+     * 描画レイヤー配列を無効化
+     * @internal
      */
     dirtyDrawingLayers()
     {
-        this._draw_layers = null;
+        this._draw_layers = undefined;
     }
 
 
     /**
-     * @summary 描画レイヤー配列を更新
-     * @private
+     * 描画レイヤー配列を更新
+     * @internal
      */
-    _updataDrawingLayers()
+    private _updateDrawingLayers(): Layer[]
     {
-        var num_layers = this.num_layers;
+        const num_layers = this.num_layers;
 
-        var draw_layers = [];
-        for ( var i = 0; i < num_layers; ++i ) {
-            var layer = this._layers[i];
+        const draw_layers = [];
+        for ( let i = 0; i < num_layers; ++i ) {
+            const layer = this._layers[i];
             if ( layer.image_provider.status() === ImageProvider.Status.READY && layer.visibility === true ) {
                 draw_layers.push( layer );
             }
         }
-
-        this._draw_layers = draw_layers;
+        return draw_layers;
     }
 
 }
