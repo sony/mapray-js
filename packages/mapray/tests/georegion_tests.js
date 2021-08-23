@@ -1,6 +1,6 @@
-import GeoMath from "../src/GeoMath";
-import GeoRegion from "../src/GeoRegion";
-import GeoPoint from "../src/GeoPoint";
+import GeoMath from "../dist/es/GeoMath";
+import GeoRegion from "../dist/es/GeoRegion";
+import GeoPoint from "../dist/es/GeoPoint";
 
 test('empty', () => {
     const region = new GeoRegion();
