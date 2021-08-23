@@ -1,4 +1,4 @@
-import ConvexPolygon from "../src/ConvexPolygon";
+import ConvexPolygon from "../dist/es/ConvexPolygon";
 
 /**
  * 同一三角形同士の交差

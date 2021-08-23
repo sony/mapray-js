@@ -1,4 +1,4 @@
-import OrderedMap from "../src/OrderedMap";
+import OrderedMap from "../dist/es/OrderedMap";
 
 test('serial_insert', () => {
     for ( let map of create_serial_maps() ) {
