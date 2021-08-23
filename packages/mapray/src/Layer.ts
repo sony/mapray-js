@@ -1,29 +1,44 @@
+import GLEnv from "./GLEnv";
+import Viewer from "./Viewer";
 import ImageProvider from "./ImageProvider";
 import TileTextureCache from "./TileTextureCache";
 import SurfaceMaterial from "./SurfaceMaterial";
 import WireframeMaterial from "./WireframeMaterial";
+import LayerCollection from "./LayerCollection";
 
 
 /**
- * @summary 地図レイヤー
- * @classdesc
- * <p>地図レイヤーを表現するオブジェクトである。</p>
+ * 地図レイヤー
  *
- * @hideconstructor
- * @memberof mapray
- * @see mapray.LayerCollection
+ * 地図レイヤーを表現するオブジェクトである。
+ *
+ * @see [[LayerCollection]]
  */
 class Layer {
 
+    private _owner: LayerCollection;
+
+    private _glenv: GLEnv;
+
+    private _viewer: Viewer;
+
+    private _image_provider: ImageProvider;
+
+    private _visibility: boolean;
+
+    private _opacity: number;
+
+    private _type: Layer.LayerType;
+
+    private _material: SurfaceMaterial;
+
+    private _tile_cache: TileTextureCache;
+
     /**
-     * @param {mapray.LayerCollection}      owner         地図レイヤー管理
-     * @param {object|mapray.ImageProvider} init          初期化プロパティ
-     * @param {mapray.ImageProvider} init.image_provider  画像プロバイダ
-     * @param {boolean}              [init.visibility]    可視性フラグ
-     * @param {number}               [init.opacity]       不透明度
-     * @param {Layer.LayerType}      [init.type]          レイヤータイプ
+     * @param owner         地図レイヤー管理
+     * @param init          初期化プロパティ
      */
-    constructor( owner, init )
+    constructor( owner: LayerCollection, init: Layer.Option | ImageProvider )
     {
         this._owner = owner;
         this._glenv = owner.glenv;
@@ -34,7 +49,6 @@ class Layer {
         this._visibility     = props.visibility || true;
         this._opacity        = props.opacity    || 1.0;
         this._type = props.type === Layer.LayerType.NIGHT ? Layer.LayerType.NIGHT : Layer.LayerType.NORMAL;
-        this._material = null;
 
         this._tile_cache = new TileTextureCache( this._glenv, this._image_provider );
 
@@ -58,52 +72,42 @@ class Layer {
 
 
     /**
-     * @summary 画像プロバイダを取得
-     * @type {mapray.ImageProvider}
-     * @readonly
+     * 画像プロバイダを取得
      */
-    get image_provider() { return this._image_provider; }
+    get image_provider(): ImageProvider { return this._image_provider; }
 
 
     /**
-     * @summary 可視性フラグを取得
-     * @type {boolean}
-     * @readonly
+     * 可視性フラグを取得
      */
-    get visibility() { return this._visibility; }
+    get visibility(): boolean { return this._visibility; }
 
 
     /**
-     * @summary 不透明度を取得
-     * @type {number}
-     * @readonly
+     * 不透明度を取得
      */
-    get opacity() { return this._opacity; }
+    get opacity(): number { return this._opacity; }
 
 
     /**
-     * @summary タイプを取得
-     * @type {LayerType}
-     * @readonly
+     * タイプを取得
      */
-    get type() { return this._type; }
+    get type(): Layer.LayerType { return this._type; }
 
 
     /**
-     * @summary タイルテクスチャキャッシュを取得
-     * @type {mapray.TileTextureCache}
-     * @readonly
-     * @package
+     * タイルテクスチャキャッシュを取得
+     * @internal
      */
-    get tile_cache() { return this._tile_cache; }
+    get tile_cache(): TileTextureCache { return this._tile_cache; }
 
 
     /**
-     * @summary 画像プロバイダを設定
+     * 画像プロバイダを設定
      *
-     * @param {mapray.ImageProvider} provider  画像プロバイダ
+     * @param provider  画像プロバイダ
      */
-    setImageProvider( provider )
+    setImageProvider( provider: ImageProvider )
     {
         if ( this._image_provider !== provider ) {
             // プロバイダを変更またはプロバイダの状態が変化したら描画レイヤーを更新
@@ -120,11 +124,11 @@ class Layer {
 
 
     /**
-     * @summary 可視性フラグを設定
+     * 可視性フラグを設定
      *
-     * @param {boolean} visibility  可視性フラグ
+     * @param visibility  可視性フラグ
      */
-    setVisibility( visibility )
+    setVisibility( visibility: boolean )
     {
         if ( this._visibility != visibility ) {
             // レイヤーの可視性が変化したら描画レイヤーを更新
@@ -136,51 +140,74 @@ class Layer {
 
 
     /**
-     * @summary 不透明度を設定
+     * 不透明度を設定
      *
-     * @param {number} opacity  不透明度
+     * @param opacity  不透明度
      */
-    setOpacity( opacity )
+    setOpacity( opacity: number )
     {
         this._opacity = opacity;
     }
 
 
     /**
-     * @summary マテリアルを取得
+     * マテリアルを取得
      *
-     * @return {mapray.SurfaceMaterial} マテリアル
-     * @package
+     * @return マテリアル
+     * @internal
      */
-    getMateral()
+    getMateral(): SurfaceMaterial
     {
         return this._material;
     }
 }
 
 
-/**
- * @summary レイヤータイプ
- * @enum {object}
- * @memberof mapray.Layer
- * @constant
- */
-const LayerType = {
 
+namespace Layer {
+
+
+
+export interface Option {
+
+    /** 画像プロバイダ */
+    image_provider: ImageProvider;
+
+    /** 可視性フラグ */
+    visibility?: boolean;
+
+    /** 不透明度 */
+    opacity?: number;
+
+    /** レイヤータイプ */
+    type?: LayerType;
+
+}
+
+
+
+/**
+ * レイヤータイプ
+ */
+export enum LayerType {
 
     /**
      * 通常のレイヤー
      */
-    NORMAL: { id: "NORMAL" },
+    NORMAL,
 
 
     /**
      * 夜部分のみ描画するレイヤー
      */
-    NIGHT: { id: "NIGHT" }
+    NIGHT,
 
 };
 
-Layer.LayerType = LayerType;
+
+
+} // namespace Layer
+
+
 
 export default Layer;
