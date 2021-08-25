@@ -79,7 +79,7 @@ class SurfaceMaterial extends FlakeMaterial {
      */
     numDrawings()
     {
-        return 1 + this._layers.numDrawingLayers();
+        return 1 + this._layers.num_drawing_layers;
     }
 
 
