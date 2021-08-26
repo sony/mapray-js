@@ -1,13 +1,10 @@
-name: <CDN pre-release> Publish JS files
+name: <CDN> Publish JS files
 on:
-  push:
-    tags:
-      - '[0-9]+.[0-9]+.[0-9]+-dev.[0-9]+'
-      - '[0-9]+.[0-9]+.[0-9]+-alpha.[0-9]+'
-      - '[0-9]+.[0-9]+.[0-9]+-beta.[0-9]+'
-      - '[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+'
+  release:
+    types: [released, prereleased]
+
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
     env:
       CORE_PACKAGE_DIR: "./packages/mapray"
@@ -15,20 +12,12 @@ jobs:
       DEPLOY_DIR: "./_deploy"
       CORE_DEPLOY_DIR: "./_deploy/public/mapray-js"
       UI_DEPLOY_DIR: "./_deploy/public/ui"
-    outputs:
-      release_name: ${{ steps.release_name.outputs.relese_name }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
           node-version: '14.x'
       - run:  git fetch --prune --unshallow
-      - name: Get release name
-        run: |
-          RELEASE_NAME=$(echo ${{ github.ref }} |  grep -o -E "(dev|alpha|beta|rc)")
-          echo "::set-output name=release_name::${RELEASE_NAME}"
-        id: release_name
-        shell: bash
       - name: Get deploy version
         run: |
           NEXT_VERSION=$(echo ${{ github.ref }} | sed -e "s#refs/tags/##g")
@@ -48,49 +37,28 @@ jobs:
       - name: Copy ui built files to dist directory
         run: |
           mkdir -p ${{ env.UI_DEPLOY_DIR }}/v${{ steps.get_version.outputs.next_version }}
+          mkdir -p ${{ env.DEPLOY_DIR }}/public/styles/v1
           cp -r ${{ env.UI_PACKAGE_DIR }}/dist/umd/* ${{ env.UI_DEPLOY_DIR }}/v${{ steps.get_version.outputs.next_version }}
           cp -r ${{ env.UI_PACKAGE_DIR }}/dist/mapray.css ${{ env.DEPLOY_DIR }}/public/styles/v1/
         shell: bash
-      - name: Archive Production Artifact
-        uses: actions/upload-artifact@v2
+      - name: Upload core files
+        uses: google-github-actions/upload-cloud-storage@main
         with:
-          name: dist
-          path: ${{ env.DEPLOY_DIR }}
-
-  deploy:
-    name: Deploy
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v2
-      - name: Download Artifact
-        uses: actions/download-artifact@v2
+          path: ${{ env.CORE_DEPLOY_DIR }}
+          destination: inou-pro-released/mapray-js
+          credentials: ${{ secrets.STORE_CREDENTIALS }}
+          parent: false
+      - name: Upload ui files
+        uses: google-github-actions/upload-cloud-storage@main
         with:
-          name: dist
-          path: dist
-      - name: Deploy to hosting server for development
-        uses: w9jds/firebase-action@master
+          path: ${{ env.UI_DEPLOY_DIR }}
+          destination: inou-pro-released/ui
+          credentials: ${{ secrets.STORE_CREDENTIALS }}
+          parent: false
+      - name: Upload style sheet
+        uses: google-github-actions/upload-cloud-storage@main
         with:
-          args: deploy
-        env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_DEPLOY_TOKEN }}
-          PROJECT_ID: ${{ secrets.FIREBASE_DEV_PROJECT }}
-          PROJECT_PATH: "./dist"
-      - name: Deploy to hosting server for staging
-        uses: w9jds/firebase-action@master
-        with:
-          args: deploy
-        env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_DEPLOY_TOKEN }}
-          PROJECT_ID: ${{ secrets.FIREBASE_STG_PROJECT }}
-          PROJECT_PATH: "./dist"
-      - name: Deploy to hosting server for production
-        uses: w9jds/firebase-action@master
-        with:
-          args: deploy
-        env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_DEPLOY_TOKEN }}
-          PROJECT_ID: ${{ secrets.FIREBASE_PRO_PROJECT }}
-          PROJECT_PATH: "./dist"
-
+          path: ${{ env.DEPLOY_DIR }}/public/styles
+          destination: inou-pro-released/styles
+          credentials: ${{ secrets.STORE_CREDENTIALS }}
+          parent: false

@@ -1,0 +1,51 @@
+name: Checking the build
+
+on:
+  push:
+    tags-ignore:
+      - '[0-9]+.[0-9]+.[0-9]+-dev.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+-alpha.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+-beta.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+'
+    branches:
+      - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      CORE_PACKAGE_DIR: "./packages/mapray"
+      UI_PACKAGE_DIR: "./packages/ui"
+      DEPLOY_DIR: "./_deploy"
+      CORE_DEPLOY_DIR: "./_deploy/public/mapray-js"
+      UI_DEPLOY_DIR: "./_deploy/public/ui"
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14.x'
+      - run:  git fetch --prune --unshallow
+      - name: Setting yarn
+        run: |
+          yarn config set version-tag-prefix ""
+          yarn config set version-sign-git-tag false
+          yarn config set version-git-tag false
+      - name: Increment core patch version to next version
+        run: yarn version --patch
+        working-directory:  ${{ env.CORE_PACKAGE_DIR }}
+      - name: Increment ui patch version to next version
+        run: yarn version --patch
+        working-directory:  ${{ env.UI_PACKAGE_DIR }}
+      - name: Get deploy version
+        run: |
+          NEXT_VERSION=`node -pe "require('./package.json').version"`
+          echo ${NEXT_VERSION}
+          echo "::set-output name=next_version::${NEXT_VERSION}"
+        id: get_version
+        shell: bash
+        working-directory: ${{ env.CORE_PACKAGE_DIR }}
+      - name: Setup
+        run: yarn install
+      - name: Build maprayJS
+        run: yarn build
