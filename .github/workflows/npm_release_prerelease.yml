@@ -1,25 +1,22 @@
 name: <NPM pre-release> Publish node packages
 
 on:
-  push:
-    tags:
-      - '[0-9]+.[0-9]+.[0-9]+-dev.[0-9]+'
-      - '[0-9]+.[0-9]+.[0-9]+-alpha.[0-9]+'
-      - '[0-9]+.[0-9]+.[0-9]+-beta.[0-9]+'
-      - '[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+'
+  release:
+    types: [prereleased]
+
 jobs:
-  build:
+  npm:
     runs-on: ubuntu-latest
     env:
       CORE_PACKAGE_DIR: "./packages/mapray"
       UI_PACKAGE_DIR: "./packages/ui"
-    outputs:
-      tag_name: ${{ steps.get_version.outputs.tag_name }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
           node-version: '14.x'
+          registry-url: https://registry.npmjs.org
+          scope: '@mapray'
       - run:  git fetch --prune --unshal
       - name: Get current version
         run: |
@@ -33,53 +30,18 @@ jobs:
         run: yarn build
       - name: Packing core package
         run: yarn pack
-        working-directory: ./packages/mapray
+        working-directory: ${{ env.CORE_PACKAGE_DIR }}
       - name: Packing ui package
         run: yarn pack
-        working-directory: ./packages/ui
-      - name: Upload core packages
-        uses: actions/upload-artifact@v2
-        with:
-          name: core_pack
-          path: |
-            ${{ env.CORE_PACKAGE_DIR }}/*.tgz
-      - name: Upload ui packages
-        uses: actions/upload-artifact@v2
-        with:
-          name: ui_pack
-          path: |
-            ${{ env.UI_PACKAGE_DIR }}/*.tgz
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    env:
-      CORE_PACKAGE_DIR: "./dist_packages/mapray"
-      UI_PACKAGE_DIR: "./dist_packages/ui"
-    steps:
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '14.x'
-          registry-url: https://registry.npmjs.org
-          scope: '@mapray'
-      - name: Download core packages
-        uses: actions/download-artifact@v2
-        with:
-          name: core_pack
-          path: ${{ env.CORE_PACKAGE_DIR }}
-      - name: Download ui packages
-        uses: actions/download-artifact@v2
-        with:
-          name: ui_pack
-          path: ${{ env.UI_PACKAGE_DIR }}
+        working-directory: ${{ env.UI_PACKAGE_DIR }}
       - name: Publish core to npm packages
-        run: find ./ -name "*.tgz" -type f | xargs npm publish --tag ${{ needs.build.outputs.tag_name }}
+        run: find ./ -name "*.tgz" -type f | xargs npm publish --tag ${{ steps.get_version.outputs.tag_name }}
         working-directory: ${{ env.CORE_PACKAGE_DIR }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Publish ui to Github packages
-        run: find ./ -name "*.tgz" -type f | xargs npm publish --tag ${{ needs.build.outputs.tag_name }}
+        run: find ./ -name "*.tgz" -type f | xargs npm publish --tag ${{ steps.get_version.outputs.tag_name }}
         working-directory: ${{ env.UI_PACKAGE_DIR }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          
+

@@ -1,11 +1,11 @@
 name: <NPM release> Publish node packages
 
 on:
-  push:
-    tags:
-      - '[0-9]+.[0-9]+.[0-9]+'
+  release:
+    types: [released]
+
 jobs:
-  build:
+  npm:
     runs-on: ubuntu-latest
     env:
       CORE_PACKAGE_DIR: "./packages/mapray"
@@ -15,6 +15,8 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: '14.x'
+          registry-url: https://registry.npmjs.org
+          scope: '@mapray'
       - run:  git fetch --prune --unshal
       - name: Setup
         run: yarn install
@@ -26,41 +28,7 @@ jobs:
       - name: Packing ui package
         run: yarn pack
         working-directory: ./packages/ui
-      - name: Upload core packages
-        uses: actions/upload-artifact@v2
-        with:
-          name: core_pack
-          path: |
-            ${{ env.CORE_PACKAGE_DIR }}/*.tgz
-      - name: Upload ui packages
-        uses: actions/upload-artifact@v2
-        with:
-          name: ui_pack
-          path: |
-            ${{ env.UI_PACKAGE_DIR }}/*.tgz
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    env:
-      CORE_PACKAGE_DIR: "./dist_packages/mapray"
-      UI_PACKAGE_DIR: "./dist_packages/ui"
-    steps:
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '14.x'
-          registry-url: https://registry.npmjs.org
-          scope: '@mapray'
-      - name: Download core packages
-        uses: actions/download-artifact@v2
-        with:
-          name: core_pack
-          path: ${{ env.CORE_PACKAGE_DIR }}
-      - name: Download ui packages
-        uses: actions/download-artifact@v2
-        with:
-          name: ui_pack
-          path: ${{ env.UI_PACKAGE_DIR }}
       - name: Publish core to npm packages
         run: find ./ -name "*.tgz" -type f | xargs npm publish
         working-directory: ${{ env.CORE_PACKAGE_DIR }}
@@ -71,5 +39,4 @@ jobs:
         working-directory: ${{ env.UI_PACKAGE_DIR }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          
-          
+
