@@ -29,6 +29,7 @@ export default class App extends maprayui.StandardUIViewer {
     private _tools?: HTMLElement;
     private _mouse_log?: HTMLElement;
     private _enable_ui?: HTMLInputElement;
+    private _enable_dem_debug?: HTMLInputElement;
 
     private _gis: {
         flag: boolean;
@@ -59,7 +60,7 @@ export default class App extends maprayui.StandardUIViewer {
         super( container, MAPRAY_ACCESS_TOKEN, {
                 debug_stats: new mapray.DebugStats(),
                 image_provider: (
-                    BINGMAP_TOKEN !== "<your Bing Maps Key here>" ?
+                    BINGMAP_TOKEN !== "<your Bing Maps Key here" + ">" ?
                     new BingMapsImageProvider( {
                             uriScheme: "https",
                             key: BINGMAP_TOKEN,
@@ -72,6 +73,10 @@ export default class App extends maprayui.StandardUIViewer {
                 south_pole: { color: [0.88, 0.89, 0.94], },
         } );
 
+        this.setURLUpdate( true );
+        this.initCameraParameterFromURL({});
+
+        /*
         const init_camera = {
             longitude: 138.339704796544,
             latitude: 36.26726586368221,
@@ -84,11 +89,13 @@ export default class App extends maprayui.StandardUIViewer {
         };
         this.setCameraPosition( init_camera );
         this.setLookAtPosition( lookat_position );
-        // this.setCameraParameter( init_camera );
+         this.setCameraParameter( init_camera );
+         */
         const tools = this._tools = options.tools;
         if ( tools ) {
             this._mouse_log = tools.querySelector("pre") || undefined;
-            this._enable_ui = tools.querySelector("div.options>input[name=log-mouse-position]") as HTMLInputElement || undefined;
+            this._enable_ui = tools.querySelector("div.options input[name=log-mouse-position]") as HTMLInputElement || undefined;
+            this._enable_dem_debug = tools.querySelector("div.options input[name=log-dem-debug]") as HTMLInputElement || undefined;
         }
 
         this._render_mode = mapray.Viewer.RenderMode.SURFACE;
@@ -187,6 +194,65 @@ export default class App extends maprayui.StandardUIViewer {
 
         if ( !this._override_mouse_event ) {
             super.onMouseDown( point, event );
+        }
+
+        if ( this._enable_dem_debug && this._enable_dem_debug.checked ) {
+            const ray = this.viewer.camera.getCanvasRay( this._pre_mouse_position_app );
+            // @ts-ignore (calls internal api)
+            this.viewer.globe.setupDebugPickInfo();
+            const point = this.viewer.getRayIntersection(ray);
+            // @ts-ignore (calls internal api)
+            const debugPickInfo = this.viewer.globe.popDebugPickInfo();
+
+            if (debugPickInfo) {
+                const gp = new mapray.GeoPoint();
+                const position = debugPickInfo.ray.position;
+                const direction = debugPickInfo.ray.direction;
+                const distance = debugPickInfo.distance;
+
+                [[0, distance], [distance, 20000000]].forEach((ds, index) => {
+                        const ray = new mapray.MarkerLineEntity( this.viewer.scene );
+                        gp.setFromGocs([
+                                position[0] + direction[0] * ds[0],
+                                position[1] + direction[1] * ds[0],
+                                position[2] + direction[2] * ds[0],
+                        ]);
+                        ray.addPoints([gp.longitude, gp.latitude, gp.altitude]);
+                        gp.setFromGocs([
+                                position[0] + direction[0] * ds[1],
+                                position[1] + direction[1] * ds[1],
+                                position[2] + direction[2] * ds[1],
+                        ]);
+                        ray.addPoints([gp.longitude, gp.latitude, gp.altitude]);
+                        if (index === 0) {
+                            ray.setColor([1.0, 0.0, 0.0]);
+                            ray.setLineWidth( 3.0 );
+                        }
+                        else {
+                            ray.setColor([0.5, 0.5, 0.5]);
+                            ray.setLineWidth( 1.0 );
+                        }
+                        this.addEntity( ray );
+                });
+
+                // @ts-ignore (uses internal api)
+                debugPickInfo.quads.forEach(ps => {
+                        const polygon = new mapray.MarkerLineEntity( this.viewer.scene );
+                        polygon.setColor([1.0, 0.0, 0.0]);
+                        polygon.setLineWidth( 3.0 );
+                        [ps[0], ps[1], ps[3], ps[2], ps[0]].forEach(p => {
+                                gp.setFromGocs(p as [x:number, y:number, z:number]);
+                                polygon.addPoints([gp.longitude, gp.latitude, gp.altitude]);
+                        });
+                        this.addEntity( polygon );
+                });
+
+                // @ts-ignore (uses internal api)
+                debugPickInfo.trace.forEach(flake => {
+                        console.log( flake );
+                });
+            }
+            this._enable_dem_debug.checked = false;
         }
     }
 
