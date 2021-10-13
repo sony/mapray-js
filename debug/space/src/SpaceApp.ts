@@ -262,6 +262,8 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
              // sun_visualizer: new mapray.TextureSunVisualizer( './data/sun_tex.jpg' ),
              // moon_visualizer: new mapray.MoonVisualizer( './data/moontest.jpg' )
              moon_visualizer: new mapray.MoonVisualizer( './data/moon.jpg' ),
+             north_pole: { color: [0, 0.07, 0.12], },
+             south_pole: { color: [0.88, 0.89, 0.94], },
         }
         );
 
