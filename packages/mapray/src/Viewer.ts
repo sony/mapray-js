@@ -54,6 +54,10 @@ class Viewer {
 
     private _dem_provider: DemProvider<any>;
 
+    private _north_pole?: Globe.PoleOption;
+
+    private _south_pole?: Globe.PoleOption;
+
     private _image_provider: ImageProvider;
 
     private _layers: LayerCollection;
@@ -137,9 +141,11 @@ class Viewer {
         this._camera             = new Camera( canvas );
         this._animation          = this._createAnimationBindingBlock();
         this._dem_provider       = this._createDemProvider( options );
+        this._north_pole         = options.north_pole;
+        this._south_pole         = options.south_pole;
         this._image_provider     = this._createImageProvider( options );
         this._layers             = this._createLayerCollection( options );
-        this._globe              = new Globe( this._glenv, this._dem_provider );
+        this._globe              = new Globe( this._glenv, this._dem_provider, options.north_pole, options.south_pole );
         this._tile_texture_cache = new TileTextureCache( this._glenv, this._image_provider );
         this._scene              = new Scene( this, this._glenv );
         this._ground_visibility  = Viewer._getBoolOption( options, "ground_visibility", true );
@@ -399,6 +405,14 @@ class Viewer {
      * DEM データプロバイダ
      */
     get dem_provider(): DemProvider<any> { return this._dem_provider; }
+
+
+    /** @internal */
+    get north_pole(): Globe.PoleOption | undefined { return this._north_pole; }
+
+
+    /** @internal */
+    get south_pole(): Globe.PoleOption | undefined { return this._south_pole; }
 
 
     /**
@@ -688,7 +702,7 @@ class Viewer {
             return null;
         }
 
-        var distance = globe.root_flake.findRayDistance( ray, Number.MAX_VALUE );
+        var distance = globe.findRayDistance( ray, Number.MAX_VALUE );
         if ( distance === Number.MAX_VALUE ) {
             // 交点が見つからなかった
             return null;
@@ -867,6 +881,12 @@ export interface Option {
      /** DEMプロバイダ */
     dem_provider?: DemProvider<any>;
 
+    /** 実験的な機能です。 */
+    north_pole?: Viewer.PoleOption;
+
+    /** 実験的な機能です。 */
+    south_pole?: Viewer.PoleOption;
+
     /** 画像プロバイダ */
     image_provider?: ImageProvider;
 
@@ -899,6 +919,12 @@ export interface Option {
     sun_visualizer?: SunVisualizer;
 
     moon_visualizer?: MoonVisualizer;
+}
+
+
+
+export interface PoleOption {
+    color: Vector3;
 }
 
 

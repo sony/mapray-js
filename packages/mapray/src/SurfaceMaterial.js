@@ -5,6 +5,8 @@ import surface_vs_code from "./shader/surface.vert";
 import surface_fs_code from "./shader/surface.frag";
 import rid_fs_code from "./shader/rid.frag";
 import Layer from "./Layer";
+import AreaUtil from "./AreaUtil";
+import Color from "./util/Color";
 
 
 /**
@@ -33,7 +35,23 @@ class SurfaceMaterial extends FlakeMaterial {
         this._viewer             = viewer;
         this._tile_texture_cache = viewer.tile_texture_cache;
         this._layers             = viewer.layers;
-        this._dummy_tile_texture = this._createDummyTileTexture( viewer.glenv );
+        this._dummy_tile_texture = this._createDummyTileTexture( viewer.glenv, [128, 128, 128, 255] );
+
+        if ( options.nightMaterial === true ) {
+            this._north_pole_tile_texture = this._createDummyTileTexture( viewer.glenv, [3, 5, 14, 255] );
+            this._south_pole_tile_texture = this._createDummyTileTexture( viewer.glenv, [43, 50, 85, 255] );
+        }
+        else {
+            this._north_pole_tile_texture = (
+                viewer.north_pole ? this._createDummyTileTexture( viewer.glenv, Color.floatColorToByteColor( viewer.north_pole.color, GeoMath.createVector4() ) ) :
+                this._dummy_tile_texture
+            );
+            this._south_pole_tile_texture = (
+                viewer.south_pole ? this._createDummyTileTexture( viewer.glenv, Color.floatColorToByteColor( viewer.south_pole.color, GeoMath.createVector4() ) ) :
+                this._dummy_tile_texture
+            );
+        }
+
         this._image_zbias = 0;
 
         this._identity_matrix = GeoMath.setIdentity( GeoMath.createMatrix() );
@@ -187,11 +205,20 @@ class SurfaceMaterial extends FlakeMaterial {
             return null;
         }
 
-        return {
-            corner_lod: [rflake.lod_00, rflake.lod_10, rflake.lod_01, rflake.lod_11],
-            image_hi: this._getImageParamater( tiles[0], zg, x, y, zi     ),
-            image_lo: this._getImageParamater( tiles[1], zg, x, y, zi - 1 )
-        };
+        if ( flake.type === AreaUtil.Type.NORMAL ) {
+            return {
+                corner_lod: [rflake.lod_00, rflake.lod_10, rflake.lod_01, rflake.lod_11],
+                image_hi: this._getImageParamater( tiles[0], zg, x, y, zi     ),
+                image_lo: this._getImageParamater( tiles[1], zg, x, y, zi - 1 )
+            };
+        }
+        else {
+            return {
+                corner_lod: [rflake.lod_00, rflake.lod_10, rflake.lod_01, rflake.lod_11],
+                image_hi: this._getPoleImageParamater( tiles[0], zg, x, y, zi    , flake.type ),
+                image_lo: this._getPoleImageParamater( tiles[1], zg, x, y, zi - 1, flake.type )
+            };
+        }
     }
 
 
@@ -231,15 +258,25 @@ class SurfaceMaterial extends FlakeMaterial {
     }
 
 
+    _getPoleImageParamater( tile, zg, x, y, zi, demType )
+    {
+        const pow = Math.pow( 2, -zg );
+        return {
+            lod:           -this._image_zbias,
+            texture: demType === AreaUtil.Type.NORTH_POLE ? this._north_pole_tile_texture : this._south_pole_tile_texture,
+            texcoord_rect: [x*pow - Math.floor( pow * (x + 0.5) ), 1 - (y + 1)*pow + Math.floor( pow * (y + 0.5) ), pow, pow]
+        };
+    }
+
+
     /**
      * @private
      */
-    _createDummyTileTexture( glenv )
+    _createDummyTileTexture( glenv, pixels )
     {
         var      gl = glenv.context;
         var  target = gl.TEXTURE_2D;
         var texture = gl.createTexture();
-        var  pixels = [128, 128, 128, 255];
 
         gl.bindTexture( target, texture );
         gl.texImage2D( target, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array( pixels ) );
