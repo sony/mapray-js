@@ -9,6 +9,7 @@ import UpdatedTileArea from "./UpdatedTileArea";
 import Mesh from "./Mesh";
 import Entity from "./Entity";
 import AvgHeightMaps from "./AvgHeightMaps";
+import AreaUtil from "./AreaUtil";
 
 
 /**
@@ -21,6 +22,10 @@ class Globe {
     private _glenv: GLEnv;
 
     private _dem_provider: DemProvider<any>;
+
+    private _north_pole_option?: Globe.PoleOption;
+
+    private _south_pole_option?: Globe.PoleOption;
 
     private _status: Globe.Status;
 
@@ -58,7 +63,20 @@ class Globe {
 
     private _frame_counter: number;
 
+    /**
+     * Web Mercatorで定義される領域の地形
+     */
     private _root_flake!: Globe.Flake;
+
+    /**
+     * 北極付近の地形
+     */
+    private _north_pole_flake?: Globe.Flake;
+
+    /**
+     * 南極付近の地形
+     */
+    private _south_pole_flake?: Globe.Flake;
 
     private _avg_height!: AvgHeightMaps;
 
@@ -69,13 +87,16 @@ class Globe {
      * @param glenv         WebGL 環境
      * @param dem_provider  DEM プロバイダ
      */
-    constructor( glenv: GLEnv, dem_provider: DemProvider<any> )
+    constructor( glenv: GLEnv, dem_provider: DemProvider<any>, north_pole_option?: Globe.PoleOption, south_pole_option?: Globe.PoleOption )
     {
         this._glenv        = glenv;
         this._dem_provider = dem_provider;
         this._status = Globe.Status.NOT_READY;
         this._dem_area_updated = new UpdatedTileArea();
         this._prev_producers = new Set<Entity.FlakePrimitiveProducer>();
+
+        this._north_pole_option = north_pole_option;
+        this._south_pole_option = south_pole_option;
 
         this._rho = dem_provider.getResolutionPower();
         this._dem_zbias = GeoMath.LOG2PI - this._rho + 1;  // b = log2(π) - ρ + 1
@@ -169,6 +190,20 @@ class Globe {
     {
         const flake = this._root_flake;
         flake.touch();
+        return flake;
+    }
+
+    get north_pole_flake(): Globe.Flake | undefined
+    {
+        const flake = this._north_pole_flake;
+        flake?.touch();
+        return flake;
+    }
+
+    get south_pole_flake(): Globe.Flake | undefined
+    {
+        const flake = this._south_pole_flake;
+        flake?.touch();
         return flake;
     }
 
@@ -325,6 +360,33 @@ class Globe {
         return this._num_dem_requesteds;
     }
 
+
+    findRayDistance( ray: Ray, limit: number ): number
+    {
+        let distance = this.root_flake.findRayDistance( ray, limit );
+        if ( distance !== limit ) {
+            return distance;
+        }
+
+        if ( this.north_pole_flake ) {
+            distance = this.north_pole_flake.findRayDistance( ray, Number.MAX_VALUE );
+            if ( distance !== limit ) {
+                return distance;
+            }
+        }
+
+        if ( this.south_pole_flake ) {
+            distance = this.south_pole_flake.findRayDistance( ray, Number.MAX_VALUE );
+            if ( distance !== limit ) {
+                return distance;
+            }
+        }
+
+        return limit;
+    }
+
+
+
     /**
      * 正確度が最も高い DEM タイルデータを検索
      *
@@ -374,6 +436,7 @@ class Globe {
 
         return dem_flake.dem_data;
     }
+
 
     /**
      * 現行の標高 (複数) を取得
@@ -547,6 +610,20 @@ class Globe {
                 this._root_flake.setupRoot( this, dem );
                 this._status = Globe.Status.READY;
                 this._dem_area_updated.addTileArea( dem );
+
+                if ( this._north_pole_option ) {
+                    this._north_pole_flake = new Globe.Flake( null, z, x, y, AreaUtil.Type.NORTH_POLE );
+                    this._north_pole_flake.setupRoot( this, dem );
+                    this._status = Globe.Status.READY;
+                    this._dem_area_updated.addTileArea( dem );
+                }
+
+                if ( this._south_pole_option ) {
+                    this._south_pole_flake = new Globe.Flake( null, z, x, y, AreaUtil.Type.SOUTH_POLE );
+                    this._south_pole_flake.setupRoot( this, dem );
+                    this._status = Globe.Status.READY;
+                    this._dem_area_updated.addTileArea( dem );
+                }
             }
             else { // データ取得に失敗
                 this._status = Globe.Status.FAILED;
@@ -620,11 +697,25 @@ export enum Status {
  */
 export class Flake {
 
-    private z: number;
+    /**
+     * 地表分割レベル
+     */
+    protected z: number;
 
-    private x: number;
+    /**
+     * 地表タイル X 座標
+     */
+    protected x: number;
 
-    private y: number;
+    /**
+     * 地表タイル Y 座標
+     */
+    protected y: number;
+
+    /**
+     * 地表タイプ
+     */
+    protected type: AreaUtil.Type;
 
     private _parent: Flake | null;
 
@@ -635,7 +726,7 @@ export class Flake {
     /* DEM バイナリ、または取り消しオブジェクト */
     private _dem_data!: DemBinary;
 
-    private _dem_state: DemState;
+    protected _dem_state: DemState;
 
     /** エンティティ辞書 */
     private _entity_map!: Map<Entity.FlakePrimitiveProducer, boolean>;
@@ -679,26 +770,15 @@ export class Flake {
      * @param x
      * @param y
      */
-    constructor( parent: Flake | null, z: number, x: number, y: number )
+    constructor( parent: Flake | null, z: number, x: number, y: number, type = AreaUtil.Type.NORMAL )
     {
-        /**
-         * 地表分割レベル
-         */
         this.z = z;
 
-        /**
-         * @summary 地表タイル X 座標
-         * @member mapray.Globe.Flake#x
-         * @type {number}
-         */
         this.x = x;
 
-        /**
-         * @summary 地表タイル Y 座標
-         * @member mapray.Globe.Flake#y
-         * @type {number}
-         */
         this.y = y;
+
+        this.type = type;
 
         // Flake 階層
         this._parent    = parent;
@@ -813,7 +893,7 @@ export class Flake {
 
         if ( !child ) {
             // 存在しないときは Flake を生成する
-            child = new Flake( this, this.z + 1, 2*this.x + u, 2*this.y + v );
+            child = new Flake( this, this.z + 1, 2*this.x + u, 2*this.y + v, this.type );
             this._children[index] = child;
         }
 
@@ -1377,7 +1457,7 @@ export class Flake {
     /**
      * 標高代表値と境界箱を更新
      */
-    private _estimate()
+    protected _estimate()
     {
         if ( this._prev_Za_dem === this ) {
             // 代表値は決定済みなので何もしない
@@ -1419,9 +1499,28 @@ export class Flake {
 
         // 境界箱の更新
         switch ( zg ) {
-        case 0:  this._updataBoundingBox_0(); break;
-        case 1:  this._updataBoundingBox_1(); break;
-        default: this._updataBoundingBox_N(); break;
+        case 0:  this._updateBoundingBox_0(); break;
+        case 1:  this._updateBoundingBox_1(); break;
+        default: this._updateBoundingBox_N(); break;
+        }
+
+        if ( this.type !== AreaUtil.Type.NORMAL ) {
+            const tmp_min = this._gocs_x_min;
+            const tmp_max = this._gocs_x_max;
+            if ( this.type === AreaUtil.Type.NORTH_POLE ) {
+                this._gocs_x_min = -this._gocs_z_max;
+                this._gocs_x_max = -this._gocs_z_min;
+
+                this._gocs_z_min = tmp_min;
+                this._gocs_z_max = tmp_max;
+            }
+            else if ( this.type === AreaUtil.Type.SOUTH_POLE ) {
+                this._gocs_x_min = this._gocs_z_min;
+                this._gocs_x_max = this._gocs_z_max;
+
+                this._gocs_z_min = -tmp_max;
+                this._gocs_z_max = -tmp_min;
+            }
         }
     }
 
@@ -1565,7 +1664,7 @@ export class Flake {
     /**
      * @summary 境界箱を更新 (Z == 0)
      */
-    _updataBoundingBox_0()
+    _updateBoundingBox_0()
     {
         var r = GeoMath.EARTH_RADIUS + this._height_max;
 
@@ -1582,7 +1681,7 @@ export class Flake {
     /**
      * @summary 境界箱を更新 (Z == 1)
      */
-    _updataBoundingBox_1()
+    _updateBoundingBox_1()
     {
         var r = GeoMath.EARTH_RADIUS + this._height_max;
         var x = this.x;
@@ -1601,7 +1700,7 @@ export class Flake {
     /**
      * @summary 境界箱を更新 (Z >= 2)
      */
-    _updataBoundingBox_N()
+    _updateBoundingBox_N()
     {
         var pi = Math.PI;
         var z = this.z;
@@ -1730,6 +1829,7 @@ export class Flake {
             this._gocs_z_max = rmax * (e2max - 1) / (e2max + 1);
         }
     }
+
 
     /**
      * サーバーにさらに正確度が高い DEM タイルデータが存在すれば、それをリクエストする。
@@ -1886,10 +1986,13 @@ export class Flake {
                 var  sinλ = Math.sin( mx );
                 var  cosλ = Math.cos( mx );
 
-                var pos = positions[index];
-                pos[0] = radius * cosφ * cosλ;
-                pos[1] = radius * cosφ * sinλ;
-                pos[2] = radius * sinφ;
+                AreaUtil.transformVector3Values(
+                    dem_flake.type,
+                    radius * cosφ * cosλ,
+                    radius * cosφ * sinλ,
+                    radius * sinφ,
+                    positions[index]
+                );
             }
         }
 
@@ -2433,6 +2536,12 @@ export enum DemState {
  * @constant
  */
 const CACHED_EMPTY_MESH = { id: "CACHED_EMPTY_MESH" };
+
+
+
+export interface PoleOption {
+    color: Vector3;
+}
 
 
 

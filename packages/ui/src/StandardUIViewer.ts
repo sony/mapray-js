@@ -202,6 +202,8 @@ class StandardUIViewer extends mapray.RenderCallback
         const viewer = this._viewer = new mapray.Viewer(
             container, {
                 dem_provider: this.createDemProvider( access_token, options ),
+                north_pole: options.north_pole,
+                south_pole: options.south_pole,
                 image_provider: this.createImageProvider( options ),
                 layers: options.layers,
                 render_callback: this,
