@@ -65,7 +65,7 @@ class MarkerLineEntity extends AbstractLineEntity {
         //   不透明度
         block.addEntry( "opacity", [number], null, (value: number) => {
             this.setOpacity( value );
-        } );        
+        } );
     }
 
 
@@ -76,7 +76,7 @@ class MarkerLineEntity extends AbstractLineEntity {
      *
      * @param points 頂点の配列
      */
-    addPoints( points: number[] )
+    addPoints( points: number[] | Vector3 )
     {
         var add_size = points.length;
         if ( add_size == 0 ) {
@@ -105,6 +105,113 @@ class MarkerLineEntity extends AbstractLineEntity {
         }
         this._num_floats = target_size;
 
+        // 形状が変化した可能性がある
+        this._producer.onChangePoints();
+    }
+
+
+    /**
+     * すべての頂点を削除する
+     * @experimental
+     */
+    removeAllPoints() {
+        this._num_floats = 0;
+        // 形状が変化した可能性がある
+        this._producer.onChangePoints();
+    }
+
+
+    /**
+     * 指定された頂点を削除する
+     * @experimental
+     * @param pos 対象頂点のindex
+     */
+    removePointAt( pos: number ) {
+        let idx = pos * 3;
+
+        if ( idx >= this._num_floats ) {
+            console.log( 'out of index', idx, this._num_floats );
+            return;
+        }
+
+        // 負の値は後ろから数える
+        if ( idx < 0 ) {
+            idx = this._num_floats + idx;
+        }
+
+        this._num_floats -= 3;
+
+        // 最後の要素でない場合
+        if ( idx !== this._num_floats - 3 ) {
+            // それ以外の場合
+            for ( let i = idx; i < this._num_floats - 3; ++i ) {
+                this._point_array[i] = this._point_array[i + 3];
+            }
+        }
+        // 形状が変化した可能性がある
+        // @ts-ignore
+        this._producer.onChangePoints();
+    }
+
+
+    /**
+     * 頂点数を返す
+     * @experimental
+     * @returns 頂点数
+     */
+    getPointCount(): number {
+        return this._num_floats / 3;
+    }
+
+
+    /**
+     * 指定された頂点座標を返す
+     * @experimental
+     * @param {number} pos
+     */
+    getPointAt( pos: number ): Vector3 | undefined {
+        let idx = pos * 3;
+
+        if ( idx >= this._num_floats ) {
+            console.log( 'out of index', idx, this._num_floats );
+            return;
+        }
+
+        // 負の値は後ろから
+        if ( idx < 0 ) {
+            idx = this._num_floats + idx;
+        }
+
+        return [
+            this._point_array[ idx++ ],
+            this._point_array[ idx++ ],
+            this._point_array[ idx++ ],
+        ];
+    }
+
+
+    /**
+     * 指定された頂点座標を変更する
+     * @experimental
+     * @param pos 変更対象の頂点Index
+     * @param point 変更後の座標
+     */
+    replacePointAt( pos: number, point: Vector3 ) {
+        let idx = pos * 3;
+
+        if ( idx >= this._num_floats ) {
+          console.log( 'out of index', idx, this._num_floats );
+          return;
+        }
+
+        // 負の値は後ろから
+        if ( idx < 0 ) {
+          idx = this._num_floats + idx;
+        }
+
+        for ( let i = 0; i < 3; ++i ) {
+          this._point_array[idx + i] = point[i];
+        }
         // 形状が変化した可能性がある
         this._producer.onChangePoints();
     }

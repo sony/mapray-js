@@ -207,9 +207,9 @@ class PolygonEntity extends Entity {
      *
      * @param points  頂点の配列
      */
-    addOuterBoundary( points: number[] )
+    addOuterBoundary( points: number[] ): PolygonEntity.Boundary
     {
-        this._addBoundary( points, false );
+        return this._addBoundary( points, false );
     }
 
 
@@ -220,9 +220,65 @@ class PolygonEntity extends Entity {
      *
      * @param points  頂点の配列
      */
-    addInnerBoundary( points: number[] )
+    addInnerBoundary( points: number[] ): PolygonEntity.Boundary
     {
-        this._addBoundary( points, true );
+        return this._addBoundary( points, true );
+    }
+
+
+    /**
+     * 境界数を取得
+     *
+     * @experimental
+     */
+    getBoundaryCount(): number
+    {
+        return this._boundaries.length;
+    }
+
+
+    /**
+     * 境界を取得
+     *
+     * @experimental
+     */
+    getBoundaryAt( index: number ): PolygonEntity.Boundary
+    {
+        return this._boundaries[index];
+    }
+
+
+    /**
+     * 境界を削除
+     *
+     * @experimental
+     */
+    removeBoundary( boundary: PolygonEntity.Boundary ): boolean
+    {
+        const index = this._boundaries.indexOf( boundary );
+        if ( index === -1 ) {
+            return false;
+        }
+        this._boundaries.splice( index, 1 );
+
+        // 境界の変更を通知
+        this._producer.onChangeBoundary();
+        return true;
+    }
+
+
+    /**
+     * 境界を全て削除
+     *
+     * @experimental
+     */
+    removeAllBoundaries()
+    {
+        this._boundaries.length = 0;
+        this._position = undefined;
+
+        // 境界の変更を通知
+        this._producer.onChangeBoundary();
     }
 
 
@@ -249,13 +305,15 @@ class PolygonEntity extends Entity {
      * @param is_inner 内側の境界を示すかを示すフラグ
      *
      */
-    private _addBoundary( points: number[], is_inner: boolean )
+    private _addBoundary( points: number[], is_inner: boolean ): PolygonEntity.Boundary
     {
-        this._boundaries.push( new PolygonEntity.Boundary( points, is_inner ) );
+        const boundary = new PolygonEntity.Boundary( points, is_inner );
+        this._boundaries.push( boundary );
         this._position = undefined;
 
         // 境界の変更を通知
         this._producer.onChangeBoundary();
+        return boundary;
     }
 
 
@@ -424,7 +482,7 @@ class PolygonEntity extends Entity {
      *
      * @return 三角形リストまたは null
      */
-    private _createTriangles(): Uint32Array | null
+    private _createTriangles(): Uint32Array | undefined
     {
         let src_points     = this._getCombinedBoundary2DPoints();
         let num_src_points = this._countNumPointsOnBoundaries();
@@ -449,9 +507,27 @@ class PolygonEntity extends Entity {
         }
         catch ( e ) {
             // 変換に失敗
-            console.error( e.message );
-            return null;
+            if ( e instanceof Error ) {
+                console.error( e.message );
+            }
+            else {
+                console.error( e );
+            }
+            return undefined;
         }
+    }
+
+
+    /**
+     * 三角形リストを生成
+     * @experimental
+     */
+    getTriangleIndices(): number[] | undefined {
+        const arr = this._createTriangles();
+        if ( !arr ) {
+            return undefined;
+        }
+        return Array.from( arr );
     }
 
 }
@@ -497,7 +573,7 @@ export class PrimitiveProducer extends Entity.PrimitiveProducer {
 
     private _status: Status;
 
-    private _triangles: Uint32Array | null;  // 三角形リスト (Uint32Array)
+    private _triangles?: Uint32Array;  // 三角形リスト (Uint32Array)
 
     private _transform: Matrix;
 
@@ -525,7 +601,6 @@ export class PrimitiveProducer extends Entity.PrimitiveProducer {
         super( entity );
 
         this._status    = Status.INVALID;
-        this._triangles = null;  // 三角形リスト (Uint32Array)
 
         // プリミティブの要素
         this._transform  = GeoMath.setIdentity( GeoMath.createMatrix() );
@@ -619,7 +694,7 @@ export class PrimitiveProducer extends Entity.PrimitiveProducer {
         else if ( this._status === Status.TRIANGLE_DIRTY ) {
             // @ts-ignore
             this._triangles = this.getEntity()._createTriangles();
-            if ( this._triangles === null ) {
+            if ( this._triangles === undefined ) {
                 // 多角形の三角形化に失敗
                 this._primitive.mesh = null;
                 this._pickPrimitive.mesh = null;
@@ -665,7 +740,7 @@ export class PrimitiveProducer extends Entity.PrimitiveProducer {
     onChangeBoundary()
     {
         this._status    = Status.TRIANGLE_DIRTY;
-        this._triangles = null;
+        this._triangles = undefined;
         this.needToCreateRegions();
     }
 
