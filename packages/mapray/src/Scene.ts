@@ -165,6 +165,12 @@ class Scene {
 
         for ( let {entity} of this._enode_list ) {
             if ( !entity.visibility ) continue;
+
+            // 選択対象で無い場合は描画しない
+            if ( stage.getRenderTarget() === RenderStage.RenderTarget.RID && !entity.isPickable() ) {
+                continue;
+            }
+
             this._add_primitives( stage, entity, op_prims, tp_prims, ac_prims );
         }
 

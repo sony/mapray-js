@@ -674,6 +674,10 @@ export class PickRenderStage extends RenderStage {
     /**
      */
     override onPushPrimitive( primitive: Primitive, pick_object: Entity ) {
+        // 選択可能でない場合はridを記録しない
+        if ( !pick_object.isPickable() ) {
+            return;
+        }
         // @ts-ignore
         primitive.rid = this._rid_map.length;
         this._rid_map.push(pick_object);

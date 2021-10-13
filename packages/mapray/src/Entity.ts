@@ -47,6 +47,11 @@ abstract class Entity {
      */
     protected _visibility: boolean = true;
 
+    /**
+     * Viewer.pick() の対象とするかどうか
+     */
+    protected _pickable: boolean = true;
+
 
     /**
      * インスタンス生成後に、それを scene に追加することができる。
@@ -171,6 +176,20 @@ abstract class Entity {
         return undefined;
     }
 
+    /**
+     * このEntityを `Viewer.pick()` による選択対象とするかを設定する。
+     * @param pickable 選択可能か否か
+     */
+    setPickable( pickable: boolean ): void {
+        this._pickable = pickable;
+    }
+
+    /**
+     * このEntityが `Viewer.pick()` による選択対象であるかを取得する。
+     */
+    isPickable(): boolean {
+        return this._pickable;
+    }
 
     /**
      * JSON データによる Entity 共通の初期化
