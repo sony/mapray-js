@@ -638,21 +638,25 @@ export class SceneRenderStage extends RenderStage {
  */
 export class PickRenderStage extends RenderStage {
 
-    private _rid_map: (Entity | null)[];
+    private _rid_map: ( Entity | PointCloud | null )[];
 
     private _pick_tool: PickTool;
 
     private _pick_result: Viewer.PickResult;
 
+    /** ピック対象の指定など */
+    private _pickOption: Viewer.PickOption;
+
     /**
      * @param viewer  所有者である Viewer
      * @param screen_pos スクリーン上のピクセル位置
+     * @param pickOption ピックオプション
      */
-    constructor( viewer: Viewer, screen_pos: Vector2 )
+    constructor( viewer: Viewer, screen_pos: Vector2, pickOption: Viewer.PickOption )
     {
         // @ts-ignore
-        const pick_tool = viewer.pick_tool_cache || (viewer.pick_tool_cache = new PickTool( viewer.glenv ));
-        const camera = pick_tool.pickCamera( viewer.camera, screen_pos );
+        const pick_tool: PickTool = viewer.pick_tool_cache as PickTool || ( viewer.pick_tool_cache = new PickTool( viewer.glenv ) );
+        const camera = pick_tool.pickCamera( viewer.camera );
         const renderInfo = camera.createRenderInfo(
             +screen_pos[0] - viewer.camera.canvas_size.width  / 2,
             -screen_pos[1] + viewer.camera.canvas_size.height / 2
@@ -668,6 +672,8 @@ export class PickRenderStage extends RenderStage {
         this._rid_map = [ null ]; // rid == 0 は要素なしを意味する
 
         this._pick_result = {};
+
+        this._pickOption = pickOption;
     }
 
 
@@ -681,6 +687,16 @@ export class PickRenderStage extends RenderStage {
         // @ts-ignore
         primitive.rid = this._rid_map.length;
         this._rid_map.push(pick_object);
+    }
+
+    /**
+     * RID Mapに点群を追加する
+     * @param pointCloud 追加する点群
+     */
+    private _pushPointCloudToRidMap( pointCloud: PointCloud ) {
+        const rid = this._rid_map.length;
+        pointCloud.setRenderId( rid );
+        this._rid_map.push( pointCloud );
     }
 
 
@@ -718,11 +734,41 @@ export class PickRenderStage extends RenderStage {
             if ( pick_object instanceof Entity ) {
                 this._pick_result.entity = pick_object;
             }
+            else if ( pick_object instanceof PointCloud ) {
+                this._pick_result.pointCloud = pick_object;
+            }
         }
 
         this._pick_result.point = pick_tool.readDepth( this._view_to_clip, this._view_to_gocs );
     }
 
+    /**
+     * @summary 点群を描画
+     *
+     * @private
+     */
+    _draw_point_cloud() {
+        if ( !this._pickOption.withPointCloud ) {
+            return;
+        }
+
+        for ( let i=0; i<this._point_cloud_collection.length; ++i ) {
+
+            const point_cloud = this._point_cloud_collection.get( i );
+
+            const pcb_collector = new PointCloudBoxCollector( this, 0 );
+            const traverse_result = pcb_collector.traverse( point_cloud );
+
+            if ( traverse_result.visible_boxes.length > 0 ) {
+                this._pushPointCloudToRidMap( point_cloud );
+            }
+            for ( const ro of traverse_result.visible_boxes ) {
+                ro.draw( this );
+            }
+
+            point_cloud.provider.flushQueue();
+        }
+    }
 
     /**
      */

@@ -4,7 +4,7 @@ import Mesh from "./Mesh";
 import RenderStage from "./RenderStage";
 import GeoMath, { Vector3, Vector4 } from "./GeoMath";
 import GeoPoint from "./GeoPoint";
-import PointCloudMaterial, { PointCloudDebugWireMaterial, PointCloudDebugFaceMaterial } from "./PointCloudMaterial";
+import PointCloudMaterial, { PointCloudDebugWireMaterial, PointCloudDebugFaceMaterial, PointCloudPickMaterial } from "./PointCloudMaterial";
 import PointCloudProvider from "./PointCloudProvider";
 import PointCloudBoxCollector from "./PointCloudBoxCollector";
 
@@ -46,6 +46,8 @@ class PointCloud {
     private _point_size_limit: number;
 
     private _dispersion: boolean;
+
+    private _rid?: number;
 
     // for debug
 
@@ -225,6 +227,24 @@ class PointCloud {
         this._point_size_limit = val;
     }
 
+    /**
+     * Render ID をセットする
+     * @param id render id
+     * @internal
+     */
+    setRenderId( id: number ): void {
+        this._rid = id;
+    }
+
+    /**
+     * Render IDを取得する
+     * @returns render ID
+     * @internal
+     */
+    getRenderId(): number | undefined {
+        return this._rid;
+    }
+
 
     // hidden properties
 
@@ -317,13 +337,20 @@ class PointCloud {
      */
     private _checkMaterials() {
         const viewer = this._scene.viewer;
-        const render_cache = viewer._render_cache || (viewer._render_cache = {});
+        const render_cache: RenderCacheType = viewer._render_cache as RenderCacheType || ( viewer._render_cache = {} );
         if ( !render_cache.point_cloud_materials ) {
             const map = new Map<PointCloud.PointShapeType, PointCloudMaterial>();
-            PointCloud.ListOfPointShapeTypes.forEach(point_shape_type => {
-                    map.set(point_shape_type, new PointCloudMaterial( viewer, { point_shape_type }));
-            });
+            PointCloud.ListOfPointShapeTypes.forEach( point_shape_type => {
+                    map.set( point_shape_type, new PointCloudMaterial( viewer, { point_shape_type } ) );
+            } );
             render_cache.point_cloud_materials = map;
+        }
+        if ( !render_cache.point_cloud_pick_materials ) {
+            const map = new Map<PointCloud.PointShapeType, PointCloudPickMaterial>();
+            PointCloud.ListOfPointShapeTypes.forEach( point_shape_type => {
+                map.set( point_shape_type, new PointCloudPickMaterial( viewer, { point_shape_type } ) );
+            } );
+            render_cache.point_cloud_pick_materials = map;
         }
         if ( !render_cache.point_cloud_debug_wire_material ) {
             render_cache.point_cloud_debug_wire_material = new PointCloudDebugWireMaterial( viewer );
@@ -337,10 +364,19 @@ class PointCloud {
     /**
      * @internal
      */
-    getMaterial( point_shape: PointCloud.PointShapeType ) {
+    getMaterial( point_shape: PointCloud.PointShapeType, renderTarget: RenderStage.RenderTarget ): PointCloudMaterial {
         const viewer = this._scene.viewer;
-        const render_cache = viewer._render_cache || (viewer._render_cache = {});
-        return render_cache.point_cloud_materials.get( point_shape );
+        const render_cache: RenderCacheType = viewer._render_cache as RenderCacheType || ( viewer._render_cache = {} );
+        const materials = (
+            renderTarget === RenderStage.RenderTarget.SCENE ? render_cache.point_cloud_materials :
+            render_cache.point_cloud_pick_materials
+        );
+        const material = materials.get( point_shape );
+
+        if ( !material ) {
+            throw new Error( 'pointcloud material not initialized' );
+        }
+        return material;
     }
 
 
@@ -374,6 +410,13 @@ class PointCloud {
 
     /** @internal */
     private static _traverseDataRequestQueue: any[] = [];
+}
+
+type RenderCacheType = {
+    point_cloud_materials: Map<PointCloud.PointShapeType, PointCloudMaterial>;
+    point_cloud_debug_wire_material: PointCloudDebugWireMaterial;
+    point_cloud_debug_face_material: PointCloudDebugFaceMaterial;
+    point_cloud_pick_materials: Map<PointCloud.PointShapeType, PointCloudPickMaterial>;
 }
 
 
@@ -1272,7 +1315,7 @@ export class Box {
      * @param points_per_pixels 点の解像度の配列。target_cells同じ順序であり、nullの場合は要素数1となる。
      * @param statistics 統計情報
      */
-    draw( render_stage: RenderStage, target_cells: number[] | undefined, points_per_pixels: number[], statistics: PointCloud.Statistics )
+    draw( render_stage: RenderStage, target_cells: number[] | undefined, points_per_pixels: number[], statistics?: PointCloud.Statistics )
     {
         if ( this._debugMesh ) {
             this._drawDebugMesh( render_stage );
@@ -1289,10 +1332,15 @@ export class Box {
         const debug_shader     = this._owner.getDebugShader();
 
         if ( this._status === Box.Status.LOADED ) {
-            const material = this._owner.getMaterial( point_shape );
+            const material = this._owner.getMaterial( point_shape, render_stage.getRenderTarget() );
             material.bindProgram();
             material.setDebugBoundsParameter( render_stage, this.gocs_center );
-            material.bindVertexAttribs(this._vertex_attribs);
+            material.bindVertexAttribs( this._vertex_attribs );
+            const rid = this._owner.getRenderId();
+            if ( rid !== undefined ) {
+                material.setRenderId( rid );
+            }
+
 
             const overlap_scale = 3;
             if ( !target_cells ) {

@@ -9,8 +9,8 @@ import point_cloud_debug_wire_vs_code from "./shader/point_cloud_debug_wire.vert
 import point_cloud_debug_wire_fs_code from "./shader/point_cloud_debug_wire.frag";
 import point_cloud_debug_face_vs_code from "./shader/point_cloud_debug_face.vert";
 import point_cloud_debug_face_fs_code from "./shader/point_cloud_debug_face.frag";
-
-
+import point_cloud_pick_vs_code from "./shader/point_cloud_pick.vert";
+import point_cloud_pick_fs_code from "./shader/point_cloud_pick.frag";
 
 /**
  * 点群マテリアル
@@ -18,17 +18,17 @@ import point_cloud_debug_face_fs_code from "./shader/point_cloud_debug_face.frag
  */
 class PointCloudMaterial extends Material {
 
-    private _local_to_clip: Matrix;
+    protected _local_to_clip: Matrix;
 
 
     /**
      * @param viewer  所有者である Viewer
      */
-    constructor( viewer: Viewer, options: PointCloudMaterial.Option )
+    constructor( viewer: Viewer, options: PointCloudMaterial.Option, vs = point_cloud_vs_code, fs = point_cloud_fs_code )
     {
         const preamble = PointCloudMaterial._getPreamble( options );
 
-        super( viewer.glenv, preamble + point_cloud_vs_code, preamble + point_cloud_fs_code );
+        super( viewer.glenv, preamble + vs, preamble + fs );
 
         this.bindProgram();
         this.setFloat( "u_point_size", 10 );
@@ -96,6 +96,8 @@ class PointCloudMaterial extends Material {
             case PointCloud.PointShapeType.GRADIENT_CIRCLE:    return 3;
         }
     }
+
+    setRenderId( id: number ) {}
 
 }
 
@@ -194,6 +196,35 @@ class PointCloudDebugFaceMaterial extends Material {
         }
         this.setVector4( "u_color", this._color );
         return true;
+    }
+}
+
+
+
+/**
+ * Pick用点群マテリアル
+ */
+export class PointCloudPickMaterial extends PointCloudMaterial {
+
+    /**
+     * @param viewer  所有者である Viewer
+     */
+    constructor( viewer: Viewer, options: PointCloudMaterial.Option )
+    {
+        super( viewer, options, point_cloud_pick_vs_code, point_cloud_pick_fs_code );
+    }
+
+    /**
+     * RIDを設定する
+     * @param id render id (RID)
+     */
+    setRenderId( id: number ) {
+        this.setVector4( "u_rid", [
+                ( id >> 12 & 0xF ) / 0xF,
+                ( id >>  8 & 0xF ) / 0xF,
+                ( id >>  4 & 0xF ) / 0xF,
+                ( id       & 0xF ) / 0xF
+        ] );
     }
 }
 

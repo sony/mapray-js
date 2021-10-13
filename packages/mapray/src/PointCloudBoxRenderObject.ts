@@ -100,7 +100,7 @@ class PointCloudBoxRenderObject {
      * @param render_stage レンダリングステージ
      * @param statistics 統計情報
      */
-    draw( render_stage: RenderStage, statistics: PointCloud.Statistics ): void
+    draw( render_stage: RenderStage, statistics?: PointCloud.Statistics ): void
     {
         this._box.draw( render_stage, this._target_children, this._points_per_pixel, statistics );
     }

@@ -1024,10 +1024,11 @@ class Viewer {
     /**
      * 現在のビューにおいて指定されたスクリーン位置の情報を取得します
      * @param screen_position スクリーン位置（キャンバス左上を原点としたピクセル座標）
+     * @param pickOption ピックオプション
      * @return ピック結果
      */
-    pick( screen_position: Vector2 ): Viewer.PickResult {
-        const stage = new RenderStage.PickRenderStage( this, screen_position );
+    pick( screen_position: Vector2, pickOption: Viewer.PickOption = {} ): Viewer.PickResult {
+        const stage = new RenderStage.PickRenderStage( this, screen_position, pickOption );
         stage.render();
         return stage.pick_result;
     }
@@ -1245,16 +1246,35 @@ export interface CaptureOption {
 export type PostProcess = () => boolean;
 
 
+/**
+ * ピックオプション
+ * 
+ * {@link mapray.Viewer.pick} の引数として設定し、ピックする対象を指定する場合に使用する。
+ */
+export interface PickOption {
+    /** 点群を対象に含めるかどうか。未指定の場合は含まない */
+    withPointCloud?: boolean;
+}
 
 /**
  * ピック結果
+ *
  * 関数型 {@link mapray.Viewer.pick} の戻り値のオブジェクト構造である。
- * @property point ピックした3次元位置。ピックした画面上位置と、地形やエンティティと交差した位置です。空をピックした場合は `undefined` になります。
- * @property entity ピックしたエンティティ。ピック位置にエンティティがない場合は `undefined` になります。
  */
 export interface PickResult {
+    /** 
+     * ピックした3次元位置。ピックした画面上位置と、地形やエンティティと交差した位置です。空をピックした場合は `undefined` になります。
+     */
     point?: Vector3,
+    /** 
+     * ピックしたエンティティ。ピック位置にエンティティがない場合は `undefined` になります。
+     */
     entity?: Entity,
+    /** 
+     * ピックした点群。点群をピック対象に含めるには、 {@link mapray.Viewer.PickOption} で対象に点群を含むよう指定する必要があります。
+     * 指定が無い場合、またはピック位置に点群がない場合は `undefined` になります。
+     */
+    pointCloud?: PointCloud
 }
 
 

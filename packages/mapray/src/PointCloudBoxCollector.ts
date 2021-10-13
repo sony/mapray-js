@@ -45,6 +45,12 @@ class PointCloudBoxCollector {
 
     private _volume_planes?: Vector4[];
 
+    /**
+     * 非表示Boxを破棄するかどうか
+     * pick stageで1x1描画する場合に画面外のBoxがunloadされてしまうのを防ぐ
+     */
+    private _unloadInvisible: boolean;
+
 
 
     /**
@@ -55,6 +61,7 @@ class PointCloudBoxCollector {
     {
         this._setupViewVectors( stage );
         this._setupClipPlanes( stage );
+        this._unloadInvisible = ( stage.getRenderTarget() === RenderStage.RenderTarget.SCENE );
 
         // @ts-ignore
         this._point_cloud_collection = stage._point_cloud_collection;
@@ -182,7 +189,7 @@ class PointCloudBoxCollector {
      * @param statistics 統計情報
      * @return 収集された点群Boxの集合
      */
-    traverse( point_cloud: PointCloud, statistics: PointCloud.Statistics ): { visible_boxes: PointCloudBoxRenderObject[], load_boxes: PointCloudBoxRenderObject[] }
+    traverse( point_cloud: PointCloud, statistics?: PointCloud.Statistics ): { visible_boxes: PointCloudBoxRenderObject[], load_boxes: PointCloudBoxRenderObject[] }
     {
         this._points_per_pixel = point_cloud.getPointsPerPixel();
         this._dispersion       = point_cloud.getDispersion();
@@ -208,7 +215,9 @@ class PointCloudBoxCollector {
         }
 
         if ( box.isInvisible( this._clip_planes ) ) {
-            box.disposeChildren( this._statistics );
+            if ( this._unloadInvisible ) {
+                box.disposeChildren( this._statistics );
+            }
             return;
         }
 
@@ -242,7 +251,9 @@ class PointCloudBoxCollector {
             return;
         }
         else if ( lodStatus === LodStatus.UNLOAD_NEXT_LEVEL ) { // if more detaild data is not required then dispose children
-            box.disposeChildren( this._statistics );
+            if ( this._unloadInvisible ) {
+                box.disposeChildren( this._statistics );
+            }
         }
 
         if ( box.status !== PointCloud.Box.Status.DESTROYED ) {
