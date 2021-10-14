@@ -1115,8 +1115,8 @@ export class Box {
                 this.debug1 = event.header.debug1;
 
                 const values = event.body;
-                console.assert( values.length > 0 );
-                console.assert( values.length / 6 === this._metaInfo.indices[7] );
+                // console.assert( values.length > 0 );
+                // console.assert( values.length / 6 === this._metaInfo.indices[7] );
 
                 ASSERT: {
                     const number_of_points = values.length / 6;
