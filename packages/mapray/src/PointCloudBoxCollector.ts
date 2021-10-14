@@ -329,8 +329,8 @@ class PointCloudBoxCollector {
     private _pushBox( box: PointCloud.Box, target_child: number | undefined, ppp: number, parent_ppp: number ) {
         let ro = this._render_boxes_map.get( box );
         if ( ro ) {
-            if ( target_child !== undefined ) ro.pushRegion( target_child, ppp );
-            else ro.setWholeRegion( ppp );
+            if ( target_child === undefined ) ro.setWholeRegion( ppp );
+            else ro.pushRegion( target_child, ppp );
         }
         else {
             const diff = GeoMath.createVector3(box.is_loaded ?
@@ -347,8 +347,8 @@ class PointCloudBoxCollector {
             );
             const distance = Math.sqrt(diff[0]*diff[0] + diff[1]*diff[1] + diff[2]*diff[2]);
             ro = new PointCloudBoxRenderObject( box, distance, parent_ppp );
-            if ( target_child ) ro.pushRegion( target_child, ppp );
-            else ro.setWholeRegion( ppp );
+            if ( target_child === undefined ) ro.setWholeRegion( ppp );
+            else ro.pushRegion( target_child, ppp );
             this._render_boxes.push( ro );
             this._render_boxes_map.set( box, ro );
 
