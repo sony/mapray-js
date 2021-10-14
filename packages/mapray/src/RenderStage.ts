@@ -566,7 +566,7 @@ export class SceneRenderStage extends RenderStage {
             if ( s.statistics_obj ) s.statistics_obj.start();
 
             const point_cloud = this._point_cloud_collection.get( i );
-            const load_limit = Math.max(0, 10 - point_cloud.provider.getNumberOfRequests());
+            const load_limit = Math.max(0, 30 - point_cloud.provider.getNumberOfRequests());
 
             const pcb_collector = new PointCloudBoxCollector( this, load_limit );
             const traverse_result = pcb_collector.traverse( point_cloud, s.statistics_obj );
