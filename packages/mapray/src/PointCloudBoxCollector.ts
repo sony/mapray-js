@@ -216,39 +216,43 @@ class PointCloudBoxCollector {
         if ( box.is_loaded ) {
             box_ppp = this._calcPointsPerPixel( box );
             lodStatus = box_ppp < this._points_per_pixel ? LodStatus.LOAD_NEXT_LEVEL : LodStatus.UNLOAD_NEXT_LEVEL;
-
-            if ( lodStatus === LodStatus.LOAD_NEXT_LEVEL ) { // if more detaild data is required then load nextLevel
-                // 子Boxがない領域を描画する
-                //   [A]
-                //    |--a1--[B]
-                //    |--a2--[C]
-                //    `--a3-- x
-                //    - Aは、8分割された領域のうち、a1, a2, a3の領域に点が含まれている。
-                //    - このうちa1, a2については子Box(B, C)を持っており、a3は子Boxを持っていない。
-                //    - この場合、a3の領域についはAが描画する。（a1, a2の領域については、B, Cにより描画される）
-                this._collectNextLevel( box, box_ppp );
-                for ( let i=0; i<8; i++ ) {
-                    if ( box.cellPointsAvailable( i ) && !box.getChild( i ) ) {
-                        this._pushBox( box, i, box_ppp, parent_ppp );
-                    }
-                }
-                return;
-            }
-            else if ( lodStatus === LodStatus.UNLOAD_NEXT_LEVEL ) { // if more detaild data is not required then dispose children
-                box.disposeChildren( this._statistics );
-            }
         }
         else {
             lodStatus = LodStatus.KEEP_STATUS;
         }
 
-        if ( box.status !== PointCloud.Box.Status.DESTROYED ) {
-            //   [A]
+        if ( lodStatus === LodStatus.LOAD_NEXT_LEVEL ) { // if more detaild data is required then load nextLevel
+            // 子Boxを読み込む
+            this._collectNextLevel( box, box_ppp as number );
+
+            // 子Boxがない領域を描画する
+            //  [box]
             //    |--a1--[B]
             //    |--a2--[C]
-            //    `--a3-- x
-            //    - Bが読み込まれている場合はBを描画する。
-            //    - Bの読み込みが完了するまでは、Aがa1領域を描画する(読み込み中は枠のみ描画される場合があるため、Bも描画する)。
+            //    |--a3-- x
+            //    `--a4-- x
+            //    - boxは、8分割された領域のうち、a1, a2, a3、a4の領域に点が含まれている。
+            //    - このうちa1, a2については子Box(B, C)があり、a3, a4は子Boxを持っていない。
+            //    - この場合、a3, a4の領域についはAが描画する。（a1, a2の領域については、B, Cにより描画される）
+            for ( let i=0; i<8; i++ ) {
+                if ( box.cellPointsAvailable( i ) && !box.getChild( i ) ) {
+                    this._pushBox( box, i, box_ppp as number, parent_ppp );
+                }
+            }
+            return;
+        }
+        else if ( lodStatus === LodStatus.UNLOAD_NEXT_LEVEL ) { // if more detaild data is not required then dispose children
+            box.disposeChildren( this._statistics );
+        }
+
+        if ( box.status !== PointCloud.Box.Status.DESTROYED ) {
+            // [parent]
+            //    |--a1--[box]
+            //    |--a2--[C]
+            //    |--a3-- x
+            //    `--a4-- x
+            //    - box が読み込まれている場合 box を描画する。
+            //    - box の読み込みが完了するまでは、Aがa1領域を描画する(読み込み中は枠のみ描画される場合があるため、box も描画する)。
             // @ts-ignore
             this._pushBox( box, undefined, box_ppp, parent_ppp );
             if ( box.status === PointCloud.Box.Status.LOADING || box.status === PointCloud.Box.Status.NOT_LOADED ) {
@@ -257,6 +261,7 @@ class PointCloudBoxCollector {
                     this._pushBox( parent, parent.indexOf(box), parent_ppp, parent_ppp );
                 }
             }
+            /*
             else {
                 if ( !box_ppp ) {
                     console.log("unknown status");
@@ -265,6 +270,7 @@ class PointCloudBoxCollector {
                     this._pushBox( box, undefined, box_ppp, parent_ppp );
                 }
             }
+            */
         }
     }
 
