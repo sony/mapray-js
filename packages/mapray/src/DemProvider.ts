@@ -18,6 +18,7 @@ abstract class DemProvider<ID> {
      * 座標が (z, x, y) の DEM タイルデータを要求する。
      * 指定したタイルデータの取得が成功または失敗したときに callback が非同期に呼び出されなければならない。
      * だたし [cancelRequest()]{@link mapray.DemProvider#cancelRequest} により要求が取り消されたとき、callback は呼び出しても呼び出さなくてもよい。また非同期呼び出しである必要もない。
+     * callbackによって得たデータに値を上書きしてはならない。
      * @param  z  ズームレベル
      * @param  x  X タイル座標
      * @param  y  Y タイル座標
@@ -62,6 +63,7 @@ namespace DemProvider {
  * DEM タイルデータの取得に成功または失敗したときに呼び出される関数の型である。
  * この関数は [[DemProvider.requestTile requestTile()]] の callback 引数に与える。
  * データの取得に成功したときは、data に ArrayBuffer のインスタンス、失敗したときは null を与える。
+ * data に値を上書きしてはならない。
  * ただし [[DemProvider.cancelRequest cancelRequest()]] により要求が取り消されたとき、コールバック関数の呼び出しは無視されるので data は任意の値でよい。
  * @param data  DEM タイルデータまたは null
  */

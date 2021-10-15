@@ -1,28 +1,42 @@
 import DemProvider from "./DemProvider";
 
 /**
- * @summary 標高0の地形を生成する DEM プロバイダ
- * @classdesc
- * <p>標高0のフラットな地形を生成する DEM プロバイダの実装である。</p>
- * @memberof mapray
- * @extends mapray.DemProvider
+ * 標高0の地形を生成する DEM プロバイダ
+ *
+ * 標高 0 のフラットな地形を生成する DEM プロバイダの実装である。
+ * 同一レベルのタイルは同じインスタンスを返却します。
  */
 class FlatDemProvider extends DemProvider<null> {
 
-    private _buffer: ArrayBuffer;
+    private _buffers: ArrayBuffer[];
 
+    /**
+     * 配信を行う最大ズームレベル
+     */
+    private _max_level: number;
 
-    constructor() {
+    /**
+     * 地形との交点計算において誤差 1cm 未満を保証するには、レベル9以上を指定する必要がある。
+     * @param max_level 最大レベル
+     */
+    constructor( max_level: number = 9 ) {
         super();
-
-        this._buffer = new ArrayBuffer( FlatDemProvider.BUFFERSIZE );
-        this._setZeroData( this._buffer );
+        this._max_level = max_level;
+        this._buffers = [];
+        for ( let i=0; i<=this._max_level; ++i ) {
+            const buffer = new ArrayBuffer( FlatDemProvider.BUFFERSIZE );
+            this._setZeroData( buffer, i );
+            this._buffers.push( buffer );
+        }
     }
 
 
     override requestTile( z: number, x: number, y: number, callback: DemProvider.RequestCallback ): null
     {
-        callback( this._buffer );
+        Promise.resolve()
+        .then(() => {
+                callback( this._buffers[z] );
+        });
         return null;
     }
 
@@ -32,19 +46,19 @@ class FlatDemProvider extends DemProvider<null> {
     }
 
 
-    private _setZeroData( buffer: ArrayBuffer )
+    private _setZeroData( buffer: ArrayBuffer, z: number )
     {
         const view = new DataView( buffer );
 
-        view.setUint8( FlatDemProvider.OFFSET_QLEVEL_00, 0 );
-        view.setUint8( FlatDemProvider.OFFSET_QLEVEL_10, 0 );
-        view.setUint8( FlatDemProvider.OFFSET_QLEVEL_01, 0 );
-        view.setUint8( FlatDemProvider.OFFSET_QLEVEL_11, 0 );
+        view.setUint8( FlatDemProvider.OFFSET_QLEVEL_00, this._max_level - z );
+        view.setUint8( FlatDemProvider.OFFSET_QLEVEL_10, this._max_level - z );
+        view.setUint8( FlatDemProvider.OFFSET_QLEVEL_01, this._max_level - z );
+        view.setUint8( FlatDemProvider.OFFSET_QLEVEL_11, this._max_level - z );
         view.setFloat32( FlatDemProvider.OFFSET_HMIN, 0.0, true );
         view.setFloat32( FlatDemProvider.OFFSET_HMAX, 0.0, true );
 
         let offset = this._setOmegaArray( view );
-        this._setHeight( view, offset);
+        this._setHeight( view, offset );
     }
 
 
@@ -52,11 +66,11 @@ class FlatDemProvider extends DemProvider<null> {
     {
         const FLT_BYTES = 4;
 
-        let offset = 0;
+        let offset = FlatDemProvider.OFFSET_ω;
         for ( let down = 0; down < 3; ++down ) {
             let count = 1 << (2 * down);
             for ( var i = 0; i < count; ++i ) {
-                view.setFloat32( FlatDemProvider.OFFSET_ω + offset, FlatDemProvider.OMEGA_VALUE, true );
+                view.setFloat32( offset, FlatDemProvider.OMEGA_VALUE, true );
                 offset += FLT_BYTES;
             }
         }
@@ -66,6 +80,7 @@ class FlatDemProvider extends DemProvider<null> {
 
     private _setHeight( view: DataView, current: number )
     {
+        /* IEEE浮動小数点数(float) 0.0 は [0, 0, 0, 0] であり、ArrayBufferは初期化時点で既に全て 0 である。
         const FLT_BYTES = 4;
 
         let offset = current
@@ -73,6 +88,7 @@ class FlatDemProvider extends DemProvider<null> {
             view.setFloat32(offset, 0.0, true);
             offset += FLT_BYTES;
         }
+        */
     }
 }
 
