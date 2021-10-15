@@ -82,6 +82,9 @@ class Globe {
 
     private _root_cancel_id?: any;
 
+    /** @internal */
+    private _debug_pick_info?: Globe.DebugPickInfo;
+
 
     /**
      * @param glenv         WebGL 環境
@@ -300,6 +303,12 @@ class Globe {
         return this._avg_height;
     }
 
+    /** @internal */
+    get debug_pick_info(): Globe.DebugPickInfo | undefined
+    {
+        return this._debug_pick_info;
+    }
+
     /**
      * エンティティ情報を更新
      *
@@ -364,6 +373,13 @@ class Globe {
     findRayDistance( ray: Ray, limit: number ): number
     {
         let distance = this.root_flake.findRayDistance( ray, limit );
+        DEBUG: {
+            if ( this._debug_pick_info ) {
+                this._debug_pick_info.ray = ray;
+                if ( distance !== undefined ) this._debug_pick_info.distance = distance;
+            }
+        }
+
         if ( distance !== limit ) {
             return distance;
         }
@@ -658,6 +674,25 @@ class Globe {
         var num_cache_meshes = Math.floor( this._mesh_reduce_factor * this._num_touch_meshes );
         flat_meshes.slice( num_cache_meshes ).forEach( mnode => mnode.dispose() );
         // assert: this._num_cache_meshes == num_cache_meshes
+    }
+
+
+    /** @internal */
+    public setupDebugPickInfo() {
+        DEBUG: {
+            this._debug_pick_info = {
+                trace: [] as Globe.Flake[],
+                quads: [] as [Vector3, Vector3, Vector3, Vector3][],
+            };
+        }
+    }
+
+    /** @internal */
+    public popDebugPickInfo(): Globe.DebugPickInfo | undefined {
+        if ( !this._debug_pick_info ) return undefined;
+        const debug_pick_info = this._debug_pick_info;
+        this._debug_pick_info = undefined;
+        return debug_pick_info;
     }
 
 }
@@ -1076,6 +1111,12 @@ export class Flake {
      */
     findRayDistance( ray: Ray, limit: number ): number
     {
+        DEBUG: {
+            if ( this._globe.debug_pick_info ) {
+                this._globe.debug_pick_info.trace.push( this );
+            }
+        }
+
         let dem_flake: Flake;
         for ( dem_flake = this; dem_flake._dem_state !== DemState.LOADED; dem_flake = dem_flake._parent as Flake ) {}
 
@@ -1872,6 +1913,16 @@ export class Flake {
     private _findQuadRayDistance( ray: Ray, limit: number, dem_flake: Flake )
     {
         var  pts = this._getQuadPositions( dem_flake, Flake._temp_positions );
+        DEBUG: {
+            if ( this._globe.debug_pick_info ) {
+                this._globe.debug_pick_info.quads.push([
+                        GeoMath.copyVector3( pts[0], GeoMath.createVector3() ),
+                        GeoMath.copyVector3( pts[1], GeoMath.createVector3() ),
+                        GeoMath.copyVector3( pts[2], GeoMath.createVector3() ),
+                        GeoMath.copyVector3( pts[3], GeoMath.createVector3() ),
+                ]);
+            }
+        }
         var dist = Flake._findTriRayDistance( ray, limit, pts[0], pts[2], pts[1] );
         return (dist === limit) ? Flake._findTriRayDistance( ray, limit, pts[1], pts[2], pts[3] ) : dist;
     }
@@ -2541,6 +2592,14 @@ const CACHED_EMPTY_MESH = { id: "CACHED_EMPTY_MESH" };
 
 export interface PoleOption {
     color: Vector3;
+}
+
+
+export interface DebugPickInfo {
+    ray?: Ray;
+    distance?: number;
+    trace: Globe.Flake[];
+    quads: [Vector3, Vector3, Vector3, Vector3][];
 }
 
 
