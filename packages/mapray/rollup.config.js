@@ -19,7 +19,7 @@ const strip_option = (
     {
         debugger: false,
         functions: [ 'console.assert' ],
-        labels: [ 'ASSERT' ],
+        labels: [ 'ASSERT', 'DEBUG' ],
         sourceMap: true,
     }:
     {
