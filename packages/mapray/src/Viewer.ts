@@ -313,7 +313,7 @@ class Viewer {
     private _createLayerCollection( options: Viewer.Option )
     {
         var layers = (options.layers) ? options.layers : undefined;
-        return new LayerCollection( this );
+        return new LayerCollection( this, layers );
     }
 
 
@@ -891,7 +891,7 @@ export interface Option {
     image_provider?: ImageProvider;
 
     /** 地図レイヤー情報の配列 */
-    layers?: Layer.Option | ImageProvider;
+    layers?: (Layer.Option | ImageProvider)[];
 
     /** 地表の可視性 */
     ground_visibility?: boolean;
