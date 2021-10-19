@@ -215,6 +215,7 @@ class StandardUIViewer extends mapray.RenderCallback
                 atmosphere: ( options && options.atmosphere ),
                 sun_visualizer: ( options && options.sun_visualizer ),
                 moon_visualizer: ( options && options.moon_visualizer ),
+                cloud_visualizer: ( options && options.cloud_visualizer ),
             }
         );
 
