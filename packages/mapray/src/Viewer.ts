@@ -27,6 +27,7 @@ import Atmosphere from "./Atmosphere";
 import SunVisualizer from "./SunVisualizer";
 import Moon from "./Moon";
 import MoonVisualizer from "./MoonVisualizer";
+import CloudVisualizer from "./CloudVisualizer";
 
 // マウス・Attribution開発
 import LogoController from "./LogoController";
@@ -102,6 +103,7 @@ class Viewer {
 
     private _moonVisualizer?: MoonVisualizer;
 
+    private _cloudVisualizer?: CloudVisualizer;
 
     /** @internal */
     _render_cache?: any;
@@ -173,6 +175,12 @@ class Viewer {
         if ( moonVisualizer ) {
             this._moonVisualizer = moonVisualizer;
             moonVisualizer.init( this );
+        }
+
+        const cloudVisualizer = options.cloud_visualizer;
+        if ( cloudVisualizer ) {
+            this._cloudVisualizer = cloudVisualizer;
+            cloudVisualizer.init( this );
         }
 
         // マウス・Attribution開発
@@ -522,6 +530,11 @@ class Viewer {
     /**
      */
     get moonVisualizer() { return this._moonVisualizer; }
+
+
+    /**
+     */
+    get cloudVisualizer() { return this._cloudVisualizer; }
 
 
     /**
@@ -919,6 +932,8 @@ export interface Option {
     sun_visualizer?: SunVisualizer;
 
     moon_visualizer?: MoonVisualizer;
+
+    cloud_visualizer?: CloudVisualizer;
 }
 
 

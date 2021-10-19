@@ -278,6 +278,8 @@ abstract class RenderStage {
             }
         }
 
+        this._draw_sky_layer();
+
         this._draw_point_cloud();
 
         // モデルシーン描画
@@ -476,6 +478,18 @@ abstract class RenderStage {
         gl.frontFace( gl.CCW );
         gl.depthMask( true );
     }
+
+    private _draw_sky_layer()
+    {
+        const gl = this._glenv.context;
+
+        if ( this._viewer.cloudVisualizer && this._viewer.cloudVisualizer.visibility ) {
+            gl.disable( gl.CULL_FACE );
+            this._viewer.cloudVisualizer.draw( this, this._gocs_to_clip, this._view_to_gocs );
+            gl.enable( gl.CULL_FACE );
+        }
+    }
+
 }
 
 
