@@ -41,7 +41,7 @@ class Option {
             }
             this.map.set( property.key, {
                 // @ts-ignore
-                key, type, value, valueToOptionMap, optionOfValue,
+                key, type, value, handlers, valueToOptionMap, optionOfValue,
                 options: property.options, description: property.description,
             });
         }
