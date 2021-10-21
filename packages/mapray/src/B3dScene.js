@@ -169,7 +169,7 @@ class B3dScene {
         }
         else if ( this._status === TreeState.READY ) {
             // ツリー上の REQUESTED をキャンセル
-            for ( let cube of this._root_cube.flatten() ) {
+            for ( let cube of this._root_cube.getCubesFlattened() ) {
                 cube.cancelTileRequest();
             }
         }
@@ -674,8 +674,8 @@ class B3dStage {
         }
 
         // cube 内のタイルのレベルの最小値と最大値 (連続値)
-        const min_level = this._lod_offset - Math.maprayLog2( depth + radius );
-        const max_level = this._lod_offset - Math.maprayLog2( min_depth );
+        const min_level = this._lod_offset - GeoMath.maprayLog2( depth + radius );
+        const max_level = this._lod_offset - GeoMath.maprayLog2( min_depth );
 
         if ( max_level - min_level >= B3dScene.LEVEL_INTERVAL ) {
             // cube 内のレベルの差が大きすぎるので cube を分割
