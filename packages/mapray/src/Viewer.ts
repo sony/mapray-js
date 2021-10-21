@@ -768,7 +768,7 @@ class Viewer {
         }
 
         // 交差の有無を確認
-        if ( !category ) {
+        if ( category === undefined ) {
             // 交差なし
             return null;
         }
