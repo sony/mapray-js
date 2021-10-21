@@ -628,7 +628,7 @@ class StandardUIViewer extends mapray.RenderCallback
               var ray = viewer.camera.getCanvasRay(center_position, new mapray.Ray());
 
               // レイと地表の交点を求める
-              var cross_point = viewer.getRayIntersection(ray);
+              var cross_point = viewer.getRayIntersection(ray) as mapray.Vector3 | null;
 
               if (cross_point != null) {
                   var cross_geoPoint = new mapray.GeoPoint();
@@ -756,7 +756,7 @@ class StandardUIViewer extends mapray.RenderCallback
 
                 var camera = viewer.camera;
                 var ray = camera.getCanvasRay( this._mouse_down_position );
-                this._rotate_center = viewer.getRayIntersection( ray );
+                this._rotate_center = viewer.getRayIntersection( ray ) as mapray.Vector3 | null;
             }
             else if ( event.ctrlKey )
             {
@@ -774,7 +774,7 @@ class StandardUIViewer extends mapray.RenderCallback
 
             var camera = viewer.camera;
             var ray = camera.getCanvasRay( this._mouse_down_position );
-            this._rotate_center = viewer.getRayIntersection( ray );
+            this._rotate_center = viewer.getRayIntersection( ray ) as mapray.Vector3 | null;
         }
         // 右ボタン
         else if ( event.button === 2 )
@@ -1104,11 +1104,11 @@ class StandardUIViewer extends mapray.RenderCallback
             var camera = viewer.camera;
 
             var ray = camera.getCanvasRay( this._mouse_down_position );
-            var start_position = viewer.getRayIntersection( ray );
+            var start_position = viewer.getRayIntersection( ray ) as mapray.Vector3 | null;
 
             var end_mouse_position = GeoMath.createVector2([this._mouse_down_position[0] + this._translate_drag[0], this._mouse_down_position[1] + this._translate_drag[1]]);
             ray = camera.getCanvasRay( end_mouse_position );
-            var end_position = viewer.getRayIntersection( ray );
+            var end_position = viewer.getRayIntersection( ray ) as mapray.Vector3 | null;
 
             if ( start_position == null || end_position == null )
             {
@@ -1301,7 +1301,7 @@ class StandardUIViewer extends mapray.RenderCallback
 
             // 移動中心
             var ray = camera.getCanvasRay( this._mouse_down_position );
-            var translation_center = viewer.getRayIntersection( ray );
+            var translation_center = viewer.getRayIntersection( ray ) as mapray.Vector3 | null;
 
             if (translation_center == null)
             {
