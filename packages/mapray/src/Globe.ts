@@ -385,14 +385,14 @@ class Globe {
         }
 
         if ( this.north_pole_flake ) {
-            distance = this.north_pole_flake.findRayDistance( ray, Number.MAX_VALUE );
+            distance = this.north_pole_flake.findRayDistance( ray, limit );
             if ( distance !== limit ) {
                 return distance;
             }
         }
 
         if ( this.south_pole_flake ) {
-            distance = this.south_pole_flake.findRayDistance( ray, Number.MAX_VALUE );
+            distance = this.south_pole_flake.findRayDistance( ray, limit );
             if ( distance !== limit ) {
                 return distance;
             }
