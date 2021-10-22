@@ -1147,7 +1147,12 @@ class B3dCube {
             if ( data !== null ) {
                 // タイルの読み込みに成功
                 const b3d_binary = await B3dBinary.create( tree._glenv, tree._native, data );
-                console.assert( this._b3d_state === B3dState.REQUESTED );
+
+                if ( this._b3d_state !== B3dState.REQUESTED ) {
+                    // タイルのデコード中に、キャンセルまたは this が破棄された
+                    return;
+                }
+                // タイルのデコードに成功
 
                 this._b3d_state = B3dState.LOADED;
                 this._b3d_data  = b3d_binary;
