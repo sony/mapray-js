@@ -78,6 +78,26 @@ class AreaUtil
         return vec;
     }
 
+
+    /**
+     * タイルが完全に必要領域外であるかを判定する。
+     * 北極・南極の場合は周辺以外は不必要な領域となる。
+     * @param type 地表タイプ
+     * @param x 変換前の x
+     * @param y 変換前の y
+     * @param z 変換前の z
+     * @return 必要領域外である場合に true
+     */
+    static isOutOfRange( type: AreaUtil.Type | undefined, x: number, y: number, z: number ): boolean {
+        if ( type !== AreaUtil.Type.NORMAL ) {
+            if ( 1 < z && z < 7 ) {
+                const n = 1 << ( z - 1 );
+                return (x < n-1 || n < x) || (y < n-1 && n < y);
+            }
+        }
+        return false;
+    }
+
 }
 
 

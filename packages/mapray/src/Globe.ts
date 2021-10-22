@@ -1127,6 +1127,12 @@ export class Flake {
             return limit;
         }
         else {
+            if ( this.type !== AreaUtil.Type.NORMAL ) {
+                if ( AreaUtil.isOutOfRange( this.type, this.x, this.y, this.z ) ) {
+                    return limit;
+                }
+            }
+
             let dmin = limit;
             for ( let v = 0; v < 2; ++ v ) {
                 for ( let u = 0; u < 2; ++ u ) {

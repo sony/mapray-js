@@ -196,8 +196,7 @@ class FlakeCollector {
                 return;
             }
             if ( flake.z < 7 ) {
-                const n = 1 << ( flake.z - 1 );
-                if ( (n-1 <= flake.x && flake.x <= n) && (n-1 <= flake.y && flake.y <= n) ) { // 範囲内のみ読み込む
+                if ( !AreaUtil.isOutOfRange( flake.type, flake.x, flake.y, flake.z ) ) {
                     if ( range.max - range.min > FlakeCollector.MAX_LOD_INTERVAL || zt > flake.z ) {
                         this._collectNextLevelFlakes( flake );   // 地表断片を分割
                     }
