@@ -336,6 +336,7 @@ abstract class RenderStage {
         // @ts-ignore
         let material: Material = flakeMaterial;
 
+        let layerRendered = false;
         // レイヤーの地表 (半透明の可能性あり)
         for ( let i = 1; i < num_drawings; ++i ) {
             const mat = this._viewer.layers.getDrawingLayer( i - 1 ).getMateral();
@@ -348,12 +349,18 @@ abstract class RenderStage {
             }
             // @ts-ignore
             if ( material.setFlakeParameter( this, rflake, mesh, i ) ) {
-                if ( this.getRenderTarget() === RenderStage.RenderTarget.SCENE ) {
-                    gl.enable( gl.BLEND );
+                if ( !layerRendered ) {
+                    if ( this.getRenderTarget() === RenderStage.RenderTarget.SCENE ) {
+                        gl.enable( gl.BLEND );
+                    }
+                    gl.depthMask( false );
+                    layerRendered = true;
                 }
-                gl.depthMask( false );
                 mesh.draw( material );
             }
+        }
+        if ( layerRendered ) {
+            gl.depthMask( true );
         }
 
         // 描画地表断頂点数を記録
