@@ -10,6 +10,7 @@ jobs:
     env:
       CORE_PACKAGE_DIR: "./packages/mapray"
       UI_PACKAGE_DIR: "./packages/ui"
+      EMSDK_DIR: "./_deploy/emsdk"
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
@@ -17,12 +18,33 @@ jobs:
           node-version: '14.x'
           registry-url: https://registry.npmjs.org
           scope: '@mapray'
+      - name: Setup EMSDK
+        run: |
+          mkdir -p ${{ env.EMSDK_DIR }}/../
+          echo "Cloning EMSDK from github"
+          git clone --branch=2.0.9 --depth=1 https://github.com/emscripten-core/emsdk.git ${{ env.EMSDK_DIR }}
+          echo "Coping patch file to the EMSDK directory"
+          cp ${{ env.CORE_PACKAGE_DIR }}/wasm/emsdk.patch ${{ env.EMSDK_DIR }}/emsdk.patch
+          echo "Install and Activate EMSDK"
+          cd ${{ env.EMSDK_DIR }}
+          ./emsdk install latest
+          ./emsdk activate latest
+          echo "Apply the patch to EMSDK"
+          git apply -p1 emsdk.patch
       - run:  git fetch --prune --unshallow
       - name: Get current version
         run: |
           TAG_NAME=$(echo ${{ github.ref }} |  grep -o -E "(dev|alpha|beta|rc)")
           echo "::set-output name=tag_name::${TAG_NAME}"
         id: get_version
+        shell: bash
+      - name: Build wasm code
+        run: |
+          echo "Activate EMSDK"
+          source ${{ env.EMSDK_DIR }}/emsdk_env.sh
+          echo "Build wasm code"
+          cd ${{ env.CORE_PACKAGE_DIR }}
+          ./wasm/rebuild_and_install.sh
         shell: bash
       - name: Setup
         run: yarn install
