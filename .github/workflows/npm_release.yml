@@ -17,7 +17,7 @@ jobs:
           node-version: '14.x'
           registry-url: https://registry.npmjs.org
           scope: '@mapray'
-      - run:  git fetch --prune --unshal
+      - run:  git fetch --prune --unshallow
       - name: Setup
         run: yarn install
       - name: Build maprayJS
