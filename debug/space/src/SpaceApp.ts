@@ -44,12 +44,12 @@ const RENDER_OPTION_PROPERTIES = [
         description: "夜間レイヤー",
         value: true,
     },
-    {
-        key: "atmosphere",
-        type: "boolean",
-        description: "　大気表現",
-        value: false,
-    },
+    // {
+    //     key: "atmosphere",
+    //     type: "boolean",
+    //     description: "　大気表現",
+    //     value: false,
+    // },
     {
         key: "sun",
         type: "boolean",
@@ -99,12 +99,18 @@ const RENDER_OPTION_PROPERTIES = [
         value: true,
     },
     {
+        key: "star mask",
+        type: "boolean",
+        description: "　昼間の大気中星表現",
+        value: true,
+    },
+    {
         key: "sun speed",
         type: "range",
         description: "太陽の速度",
         min: 0,
         max: 300,
-        value: 1.0,
+        value: 20.0,
     },
     {
         key: "sun radius",
@@ -204,9 +210,9 @@ const RENDER_OPTION_PROPERTIES = [
         key: "star intensity",
         type: "range",
         description: "恒星の強度",
-        min: -1,
-        max: 1,
-        value: -0.2,
+        min: -5,
+        max: 0,
+        value: -3.0,
     },
     {
         key: "constellation intensity",
@@ -214,7 +220,7 @@ const RENDER_OPTION_PROPERTIES = [
         description: "星座の強度",
         min: 0,
         max: 2,
-        value: 0.12,
+        value: 0.2,
     },
     {
         key: "milkyway intensity",
@@ -222,7 +228,7 @@ const RENDER_OPTION_PROPERTIES = [
         description: "天の川の強度",
         min: 0,
         max: 2,
-        value: 0.5,
+        value: 0.3,
     },
     {
         key: "kr",
@@ -383,21 +389,18 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
                 } ),
                 atmosphere: new mapray.Atmosphere(),
                 sun_visualizer: new mapray.SunVisualizer( 32 ),
-                // sun_visualizer: new mapray.SunVisualizer( 5 ),
                 // sun_visualizer: new mapray.TextureSunVisualizer( './data/sun_tex.jpg' ),
-                // moon_visualizer: new mapray.MoonVisualizer( './data/moontest.jpg' )
                 moon_visualizer: new mapray.MoonVisualizer( './data/moon.jpg' ),
                 cloud_visualizer: new mapray.CloudVisualizer(),
-                star_visualizer: new mapray.StarVisualizer( './data/star.json', './data/starmap_512n2.jpg' ),
+                // star_visualizer: new mapray.StarVisualizer( './data/star.json', './data/starmap_512n2.jpg' ),
+                // star_visualizer: new mapray.StarVisualizer( './data/star65.json', './data/starmap_512n2.jpg' ),
+                // star_visualizer: new mapray.StarVisualizer( './data/star70.json', './data/starmap_512n2.jpg' ),
+                star_visualizer: new mapray.StarVisualizer( './data/star75.json', './data/starmap_512n2.jpg' ),
                 north_pole: { color: [0, 0.07, 0.12], },
                 south_pole: { color: [0.88, 0.89, 0.94], },
         });
 
         this._renderOption = renderOption;
-
-        if ( this.viewer.cloudVisualizer ) {
-            this.viewer.cloudVisualizer.setIntensity( this._renderOption.get("cloud intensity") );
-        }
 
         this._cloudURLArray = [];
         this._moveCloud = false;
@@ -479,6 +482,9 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
         (async () => {
                 await this._loadClouds();
         })();
+
+        // 初期値設定
+        this._setupInitialValue();
 }
 
     /**
@@ -971,6 +977,7 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
             top4.appendChild(DomTool.createCheckboxOption(renderOption, "moon"));
             top4.appendChild(DomTool.createCheckboxOption(renderOption, "sky"));
             top4.appendChild(DomTool.createCheckboxOption(renderOption, "ground"));
+            top4.appendChild(DomTool.createCheckboxOption(renderOption, "star mask"));
             top4.appendChild(DomTool.createCheckboxOption(renderOption, "cloud"));
             top4.appendChild(DomTool.createCheckboxOption(renderOption, "star"));
             top4.appendChild(DomTool.createCheckboxOption(renderOption, "constellation"));
@@ -1102,42 +1109,7 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
 
            renderOption.onChange("cloud contour", event => {
                 // console.log ( event.value );
-                if ( this.viewer.cloudVisualizer !== undefined ) {
-
-                    // contour array
-                    const gradientArray = [];
-
-                    if ( event.value === '1' ) {
-                        // cloud
-                        gradientArray.push( mapray.GeoMath.createVector4([1,1,1,0]) );
-                        gradientArray.push( mapray.GeoMath.createVector4([1,1,1,1]) );
-                        this.viewer.cloudVisualizer.setGradient(gradientArray, mapray.CloudVisualizer.GradientMode.LINEAR);
-                      }
-                      else if ( event.value === '2' ) {
-                        // contour
-                        gradientArray.push( mapray.GeoMath.createVector4([0,1,1,0]) );
-                        gradientArray.push( mapray.GeoMath.createVector4([0,1,1,0.5]) );
-                        gradientArray.push( mapray.GeoMath.createVector4([0,1,1,1]) );
-                        gradientArray.push( mapray.GeoMath.createVector4([0.5,1,0.5,1]) );
-                        gradientArray.push( mapray.GeoMath.createVector4([1,1,0,1]) );
-                        gradientArray.push( mapray.GeoMath.createVector4([1,0.5,0.5,1]) );
-                        this.viewer.cloudVisualizer.setGradient(gradientArray, mapray.CloudVisualizer.GradientMode.STEP);
-                    }
-                    else {
-                        // cloud
-                        gradientArray.push( mapray.GeoMath.createVector4([0.00, 0.60, 0.00, 0.0]) );
-                        gradientArray.push( mapray.GeoMath.createVector4([0.00, 0.60, 0.00, 0.2]) );
-                        gradientArray.push( mapray.GeoMath.createVector4([0.00, 0.60, 0.00, 0.4]) );
-                        gradientArray.push( mapray.GeoMath.createVector4([0.00, 0.60, 0.00, 0.6]) );
-                        gradientArray.push( mapray.GeoMath.createVector4([0.00, 0.60, 0.00, 0.8]) );
-                        gradientArray.push( mapray.GeoMath.createVector4([0.00, 0.60, 0.00, 1.0]) );
-                        gradientArray.push( mapray.GeoMath.createVector4([0.90, 0.90, 0.00, 1.0]) );
-                        gradientArray.push( mapray.GeoMath.createVector4([1.00, 0.50, 0.00, 1.0]) );
-                        gradientArray.push( mapray.GeoMath.createVector4([0.50, 0.00, 0.00, 1.0]) );
-                        gradientArray.push( mapray.GeoMath.createVector4([0.40, 0.10, 0.90, 1.0]) );
-                        this.viewer.cloudVisualizer.setGradient(gradientArray, mapray.CloudVisualizer.GradientMode.LINEAR);
-                    }
-                }
+                this._setCloudContour( event.value );
             });
 
 
@@ -1168,6 +1140,12 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
             renderOption.onChange("ground", event => {
                 if ( this.viewer.atmosphere ) {
                     this.viewer.atmosphere.setGroundVisibility( event.value );
+                }
+            });
+
+            renderOption.onChange("star mask", event => {
+                if ( this.viewer.atmosphere ) {
+                    this.viewer.atmosphere.setStarMask( event.value );
                 }
             });
 
@@ -1268,6 +1246,158 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
         // }
     }
 
+    private _setCloudContour( value: string ) {
+        if ( this.viewer.cloudVisualizer ) {
+            // contour array
+            const gradientArray = [];
+
+            if ( value === '1' ) {
+                // cloud
+                gradientArray.push( mapray.GeoMath.createVector4([1,1,1,0]) );
+                gradientArray.push( mapray.GeoMath.createVector4([1,1,1,1]) );
+                this.viewer.cloudVisualizer.setGradient(gradientArray, mapray.CloudVisualizer.GradientMode.LINEAR);
+                }
+                else if ( value === '2' ) {
+                // contour
+                gradientArray.push( mapray.GeoMath.createVector4([0,1,1,0]) );
+                gradientArray.push( mapray.GeoMath.createVector4([0,1,1,0.5]) );
+                gradientArray.push( mapray.GeoMath.createVector4([0,1,1,1]) );
+                gradientArray.push( mapray.GeoMath.createVector4([0.5,1,0.5,1]) );
+                gradientArray.push( mapray.GeoMath.createVector4([1,1,0,1]) );
+                gradientArray.push( mapray.GeoMath.createVector4([1,0.5,0.5,1]) );
+                this.viewer.cloudVisualizer.setGradient(gradientArray, mapray.CloudVisualizer.GradientMode.STEP);
+            }
+            else {
+                // cloud
+                gradientArray.push( mapray.GeoMath.createVector4([0.00, 0.60, 0.00, 0.0]) );
+                gradientArray.push( mapray.GeoMath.createVector4([0.00, 0.60, 0.00, 0.2]) );
+                gradientArray.push( mapray.GeoMath.createVector4([0.00, 0.60, 0.00, 0.4]) );
+                gradientArray.push( mapray.GeoMath.createVector4([0.00, 0.60, 0.00, 0.6]) );
+                gradientArray.push( mapray.GeoMath.createVector4([0.00, 0.60, 0.00, 0.8]) );
+                gradientArray.push( mapray.GeoMath.createVector4([0.00, 0.60, 0.00, 1.0]) );
+                gradientArray.push( mapray.GeoMath.createVector4([0.90, 0.90, 0.00, 1.0]) );
+                gradientArray.push( mapray.GeoMath.createVector4([1.00, 0.50, 0.00, 1.0]) );
+                gradientArray.push( mapray.GeoMath.createVector4([0.50, 0.00, 0.00, 1.0]) );
+                gradientArray.push( mapray.GeoMath.createVector4([0.40, 0.10, 0.90, 1.0]) );
+                this.viewer.cloudVisualizer.setGradient(gradientArray, mapray.CloudVisualizer.GradientMode.LINEAR);
+            }
+        }
+    }
+
+    private _setupInitialValue() {
+        // atmosphere
+        if ( this.viewer.atmosphere ) {
+            //// atmosphere sky
+            // visible
+            this.viewer.atmosphere.setSkyVisibility( this._renderOption.get("sky") );
+            // kr
+            this.viewer.atmosphere.setRayleigh( this._renderOption.get("kr") );
+            // km
+            this.viewer.atmosphere.setMie( this._renderOption.get("km") );
+            // scale depth
+            this.viewer.atmosphere.setScaleDepth( this._renderOption.get("scale depth") );
+            // eSun
+            this.viewer.atmosphere.setSunRate( this._renderOption.get("eSun") );
+            // exposure
+            this.viewer.atmosphere.setExposure( this._renderOption.get("exposure") );
+            // star mask
+            this.viewer.atmosphere.setStarMask( this._renderOption.get("star mask") );
+
+            //// atmosphere ground
+            // visible
+            this.viewer.atmosphere.setGroundVisibility( this._renderOption.get("ground") );
+            // kr
+            this.viewer.atmosphere.setGroundRayleigh( this._renderOption.get("g_kr") );
+            // km
+            this.viewer.atmosphere.setGroundMie( this._renderOption.get("g_km") );
+            // scale depth
+            this.viewer.atmosphere.setGroundScaleDepth( this._renderOption.get("g_scale depth") );
+            // eSun
+            this.viewer.atmosphere.setGroundSunRate( this._renderOption.get("g_eSun") );
+            // exposure
+            this.viewer.atmosphere.setGroundExposure( this._renderOption.get("g_exposure") );
+        }
+
+        // sun
+        if ( this.viewer.sunVisualizer ) {
+            // visible
+            this.viewer.sunVisualizer.setVisibility( this._renderOption.get("sun") );
+            // move
+            this._moveSun = this._renderOption.get("move sun");
+            // speed
+            this._sunSpeed = this._renderOption.get("sun speed");
+            // radius
+            this.viewer.sunVisualizer.setRadius( this._renderOption.get("sun radius") );
+            // intensity
+            this.viewer.sunVisualizer.setIntensity( this._renderOption.get("sun intensity") );
+        }
+
+        // moon
+        if ( this.viewer.moonVisualizer ) {
+            // visible
+            this.viewer.moonVisualizer.setVisibility( this._renderOption.get("moon") );
+            // move
+            this._moveMoon = this._renderOption.get("move moon");
+            // speed
+            this._moonSpeed = this._renderOption.get("moon speed");
+            // radius
+            this.viewer.moonVisualizer.setRadius( this._renderOption.get("moon radius") );
+        }
+
+        // star
+        if( this.viewer.starVisualizer ) {
+            //// star
+            // visible
+            this.viewer.starVisualizer.setVisibility( this._renderOption.get("star") );
+            // move
+            this._moveStar = this._renderOption.get("move star");
+            // speed
+            this._starSpeed = this._renderOption.get("star speed");
+            // intensity
+            this.viewer.starVisualizer.setIntensity( this._renderOption.get("star intensity") );
+
+            //// constellation
+            // visible
+            this.viewer.starVisualizer.setConstellationVisibility( this._renderOption.get("constellation") );
+            // intensity
+            this._constellationIntensity = this._renderOption.get("constellation intensity");
+            this.viewer.starVisualizer.setLineColor(
+                mapray.GeoMath.createVector3([
+                0.3 * this._constellationIntensity,
+                0.5 * this._constellationIntensity,
+                1.0 * this._constellationIntensity
+            ]) );
+            //// milkyway
+            // visible
+            this.viewer.starVisualizer.setMilkyWayVisibility( this._renderOption.get("milkyway") );
+            // intensity
+            this.viewer.starVisualizer.setMilkyWayIntensity( this._renderOption.get("milkyway intensity") );
+        }
+
+        // cloud
+        if ( this.viewer.cloudVisualizer ) {
+            // visible
+            this.viewer.cloudVisualizer.setVisibility( this._renderOption.get("cloud") );
+            // move
+            this._moveCloud = this._renderOption.get("move cloud");
+            // intensity
+            this.viewer.cloudVisualizer.setIntensity( this._renderOption.get("cloud intensity") );
+            // stream
+            // (no support)
+            // fade
+            this.viewer.cloudVisualizer.setFade( this._renderOption.get("cloud fade") );
+            // select
+            // (no support)
+            // contour
+            this._setCloudContour( this._renderOption.get("cloud contour") );
+        }
+
+        // night layer
+        if (this.viewer.layers && this.viewer.layers.getLayer(0)) {
+            // visible
+            this.viewer.layers.getLayer(0).setOpacity( this._renderOption.get("night layer") );
+        }
+    }
 
     private async _loadClouds() {
         const CLOUD_URL = "https://weather-cloud-dot-inou-dev.an.r.appspot.com/raster/weather/cloud/x/y/z";
