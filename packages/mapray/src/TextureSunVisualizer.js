@@ -172,6 +172,7 @@ class TextureSunVisualizer {
      * @private
      */
     _checkMaterials() {
+        // @ts-ignore
         const render_cache = this._viewer._render_cache || (this._viewer._render_cache = {});
         if ( !render_cache.sun_material ) {
             render_cache.sun_material = new TextureSunMaterial( this._viewer, this._image );
@@ -183,7 +184,9 @@ class TextureSunVisualizer {
      * @private
      */
     _deleteMaterials() {
-        if (this._viewer._render_cache && render_cache.sun_material ) {
+        // @ts-ignore
+        const render_cache = this._viewer._render_cache;
+        if (render_cache && render_cache.sun_material ) {
             render_cache.sun_material.dispose();
         }
     }
