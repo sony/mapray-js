@@ -111,6 +111,7 @@ class StandardUIViewer extends mapray.RenderCallback
 
     private _flycamera_on_success?: () => void;
 
+    private _controllable: boolean;
 
     /**
      * コンストラクタ
@@ -185,6 +186,7 @@ class StandardUIViewer extends mapray.RenderCallback
         // カメラパラメータの初期化
         this._initCameraParameter( options );
 
+        this._controllable = true;
     }
 
     /**
@@ -538,20 +540,22 @@ class StandardUIViewer extends mapray.RenderCallback
             this.updateFlyCamera( delta_time );
 
         } else {
-            // 平行移動
-            this.updateTranslation( delta_time );
+            if ( this._controllable ) {
+                // 平行移動
+                this.updateTranslation( delta_time );
 
-            // 回転
-            this.updateRotation( delta_time );
+                // 回転
+                this.updateRotation( delta_time );
 
-            // 自由回転
-            this._freeRotation( delta_time )
+                // 自由回転
+                this._freeRotation( delta_time )
 
-            // 高さ変更
-            this.updateTranslationOfHeight();
+                // 高さ変更
+                this.updateTranslationOfHeight();
 
-            //　視線方向移動
-            this.updateTranslationOfEyeDirection();
+                //　視線方向移動
+                this.updateTranslationOfEyeDirection();
+            }
 
             // 画角変更
             this._changeFovy();
@@ -2065,6 +2069,23 @@ class StandardUIViewer extends mapray.RenderCallback
 
         return location_geo;
     }
+
+    /**
+     * 操作可否
+     */
+    protected getControllable(): boolean { return this._controllable; }
+
+    /**
+     * 操作可否を設定
+     */
+    protected setControllable( flag: boolean ) {
+        if ( !this._controllable && flag ) {
+            this._resetEventParameter();
+            this._zoom_wheel = 0;
+        }
+        this._controllable = flag;
+    }
+
 }
 
 
