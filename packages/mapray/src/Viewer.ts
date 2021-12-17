@@ -14,6 +14,7 @@ import Globe from "./Globe";
 import DemProvider from "./DemProvider";
 import ImageProvider from "./ImageProvider";
 import PointCloudCollection from "./PointCloudCollection";
+import PointCloud from "./PointCloud";
 import TileTextureCache from "./TileTextureCache";
 import GeoMath, { Vector2, Vector3 } from "./GeoMath";
 import GeoPoint from "./GeoPoint";
@@ -112,6 +113,8 @@ class Viewer {
 
     private _cloudVisualizer?: CloudVisualizer;
 
+    private _load_status: Viewer.LoadStatus;
+
     /** @internal */
     _render_cache?: any;
 
@@ -167,6 +170,13 @@ class Viewer {
         this._render_callback    = this._createRenderCallback( options );
         this._sun                = new Sun();
         this._moon               = new Moon();
+        this._load_status        = {
+            dem_loading: 0,
+            img_loading: 0,
+            b3d_loading: 0,
+            pc_loading: 0,
+            total_loading: 0,
+        };
 
         const atmosphere = options.atmosphere;
         if ( atmosphere ) {
@@ -528,6 +538,11 @@ class Viewer {
 
     /**
      */
+    get load_status(): Viewer.LoadStatus { return this._load_status; }
+
+
+    /**
+     */
     get sun(): Sun { return this._sun; }
 
 
@@ -814,20 +829,38 @@ class Viewer {
      * @param  {object}  options  オプション
      * @return {blob}             データ
      */
-    async capture( options = { type: 'jpeg' } )
+    async capture( options: Viewer.CaptureOption = { type: 'jpeg' } ): Promise<Blob | null>
     {
        if ( !this._canvas_element ) {
          throw new Error('Canvas is null.');
        }
 
-       const mimeType = options.type === 'png' ? 'image/png' : 'image/jpeg';
+       const mime_type = options.type === 'png' ? 'image/png' : 'image/jpeg';
 
-       return await new Promise( resolve => {
-         this._postProcesses.push( () => {
-           this._canvas_element.toBlob( resolve,  mimeType );
-           return false;
+       if ( options.sync ) {
+         let counter = 0; // フレーム安定カウンタ
+         return await new Promise( resolve => {
+             this._postProcesses.push( () => {
+                 if ( this.load_status.total_loading > 0 ) {
+                   counter = 0;
+                   return true;
+                 }
+                 if ( counter++ < 4 ) {
+                   return true;
+                 }
+                 this._canvas_element.toBlob( resolve,  mime_type );
+                 return false;
+             });
          });
-       });
+       }
+       else {
+         return await new Promise( resolve => {
+             this._postProcesses.push( () => {
+                 this._canvas_element.toBlob( resolve,  mime_type );
+                 return false;
+             });
+         });
+       }
     }
 
 
@@ -863,9 +896,42 @@ class Viewer {
 
         this._postProcess();
 
+        this._updateLoadStatus();
+
         this._finishDebugStats();
     }
 
+
+    /**
+     * 読み込み状況を集計
+     */
+    private _updateLoadStatus() {
+        const load_status = this._load_status;
+
+        load_status.dem_loading = this._globe.getNumDemWaitingRequests();
+        load_status.img_loading = this._tile_texture_cache.getNumWaitingRequests();
+
+        load_status.b3d_loading = 0;
+        const it = this._b3d_collection.getIterator();
+        // @ts-ignore
+        while ( it.value ) {
+            // @ts-ignore
+            load_status.b3d_loading += Math.max( 0, it.value._num_tile_requesteds );
+            // @ts-ignore
+            it.next();
+        }
+
+        // @ts-ignore
+        const s = PointCloud.getStatistics() || {};
+        load_status.pc_loading = s.statistics_obj?.loading_boxes || 0;
+
+        load_status.total_loading = (
+            load_status.dem_loading +
+            load_status.img_loading +
+            load_status.b3d_loading +
+            load_status.pc_loading
+        );
+    }
 
     /**
      * 現在のビューにおいて指定されたスクリーン位置の情報を取得します
@@ -940,9 +1006,11 @@ class Viewer {
             return;
         }
 
+        const load_status = this._load_status;
+
         // 統計値の取得
-        stats.num_wait_reqs_dem = this._globe.getNumDemWaitingRequests();
-        stats.num_wait_reqs_img = this._tile_texture_cache.getNumWaitingRequests();
+        stats.num_wait_reqs_dem = load_status.dem_loading;
+        stats.num_wait_reqs_img = load_status.img_loading;
 
         // 統計の更新を通知
         stats.onUpdate();
@@ -1049,11 +1117,28 @@ export interface RayIntersectionInfo {
 
 
 
+/**
+ * 読み込み状況を格納する型
+ */
+export interface LoadStatus {
+    dem_loading: number;
+    img_loading: number;
+    b3d_loading: number;
+    pc_loading: number;
+    total_loading: number;
+}
+
+
+
 export interface PoleOption {
     color: Vector3;
 }
 
 
+export interface CaptureOption {
+    type: "jpeg" | "png",
+    sync?: boolean,
+}
 
 /**
  * レンダリング直後に実行する処理を表現する型です。
