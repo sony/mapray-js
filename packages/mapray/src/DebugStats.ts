@@ -1,61 +1,47 @@
 /**
- * @summary デバッグ統計
- * @classdesc
- * <p>エンジン開発用の統計オブジェクトである。<p>
- * <p>NOTE: オブジェクトの振舞いはエンジンの実装に依存するため、一般アプリの開発では使用できない。<p>
- * @memberof mapray
+ * デバッグ統計
+ *
+ * エンジン開発用の統計オブジェクトである。
+ *
+ * NOTE: オブジェクトの振舞いはエンジンの実装に依存するため、一般アプリの開発では使用できない。
  */
 class DebugStats {
 
     /**
+     *  リクエスト待ちの DEM 数
      */
-    constructor()
-    {
-        /**
-         *  @summary リクエスト待ちの DEM 数
-         *  @member mapray.DebugStats#num_wait_reqs_dem
-         *  @type {number}
-         */
+    num_wait_reqs_dem: number;
 
-        /**
-         *  @summary リクエスト待ちの画像数
-         *  @member mapray.DebugStats#num_wait_reqs_img
-         *  @type {number}
-         */
+    /**
+     *  リクエスト待ちの画像数
+     */
+    num_wait_reqs_img: number;
 
-        /**
-         *  @summary 描画地表断片数
-         *  @member mapray.DebugStats#num_drawing_flakes
-         *  @type {number}
-         */
+    /**
+     *  描画地表断片数
+     */
+    num_drawing_flakes: number;
 
-        /**
-         *  @summary 描画地表断頂点数
-         *  @member mapray.DebugStats#num_drawing_flake_vertices
-         *  @type {number}
-         */
+    /**
+     *  描画地表断頂点数
+     */
+    num_drawing_flake_vertices: number;
 
-        /**
-         *  @summary 地表断片処理 A の数
-         *  @member mapray.DebugStats#num_procA_flakes
-         *  @type {number}
-         */
+    /**
+     *  地表断片処理 A の数
+     */
+    num_procA_flakes: number;
 
-        /**
-         *  @summary 地表断片処理 B の数
-         *  @member mapray.DebugStats#num_procB_flakes
-         *  @type {number}
-         */
-
-        this.clearStats();
-    }
+    /**
+     *  地表断片処理 B の数
+     */
+    num_procB_flakes: number;
 
 
     /**
-     * 統計値をクリア
-     * @package
+     * 
      */
-    clearStats()
+    constructor()
     {
         this.num_wait_reqs_dem          = 0;
         this.num_wait_reqs_img          = 0;
@@ -67,10 +53,24 @@ class DebugStats {
 
 
     /**
-     * @summary 更新が完了したときに呼び出される
-     * @abstract
+     * 統計値をクリア
+     * @package
      */
-    onUpdate()
+    clearStats(): void
+    {
+        this.num_wait_reqs_dem          = 0;
+        this.num_wait_reqs_img          = 0;
+        this.num_drawing_flakes         = 0;
+        this.num_drawing_flake_vertices = 0;
+        this.num_procA_flakes           = 0;
+        this.num_procB_flakes           = 0;
+    }
+
+
+    /**
+     * 更新が完了したときに呼び出される
+     */
+    onUpdate(): void
     {
     }
 

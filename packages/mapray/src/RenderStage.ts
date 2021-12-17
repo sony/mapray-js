@@ -58,7 +58,7 @@ abstract class RenderStage {
     protected _point_cloud_collection: PointCloudCollection;
 
     // デバッグ統計
-    protected _debug_stats: DebugStats | null;
+    protected _debug_stats?: DebugStats;
 
     protected _flake_material!: FlakeMaterial;
 
@@ -365,7 +365,7 @@ abstract class RenderStage {
 
         // 描画地表断頂点数を記録
         var stats = this._debug_stats;
-        if ( stats !== null ) {
+        if ( stats ) {
             // @ts-ignore
             stats.num_drawing_flake_vertices += mesh.num_vertices;
         }
@@ -561,7 +561,7 @@ export class SceneRenderStage extends RenderStage {
 
         // 描画地表断片数を記録
         var stats = this._debug_stats;
-        if ( stats !== null ) {
+        if ( stats ) {
             stats.num_drawing_flakes = this._flake_list.length;
         }
 

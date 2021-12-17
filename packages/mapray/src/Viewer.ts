@@ -82,7 +82,7 @@ class Viewer {
 
     private _render_mode: Viewer.RenderMode;
 
-    private _debug_stats: DebugStats | null;
+    private _debug_stats?: DebugStats;
 
     private _point_cloud_collection: PointCloudCollection;
 
@@ -162,7 +162,7 @@ class Viewer {
         this._entity_visibility  = Viewer._getBoolOption( options, "entity_visibility", true );
         this._b3d_scene_visibility = Viewer._getBoolOption( options, "b3d_scene_visibility", true );
         this._render_mode        = options.render_mode || Viewer.RenderMode.SURFACE;
-        this._debug_stats        = options.debug_stats || null;
+        this._debug_stats        = options.debug_stats;
         this._point_cloud_collection = this._createPointCloudCollection( options );
         this._render_callback    = this._createRenderCallback( options );
         this._sun                = new Sun();
@@ -480,7 +480,7 @@ class Viewer {
     /**
      * デバッグ統計オブジェクト
      */
-    get debug_stats(): DebugStats | null { return this._debug_stats; }
+    get debug_stats(): DebugStats | undefined { return this._debug_stats; }
 
 
     /**
@@ -854,7 +854,7 @@ class Viewer {
 
         this._render_callback.onUpdateFrameInner( delta_time );
 
-        if ( this._debug_stats !== null ) {
+        if ( this._debug_stats ) {
             this._debug_stats.clearStats();
         }
 
@@ -935,7 +935,7 @@ class Viewer {
     private _finishDebugStats()
     {
         var stats = this._debug_stats;
-        if ( stats === null ) {
+        if ( !stats ) {
             // 統計オブジェクトは指定されていない
             return;
         }
