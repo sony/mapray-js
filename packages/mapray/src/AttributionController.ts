@@ -1,45 +1,39 @@
 import ContainerController from "./ContainerController"
 
+
+
 /**
- * @summary 著作権表示の表示制御
- *
- * @class AttributionController
- * @extends {mapray.ContainerController}
+ * 著作権表示の表示制御
  */
 class AttributionController extends ContainerController
 {
+    private _attributions: AttributionController.Attribution[];
+
+
     /**
-     * @summary コンストラクタ
-     * @param {HTMLElement}                             container                       ルートコンテナ（Viewerクラスのcontainer_element）
-     * @param {object}                                  options                         表示オプション
-     * @param {boolean}                                 options.isVisible               表示・非表示
-     * @param {ContainerController.ContainerPosition}   options.position                表示位置
-     * @param {array}                                   options.attributions            著作権リスト
-     * @param {string}                                  options.attributions.display    表示名
-     * @param {string}                                  options.attributions.link       リンク
-     * @memberof AttributionController
+     * コンストラクタ
+     * @param container    ルートコンテナ（Viewerクラスのcontainer_element）
+     * @param options      表示オプション
      */
-    constructor( container, options = {} )
+    constructor( container: HTMLElement | string, options: AttributionController.Option = {} )
     {
         super( container, options );
-        this._position = ( options.position ) || ContainerController.ContainerPosition.BOTTOM_RIGHT;
+        this._position = options.position || ContainerController.ContainerPosition.BOTTOM_RIGHT;
         this._attributions = [];
         if ( options && options.attributions ) {
-            this.copyAttributions(options.attributions);
+            this._copyAttributions(options.attributions);
         } else {
-            this.copyAttributions(AttributionController._default_attribution);
+            this._copyAttributions(AttributionController._default_attribution);
         }
     }
 
+
     /**
-     * @summary 著作権表示の追加
+     * 著作権表示の追加
      *
-     * @param {object}  attribution            著作権表示オブジェクト
-     * @param {string}  attribution.display    表示名
-     * @param {string}  attribution.link       リンク
-     * @memberof AttributionController
+     * @param attribution 著作権表示オブジェクト
      */
-    addAttribution( attribution )
+    addAttribution( attribution: AttributionController.Attribution ): void
     {
         this._attributions.push( attribution );
 
@@ -48,12 +42,11 @@ class AttributionController extends ContainerController
         this.createContainer();
     }
 
+
     /**
-     * @summary 著作権表示のリセット
-     *
-     * @memberof AttributionController
+     * 著作権表示のリセット
      */
-    clearAttribution()
+    clearAttribution(): void
     {
         this._attributions = [];
 
@@ -64,17 +57,15 @@ class AttributionController extends ContainerController
 
 
     /**
-     * @summary リサイズイベント
-     *
-     * @memberof AttributionController
+     * リサイズイベント
      */
-    _sizeChanged()
+    protected _sizeChanged(): void
     {
         if ( this._container )
         {
             var parent_container = this._container.parentElement;
 
-            if ( parent_container.parentElement.clientWidth < ContainerController._compact_size )
+            if ( parent_container!.parentElement!.clientWidth < ContainerController._compact_size )
             {
                 this._container.classList.add( "mapray-attribution-compact" )
             }
@@ -85,14 +76,13 @@ class AttributionController extends ContainerController
         }
     }
 
+
     /**
-     * @summary 追加コンテナの作成
-     *
-     * @memberof AttributionController
+     * 追加コンテナの作成
      */
-    createContainer()
+    createContainer(): void
     {
-        var name = "control-" + this._position.id;
+        var name = "control-" + this._position;
         var parent_container = this._viewer_container.getElementsByClassName( name )[0];
 
         var main_container = document.createElement( "div" );
@@ -126,15 +116,45 @@ class AttributionController extends ContainerController
         this._sizeChanged();
     }
 
-    copyAttributions( src )
+
+    private _copyAttributions( src: AttributionController.Attribution[] ): void
     {
         this._attributions = src.map(d => d);
     }
 }
 
-// クラス変数の定義
-{
-    AttributionController._default_attribution = [
+
+
+namespace AttributionController {
+
+
+
+export interface Option extends ContainerController.Option {
+    /**
+     * 著作権リスト
+     */
+    attributions?: Attribution[];
+}
+
+
+
+/**
+ * 著作権情報
+ */
+export interface Attribution {
+    /** 表示名 */
+    display: string;
+
+    /** リンク */
+    link: string;
+}
+
+
+
+/**
+ * デフォルト著作権情報
+ */
+export const _default_attribution: Attribution[] = [
     {
         display: "©Mapray",
         link: "https://mapray.com"
@@ -148,6 +168,11 @@ class AttributionController extends ContainerController
         link: "https://www.gsi.go.jp/kiban/index.html"
     }
 ];
-}
+
+
+
+} // namespace AttributionController
+
+
 
 export default AttributionController;

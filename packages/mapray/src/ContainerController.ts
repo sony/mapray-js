@@ -1,27 +1,34 @@
 /**
- * @summary 追加コンテナの表示制御
+ * 追加コンテナの表示制御
  *
  * @class ContainerController
  */
 class ContainerController
 {
+    protected _visibility: boolean;
+
+    protected _position: ContainerController.ContainerPosition;
+
+    protected _container?: HTMLElement;
+
+    protected _viewer_container: HTMLElement;
+
+    protected _is_compact: boolean;
+
+
     /**
-     * @summary コンストラクタ
-     * @param {HTMLElement}                         container           ルートコンテナ（Viewerクラスのcontainer_element）
-     * @param {object}                              options             表示オプション
-     * @param {boolean}                             options.visibility  表示・非表示
-     * @param {ContainerPosition}                   options.position    表示位置
-     * @memberof ContainerController
+     * @param container ルートコンテナ（Viewerクラスのcontainer_element）
+     * @param options   表示オプション
      */
-    constructor( container, options )
+    constructor( container: HTMLElement | string, options: ContainerController.Option )
     {
-        this._visibility = ( options && options.visibility ) || true;
-        this._position = ( options && options.position ) || ContainerPosition.TOP_LEFT;
+        this._visibility = options.visibility !== undefined ? options.visibility : true;
+        this._position = options.position || ContainerController.ContainerPosition.TOP_LEFT;
 
         var container_element;
-        if ( typeof container == "string" ) {
+        if ( typeof container === "string" ) {
             // コンテナを ID 指定したとき
-            container_element = document.getElementById( container );
+            container_element = document.getElementById( container ) as HTMLElement;
         }
         else {
             // コンテナを直接要素で指定のとき
@@ -29,7 +36,6 @@ class ContainerController
         }
 
         this._viewer_container = container_element;
-        this._container = null;
         this._is_compact = false;
 
         var self = this;
@@ -37,12 +43,11 @@ class ContainerController
     }
 
     /**
-     * @summary 表示・非表示の設定
+     * 表示・非表示の設定
      *
-     * @param {boolean} visibility
-     * @memberof ContainerController
+     * @param visibility
      */
-    setVisibility( visibility )
+    setVisibility( visibility: boolean ): void
     {
         this._visibility = visibility;
 
@@ -51,12 +56,11 @@ class ContainerController
     }
 
     /**
-     * @summary 表示位置
+     * 表示位置
      *
-     * @param {ContainerPosition}   position
-     * @memberof ContainerController
+     * @param position
      */
-    setPosition( position )
+    setPosition( position: ContainerController.ContainerPosition ): void
     {
         this._position = position;
 
@@ -66,24 +70,20 @@ class ContainerController
     }
 
     /**
-     * @summary コンテナの表示設定
-     *
-     * @memberof ContainerController
+     * コンテナの表示設定
      */
-    _setContainerVisibility()
+    private _setContainerVisibility(): void
     {
-        if(this._container)
+        if (this._container)
         {
             ( this._visibility ) ? this._container.style.visibility = "visible" : this._container.style.visibility = "collapse"
         }
     }
 
     /**
-     * @summary インスタンスの破棄
-     *
-     * @memberof ContainerController
+     * インスタンスの破棄
      */
-    _destroy()
+    private _destroy(): void
     {
         var self = this;
         window.removeEventListener( "resize", function () { self._sizeChanged(); }, false );
@@ -92,71 +92,77 @@ class ContainerController
     }
 
     /**
-     * @summary 追加コンテナの削除
-     *
-     * @memberof ContainerController
+     * 追加コンテナの削除
      */
-    _deleteContainer()
+    protected _deleteContainer(): void
     {
-        var parent_container = this._container.parentElement;
-        parent_container.removeChild( this._container );
-        this._container = null;
+        if ( this._container ) {
+            var parent_container = this._container.parentElement;
+            if ( parent_container ) {
+                parent_container.removeChild( this._container );
+            }
+            this._container = undefined;
+        }
     }
 
     /**
-     * @summary リサイズイベント
-     *
-     * @memberof ContainerController
-     * @abstract
+     * リサイズイベント
      */
-    _sizeChanged()
+    protected _sizeChanged(): void
     {
-
     }
 
     /**
-     * @summary 追加コンテナの作成
-     *
-     * @memberof ContainerController
-     * @abstract
+     * 追加コンテナの作成
      */
-    createContainer()
+    createContainer(): void
     {
     }
 }
+
+
+
+namespace ContainerController {
+
 
 /**
- * @summary ロゴ・著作権表示位置の列挙型
- * @enum {object}
- * @memberof ContainerController
- * @constant
+ * オプション
  */
-var ContainerPosition = {
-    /** 
-     * 左上
-     */
-    TOP_LEFT: { id: "top-left" },
+export interface Option {
+    /** 表示・非表示 */
+    visibility?: boolean;
 
-    /** 
-     * 右上 
-     */
-    TOP_RIGHT: { id: "top-right" },
+    /** 表示位置 */
+    position?: ContainerPosition;
+}
 
-    /**
-     * 左下
-     */
-    BOTTOM_LEFT: { id: "bottom-left" },
 
-    /**
-     * 右下
-     */
-    BOTTOM_RIGHT: { id: "bottom-right" }
+
+/**
+ * ロゴ・著作権表示位置の列挙型
+ */
+export enum ContainerPosition {
+    /** 左上 */
+    TOP_LEFT = "top-left",
+
+    /** 右上 */
+    TOP_RIGHT = "top-right",
+
+    /** 左下 */
+    BOTTOM_LEFT = "bottom-left",
+
+    /** 右下 */
+    BOTTOM_RIGHT = "bottom-right",
 };
 
-{
-    ContainerController._compact_size = 500;
 
-    ContainerController.ContainerPosition = ContainerPosition;
-}
+
+export const _compact_size = 500;
+
+
+
+} // namespace ContainerController
+
+
 
 export default ContainerController;

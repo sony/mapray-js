@@ -1,41 +1,37 @@
 import ContainerController from "./ContainerController"
 
+
+
 /**
- * @summary ロゴの表示制御
- *
- * @class LogoController
- * @extends {mapray.ContainerController}
+ * ロゴの表示制御
  */
 class LogoController extends ContainerController
 {
+
     /**
-     * @summary コンストラクタ
-     * @param {HTMLElement}                                 container           ルートコンテナ（Viewerクラスのcontainer_element）
-     * @param {object}                                      options             表示オプション
-     * @param {boolean}                                     options.visibility  表示・非表示
-     * @param {ContainerController.ContainerPosition}       options.position    表示位置
-     * @memberof LogoController
+     * コンストラクタ
+     * @param container ルートコンテナ（Viewerクラスのcontainer_element）
+     * @param options   表示オプション
      */
-    constructor( container, options = {} )
+    constructor( container: HTMLElement | string, options: LogoController.Option = {} )
     {
         super( container, options );
         
-        this._position = ( options.position ) || ContainerController.ContainerPosition.BOTTOM_LEFT;
+        this._position = options.position || ContainerController.ContainerPosition.BOTTOM_LEFT;
     }
 
+
     /**
-     * @summary リサイズイベント
-     *
-     * @memberof LogoController
+     * リサイズイベント
      */
-    _sizeChanged()
+    protected _sizeChanged(): void
     {
         if (this._container)
         {
             var sub_container = this._container.children[0];
             var parent_container = this._container.parentElement;
             
-            if ( parent_container.parentElement.clientWidth < ContainerController._compact_size)
+            if ( parent_container!.parentElement!.clientWidth < ContainerController._compact_size)
             {
                 sub_container.classList.add( "mapray-logo-compact" )
             }
@@ -46,14 +42,13 @@ class LogoController extends ContainerController
         }
     }
 
+
     /**
-     * @summary 追加コンテナの作成
-     *
-     * @memberof LogoController
+     * 追加コンテナの作成
      */
-    createContainer()
+    createContainer(): void
     {
-        var name = "control-" + this._position.id;
+        var name = "control-" + this._position;
         var parent_container = this._viewer_container.getElementsByClassName( name )[0];
 
         var main_container = document.createElement( "div" );
@@ -71,7 +66,23 @@ class LogoController extends ContainerController
 
         this._sizeChanged();
     }
-    
+
 }
+
+
+
+namespace LogoController {
+
+
+
+export interface Option extends ContainerController.Option {
+}
+
+
+
+} // namespace LogoController
+
+
+
 
 export default LogoController;
