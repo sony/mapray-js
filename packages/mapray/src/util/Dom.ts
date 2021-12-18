@@ -29,6 +29,30 @@ namespace Dom {
     }
 
 
+
+    /**
+     * キャンバスのピクセル情報を保持した、2Dコンテキストを生成します。
+     * @param canvas
+     */
+    export function copyTo2dCanvasContext( canvas: HTMLCanvasElement, dst_ctx?: CanvasRenderingContext2D ): CanvasRenderingContext2D
+    {
+        const dst = dst_ctx ? dst_ctx.canvas : document.createElement( "canvas" );
+        if ( dst.width !== canvas.width ) {
+            dst.width = canvas.width;
+        }
+        if ( dst.height !== canvas.height ) {
+            dst.height = canvas.height;
+        }
+        const context = dst.getContext( "2d" );
+        if ( !context ) {
+            throw new Error("Cannot get context of canvas");
+        }
+        context.drawImage( canvas, 0, 0 );
+        return context;
+    }
+
+
+
     /**
      * 画像を読み込みます。
      * @param src
@@ -71,6 +95,11 @@ namespace Dom {
                     reject( new Error("Failed to load image") );
                 };
         } );
+    }
+
+
+    export function convertSVGToDataURL( src: string ): string {
+        return "data:image/svg+xml;charset=utf-8," + encodeURIComponent( src );
     }
 
 
