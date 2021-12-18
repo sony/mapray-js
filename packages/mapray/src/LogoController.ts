@@ -1,5 +1,10 @@
 import ContainerController from "./ContainerController"
 
+import Dom from "./util/Dom";
+
+import LOGO from "./resources/svg/mapray.svg";
+import LOGO_MINI from "./resources/svg/mapray_small.svg";
+
 
 
 /**
@@ -67,7 +72,28 @@ class LogoController extends ContainerController
         this._sizeChanged();
     }
 
+
+    async getLogoImage( option: { mini: boolean } ): Promise<HTMLImageElement>
+    {
+        if ( option.mini ) {
+            if ( !LOGO_MINI_IMAGE ) {
+                LOGO_MINI_IMAGE = await Dom.loadImage( Dom.convertSVGToDataURL( LOGO_MINI ) );
+            }
+            return LOGO_MINI_IMAGE;
+        }
+        else {
+            if ( !LOGO_IMAGE ) {
+                LOGO_IMAGE = await Dom.loadImage( Dom.convertSVGToDataURL( LOGO ) );
+            }
+            return LOGO_IMAGE;
+        }
+    }
 }
+
+
+
+let LOGO_IMAGE: HTMLImageElement;
+let LOGO_MINI_IMAGE: HTMLImageElement;
 
 
 
