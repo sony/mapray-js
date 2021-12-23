@@ -744,21 +744,35 @@ class Viewer {
      * レイとの交点を取得
      *
      * ray と最も近いオブジェクトとの交点の情報を取得する。ただし交差が存在しない場合は
-     *    null を返す。
+     *    undefined を返す。
      *
-     * options.extra_info が false のとき、交差があればその交点の位置 (GOCS) を返す。
-     *
-     * options.extra_info が true のとき、交差があれば次の形式のオブジェクトを返す。
+     * 交差があればその交点の位置 (GOCS) を返す。
      *
      * @param ray    レイ (GOCS)
      * @param options  オプション
      *
-     * @return 交点情報または null
+     * @return 交点または undefined
      */
-    getRayIntersection( ray: Ray, opts: Viewer.RayIntersectionOption = {} ): Vector3 | Viewer.RayIntersectionInfo | null
+    getRayIntersection( ray: Ray, opts: Viewer.RayIntersectionOption = {} ): Vector3 | undefined
+     {
+        const info = this.getRayIntersectionInfo( ray, opts );
+        return info ? info.position : undefined;
+     }
+
+    /**
+     * レイとの交点情報を取得
+     *
+     * ray と最も近いオブジェクトとの交点の情報を取得する。ただし交差が存在しない場合は
+     *    undefined を返す。
+     *
+     * @param ray    レイ (GOCS)
+     * @param options  オプション
+     *
+     * @return 交点情報または undefined
+     */
+    getRayIntersectionInfo( ray: Ray, opts: Viewer.RayIntersectionOption = {} ):  Viewer.RayIntersectionInfo | undefined
     {
         const limit      = (opts.limit      !== undefined) ? opts.limit      : Number.MAX_VALUE;
-        const extra_info = (opts.extra_info !== undefined) ? opts.extra_info : false;
 
         let category;
         let distance = limit;
@@ -786,7 +800,7 @@ class Viewer {
         // 交差の有無を確認
         if ( category === undefined ) {
             // 交差なし
-            return null;
+            return undefined;
         }
 
         // 位置 P = Q + distance V
@@ -799,30 +813,22 @@ class Viewer {
         }
 
         // 結果を返す
-        if ( extra_info ) {
-            // 位置以外の情報も返す
-            const ex_info: Viewer.RayIntersectionInfo = {
-                category,
-                distance,
-                position: p
-            };
+        const ex_info: Viewer.RayIntersectionInfo = {
+            category,
+            distance,
+            position: p
+        };
 
-            // B3D 専用の情報を追加
-            if ( category === Viewer.Category.B3D_SCENE ) {
-                // @ts-ignore
-                ex_info.b3d_scene  = b3d_info!.b3d_scene;
-                // @ts-ignore
-                ex_info.feature_id = b3d_info!.feature_id;
-            }
+        // B3D 専用の情報を追加
+        if ( category === Viewer.Category.B3D_SCENE ) {
+            // @ts-ignore
+            ex_info.b3d_scene  = b3d_info!.b3d_scene;
+            // @ts-ignore
+            ex_info.feature_id = b3d_info!.feature_id;
+        }
 
-            return ex_info;
-        }
-        else {
-            // 位置のみを返す
-            return p;
-        }
+        return ex_info;
     }
-
 
     /**
      * Canvas画面のキャプチャ
