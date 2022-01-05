@@ -43,7 +43,7 @@ export default [
       }),
     ]
   },
-  
+
   // ES for Browsers
   {
     input: 'src/maprayui.ts',
@@ -112,7 +112,7 @@ export default [
   {
     input: 'src/index.ts',
     output: {
-      file: outdir + 'umd/maprayui.js',
+      file: outdir + 'umd/maprayui.min.js',
       format: 'umd',
       name: 'maprayui',
       exports: 'named',
