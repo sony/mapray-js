@@ -324,7 +324,7 @@ class PolygonEntity extends Entity {
      */
     private _getPosition(): GeoPoint | undefined
     {
-        if ( this._position !== null ) {
+        if ( this._position !== undefined ) {
             // キャッシュさている値を返す
             return this._position;
         }

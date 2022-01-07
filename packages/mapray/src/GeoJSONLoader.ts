@@ -379,7 +379,7 @@ class GeoJSONLoader extends Loader {
     private _flatten( array: number[][], altitude: number | undefined, len: number = array.length ): number[]
     {
         return array.reduce( (arr: number[], v: number[], index: number) => (
-                index >= len ? v :
+                index >= len ? arr :
                 arr.concat( v.slice(0, 2), this._getActualValue( altitude, v[2], GeoJSONLoader.defaultAltitude ) )
         ), [] );
     };
