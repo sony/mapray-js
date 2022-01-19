@@ -115,6 +115,7 @@ class StandardUIViewer extends mapray.RenderCallback
 
     private _altitude_range: { min: number, max: number };
 
+    private _selfHashChangeFlag: boolean;
 
     /**
      * コンストラクタ
@@ -194,6 +195,11 @@ class StandardUIViewer extends mapray.RenderCallback
         this._initCameraParameter( options );
 
         this._controllable = true;
+
+        this._selfHashChangeFlag = false;
+
+        // イベントリスナーの追加
+        this._addEventListener();
     }
 
     /**
@@ -234,9 +240,6 @@ class StandardUIViewer extends mapray.RenderCallback
 
         // For getting KeybordEvent
         element.setAttribute('tabindex', '0');
-
-        // イベントリスナーの追加
-        this._addEventListener();
 
         return this._viewer;
     }
@@ -352,6 +355,40 @@ class StandardUIViewer extends mapray.RenderCallback
         this.updateCamera();
     }
 
+    /**
+     * URLHash変更イベント
+     */
+     private _onHashChange()
+     {
+         if ( this._selfHashChangeFlag ) {
+             this._selfHashChangeFlag = false;
+             return;
+         }
+
+         let camera_position = undefined;
+         let lookat_position = undefined;
+         let url_yaw = undefined;
+
+         const url_parameter = this._extractURLParameter();
+         if ( url_parameter ) {
+           camera_position = url_parameter.camera_position;
+           lookat_position = url_parameter.lookat_position;
+           url_yaw = url_parameter.yaw;
+         }
+
+         // カメラ位置の設定
+         if ( camera_position ) {
+             this.setCameraPosition( camera_position );
+         }
+
+         if ( lookat_position && url_yaw !== undefined ) {
+             //　注視点位置の設定
+             this.setLookAtPosition( lookat_position, url_yaw );
+         }
+
+         // カメラ姿勢の確定
+         this.updateCamera();
+     }
 
     /**
      * URLのパラメータの抽出と、カメラパラメータの算出
@@ -360,7 +397,7 @@ class StandardUIViewer extends mapray.RenderCallback
     {
         let urlHash = window.location.hash;
 
-        if ( urlHash.length === 0)
+        if ( urlHash.length === 0 )
         {
             // URLに位置情報は無し または 不正
             return;
@@ -470,6 +507,7 @@ class StandardUIViewer extends mapray.RenderCallback
         this._onMouseWheel = this._onMouseWheel.bind(this);
         this._onKeyDown = this._onKeyDown.bind(this);
         this._onKeyUp = this._onKeyUp.bind(this);
+        this._onHashChange = this._onHashChange.bind(this);
 
         window.addEventListener( "blur", self._onBlur, { passive: false } );
         canvas.addEventListener( "mousedown", self._onMouseDown, { passive: true } );
@@ -480,6 +518,7 @@ class StandardUIViewer extends mapray.RenderCallback
         canvas.addEventListener( "wheel", self._onMouseWheel, { passive : false } );
         canvas.addEventListener( "keydown", self._onKeyDown, { capture: false, passive: false } );
         canvas.addEventListener( "keyup", self._onKeyUp, { passive: true } );
+        window.addEventListener("hashchange", self._onHashChange, { passive: false } );
     }
 
     /**
@@ -508,6 +547,8 @@ class StandardUIViewer extends mapray.RenderCallback
         canvas.removeEventListener( "keydown", self._onKeyDown, { capture: false, passive: false } );
         // @ts-ignore
         canvas.removeEventListener( "keyup", self._onKeyUp, { passive: true } );
+        // @ts-ignore
+        window.removeEventListener( "hashchange", self._onHashChange, { passive: false } );
     }
 
 
@@ -619,6 +660,9 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     private _updateURLHash()
     {
+      if ( this._selfHashChangeFlag ) {
+          return;
+      }
       const viewer = this._viewer;
       if ( ! viewer ) return;
 
@@ -681,6 +725,7 @@ class StandardUIViewer extends mapray.RenderCallback
                   this._last_camera_parameter.pitch = this._camera_parameter.pitch;
                   this._last_camera_parameter.yaw = this._camera_parameter.yaw;
 
+                  this._selfHashChangeFlag = true;
                   const new_url = window.location.href.replace(window.location.hash, new_hash);
                   window.location.replace(new_url);
               }
