@@ -18,7 +18,7 @@ Please check the [ReadME](./animation/README.md) in the future.
 There are examples of how to use the camera. In 3D computer graphics, the operation of the camera is a bit complicated. In maprayJS, you can use the core library to program highly flexible camera operations, or the ui library to let the engine handle complex camera operations.
 
 ### [Input](./input)
-An example using the ability to access data interactively.
+There are examples using the ability to access data interactively.
 
 ### [Layer](./layer)
 There are an examples of superimposing map data on the base map using the layer function. This is an example of the layer function based mainly on images.
