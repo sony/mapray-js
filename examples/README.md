@@ -10,11 +10,11 @@ const accessToken = "<your access token here>";
 
 ## Examples Catalog
 
-### [animation](./animation)
+### [Animation](./animation)
 There are various animation examples. maprayJS has a powerful animation engine. You can take advantage of the pre-built core libraries or customize them yourself.
 Please check the [ReadME](./animation/README.md) in the future.
 
-### [camera](./camera)
+### [Camera](./camera)
 There are examples of how to use the camera. In 3D computer graphics, the operation of the camera is a bit complicated. In maprayJS, you can use the core library to program highly flexible camera operations, or the ui library to let the engine handle complex camera operations.
 
 ### [Input](./input)
