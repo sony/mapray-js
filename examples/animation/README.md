@@ -1,6 +1,6 @@
 # animation-samples
 
-## [liner](./liner)
+## [linear](./linear)
 An animation using KFLinerCurve to change pin size and color.
 On the KFLinearCurve, bind size and bg_color to animate the size and color of the PinEntity linearly.
 
