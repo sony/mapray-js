@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Mapray B3DTiles Basic Sample</title>
+    <noscript>
+        <div style="
+            padding: 0.5em 1em;
+            margin: 2em 0;
+            color: black;
+            background: #fcefb7;
+            border: solid 2px #f8d450;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.22);
+        ">
+            <p style="
+                margin: 0;
+                padding: 0;">JavaScriptが無効になっています。MaprayのWebサイトを正しく表示するためにはJavaScriptを有効にして下さい。</p>
+        </div>
+    </noscript>
+    <style>
+        html, body {
+            height:  100%;
+            margin:  0;
+            padding: 0;
+        }
+        div#contents {
+            display:        flex;
+            flex-direction: column;
+            flex-wrap:      nowrap;
+            height:         100%;
+        }
+        div#mapray-container {
+            height:    0;
+            flex-grow: 1;
+            position: relative;
+        }
+
+        table {
+            border-collapse: collapse;
+        }
+        td, th {
+            padding: 0px 5px;
+        }
+    </style>
+</head>
+<body onload="window.startApp('mapray-container');">
+<div id="contents">
+    <div id="mapray-container" />
+</div>
+    </body>
+    <script type="text/javascript" src="./dist/bundle.js"></script>
+</html>
