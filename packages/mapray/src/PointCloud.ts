@@ -784,6 +784,22 @@ export class Box {
     }
 
     /**
+     * 読み込み済みの `Box` を引数として、指定されたコールバック関数を呼び出します。
+     * 読み込み済みとは、`Box.status == PointCloud.Status.LOADED` を満たす `Box` を指します。
+     * @param callback コールバック関数
+     */
+    forEach( callback: ( box: PointCloud.Box ) => void ) {
+        for (let i=0; i<this._children.length; i++) {
+            const child = this._children[i];
+            if ( child && child.status === Box.Status.LOADED ) {
+                child.forEach( callback );
+            }
+        }
+        callback( this );
+    }
+
+
+    /**
      * デバッグ表示用のメッシュを生成します。
      * @internal
      */
