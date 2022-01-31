@@ -209,8 +209,8 @@ class PointCloudBoxCollector {
         if ( this._statistics ) {
             this._statistics.total_boxes++;
             if ( box.status === PointCloud.Box.Status.LOADING ) this._statistics.loading_boxes++;
-            if ( box.getPointsLength() ) {
-                this._statistics.total_point_count += box.getPointsLength();
+            if ( box.vertex_length ) {
+                this._statistics.total_point_count += box.vertex_length;
             }
         }
 
@@ -317,7 +317,7 @@ class PointCloudBoxCollector {
                 Math.sqrt(nn[0] * nn[0] * ev2l * ev2l + nn[1] * nn[1] * ev1l * ev1l + nn[2] * nn[2] * ev3l * ev3l)
             );
             const area = Math.min(Math.max(area_calc, 0.05 * box.proj_area), box.proj_area);
-            points_per_pixel = Math.sqrt( box.getPointsLength() / area );
+            points_per_pixel = Math.sqrt( box.vertex_length / area );
         }
         else {
             points_per_pixel = 64 / box.size; // (128 / (2*box.size)) = 1セルの大きさ（点の間隔）

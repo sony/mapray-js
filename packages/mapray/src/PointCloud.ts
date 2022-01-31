@@ -851,7 +851,7 @@ export class Box {
             }
 
             if ( this._owner.getDebugRenderSection() ) {
-                if ( this.level > 20 && this.getPointsLength() > 5000 && this.eigenVectorLength[0] < this.size * 0.2 ) { // = 10% = (2 * s) / 10
+                if ( this.level > 20 && this.vertex_length > 5000 && this.eigenVectorLength[0] < this.size * 0.2 ) { // = 10% = (2 * s) / 10
                     this._putSectionShapePoints(vertices, indices, tindices); // Render Cross Section
                 }
             }
@@ -1025,6 +1025,15 @@ export class Box {
 
 
     /**
+     * Boxに含まれる点の数
+     */
+    get vertex_length(): number
+    {
+        return this._metaInfo?.indices[7] || 0;
+    }
+
+
+    /**
      * 子Boxの情報を取得
      * 
      * @param index 番号
@@ -1053,14 +1062,6 @@ export class Box {
         );
     }
 
-
-    /**
-     * Boxに含まれる点の数
-     */
-    getPointsLength(): number
-    {
-        return this._metaInfo ? this._metaInfo.indices[7] : 0;
-    }
 
     /**
      * 子Boxの番号を返します。
