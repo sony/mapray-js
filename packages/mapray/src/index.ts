@@ -32,6 +32,7 @@ export { default as FlatDemProvider } from "./FlatDemProvider";
 // Image Provider
 export { default as ImageProvider } from "./ImageProvider";
 export { default as StandardImageProvider } from "./StandardImageProvider";
+export { default as EmptyImageProvider } from "./EmptyImageProvider";
 
 // Entity
 export { default as Entity } from "./Entity";
