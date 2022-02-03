@@ -319,176 +319,119 @@ class StandardUIViewer extends mapray.RenderCallback
 
 
     /**
-     * URLによるカメラパラメータの初期化
-     *
-     * URL指定直後はDEMデータが存在しない、または精度が荒いため地表付近の位置を指定した時、カメラの高度補正によりカメラ高度が高く設定されることがあります 
-     *
-     * @param options オプション
+     * URL Hash 書き換え機能を有効にします。
+     * カメラ移動時に自動的に URL Hash を書き換えます。
+     * @param readUrlOnStart true の場合、関数呼び出し時に URL Hash で示される位置に移動します。
      */
-    initCameraParameterFromURL( options: StandardUIViewer.Option )
+    enableURLUpdate( readUrlOnStart: boolean ): void
     {
-        var camera_position = options.camera_position || StandardUIViewer.DEFAULT_CAMERA_POSITION;
-        var lookat_position = options.lookat_position || StandardUIViewer.DEFAULT_LOOKAT_POSITION;
-        var camera_parameter = options.camera_parameter || StandardUIViewer.DEFAULT_CAMERA_PARAMETER;
-        var url_yaw = 0;
-
-        if ( options.url_update ) {
-            this.setURLUpdate(options.url_update);
+        if ( readUrlOnStart ) {
+            this._restoreCameraParameterFromHash();
         }
-
-        const url_parameter = this._extractURLParameter();
-        if ( url_parameter ) {
-          camera_position = url_parameter.camera_position;
-          lookat_position = url_parameter.lookat_position;
-          url_yaw = url_parameter.yaw;
-        }
-
-        // カメラ位置の設定
-        this.setCameraPosition( camera_position );
-
-        //　注視点位置の設定
-        this.setLookAtPosition( lookat_position, url_yaw );
-
-        // カメラパラメータの設定
-        this.setCameraParameter( camera_parameter );
-
-        // カメラ姿勢の確定
-        this.updateCamera();
+        this._update_url_hash = true;
     }
+
+
+    /**
+     * URL Hash 書き換え機能を無効にします。
+     */
+    disableURLUpdate(): void
+    {
+        this._update_url_hash = false;
+    }
+
 
     /**
      * URLHash変更イベント
      */
-     private _onHashChange()
+     private _onHashChange(): void
      {
          if ( this._selfHashChangeFlag ) {
              this._selfHashChangeFlag = false;
              return;
          }
 
-         let camera_position = undefined;
-         let lookat_position = undefined;
-         let url_yaw = undefined;
+         this._restoreCameraParameterFromHash();
+     }
 
-         const url_parameter = this._extractURLParameter();
-         if ( url_parameter ) {
-           camera_position = url_parameter.camera_position;
-           lookat_position = url_parameter.lookat_position;
-           url_yaw = url_parameter.yaw;
+
+     /**
+      * URL Hashの値を取得し、カメラ位置を更新します。
+      */
+     private _restoreCameraParameterFromHash(): void
+     {
+         const param = this.getCameraParameterFromHash( window.location.hash );
+         if ( !param ) {
+             return;
          }
-
-         // カメラ位置の設定
-         if ( camera_position ) {
-             this.setCameraPosition( camera_position );
-         }
-
-         if ( lookat_position && url_yaw !== undefined ) {
-             //　注視点位置の設定
-             this.setLookAtPosition( lookat_position, url_yaw );
-         }
-
-         // カメラ姿勢の確定
+         this.setCameraPosition( param.camera_position );
+         this.setLookAtPosition( param.lookat_position, param.yaw );
          this.updateCamera();
      }
 
+
     /**
-     * URLのパラメータの抽出と、カメラパラメータの算出
+     * URL Hashからカメラパラメータを取り出す。
+     * @param urlHash hash string
+     * @returns パラメータが不足、不正な場合は undefined
      */
-    private _extractURLParameter()
+    getCameraParameterFromHash( urlHash: string ): CameraPositionOption | undefined
     {
-        let urlHash = window.location.hash;
-
-        if ( urlHash.length === 0 )
-        {
-            // URLに位置情報は無し または 不正
-            return;
+        if ( urlHash.length === 0 || urlHash[0] !== "#" ) {
+            return undefined;
         }
 
-        // 先頭の#を削除
-        urlHash = urlHash.slice(1);
-
-        const split_parameter = urlHash.split( '/' );
-        if ( split_parameter.length < 2 )
-        {
-            // パラメータ不足
-            return;
+        const params = urlHash.slice( 1 ).split( "/" );
+        if ( params.length < 2 ) { // 必須項目が不足
+            return undefined;
         }
 
-        // 1,2番目のパラメータは lat, lon
-        let value = parseFloat(split_parameter[0]);
-        if ( !( (typeof value === 'number') && (isFinite(value)) ) )
-        {
-            return;
+        // 1, 2番目のパラメータは latitude, longitude
+        const latitude  = parseFloat( params[0] );
+        const longitude = parseFloat( params[1] );
+        if ( isNaN( latitude ) || isNaN( longitude ) ) {
+            return undefined;
         }
-        var latitude = value;
-
-        value = parseFloat(split_parameter[1]);
-        if ( !( (typeof value === 'number') && (isFinite(value)) ) )
-        {
-            return;
-        }
-        var longitude = value;
-
-        // デフォルトとして地面高さを入れておく
-        // const target_altitude = this._viewer.getElevation(latitude, longitude);
-        const target_altitude = 8000; //今は高精度DEMが取得できないのでデフォルトは8000m
-        var altitude = target_altitude;
-
-        // default
-        var range = 1000;
-        var tilt = 0;
-        var heading = 0;
 
         // パラメータの解析
-        for ( let num = 2; split_parameter.length > num; num++) {
-            const value = split_parameter[num];
-            const converted_value = this._getURLParameterValue(value);
-            if(!isNaN(converted_value)) {
-                // 記号チェック
-                switch ( value. slice(-1) ) {
-                    case 'a':
-                      altitude = converted_value;
-                      break;
-                    case 't':
-                      tilt = converted_value;
-                      break;
-                    case 'r':
-                      range = converted_value;
-                      break;
-                    case 'h':
-                      heading = converted_value;
-                      break;
-                }
+        const paramMap: { [key: string]: number } = {};
+        for ( let i = 2; i < params.length; i++ ) {
+            const param = params[i];
+            const key = param.slice( -1 );
+            const value = parseFloat( param.slice( 0, -1 ) );
+            if ( isNaN( value ) ) {
+                continue;
             }
+            paramMap[key] = value;
         }
 
-        var tilt_theta = tilt * GeoMath.DEGREE;
+        // const altitude = this._viewer.getElevation( latitude, longitude );
+        const altitude = paramMap["a"] !== undefined ? paramMap["a"] : 8000.0;
+        const range    = paramMap["r"] !== undefined ? paramMap["r"] : 1000.0;
+        const tilt     = paramMap["t"] !== undefined ? paramMap["t"] : 0.0;
+        const heading  = paramMap["h"] !== undefined ? paramMap["h"] : 0.0;
 
-        var camera_z = range * Math.cos(tilt_theta);
-        var flat_length = range * Math.sin(tilt_theta);
+        const tilt_rad    = tilt * GeoMath.DEGREE;
+        const camera_z    = range * Math.cos( tilt_rad );
+        const flat_length = range * Math.sin( tilt_rad );
 
-        const camera_geoPoint = this._destination(longitude, latitude, flat_length, heading);
+        const camera_geoPoint = this._getOffsetPoint( longitude, latitude, flat_length, heading, new GeoPoint() );
 
-        let camera_position = { height:altitude + camera_z, longitude:camera_geoPoint.longitude, latitude:camera_geoPoint.latitude};
-        let lookat_position = { height:altitude, longitude:longitude, latitude:latitude};
-
-        return {camera_position: camera_position, lookat_position: lookat_position, yaw:heading};
+        return {
+            camera_position: {
+                height: altitude + camera_z,
+                longitude: camera_geoPoint.longitude,
+                latitude: camera_geoPoint.latitude,
+            },
+            lookat_position: {
+                height: altitude,
+                longitude: longitude,
+                latitude: latitude,
+            },
+            yaw: heading,
+        };
     }
 
-    /**
-     * URLに含まれるパラメータの数値化
-     *
-     * @param  str     URLから抽出されたパラメータ文字列
-     */
-    private _getURLParameterValue( str: string ): number
-    {
-        const value = parseFloat(str);
-        if ( (typeof value === 'number') && (isFinite(value)) )
-        {
-            return value;
-        }
-        return NaN;
-    }
 
     // private _addHash()
     // {
@@ -655,92 +598,88 @@ class StandardUIViewer extends mapray.RenderCallback
 
 
     /**
-     * URL Hashの更新設定
-     *
-     * @param flag  更新設定 trueでURL更新
-     */
-    setURLUpdate( flag: boolean )
-    {
-        this._update_url_hash = flag;
-    }
-
-    /**
      * URLHashの更新
      */
-    private _updateURLHash()
+    private _updateURLHash(): void
     {
-      if ( this._selfHashChangeFlag ) {
+      if ( this._selfHashChangeFlag || !this._update_url_hash || this._operation_mode !== StandardUIViewer.OperationMode.NONE ) {
           return;
       }
-      const viewer = this._viewer;
-      if ( ! viewer ) return;
+      const changed = (
+          ( this._last_camera_parameter.latitude !== this._camera_parameter.latitude ) ||
+          ( this._last_camera_parameter.longitude !== this._camera_parameter.longitude ) ||
+          ( this._last_camera_parameter.height !== this._camera_parameter.height ) ||
+          ( this._last_camera_parameter.pitch !== this._camera_parameter.pitch ) ||
+          ( this._last_camera_parameter.yaw !== this._camera_parameter.yaw )
+      );
+      if ( changed ) {
+          const new_hash = this.createCameraParameterHash();
+          if ( new_hash ) {
+              this._last_camera_parameter.latitude = this._camera_parameter.latitude;
+              this._last_camera_parameter.longitude = this._camera_parameter.longitude;
+              this._last_camera_parameter.height = this._camera_parameter.height;
+              this._last_camera_parameter.pitch = this._camera_parameter.pitch;
+              this._last_camera_parameter.yaw = this._camera_parameter.yaw;
 
-      if( this._update_url_hash && this._operation_mode === StandardUIViewer.OperationMode.NONE ) {
-          if(
-            ( this._last_camera_parameter.latitude !== this._camera_parameter.latitude ) ||
-            ( this._last_camera_parameter.longitude !== this._camera_parameter.longitude ) ||
-            ( this._last_camera_parameter.height !== this._camera_parameter.height ) ||
-            ( this._last_camera_parameter.pitch !== this._camera_parameter.pitch ) ||
-            ( this._last_camera_parameter.yaw !== this._camera_parameter.yaw )
-          ) {
-              // 注視点
-              // 画面中央を移動基準にする
-              var canvas = viewer.canvas_element;
-              var center_position = GeoMath.createVector2([canvas.width / 2, canvas.height / 2]);
-
-              // キャンバス座標のレイを取得
-              var ray = viewer.camera.getCanvasRay(center_position, new mapray.Ray());
-
-              // レイと地表の交点を求める
-              var cross_point = viewer.getRayIntersection(ray) as mapray.Vector3 | null;
-
-              if (cross_point != null) {
-                  var cross_geoPoint = new mapray.GeoPoint();
-                  cross_geoPoint.setFromGocs( cross_point );
-
-                  var cross_altitude = viewer.getElevation(cross_geoPoint.latitude, cross_geoPoint.longitude);
-                  var target_geoPoint = new mapray.GeoPoint(cross_geoPoint.longitude, cross_geoPoint.latitude, cross_altitude);
-                  var target_pos = target_geoPoint.getAsGocs(GeoMath.createVector3());
-
-                  var camera = viewer.camera;
-                  const len_x = camera.view_to_gocs[12] - target_pos[0];
-                  const len_y = camera.view_to_gocs[13] - target_pos[1];
-                  const len_z = camera.view_to_gocs[14] - target_pos[2];
-                  const length = Math.sqrt(len_x*len_x + len_y*len_y + len_z*len_z);
-
-                  // URLの生成
-                  let new_hash = '';
-                  let lat, lon, alt, tilt, range, heading;
-                  if(this._update_url_hash_full_digits) {
-                    lat = cross_geoPoint.latitude;
-                    lon = cross_geoPoint.longitude;
-                    alt = cross_altitude;
-                    tilt = this._camera_parameter.pitch;
-                    range = length;
-                    heading = this._camera_parameter.yaw;
-                  } else {
-                    lat = cross_geoPoint.latitude.toFixed(10);
-                    lon = cross_geoPoint.longitude.toFixed(10);
-                    alt = cross_altitude.toFixed(5);
-                    tilt = this._camera_parameter.pitch.toFixed(5);
-                    range = length.toFixed(5);
-                    heading = this._camera_parameter.yaw.toFixed(5);
-                  }
-                  new_hash = `#${lat}/${lon}/${alt}a/${tilt}t/${range}r/${heading}h`;
-
-                  this._last_camera_parameter.latitude = this._camera_parameter.latitude;
-                  this._last_camera_parameter.longitude = this._camera_parameter.longitude;
-                  this._last_camera_parameter.height = this._camera_parameter.height;
-                  this._last_camera_parameter.pitch = this._camera_parameter.pitch;
-                  this._last_camera_parameter.yaw = this._camera_parameter.yaw;
-
-                  this._selfHashChangeFlag = true;
-                  const new_url = window.location.href.replace(window.location.hash, new_hash);
-                  window.location.replace(new_url);
-              }
+              this._selfHashChangeFlag = true;
+              const new_url = window.location.href.replace( window.location.hash, new_hash );
+              window.location.replace( new_url );
           }
       }
     }
+
+
+    /**
+     * 現在のカメラ情報から URL Hash string を取得
+     * @returns Hash Stringが生成できないときは length 0の文字列
+     */
+    createCameraParameterHash(): string | undefined
+    {
+        const viewer = this.viewer;
+
+        // 注視点
+        // 画面中央を移動基準にする
+        const canvas = viewer.canvas_element;
+        const center_position = GeoMath.createVector2([canvas.width / 2, canvas.height / 2]);
+
+        // レイと地表の交点を求める
+        const ray = viewer.camera.getCanvasRay( center_position, new mapray.Ray() );
+        const cross_point = viewer.getRayIntersection( ray );
+        if ( !cross_point ) {
+            return undefined;
+        }
+        const cross_geoPoint = new mapray.GeoPoint();
+        cross_geoPoint.setFromGocs( cross_point );
+        cross_geoPoint.altitude = viewer.getElevation( cross_geoPoint.latitude, cross_geoPoint.longitude );
+        cross_geoPoint.getAsGocs( cross_point );
+
+        // カメラ位置と交点の距離を求める
+        const camera = viewer.camera;
+        const length = GeoMath.length3(GeoMath.createVector3([
+              camera.view_to_gocs[12] - cross_point[0],
+              camera.view_to_gocs[13] - cross_point[1],
+              camera.view_to_gocs[14] - cross_point[2],
+        ]));
+
+        // URLの生成
+        const lat = cross_geoPoint.latitude;
+        const lon = cross_geoPoint.longitude;
+        const alt = cross_geoPoint.altitude;
+        const tilt = this._camera_parameter.pitch;
+        const range = length;
+        const heading = this._camera_parameter.yaw;
+        return "#" + (
+          this._update_url_hash_full_digits ? (
+            lat + "/" + lon + "/" + alt + "a/" +
+            tilt + "t/" + range + "r/" + heading + "h"
+          ):
+          (
+            lat.toFixed(10) + "/" + lon.toFixed(10) + "/" + alt.toFixed(5) + "a/" +
+            tilt.toFixed(5) + "t/" + range.toFixed(5) + "r/" + heading.toFixed(5) + "h"
+          )
+        );
+    }
+
 
     /**
      * クリップ範囲の更新
@@ -1896,53 +1835,70 @@ class StandardUIViewer extends mapray.RenderCallback
      * @param   options 引数オブジェクト
      * @returns fly_param 算出した情報
      */
-    private _calculateKeyPoint(viewer: mapray.Viewer, options: StandardUIViewer.FlyParam ): StandardUIViewer.FlyParamKeyPoint {
-        const options_iscs_start = options.iscs_start;
-        let fly_iscs_start;
+    private _calculateKeyPoint( viewer: mapray.Viewer, options: StandardUIViewer.FlyParam ): StandardUIViewer.FlyParamKeyPoint {
+        /*
+        *
+        *    --- b -----------> c
+        *     ^  ^              |
+        *     |  |              v
+        *     f  |              e ---
+        *     |  |             /:  ^ 
+        *     v  |            / :  | end_altitude
+        *    --- a           /  :  v 
+        *                   d   : ---
+        *                   |<->|
+        *                     end_from_lookat
+        *
+        * a: fly_iscs_start = options.iscs_start
+        * b: start_top
+        * c: end_top
+        * d: options.iscs_end
+        * e: fly_iscs_end
+        * f: highest
+        */
 
-        // start from current position
-        if ( options_iscs_start ) {
-            fly_iscs_start = options_iscs_start;
+        const fly_iscs_start = new mapray.GeoPoint();
+        if ( options.iscs_start ) {
+            fly_iscs_start.assign( options.iscs_start );
         }
         else {
             const view_to_gocs = viewer.camera.view_to_gocs;
-            fly_iscs_start = new mapray.GeoPoint().setFromGocs(
-              mapray.GeoMath.createVector3([view_to_gocs[12], view_to_gocs[13], view_to_gocs[14]])
-            );
+            fly_iscs_start.setFromGocs( GeoMath.createVector3([
+                        view_to_gocs[12],
+                        view_to_gocs[13],
+                        view_to_gocs[14]
+            ]));
         }
 
-        const TOP_ALTITUDE = 1200000; // meter
-        const end_from_lookat = options.end_from_lookat || 20000;
-        const end_altitude = options.end_altitude || 20000;
+        const MAX_TOP_ALTITUDE = 1200000; // meter
+        const end_from_lookat = options.end_from_lookat !== undefined ? options.end_from_lookat : 20000;
+        const end_altitude = options.end_altitude !== undefined ? options.end_altitude : 20000;
         const target_clamp = options.target_clamp || true;
 
         // [アニメーションに利用する途中と最終の位置情報]
         // カメラの最終地点を計算
-        const to_camera = this._destination(options.iscs_end.longitude, options.iscs_end.latitude, end_from_lookat, 0);
-        const fly_iscs_end = new mapray.GeoPoint(to_camera.longitude, to_camera.latitude, end_altitude);
-        const getElevationFunc = viewer.getElevation.bind(this._viewer);
-        if (getElevationFunc) {
-            fly_iscs_end.altitude += getElevationFunc(fly_iscs_end.latitude, fly_iscs_end.longitude);
-        }
+        const fly_iscs_end = this._getOffsetPoint( options.iscs_end.longitude, options.iscs_end.latitude, end_from_lookat, 0, new GeoPoint() );
+        fly_iscs_end.altitude = viewer.getElevation( fly_iscs_end.latitude, fly_iscs_end.longitude ) + end_altitude;
 
         // カメラの注視点から最終アングル決定
-        let cam_target = options.iscs_end;
-        if (getElevationFunc && target_clamp) {
-            cam_target.altitude = getElevationFunc(cam_target.latitude, cam_target.longitude);
+        const cam_target = options.iscs_end;
+        if ( target_clamp ) {
+            cam_target.altitude = viewer.getElevation( cam_target.latitude, cam_target.longitude );
         }
-        const target_angle = this._getLookAtAngle(fly_iscs_end, cam_target);
+        const target_angle = this._getLookAtAngle( fly_iscs_end, cam_target );
 
         // 途中点
-        const from = new mapray.GeoPoint(fly_iscs_start.longitude, fly_iscs_start.latitude, 0);
-        const to = new mapray.GeoPoint(options.iscs_end.longitude, options.iscs_end.latitude, 0);
+        const from = new GeoPoint( fly_iscs_start.longitude, fly_iscs_start.latitude, 0 );
+        const to = new GeoPoint( options.iscs_end.longitude, options.iscs_end.latitude, 0 );
+        const highest = Math.min( from.getGeographicalDistance(to), MAX_TOP_ALTITUDE );
 
-        let higest = from.getGeographicalDistance(to);
-        if (higest > TOP_ALTITUDE) {
-            higest = TOP_ALTITUDE;
-        }
+        const start_top = new GeoPoint();
+        start_top.assign( fly_iscs_start );
+        start_top.altitude += highest;
 
-        const start_top = new mapray.GeoPoint(fly_iscs_start.longitude, fly_iscs_start.latitude, fly_iscs_end.altitude + higest);
-        const end_top = new mapray.GeoPoint(fly_iscs_end.longitude, fly_iscs_end.latitude, fly_iscs_end.altitude + higest);
+        const end_top = new GeoPoint();
+        end_top.assign( fly_iscs_end );
+        end_top.altitude += highest;
 
         this.setCameraParameter({near: 30, far:10000000});
 
@@ -2126,29 +2082,32 @@ class StandardUIViewer extends mapray.RenderCallback
         };
     }
 
+
     /**
      * ある地点から指定距離、指定方向に移動した位置を算出する
      *
      * @param longitude     経度
      * @param latitude      緯度
      * @param distance      距離(m)
-     * @param bearing       方角
+     * @param bearing       方角(deg)
+     * @param dst           計算結果が格納されるオブジェクト
      */
-    private _destination( longitude: number, latitude: number, distance: number, bearing: number ): mapray.GeoPoint
+    private _getOffsetPoint( longitude: number, latitude: number, distance: number, bearing: number, dst: mapray.GeoPoint ): mapray.GeoPoint
     {
-        const heading_theta = -(180-bearing) * GeoMath.DEGREE;
-        const pos_x = - distance * Math.sin(heading_theta);
-        const pos_y = distance * Math.cos(heading_theta);
-        const target_point = new mapray.GeoPoint(longitude, latitude, 0);
-        const target_matrix = target_point.getMlocsToGocsMatrix( GeoMath.createMatrix() );
-        const target_x = pos_x*target_matrix[0] + pos_y*target_matrix[4] + target_matrix[12];
-        const target_y = pos_x*target_matrix[1] + pos_y*target_matrix[5] + target_matrix[13];
-        const target_z = pos_x*target_matrix[2] + pos_y*target_matrix[6] + target_matrix[14];
+        const heading_theta = -(180 - bearing) * GeoMath.DEGREE;
+        const vec_x = -distance * Math.sin( heading_theta );
+        const vec_y =  distance * Math.cos( heading_theta );
 
-        let location_geo = new mapray.GeoPoint();
-        location_geo.setFromGocs( [target_x, target_y, target_z] );
+        dst.setFromArray([longitude, latitude, 0]);
+        const mat = dst.getMlocsToGocsMatrix( GeoMath.createMatrix() );
 
-        return location_geo;
+        dst.setFromGocs([
+                vec_x * mat[0] + vec_y * mat[4] + mat[12],
+                vec_x * mat[1] + vec_y * mat[5] + mat[13],
+                vec_x * mat[2] + vec_y * mat[6] + mat[14]
+        ]);
+
+        return dst;
     }
 
     /**
@@ -2167,6 +2126,14 @@ class StandardUIViewer extends mapray.RenderCallback
         this._controllable = flag;
     }
 
+}
+
+
+
+interface CameraPositionOption {
+    camera_position: mapray.GeoPointData;
+    lookat_position: mapray.GeoPointData;
+    yaw: number;
 }
 
 
