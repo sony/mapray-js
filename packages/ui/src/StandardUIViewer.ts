@@ -1,7 +1,7 @@
 import mapray from "@mapray/mapray-js";
 
-var GeoMath = mapray.GeoMath;
-var GeoPoint = mapray.GeoPoint;
+const GeoMath = mapray.GeoMath;
+const GeoPoint = mapray.GeoPoint;
 
 
 
@@ -52,13 +52,13 @@ class StandardUIViewer extends mapray.RenderCallback
     private _operation_mode: StandardUIViewer.OperationMode;
 
     /** マウスダウンした位置 */
-    private _mouse_down_position: [ x: number, y: number ];
+    private _mouse_down_position: [x: number, y: number];
 
     /** 直前のマウス位置 */
-    private _pre_mouse_position: [ x: number, y: number ];
+    private _pre_mouse_position: [x: number, y: number];
 
     /** 回転中心 */
-    private _rotate_center: mapray.Vector3 | null
+    private _rotate_center?: mapray.Vector3;
 
     /** 平行移動の移動量（マウスの移動量） */
     private _translate_drag: mapray.Vector2;
@@ -95,7 +95,7 @@ class StandardUIViewer extends mapray.RenderCallback
     /** URLに含む値の桁数(true:全桁, false:桁数制限) */
     private _update_url_hash_full_digits: boolean;
 
-    private _viewerCameraMode: StandardUIViewer.CameraMode;
+    private _viewer_camera_mode: StandardUIViewer.CameraMode;
 
     private _animation: mapray.animation.EasyBindingBlock;
 
@@ -115,13 +115,13 @@ class StandardUIViewer extends mapray.RenderCallback
 
     private _altitude_range: { min: number, max: number };
 
-    private _selfHashChangeFlag: boolean;
+    private _self_hash_change_flag: boolean;
 
     /**
      * コンストラクタ
-     * @param container                               ビューワ作成先のコンテナ（IDまたは要素）
-     * @param access_token                            アクセストークン
-     * @param {object}                      options                                 生成オプション
+     * @param container         ビューワ作成先のコンテナ（IDまたは要素）
+     * @param access_token      アクセストークン
+     * @param options           生成オプション
      */
     constructor( container: string | HTMLElement, access_token: string, options: StandardUIViewer.Option = {} )
     {
@@ -145,15 +145,15 @@ class StandardUIViewer extends mapray.RenderCallback
 
         this._operation_mode = StandardUIViewer.OperationMode.NONE;
 
-        this._mouse_down_position = [ 0, 0 ];
-        this._pre_mouse_position = [ 0, 0 ];
+        this._mouse_down_position = [0, 0];
+        this._pre_mouse_position  = [0, 0];
         this._rotate_center = GeoMath.createVector3();
 
-        this._translate_drag = GeoMath.createVector2f();
-        this._translate_eye_drag = GeoMath.createVector2f();
-        this._rotate_drag = GeoMath.createVector2f();
-        this._free_rotate_drag = GeoMath.createVector2f();
-        this._height_drag = GeoMath.createVector2f();
+        this._translate_drag        = GeoMath.createVector2f();
+        this._translate_eye_drag    = GeoMath.createVector2f();
+        this._rotate_drag           = GeoMath.createVector2f();
+        this._free_rotate_drag      = GeoMath.createVector2f();
+        this._height_drag           = GeoMath.createVector2f();
 
         this._zoom_wheel = 0;
         this._fovy_key = 0;
@@ -169,18 +169,18 @@ class StandardUIViewer extends mapray.RenderCallback
         this._last_camera_parameter = {
           latitude: -1,         // 緯度
           longitude: -1,        // 経度
-          height: 0,           // 高度
-          pitch: 0,            // 上下（X軸）回転
-          yaw: 0,              // 左右（Z軸）回転
-          fov: 0,              // 画角
-          near: 0,             // 近接平面距離
-          far: 0,              // 遠方平面距離
+          height: 0,            // 高度
+          pitch: 0,             // 上下（X軸）回転
+          yaw: 0,               // 左右（Z軸）回転
+          fov: 0,               // 画角
+          near: 0,              // 近接平面距離
+          far: 0,               // 遠方平面距離
           roll: 0,
           speed_factor: 2000,
         }
 
         // for FlyCamera
-        this._viewerCameraMode = StandardUIViewer.CameraMode.CAMERA_FREE;
+        this._viewer_camera_mode = StandardUIViewer.CameraMode.CAMERA_FREE;
         this._animation = new mapray.animation.EasyBindingBlock();
         this._updater = new mapray.animation.Updater();
         this._flycamera_total_time = 0;
@@ -196,11 +196,12 @@ class StandardUIViewer extends mapray.RenderCallback
 
         this._controllable = true;
 
-        this._selfHashChangeFlag = false;
+        this._self_hash_change_flag = false;
 
         // イベントリスナーの追加
         this._addEventListener();
     }
+
 
     /**
      * ビューワの作成
@@ -208,7 +209,7 @@ class StandardUIViewer extends mapray.RenderCallback
      * @param access_token                            アクセストークン
      * @param options                                 生成オプション
      */
-    protected createViewer( container: string | HTMLElement, access_token: string, options: StandardUIViewer.Option = {} )
+    protected createViewer( container: string | HTMLElement, access_token: string, options: StandardUIViewer.Option = {} ): mapray.Viewer
     {
         if ( this._viewer ) {
             this.destroy();
@@ -222,8 +223,8 @@ class StandardUIViewer extends mapray.RenderCallback
                 image_provider: this.createImageProvider( options ),
                 layers: options.layers,
                 render_callback: this,
-                ground_visibility: ( options && (options.ground_visibility !== undefined)) ? options.ground_visibility : true,
-                entity_visibility: ( options && (options.entity_visibility !== undefined)) ? options.entity_visibility : true,
+                ground_visibility: ( options && options.ground_visibility ) ? options.ground_visibility : true,
+                entity_visibility: ( options && options.entity_visibility ) ? options.entity_visibility : true,
                 render_mode: ( options && options.render_mode ) || mapray.Viewer.RenderMode.SURFACE,
                 debug_stats: ( options && options.debug_stats ),
                 attribution_controller: ( options && options.attribution_controller ),
@@ -236,22 +237,22 @@ class StandardUIViewer extends mapray.RenderCallback
         );
 
         // 右クリックメニューの無効化
-        var element = viewer.canvas_element;
+        const element = viewer.canvas_element;
         element.setAttribute( "oncontextmenu", "return false;" );
 
         // For getting KeybordEvent
-        element.setAttribute('tabindex', '0');
+        element.setAttribute( 'tabindex', '0' );
 
         return this._viewer;
     }
 
+
     /**
      * 破棄関数
      */
-    destroy()
+    destroy(): void
     {
-        if ( !this._viewer )
-        {
+        if ( !this._viewer ) {
             return;
         }
 
@@ -260,6 +261,7 @@ class StandardUIViewer extends mapray.RenderCallback
         this._viewer.destroy();
     }
 
+
     /**
      * ビューワ
      */
@@ -267,6 +269,7 @@ class StandardUIViewer extends mapray.RenderCallback
     {
         return this._viewer as mapray.Viewer;
     }
+
 
     /**
      * DEMプロバイダの生成
@@ -281,6 +284,7 @@ class StandardUIViewer extends mapray.RenderCallback
         return options.dem_provider || new mapray.CloudDemProvider( access_token );
     }
 
+
     /**
      * 画像プロバイダの生成
      *
@@ -293,16 +297,17 @@ class StandardUIViewer extends mapray.RenderCallback
         return options.image_provider || new mapray.StandardImageProvider( "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", ".jpg", 256, 2, 18 );
     }
 
+
     /**
      * カメラパラメータの初期化
      *
      * @param options オプション
      */
-    private _initCameraParameter( options: StandardUIViewer.Option )
+    private _initCameraParameter( options: StandardUIViewer.Option ): void
     {
-        var camera_position = options.camera_position || StandardUIViewer.DEFAULT_CAMERA_POSITION;
-        var lookat_position = options.lookat_position || StandardUIViewer.DEFAULT_LOOKAT_POSITION;
-        var camera_parameter = options.camera_parameter || StandardUIViewer.DEFAULT_CAMERA_PARAMETER;
+        const camera_position = options.camera_position || StandardUIViewer.DEFAULT_CAMERA_POSITION;
+        const lookat_position = options.lookat_position || StandardUIViewer.DEFAULT_LOOKAT_POSITION;
+        const camera_parameter = options.camera_parameter || StandardUIViewer.DEFAULT_CAMERA_PARAMETER;
 
         // カメラ位置の設定
         this.setCameraPosition( camera_position );
@@ -342,12 +347,12 @@ class StandardUIViewer extends mapray.RenderCallback
 
 
     /**
-     * URLHash変更イベント
+     * URLHash変更イベント処理
      */
      private _onHashChange(): void
      {
-         if ( this._selfHashChangeFlag ) {
-             this._selfHashChangeFlag = false;
+         if ( this._self_hash_change_flag ) {
+             this._self_hash_change_flag = false;
              return;
          }
 
@@ -375,13 +380,17 @@ class StandardUIViewer extends mapray.RenderCallback
      * @param urlHash hash string
      * @returns パラメータが不足、不正な場合は undefined
      */
-    getCameraParameterFromHash( urlHash: string ): CameraPositionOption | undefined
+    getCameraParameterFromHash( urlHash: string ): StandardUIViewer.HashCameraParameter | undefined
     {
-        if ( urlHash.length === 0 || urlHash[0] !== "#" ) {
+        if ( urlHash.length < 3 ) {
             return undefined;
         }
 
-        const params = urlHash.slice( 1 ).split( "/" );
+        // 先頭の#を削除
+        if ( urlHash[0] === "#" ) {
+            urlHash = urlHash.slice( 1 );
+        }
+        const params = urlHash.split( "/" );
         if ( params.length < 2 ) { // 必須項目が不足
             return undefined;
         }
@@ -433,89 +442,67 @@ class StandardUIViewer extends mapray.RenderCallback
     }
 
 
-    // private _addHash()
-    // {
-    //     var self = this;
-    //     this._onHashChange = this._onHashChange.bind(this);
-    //     window.addEventListener("hashchange", self._onHashChange, { passive: false } );
-
-    // }
-
     /**
      * イベントリスナーの追加
      */
-    private _addEventListener()
+    private _addEventListener(): void
     {
-        // @ts-ignore;
-        const viewer: Viewer = this._viewer;
+        const canvas = this.viewer.canvas_element;
 
-        var canvas = viewer._canvas_element;
-        var self = this;
+        this._onBlur = this._onBlur.bind( this );
+        this._onMouseDown = this._onMouseDown.bind( this );
+        this._onMouseMove = this._onMouseMove.bind( this );
+        this._onMouseUp = this._onMouseUp.bind( this );
+        this._onMouseWheel = this._onMouseWheel.bind( this );
+        this._onKeyDown = this._onKeyDown.bind( this );
+        this._onKeyUp = this._onKeyUp.bind( this );
+        this._onHashChange = this._onHashChange.bind( this );
 
-        this._onBlur = this._onBlur.bind(this);
-        this._onMouseDown = this._onMouseDown.bind(this);
-        this._onMouseMove = this._onMouseMove.bind(this);
-        this._onMouseUp = this._onMouseUp.bind(this);
-        this._onMouseWheel = this._onMouseWheel.bind(this);
-        this._onKeyDown = this._onKeyDown.bind(this);
-        this._onKeyUp = this._onKeyUp.bind(this);
-        this._onHashChange = this._onHashChange.bind(this);
-
-        window.addEventListener( "blur", self._onBlur, { passive: false } );
-        canvas.addEventListener( "mousedown", self._onMouseDown, { passive: true } );
-        canvas.addEventListener( "mousemove", self._onMouseMove, { passive: true } );
-        document.addEventListener( "mousemove", self._onMouseMove, { capture: true } );
-        canvas.addEventListener( "mouseup", self._onMouseUp, { passive: true } );
-        document.addEventListener( "mouseup", self._onMouseUp, { capture: false } );
-        canvas.addEventListener( "wheel", self._onMouseWheel, { passive : false } );
-        canvas.addEventListener( "keydown", self._onKeyDown, { capture: false, passive: false } );
-        canvas.addEventListener( "keyup", self._onKeyUp, { passive: true } );
-        window.addEventListener("hashchange", self._onHashChange, { passive: false } );
+        window.addEventListener( "blur", this._onBlur, { passive: false } );
+        canvas.addEventListener( "mousedown", this._onMouseDown, { passive: true } );
+        canvas.addEventListener( "mousemove", this._onMouseMove, { passive: true } );
+        document.addEventListener( "mousemove", this._onMouseMove, { capture: true } );
+        canvas.addEventListener( "mouseup", this._onMouseUp, { passive: true } );
+        document.addEventListener( "mouseup", this._onMouseUp, { capture: false } );
+        canvas.addEventListener( "wheel", this._onMouseWheel, { passive : false } );
+        canvas.addEventListener( "keydown", this._onKeyDown, { capture: false, passive: false } );
+        canvas.addEventListener( "keyup", this._onKeyUp, { passive: true } );
+        window.addEventListener( "hashchange", this._onHashChange, { passive: false } );
     }
+
 
     /**
      * イベントリスナーの削除
      */
-    private _removeEventListener()
+    private _removeEventListener(): void
     {
-        // @ts-ignore
-        var canvas = this._viewer._canvas_element;
-        var self = this;
-        // @ts-ignore
-        window.removeEventListener( "blur", self._onBlur, { passive: false } );
-        // @ts-ignore
-        canvas.removeEventListener( "mousedown", self._onMouseDown, { passive: true } );
-        // @ts-ignore
-        canvas.removeEventListener( "mousemove", self._onMouseMove, { passive: true } );
-        // @ts-ignore
-        document.removeEventListener( "mousemove", self._onMouseMove, { capture: true } );
-        // @ts-ignore
-        canvas.removeEventListener( "mouseup", self._onMouseUp, { passive: true } );
-        // @ts-ignore
-        document.removeEventListener( "mouseup", self._onMouseUp, { capture: false } );
-        // @ts-ignore
-        canvas.removeEventListener( "wheel", self._onMouseWheel, { passive : false } );
-        // @ts-ignore
-        canvas.removeEventListener( "keydown", self._onKeyDown, { capture: false, passive: false } );
-        // @ts-ignore
-        canvas.removeEventListener( "keyup", self._onKeyUp, { passive: true } );
-        // @ts-ignore
-        window.removeEventListener( "hashchange", self._onHashChange, { passive: false } );
+        const canvas = this.viewer.canvas_element;
+        window.removeEventListener( "blur", this._onBlur, { passive: false } as EventListenerOptions );
+        canvas.removeEventListener( "mousedown", this._onMouseDown, { passive: true } as EventListenerOptions );
+        canvas.removeEventListener( "mousemove", this._onMouseMove, { passive: true } as EventListenerOptions );
+        document.removeEventListener( "mousemove", this._onMouseMove, { capture: true } as EventListenerOptions );
+        canvas.removeEventListener( "mouseup", this._onMouseUp, { passive: true } as EventListenerOptions );
+        document.removeEventListener( "mouseup", this._onMouseUp, { capture: false } as EventListenerOptions );
+        canvas.removeEventListener( "wheel", this._onMouseWheel, { passive : false } as EventListenerOptions );
+        canvas.removeEventListener( "keydown", this._onKeyDown, { capture: false, passive: false } as EventListenerOptions );
+        canvas.removeEventListener( "keyup", this._onKeyUp, { passive: true } as EventListenerOptions );
+        window.removeEventListener( "hashchange", this._onHashChange, { passive: false } as EventListenerOptions );
     }
 
 
     /**
      * レンダリングループ開始の処理
      */
-    override onStart()
+    override onStart(): void
     {
 
     }
 
+
     /**
      * レンダリングループ終了の処理
      */
-    override onStop()
+    override onStop(): void
     {
 
     }
@@ -534,56 +521,39 @@ class StandardUIViewer extends mapray.RenderCallback
      *
      * @param delta_time  全フレームからの経過時間（秒）
      */
-    override onUpdateFrame( delta_time: number )
+    override onUpdateFrame( delta_time: number ): void
     {
-        if (this._viewerCameraMode === StandardUIViewer.CameraMode.CAMERA_FLY) {
+        if ( this._viewer_camera_mode === StandardUIViewer.CameraMode.CAMERA_FLY ) {
             this.updateFlyCamera( delta_time );
-
-        } else {
+        }
+        else {
             if ( this._controllable ) {
-                // 平行移動
-                this.updateTranslation( delta_time );
-
-                // 回転
-                this.updateRotation( delta_time );
-
-                // 自由回転
-                this._freeRotation( delta_time )
-
-                // 高さ変更
-                this.updateTranslationOfHeight();
-
-                //　視線方向移動
-                this.updateTranslationOfEyeDirection();
+                this.updateTranslation( delta_time );   // 平行移動
+                this.updateRotation( delta_time );      // 回転
+                this._freeRotation( delta_time );       // 自由回転
+                this.updateTranslationOfHeight();       // 高さ変更
+                this.updateTranslationOfEyeDirection(); // 視線方向移動
             }
-
-            // 画角変更
-            this._changeFovy();
-
-            // 高度補正
-            this._correctAltitude();
-
-            // クリップ範囲の更新
-            this.updateClipPlane();
-
-            // カメラ姿勢の確定
-            this.updateCamera();
+            this._changeFovy();      // 画角変更
+            this._correctAltitude(); // 高度補正
+            this.updateClipPlane();  // クリップ範囲の更新
+            this.updateCamera();     // カメラ姿勢の確定
         }
     }
 
     /**
      * カメラの位置・向きの更新
      */
-    protected updateCamera()
+    protected updateCamera(): void
     {
-        var camera = this.viewer.camera;
+        const camera = this.viewer.camera;
 
-        var camera_geoPoint = new GeoPoint( this._camera_parameter.longitude, this._camera_parameter. latitude, this._camera_parameter.height );
-        var camera_matrix = camera_geoPoint.getMlocsToGocsMatrix( GeoMath.createMatrix() );
+        const camera_geoPoint = new GeoPoint( this._camera_parameter.longitude, this._camera_parameter. latitude, this._camera_parameter.height );
+        const camera_matrix = camera_geoPoint.getMlocsToGocsMatrix( GeoMath.createMatrix() );
 
-        var pitch_matrix = GeoMath.rotation_matrix( [1, 0, 0], this._camera_parameter.pitch, GeoMath.createMatrix() );
-        var yaw_matrix = GeoMath.rotation_matrix( [0, 0, 1], this._camera_parameter.yaw, GeoMath.createMatrix() );
-        var eye_matrix = GeoMath.mul_AA( yaw_matrix, pitch_matrix, GeoMath.createMatrix() );
+        const pitch_matrix = GeoMath.rotation_matrix( [1, 0, 0], this._camera_parameter.pitch, GeoMath.createMatrix() );
+        const yaw_matrix = GeoMath.rotation_matrix( [0, 0, 1], this._camera_parameter.yaw, GeoMath.createMatrix() );
+        const eye_matrix = GeoMath.mul_AA( yaw_matrix, pitch_matrix, GeoMath.createMatrix() );
 
         camera.view_to_gocs = GeoMath.mul_AA( camera_matrix, eye_matrix, GeoMath.createMatrix() );
 
@@ -598,11 +568,11 @@ class StandardUIViewer extends mapray.RenderCallback
 
 
     /**
-     * URLHashの更新
+     * アドレスバーの URL Hash の更新
      */
     private _updateURLHash(): void
     {
-      if ( this._selfHashChangeFlag || !this._update_url_hash || this._operation_mode !== StandardUIViewer.OperationMode.NONE ) {
+      if ( this._self_hash_change_flag || !this._update_url_hash || this._operation_mode !== StandardUIViewer.OperationMode.NONE ) {
           return;
       }
       const changed = (
@@ -621,7 +591,7 @@ class StandardUIViewer extends mapray.RenderCallback
               this._last_camera_parameter.pitch = this._camera_parameter.pitch;
               this._last_camera_parameter.yaw = this._camera_parameter.yaw;
 
-              this._selfHashChangeFlag = true;
+              this._self_hash_change_flag = true;
               const new_url = window.location.href.replace( window.location.hash, new_hash );
               window.location.replace( new_url );
           }
@@ -631,7 +601,7 @@ class StandardUIViewer extends mapray.RenderCallback
 
     /**
      * 現在のカメラ情報から URL Hash string を取得
-     * @returns Hash Stringが生成できないときは length 0の文字列
+     * @returns Hash Stringが生成できないときは undefined
      */
     createCameraParameterHash(): string | undefined
     {
@@ -640,7 +610,7 @@ class StandardUIViewer extends mapray.RenderCallback
         // 注視点
         // 画面中央を移動基準にする
         const canvas = viewer.canvas_element;
-        const center_position = GeoMath.createVector2([canvas.width / 2, canvas.height / 2]);
+        const center_position = GeoMath.createVector2( [canvas.width / 2, canvas.height / 2] );
 
         // レイと地表の交点を求める
         const ray = viewer.camera.getCanvasRay( center_position, new mapray.Ray() );
@@ -681,124 +651,115 @@ class StandardUIViewer extends mapray.RenderCallback
     }
 
 
+
     /**
      * クリップ範囲の更新
      */
-    protected updateClipPlane()
+    protected updateClipPlane(): void
     {
-        const viewer = this._viewer;
-        if ( !viewer ) return;
-
         // 地表面の標高
-        var elevation = viewer.getElevation( this._camera_parameter.latitude, this._camera_parameter.longitude );
-        var altitude = GeoMath.clamp( this._camera_parameter.height - elevation, this._altitude_range.min, this._altitude_range.max );
+        const elevation = this.viewer.getElevation( this._camera_parameter.latitude, this._camera_parameter.longitude );
+        const altitude = GeoMath.clamp( this._camera_parameter.height - elevation, this._altitude_range.min, this._altitude_range.max );
 
         this._camera_parameter.near = Math.max( altitude * StandardUIViewer.NEAR_FACTOR, StandardUIViewer.MINIMUM_NEAR );
         this._camera_parameter.far = Math.max( this._camera_parameter.near * StandardUIViewer.FAR_FACTOR, StandardUIViewer.MINIMUM_FAR );
     }
 
+
     /**
      * 高度の補正（地表面以下にならないようにする）
      */
-    private _correctAltitude()
+    private _correctAltitude(): void
     {
-        const viewer = this._viewer;
-        if ( !viewer ) return;
-
-        var elevation = viewer.getElevation( this._camera_parameter.latitude, this._camera_parameter.longitude );
+        const elevation = this.viewer.getElevation( this._camera_parameter.latitude, this._camera_parameter.longitude );
         this._camera_parameter.height = GeoMath.clamp( this._camera_parameter.height, elevation + this._altitude_range.min, elevation + this._altitude_range.max );
     }
 
+
     /**
      * @internal
-     * カメラ高度の移動可能範囲を指定します。
+     * カメラ高度の移動可能範囲を指定します
+     * 
      * @param min 下限
      * @param max 上限（省略可）
      */
-    setCameraAltitudeRange( min: number, max?: number ): void
+    setCameraAltitudeRange( min: number, max: number = Number.MAX_VALUE ): void
     {
-        if ( max !== undefined ) {
-            if ( min > max ) throw new Error("Illegal Argument");
-        }
+        if ( min > max ) throw new Error( "Illegal Argument" );
         this._altitude_range.min = min;
-        this._altitude_range.max = max || Number.MAX_VALUE;
+        this._altitude_range.max = max;
         this._correctAltitude();
     }
 
+
     /**
-     * 操作系のイベントをリセットする(公開関数)
+     * 操作系のイベントをリセットする
      */
-    resetOpEvent()
+    resetOpEvent(): void
     {
         this._resetEventParameter();
     }
 
-    /**
-     * フォーカスが外れた時のイベント(公開関数)
-     *
-     * @param event  イベントデータ
-     */
-    onBlur( event: Event )
-    {
-        this._resetEventParameter();
-    }
 
     /**
      * フォーカスが外れた時のイベント
      *
      * @param event  イベントデータ
      */
-    private _onBlur( event: Event )
+    onBlur( event: Event ): void
+    {
+        this._resetEventParameter();
+    }
+
+
+    /**
+     * フォーカスが外れた時のイベント
+     *
+     * @param event  イベントデータ
+     */
+    private _onBlur( event: Event ): void
     {
         this.onBlur( event );
     }
 
+
     /**
-     * マウスを押した時のイベント(公開関数）
+     * マウスを押した時のイベント
      *
      * @param point 要素上の座標
      * @param event  マウスイベントデータ
      */
-    onMouseDown( point: [x: number, y: number], event: MouseEvent )
+    onMouseDown( point: [x: number, y: number], event: MouseEvent ): void
     {
-        const viewer = this._viewer;
-        if ( !viewer ) return;
+        const viewer = this.viewer;
 
         this._mouse_down_position = point;
         this._pre_mouse_position = point;
 
         // 左ボタン
-        if ( event.button === 0 )
-        {
-            if ( event.shiftKey )
-            {
+        if ( event.button === 0 ) {
+            if ( event.shiftKey ) {
                 this._operation_mode = StandardUIViewer.OperationMode.ROTATE;
 
-                var camera = viewer.camera;
-                var ray = camera.getCanvasRay( this._mouse_down_position );
-                this._rotate_center = viewer.getRayIntersection( ray ) as mapray.Vector3 | null;
+                const ray = viewer.camera.getCanvasRay( this._mouse_down_position );
+                this._rotate_center = viewer.getRayIntersection( ray );
             }
-            else if ( event.ctrlKey )
-            {
+            else if ( event.ctrlKey ) {
                 this._operation_mode = StandardUIViewer.OperationMode.FREE_ROTATE;
             }
-            else
-            {
+            else {
                 this._operation_mode = StandardUIViewer.OperationMode.TRANSLATE;
             }
         }
         // 中ボタン
-        else if ( event.button === 1 )
-        {
+        else if ( event.button === 1 ) {
             this._operation_mode = StandardUIViewer.OperationMode.ROTATE;
 
-            var camera = viewer.camera;
-            var ray = camera.getCanvasRay( this._mouse_down_position );
-            this._rotate_center = viewer.getRayIntersection( ray ) as mapray.Vector3 | null;
+            const ray = viewer.camera.getCanvasRay( this._mouse_down_position );
+            this._rotate_center = viewer.getRayIntersection( ray );
         }
         // 右ボタン
-        else if ( event.button === 2 )
-        {
+        else if ( event.button === 2 ) {
             this._operation_mode = (
                 event.shiftKey ? StandardUIViewer.OperationMode.HEIGHT_TRANSLATE:
                     StandardUIViewer.OperationMode.EYE_TRANSLATE
@@ -806,56 +767,50 @@ class StandardUIViewer extends mapray.RenderCallback
         }
     }
 
+
     /**
      * マウスを押した時のイベント
      *
      * @param event  マウスイベントデータ
      */
-    private _onMouseDown( event: MouseEvent )
+    private _onMouseDown( event: MouseEvent ): void
     {
-        const viewer = this._viewer;
-        if ( !viewer ) return;
-
-        const point = this._mousePos( viewer.canvas_element, event );
+        const point = this._mousePos( this.viewer.canvas_element, event );
         this.onMouseDown( point, event );
     }
 
+
     /**
-     * マウスを動かした時のイベント（公開間数）
+     * マウスを動かした時のイベント
      *
      * @param point 要素上の座標
      * @param event  マウスイベントデータ
      */
-    onMouseMove( point: [ x: number, y: number ], event: MouseEvent )
+    onMouseMove( point: [x: number, y: number], event: MouseEvent ): void
     {
-        var mouse_position = point;
+        const mouse_position = point;
 
         //　平行移動
-        if ( this._operation_mode === StandardUIViewer.OperationMode.TRANSLATE )
-        {
+        if ( this._operation_mode === StandardUIViewer.OperationMode.TRANSLATE ) {
             this._translate_drag[0] += mouse_position[0] - this._pre_mouse_position[0];
             this._translate_drag[1] += mouse_position[1] - this._pre_mouse_position[1];
         }
         //　回転移動
-        else if ( this._operation_mode === StandardUIViewer.OperationMode.ROTATE )
-        {
+        else if ( this._operation_mode === StandardUIViewer.OperationMode.ROTATE ) {
             this._rotate_drag[0] += mouse_position[0] - this._pre_mouse_position[0];
             this._rotate_drag[1] += mouse_position[1] - this._pre_mouse_position[1];
         }
-        else if ( this._operation_mode === StandardUIViewer.OperationMode.FREE_ROTATE )
-        {
+        else if ( this._operation_mode === StandardUIViewer.OperationMode.FREE_ROTATE ) {
             this._free_rotate_drag[0] += mouse_position[0] - this._pre_mouse_position[0];
             this._free_rotate_drag[1] += mouse_position[1] - this._pre_mouse_position[1];
         }
         // 高度変更
-        else if ( this._operation_mode === StandardUIViewer.OperationMode.HEIGHT_TRANSLATE )
-        {
+        else if ( this._operation_mode === StandardUIViewer.OperationMode.HEIGHT_TRANSLATE ) {
             // 横方向は平行移動する
             this._translate_drag[0] += mouse_position[0] - this._pre_mouse_position[0];
             this._height_drag[1] += mouse_position[1] - this._pre_mouse_position[1];
         }
-        else if ( this._operation_mode === StandardUIViewer.OperationMode.EYE_TRANSLATE )
-        {
+        else if ( this._operation_mode === StandardUIViewer.OperationMode.EYE_TRANSLATE ) {
             this._translate_eye_drag[1] += mouse_position[1] - this._pre_mouse_position[1];
         }
 
@@ -864,44 +819,42 @@ class StandardUIViewer extends mapray.RenderCallback
 
     }
 
+
     /**
      * マウスを動かした時のイベント
      *
      * @param event  マウスイベントデータ
      */
-    private _onMouseMove( event: MouseEvent )
+    private _onMouseMove( event: MouseEvent ): void
     {
-        const viewer = this._viewer;
-        if ( !viewer ) return;
-
-        const point = this._mousePos( viewer.canvas_element, event );
+        const point = this._mousePos( this.viewer.canvas_element, event );
         this.onMouseMove( point, event );
     }
 
+
     /**
-     * マウスを上げた時のイベント（公開関数）
+     * マウスを上げた時のイベント
      *
      * @param point 要素上の座標
      * @param event  マウスイベントデータ
      */
-    onMouseUp( point: [ x: number, y: number ], event: MouseEvent )
+    onMouseUp( point: [x: number, y: number], event: MouseEvent ): void
     {
         this._resetEventParameter();
     }
+
 
     /**
      * マウスを上げた時のイベント
      *
      * @param  event  マウスイベントデータ
      */
-    private _onMouseUp( event: MouseEvent )
+    private _onMouseUp( event: MouseEvent ): void
     {
-        const viewer = this._viewer;
-        if ( !viewer ) return;
-
-        const point = this._mousePos( viewer.canvas_element, event );
+        const point = this._mousePos( this.viewer.canvas_element, event );
         this.onMouseUp( point, event );
     }
+
 
     /**
      * マウスホイールを動かした時のイベント
@@ -909,39 +862,36 @@ class StandardUIViewer extends mapray.RenderCallback
      * @param point 要素上の座標
      * @param event ホイールイベント
      */
-    onMouseWheel( point: [ x: number, y: number ], event: WheelEvent )
+    onMouseWheel( point: [x: number, y: number], event: WheelEvent ): void
     {
         event.preventDefault();
 
-        if (this._viewerCameraMode != StandardUIViewer.CameraMode.CAMERA_FREE) {
+        if ( this._viewer_camera_mode != StandardUIViewer.CameraMode.CAMERA_FREE ) {
             return;
         }
 
         this._mouse_down_position = point;
 
-        var zoom = 0;
-
-        zoom = -1 * Math.sign( event.deltaY ) * Math.ceil( Math.abs( event.deltaY ) / 100 );
+        const zoom = -1 * Math.sign( event.deltaY ) * Math.ceil( Math.abs( event.deltaY ) / 100 );
 
         this._zoom_wheel += zoom;
     }
 
+
     /**
      * マウスホイールを動かした時のイベント
      */
-    private _onMouseWheel( event: WheelEvent )
+    private _onMouseWheel( event: WheelEvent ): void
     {
-        const viewer = this._viewer;
-        if ( !viewer ) return;
-
-        const point = this._mousePos( viewer.canvas_element, event );
+        const point = this._mousePos( this.viewer.canvas_element, event );
         this.onMouseWheel( point, event );
     }
 
+
     /**
-     * キーを押した時のイベント(公開関数)
+     * キーを押した時のイベント
      */
-    onKeyDown( event: KeyboardEvent )
+    onKeyDown( event: KeyboardEvent ): void
     {
         switch( event.key )
         {
@@ -968,12 +918,10 @@ class StandardUIViewer extends mapray.RenderCallback
             // ↑ 前進
             case "ArrowUp": {
                 event.preventDefault();
-                const viewer = this._viewer;
-                if ( !viewer ) return;
 
                 // 画面中央を移動基準にする
-                var canvas = viewer.canvas_element;
-                var mouse_position = [canvas.width / 2, canvas.height / 2] as [ x: number, y: number ];
+                const canvas = this.viewer.canvas_element;
+                const mouse_position = [canvas.width / 2, canvas.height / 2] as [x: number, y: number];
                 this._mouse_down_position = mouse_position;
 
                 this._translate_drag[1] = 100;
@@ -983,12 +931,10 @@ class StandardUIViewer extends mapray.RenderCallback
             // ↓ 後退
             case "ArrowDown": {
                 event.preventDefault();
-                const viewer = this._viewer;
-                if ( !viewer ) return;
 
                 // 画面中央を移動基準にする
-                var canvas = viewer.canvas_element;
-                var mouse_position = [canvas.width / 2, canvas.height / 2] as [ x: number, y: number ];
+                const canvas = this.viewer.canvas_element;
+                const mouse_position = [canvas.width / 2, canvas.height / 2] as [x: number, y: number];
                 this._mouse_down_position = mouse_position;
 
                 this._translate_drag[1] = -100;
@@ -1012,18 +958,20 @@ class StandardUIViewer extends mapray.RenderCallback
         }
     }
 
+
     /**
      * キーを押した時のイベント
      */
-    private _onKeyDown( event: KeyboardEvent )
+    private _onKeyDown( event: KeyboardEvent ): void
     {
         this.onKeyDown( event );
     }
 
+
     /**
-     * キーを挙げた時のイベント(公開関数）
+     * キーを挙げた時のイベント
      */
-    onKeyUp( event: KeyboardEvent )
+    onKeyUp( event: KeyboardEvent ): void
     {
         switch ( event.key )
         {
@@ -1074,20 +1022,22 @@ class StandardUIViewer extends mapray.RenderCallback
         }
     }
 
+
     /**
      * キーを挙げた時のイベント
      *
      * @param event
      */
-    private _onKeyUp( event: KeyboardEvent )
+    private _onKeyUp( event: KeyboardEvent ): void
     {
         this.onKeyUp( event );
     }
 
+
     /**
      * イベントパラメータの初期化
      */
-    private _resetEventParameter()
+    private _resetEventParameter(): void
     {
         this._translate_drag[0] = 0;
         this._translate_drag[1] = 0;
@@ -1108,64 +1058,64 @@ class StandardUIViewer extends mapray.RenderCallback
     /**
      * カメラの平行移動
      */
-    protected updateTranslation( delta_time: number )
+    protected updateTranslation( delta_time: number ): void
     {
-        const viewer = this._viewer;
-        if ( !viewer ) return;
+        const viewer = this.viewer;
 
-        if ( this._translate_drag[0] != 0 || this._translate_drag[1] != 0 )
-        {
-            if ( this._key_mode )
-            {
+        if ( this._translate_drag[0] !== 0 || this._translate_drag[1] !== 0 ) {
+            if ( this._key_mode ) {
                 this._translate_drag[0] *= delta_time;
                 this._translate_drag[1] *= delta_time;
             }
 
-            var camera = viewer.camera;
+            const camera = viewer.camera;
+            let ray = camera.getCanvasRay( this._mouse_down_position );
+            const start_position = viewer.getRayIntersection( ray );
 
-            var ray = camera.getCanvasRay( this._mouse_down_position );
-            var start_position = viewer.getRayIntersection( ray ) as mapray.Vector3 | null;
-
-            var end_mouse_position = GeoMath.createVector2([this._mouse_down_position[0] + this._translate_drag[0], this._mouse_down_position[1] + this._translate_drag[1]]);
+            const end_mouse_position = GeoMath.createVector2([
+                    this._mouse_down_position[0] + this._translate_drag[0],
+                    this._mouse_down_position[1] + this._translate_drag[1]
+            ]);
             ray = camera.getCanvasRay( end_mouse_position );
-            var end_position = viewer.getRayIntersection( ray ) as mapray.Vector3 | null;
+            const end_position = viewer.getRayIntersection( ray );
 
-            if ( start_position == null || end_position == null )
-            {
+            if ( !start_position || !end_position ) {
                 return;
             }
 
-            var start_spherical_position = new mapray.GeoPoint();
+            const start_spherical_position = new mapray.GeoPoint();
             start_spherical_position.setFromGocs( start_position );
 
-            var end_spherical_position = new mapray.GeoPoint();
+            const end_spherical_position = new mapray.GeoPoint();
             end_spherical_position.setFromGocs( end_position );
 
             // 球とレイの交点計算
-            var variable_A = Math.pow( this._getVectorLength( ray.direction ), 2 );
-            var variable_B = 2 * GeoMath.dot3( ray.position, ray.direction );
-            var variable_C = Math.pow( this._getVectorLength( ray.position ), 2 ) - Math.pow( start_spherical_position.altitude + GeoMath.EARTH_RADIUS, 2 );
-            var variable_D = variable_B * variable_B - 4 * variable_A * variable_C;
+            // const variable_A = 1.0; // = Math.pow( GeoMath.length3( ray.direction ), 2 );
+            const variable_B = 2.0 * GeoMath.dot3( ray.position, ray.direction );
+            const variable_C = GeoMath.lengthSquared3( ray.position ) - Math.pow( start_spherical_position.altitude + GeoMath.EARTH_RADIUS, 2.0 );
+            const variable_D = variable_B * variable_B - 4.0 * variable_C; // variable_B * variable_B - 4.0 * variable_A * variable_C;
 
             // カメラより選択した場所の高度が高い、交点が取れない場合は補正しない
-            if ( start_spherical_position.altitude < this._camera_parameter.height &&
-                 end_spherical_position.altitude < this._camera_parameter.height &&
-                 variable_D > 0 )
-            {
-                var variable_t1 = ( -variable_B + Math.sqrt( variable_D ) ) / 2 * variable_A;
-                var variable_t2 = ( -variable_B - Math.sqrt( variable_D ) ) / 2 * variable_A;
+            const flag = (
+                start_spherical_position.altitude < this._camera_parameter.height &&
+                end_spherical_position.altitude   < this._camera_parameter.height &&
+                variable_D >= 0
+            );
+            if ( flag ) {
+                const variable_t = 0.5 * ( -variable_B - Math.sqrt( variable_D ) );
+                /* equivalent to:
+                const sqrt_variable_D = Math.sqrt( variable_D );
+                const variable_t1 = ( -variable_B + sqrt_variable_D ) * 0.5; // (2.0 * variable_A)
+                const variable_t2 = ( -variable_B - sqrt_variable_D ) * 0.5; // (2.0 * variable_A)
+                const variable_t = Math.min( variable_t1, variable_t2 );
+                */
 
-                var variable_t = Math.min( variable_t1, variable_t2 )
-
-                end_position[0] = ray.position[0] + variable_t * ray.direction[0];
-                end_position[1] = ray.position[1] + variable_t * ray.direction[1];
-                end_position[2] = ray.position[2] + variable_t * ray.direction[2];
-
+                GeoMath.add3( GeoMath.scale3( variable_t, ray.direction, end_position ), ray.position, end_position );
                 end_spherical_position.setFromGocs( end_position );
             }
 
-            var delta_latitude = end_spherical_position.latitude - start_spherical_position.latitude;
-            var delta_longitude = end_spherical_position.longitude - start_spherical_position.longitude;
+            const delta_latitude = end_spherical_position.latitude - start_spherical_position.latitude;
+            const delta_longitude = end_spherical_position.longitude - start_spherical_position.longitude;
 
             this._camera_parameter.latitude -= delta_latitude;
             this._camera_parameter.longitude -= delta_longitude;
@@ -1178,212 +1128,199 @@ class StandardUIViewer extends mapray.RenderCallback
         }
     }
 
+
     /**
      * カメラの回転（回転中心指定）
      */
-    protected updateRotation( delta_time: number )
+    protected updateRotation( delta_time: number ): void
     {
-        const viewer = this._viewer;
-        if ( !viewer ) return;
+        if ( this._rotate_drag[0] === 0 && this._rotate_drag[1] === 0 ) {
+            return;
+        }
 
-        if ( this._rotate_drag[0] != 0 || this._rotate_drag[1] != 0 )
-        {
-            if (this._rotate_center == null)
-            {
-                this._rotate_drag[0] = 0;
-                this._rotate_drag[1] = 0;
-
-                return;
-            }
-
-            var camera = viewer.camera;
-
-            var camera_direction = GeoMath.createVector3();
-            camera_direction[0] = camera.view_to_gocs[12] - this._rotate_center[0];
-            camera_direction[1] = camera.view_to_gocs[13] - this._rotate_center[1];
-            camera_direction[2] = camera.view_to_gocs[14] - this._rotate_center[2];
-
-            var center_geoPoint = new mapray.GeoPoint();
-            center_geoPoint.setFromGocs( this._rotate_center );
-            var center_matrix = center_geoPoint.getMlocsToGocsMatrix( GeoMath.createMatrix() );
-
-            var rotate_axis = GeoMath.createVector3();
-            rotate_axis[0] = center_matrix[8];
-            rotate_axis[1] = center_matrix[9];
-            rotate_axis[2] = center_matrix[10];
-
-            rotate_axis = GeoMath.normalize3( rotate_axis, GeoMath.createVector3() );
-
-            // カメラ自身を回転
-            var yaw_angle = -this._rotate_drag[0] / 10;
-            var pitch_angle = -this._rotate_drag[1] / 10;
-
-            var rotated_direction = this.rotateVector( camera_direction, rotate_axis, yaw_angle );
-
-            var after_pitch = GeoMath.clamp( this._camera_parameter.pitch + pitch_angle, 0, 90 );
-
-            if ( after_pitch != this._camera_parameter.pitch )
-            {
-                rotate_axis[0] = camera.view_to_gocs[0];
-                rotate_axis[1] = camera.view_to_gocs[1];
-                rotate_axis[2] = camera.view_to_gocs[2];
-
-                rotated_direction = this.rotateVector( rotated_direction, rotate_axis, pitch_angle );
-            }
-
-            var new_position = GeoMath.createVector3();
-            new_position[0] = this._rotate_center[0] + rotated_direction[0];
-            new_position[1] = this._rotate_center[1] + rotated_direction[1];
-            new_position[2] = this._rotate_center[2] + rotated_direction[2];
-
-            var new_spherical_position = new mapray.GeoPoint();
-            new_spherical_position.setFromGocs( new_position );
-
-            this._camera_parameter.latitude = new_spherical_position.latitude;
-            this._camera_parameter.longitude = new_spherical_position.longitude;
-            this._camera_parameter.height = new_spherical_position.altitude;
-            this._camera_parameter.yaw += yaw_angle;
-            this._camera_parameter.pitch = after_pitch;
-
+        if ( !this._rotate_center ) {
             this._rotate_drag[0] = 0;
             this._rotate_drag[1] = 0;
+            return;
         }
+
+        const camera = this.viewer.camera;
+
+        const camera_position = GeoMath.createVector3([
+                camera.view_to_gocs[12],
+                camera.view_to_gocs[13],
+                camera.view_to_gocs[14]
+        ]);
+
+        const camera_direction = GeoMath.sub3( camera_position, this._rotate_center, GeoMath.createVector3() );
+
+        const center_geoPoint = new mapray.GeoPoint();
+        center_geoPoint.setFromGocs( this._rotate_center );
+        const center_matrix = center_geoPoint.getMlocsToGocsMatrix( GeoMath.createMatrix() );
+
+        const rotate_axis = GeoMath.createVector3([
+                center_matrix[8],
+                center_matrix[9],
+                center_matrix[10],
+        ]);
+        GeoMath.normalize3( rotate_axis, rotate_axis );
+
+        // カメラ自身を回転
+        const yaw   = -this._rotate_drag[0] / 10.0;
+        const pitch = -this._rotate_drag[1] / 10.0;
+
+        let rotated_direction = this.rotateVector( camera_direction, rotate_axis, yaw );
+
+        const after_pitch = GeoMath.clamp( this._camera_parameter.pitch + pitch, 0, 90 );
+
+        if ( after_pitch !== this._camera_parameter.pitch ) {
+            rotate_axis[0] = camera.view_to_gocs[0];
+            rotate_axis[1] = camera.view_to_gocs[1];
+            rotate_axis[2] = camera.view_to_gocs[2];
+
+            rotated_direction = this.rotateVector( rotated_direction, rotate_axis, pitch );
+        }
+
+        const new_position = GeoMath.add3( this._rotate_center, rotated_direction, GeoMath.createVector3() );
+        const new_spherical_position = new mapray.GeoPoint();
+        new_spherical_position.setFromGocs( new_position );
+
+        this._camera_parameter.latitude  = new_spherical_position.latitude;
+        this._camera_parameter.longitude = new_spherical_position.longitude;
+        this._camera_parameter.height    = new_spherical_position.altitude;
+        this._camera_parameter.yaw += yaw;
+        this._camera_parameter.pitch = after_pitch;
+
+        this._rotate_drag[0] = 0;
+        this._rotate_drag[1] = 0;
     }
+
 
     /**
      * カメラの回転（自由回転）
      */
-    private _freeRotation( delta_time: number )
+    private _freeRotation( delta_time: number ): void
     {
-        if ( this._free_rotate_drag[0] != 0 || this._free_rotate_drag[1] != 0 )
-        {
-            if ( this._key_mode )
-            {
-                this._free_rotate_drag[0] *= delta_time;
-                this._free_rotate_drag[1] *= delta_time;
-            }
-
-            // カメラ自身を回転
-            var yaw_angle = this._free_rotate_drag[0] / 10;
-            var pitch_angle = this._free_rotate_drag[1] / 10;
-
-            var after_pitch = GeoMath.clamp( this._camera_parameter.pitch + pitch_angle, 0, 90 );
-
-            this._camera_parameter.yaw += yaw_angle;
-            this._camera_parameter.pitch = after_pitch;
-
-            this._free_rotate_drag[0] = 0;
-            this._free_rotate_drag[1] = 0;
+        if ( this._free_rotate_drag[0] === 0 && this._free_rotate_drag[1] === 0 ) {
+            return;
         }
+
+        if ( this._key_mode ) {
+            this._free_rotate_drag[0] *= delta_time;
+            this._free_rotate_drag[1] *= delta_time;
+        }
+
+        // カメラ自身を回転
+        const yaw = this._free_rotate_drag[0] / 10.0;
+        const pitch = this._free_rotate_drag[1] / 10.0;
+
+        const after_pitch = GeoMath.clamp( this._camera_parameter.pitch + pitch, 0, 90 );
+
+        this._camera_parameter.yaw += yaw;
+        this._camera_parameter.pitch = after_pitch;
+
+        this._free_rotate_drag[0] = 0;
+        this._free_rotate_drag[1] = 0;
     }
+
 
     /**
      * 高度変更
      */
-    protected updateTranslationOfHeight()
+    protected updateTranslationOfHeight(): void
     {
-        if ( this._height_drag[0] != 0 || this._height_drag[1] != 0 )
-        {
-            var height_drag = this._height_drag[1];
-
-            var factor = GeoMath.gudermannian( ( this._camera_parameter.height - 50000 ) / 10000 ) + Math.PI / 2;
-            var delta_height = height_drag * 100 * factor;
-
-            this._camera_parameter.height += delta_height;
-
-            this._height_drag[0] = 0;
-            this._height_drag[1] = 0;
+        if ( this._height_drag[0] === 0 && this._height_drag[1] === 0 ) {
+            return;
         }
+
+        const height_drag = this._height_drag[1];
+
+        const factor = GeoMath.gudermannian( ( this._camera_parameter.height - 50000 ) / 10000 ) + Math.PI / 2;
+        const delta_height = height_drag * 100 * factor;
+
+        this._camera_parameter.height += delta_height;
+
+        this._height_drag[0] = 0;
+        this._height_drag[1] = 0;
     }
+
 
     /**
      * 視線方向への移動
      */
-    protected updateTranslationOfEyeDirection()
+    protected updateTranslationOfEyeDirection(): void
     {
-        const viewer = this._viewer;
-        if ( !viewer ) return;
-
         let zoom = 0;
-        if ( this._zoom_wheel != 0 )
-        {
-            zoom = Math.pow(0.9, this._zoom_wheel);
+        if ( this._zoom_wheel !== 0 ) {
+            zoom = Math.pow( 0.9, this._zoom_wheel );
             this._zoom_wheel = 0;
         }
-        else if ( this._translate_eye_drag[1] != 0 ) {
-            zoom = Math.pow(0.995, this._translate_eye_drag[1]);
+        else if ( this._translate_eye_drag[1] !== 0 ) {
+            zoom = Math.pow( 0.995, this._translate_eye_drag[1] );
             this._translate_eye_drag[1] = 0;
         }
 
-        if ( zoom !== 0 )
-        {
-            var camera = viewer.camera;
-
-            // 移動中心
-            var ray = camera.getCanvasRay( this._mouse_down_position );
-            var translation_center = viewer.getRayIntersection( ray ) as mapray.Vector3 | null;
-
-            if (translation_center == null)
-            {
-                return;
-            }
-
-            var center_spherical_position = new mapray.GeoPoint();
-            center_spherical_position.setFromGocs( translation_center );
-
-            var translation_vector = GeoMath.createVector3();
-            translation_vector[0] = (translation_center[0] - camera.view_to_gocs[12]) * zoom;
-            translation_vector[1] = (translation_center[1] - camera.view_to_gocs[13]) * zoom;
-            translation_vector[2] = (translation_center[2] - camera.view_to_gocs[14]) * zoom;
-
-            var new_camera_gocs_position = GeoMath.createVector3();
-            new_camera_gocs_position[0] = translation_center[0] - translation_vector[0];
-            new_camera_gocs_position[1] = translation_center[1] - translation_vector[1];
-            new_camera_gocs_position[2] = translation_center[2] - translation_vector[2];
-
-            var new_camera_spherical_position = new mapray.GeoPoint();
-            new_camera_spherical_position.setFromGocs( new_camera_gocs_position );
-
-            const elevation = viewer.getElevation( new_camera_spherical_position.latitude, new_camera_spherical_position.longitude );
-            const clamp_pos = (
-                (elevation + this._altitude_range.min) > new_camera_spherical_position.altitude ? elevation + this._altitude_range.min:
-                (elevation + this._altitude_range.max) < new_camera_spherical_position.altitude ? elevation + this._altitude_range.max:
-                undefined
-            );
-
-            if ( clamp_pos ) {
-                // fix_altitude だけ高さを変更する。
-                const fix_altitude = new_camera_spherical_position.altitude - clamp_pos;
-                const up = center_spherical_position.getUpwardVector(GeoMath.createVector3());
-                const translation_vector_length = Math.sqrt(
-                  translation_vector[0] * translation_vector[0] +
-                  translation_vector[1] * translation_vector[1] +
-                  translation_vector[2] * translation_vector[2]
-                );
-                const up_dot_dir = GeoMath.dot3(translation_vector, up) / translation_vector_length;
-                GeoMath.scale3(1 - (fix_altitude / up_dot_dir / translation_vector_length), translation_vector, translation_vector);
-
-                new_camera_gocs_position[0] = translation_center[0] - translation_vector[0];
-                new_camera_gocs_position[1] = translation_center[1] - translation_vector[1];
-                new_camera_gocs_position[2] = translation_center[2] - translation_vector[2];
-                new_camera_spherical_position.setFromGocs( new_camera_gocs_position );
-            }
-            this._camera_parameter.latitude = new_camera_spherical_position.latitude;
-            this._camera_parameter.longitude = new_camera_spherical_position.longitude;
-            this._camera_parameter.height = new_camera_spherical_position.altitude;
-
-            this._zoom_wheel = 0;
+        if ( zoom === 0 ) {
+            return;
         }
+
+        const viewer = this.viewer;
+        const camera = viewer.camera;
+
+        // 移動中心
+        const ray = camera.getCanvasRay( this._mouse_down_position );
+        const translation_center = viewer.getRayIntersection( ray );
+
+        if ( !translation_center ) {
+            return;
+        }
+
+        const center_spherical_position = new mapray.GeoPoint();
+        center_spherical_position.setFromGocs( translation_center );
+
+        const translation_vector = GeoMath.createVector3();
+        translation_vector[0] = (translation_center[0] - camera.view_to_gocs[12]) * zoom;
+        translation_vector[1] = (translation_center[1] - camera.view_to_gocs[13]) * zoom;
+        translation_vector[2] = (translation_center[2] - camera.view_to_gocs[14]) * zoom;
+
+        const new_camera_gocs_position = GeoMath.sub3( translation_center, translation_vector, GeoMath.createVector3() );
+        const new_camera_spherical_position = new mapray.GeoPoint();
+        new_camera_spherical_position.setFromGocs( new_camera_gocs_position );
+
+        const elevation = viewer.getElevation( new_camera_spherical_position.latitude, new_camera_spherical_position.longitude );
+        const clamp_pos = (
+            (elevation + this._altitude_range.min) > new_camera_spherical_position.altitude ? elevation + this._altitude_range.min:
+            (elevation + this._altitude_range.max) < new_camera_spherical_position.altitude ? elevation + this._altitude_range.max:
+            undefined
+        );
+
+        if ( clamp_pos ) {
+            // fix_altitude だけ高さを変更する。
+            const fix_altitude = new_camera_spherical_position.altitude - clamp_pos;
+            const up = center_spherical_position.getUpwardVector( GeoMath.createVector3() );
+            const translation_vector_length = GeoMath.length3( translation_vector );
+            const up_dot_dir = GeoMath.dot3( translation_vector, up ) / translation_vector_length;
+            GeoMath.scale3( 1 - (fix_altitude / up_dot_dir / translation_vector_length), translation_vector, translation_vector );
+
+            GeoMath.sub3( translation_center, translation_vector, new_camera_gocs_position );
+            new_camera_spherical_position.setFromGocs( new_camera_gocs_position );
+        }
+        this._camera_parameter.latitude = new_camera_spherical_position.latitude;
+        this._camera_parameter.longitude = new_camera_spherical_position.longitude;
+        this._camera_parameter.height = new_camera_spherical_position.altitude;
+
+        this._zoom_wheel = 0;
     }
+
 
     /**
      * 画角変更
      */
-    private _changeFovy()
+    private _changeFovy(): void
     {
-        var tanθh = Math.tan( 0.5 * this._camera_parameter.fov * GeoMath.DEGREE );
-        var θ = 2 * Math.atan( tanθh * Math.pow( StandardUIViewer.FOV_FACTOR, -this._fovy_key ) );
-        var range = StandardUIViewer.FOV_RANGE;
+        const tanθh = Math.tan( 0.5 * this._camera_parameter.fov * GeoMath.DEGREE );
+        const θ = 2 * Math.atan( tanθh * Math.pow( StandardUIViewer.FOV_FACTOR, -this._fovy_key ) );
+        const range = StandardUIViewer.FOV_RANGE;
         this._camera_parameter.fov = GeoMath.clamp( θ / GeoMath.DEGREE, range.min, range.max );
 
         this._fovy_key = 0;
@@ -1392,6 +1329,8 @@ class StandardUIViewer extends mapray.RenderCallback
 
     /**
      * カメラ位置の取得
+     * 
+     * @returns カメラ位置
      */
     getCameraPosition(): mapray.GeoPointData
     {
@@ -1409,7 +1348,7 @@ class StandardUIViewer extends mapray.RenderCallback
      *
      * @param position            カメラ位置
      */
-    setCameraPosition( position: mapray.GeoPointData )
+    setCameraPosition( position: mapray.GeoPointData ): void
     {
         this._camera_parameter.latitude = position.latitude;
         this._camera_parameter.longitude = position.longitude;
@@ -1423,6 +1362,8 @@ class StandardUIViewer extends mapray.RenderCallback
 
     /**
      * カメラ方向の取得
+     * 
+     * @returns カメラ方向
      */
     getCameraAngle(): StandardUIViewer.RollPitchYawData
     {
@@ -1433,6 +1374,7 @@ class StandardUIViewer extends mapray.RenderCallback
             yaw: parameter.yaw,
         };
     }
+
 
     /**
      * カメラ方向の設定
@@ -1446,8 +1388,6 @@ class StandardUIViewer extends mapray.RenderCallback
     }
 
 
-
-
     /**
      * 閾値のある同一判定
      *
@@ -1458,12 +1398,9 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     private _isSame( value1: number, value2: number, threshold: number = 0.000001 ): boolean
     {
-        let threshold_value = threshold;
-        if((Math.abs(value1 - value2)) < threshold_value) {
-            return true;
-        }
-        return false;
+        return Math.abs( value1 - value2 ) < threshold;
     }
+
 
     /**
      * 注視点の設定
@@ -1471,64 +1408,74 @@ class StandardUIViewer extends mapray.RenderCallback
      * @param position カメラ位置
      * @param yaw      ヨー角
      */
-    setLookAtPosition( position: mapray.GeoPointData, yaw: number = 0 )
+    setLookAtPosition( position: mapray.GeoPointData, yaw: number = 0 ): void
     {
-        if( this._isSame(this._camera_parameter.longitude, position.longitude) &&
-            this._isSame(this._camera_parameter.latitude, position.latitude) ) {
+        const isSame = (
+            this._isSame( this._camera_parameter.longitude, position.longitude ) &&
+            this._isSame( this._camera_parameter.latitude, position.latitude )
+        );
+        if ( isSame ) {
             this._camera_parameter.yaw = yaw;
             this._camera_parameter.pitch = 0;
             return;
         }
 
-        // 現在の視線方向を取得
-        var current_camera_geoPoint = new GeoPoint( this._camera_parameter.longitude, this._camera_parameter.latitude, this._camera_parameter.height );
-        var current_camera_matrix = current_camera_geoPoint.getMlocsToGocsMatrix( GeoMath.createMatrix() );
+        // 現在位置のローカル行列を取得
+        const current_camera_geoPoint = new GeoPoint( this._camera_parameter.longitude, this._camera_parameter.latitude, this._camera_parameter.height );
+        const current_camera_matrix = current_camera_geoPoint.getMlocsToGocsMatrix( GeoMath.createMatrix() );
 
-        var current_y_direction = GeoMath.createVector3();
-        current_y_direction[0] = current_camera_matrix[4];
-        current_y_direction[1] = current_camera_matrix[5];
-        current_y_direction[2] = current_camera_matrix[6];
+        // 注視点のローカル行列を取得
+        const target_camera_geoPoint = new GeoPoint( position.longitude, position.latitude, position.height );
+        const target_camera_matrix = target_camera_geoPoint.getMlocsToGocsMatrix( GeoMath.createMatrix() );
 
-        var target_camera_geoPoint = new GeoPoint( position.longitude, position.latitude, position.height );
-        var target_camera_matrix = target_camera_geoPoint.getMlocsToGocsMatrix( GeoMath.createMatrix() );
-        var target_camera_direction = GeoMath.createVector3();
-        target_camera_direction[0] = target_camera_matrix[12] - current_camera_matrix[12];
-        target_camera_direction[1] = target_camera_matrix[13] - current_camera_matrix[13];
-        target_camera_direction[2] = target_camera_matrix[14] - current_camera_matrix[14];
+        const current_y_direction = GeoMath.createVector3([
+                current_camera_matrix[4],
+                current_camera_matrix[5],
+                current_camera_matrix[6]
+        ]);
+        GeoMath.normalize3( current_y_direction, current_y_direction );
 
-        current_y_direction = GeoMath.normalize3( current_y_direction, GeoMath.createVector3() );
-        target_camera_direction = GeoMath.normalize3( target_camera_direction, GeoMath.createVector3() );
+        const target_camera_direction = GeoMath.createVector3([
+                target_camera_matrix[12] - current_camera_matrix[12],
+                target_camera_matrix[13] - current_camera_matrix[13],
+                target_camera_matrix[14] - current_camera_matrix[14]
+        ]);
+        GeoMath.normalize3( target_camera_direction, target_camera_direction );
 
-        var rotate_axis = GeoMath.createVector3();
-        rotate_axis[0] = current_camera_matrix[8];
-        rotate_axis[1] = current_camera_matrix[9];
-        rotate_axis[2] = current_camera_matrix[10];
+        let rotate_axis = GeoMath.createVector3([
+                current_camera_matrix[8],
+                current_camera_matrix[9],
+                current_camera_matrix[10]
+        ]);
 
-        var yaw_angle = this.calculateAngle( rotate_axis, current_y_direction, target_camera_direction );
-        this._camera_parameter.yaw = yaw_angle;
+        const yaw2 = this.calculateAngle( rotate_axis, current_y_direction, target_camera_direction );
+        this._camera_parameter.yaw = yaw2;
 
-        var current_camera_direction = GeoMath.createVector3();
-        current_camera_direction[0] = current_camera_matrix[8];
-        current_camera_direction[1] = current_camera_matrix[9];
-        current_camera_direction[2] = current_camera_matrix[10];
+        const current_camera_direction = GeoMath.createVector3([
+                current_camera_matrix[8],
+                current_camera_matrix[9],
+                current_camera_matrix[10]
+        ]);
 
-        var pitch_axis = GeoMath.createVector3();
-        pitch_axis[0] = current_camera_matrix[0];
-        pitch_axis[1] = current_camera_matrix[1];
-        pitch_axis[2] = current_camera_matrix[2];
-        rotate_axis = this.rotateVector( pitch_axis, rotate_axis, yaw_angle );
+        const pitch_axis = GeoMath.createVector3([
+                current_camera_matrix[0],
+                current_camera_matrix[1],
+                current_camera_matrix[2]
+        ]);
+        rotate_axis = this.rotateVector( pitch_axis, rotate_axis, yaw2 );
 
-        target_camera_direction[0] = -1 * target_camera_direction[0];
-        target_camera_direction[1] = -1 * target_camera_direction[1];
-        target_camera_direction[2] = -1 * target_camera_direction[2];
+        GeoMath.scale3( -1, target_camera_direction, target_camera_direction );
 
-        this._camera_parameter.pitch = GeoMath.clamp( Math.abs( this.calculateAngle( rotate_axis, current_camera_direction, target_camera_direction ) ), 0, 90 );
+        const pitch = GeoMath.clamp( Math.abs( this.calculateAngle( rotate_axis, current_camera_direction, target_camera_direction ) ), 0, 90 );
+        this._camera_parameter.pitch = pitch;
     }
 
 
 
     /**
      * カメラパラメータの取得
+     * 
+     * @returns カメラパラメータ
      */
     getCameraParameter(): StandardUIViewer.CameraParameter
     {
@@ -1548,7 +1495,7 @@ class StandardUIViewer extends mapray.RenderCallback
      *
      * @param parameter  カメラパラメータ
      */
-    setCameraParameter( parameter: StandardUIViewer.CameraParameterOption )
+    setCameraParameter( parameter: StandardUIViewer.CameraParameterOption ): void
     {
         if ( parameter.fov ) {
             this._camera_parameter.fov = parameter.fov;
@@ -1571,8 +1518,7 @@ class StandardUIViewer extends mapray.RenderCallback
     getLayer( index: number ): mapray.Layer
     {
         // @ts-ignore
-        const viewer = this._viewer as mapray.Viewer;
-        return viewer.layers.getLayer( index );
+        return this.viewer.layers.getLayer( index );
     }
 
     /**
@@ -1582,20 +1528,20 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     getLayerNum(): number
     {
-        const viewer = this._viewer as mapray.Viewer;
-        return viewer.layers.num_layers;
+        return this.viewer.layers.num_layers;
     }
+
 
     /**
      * レイヤの追加（末尾）
      *
      * @param layer                  作成するレイヤのプロパティ
      */
-    addLayer( layer: any )
+    addLayer( layer: any ): void
     {
-        const viewer = this._viewer as mapray.Viewer;
-        viewer.layers.add( layer );
+        this.viewer.layers.add( layer );
     }
+
 
     /**
      * レイヤの追加（任意）
@@ -1603,31 +1549,31 @@ class StandardUIViewer extends mapray.RenderCallback
      * @param index                  挿入場所
      * @param layer                  作成するレイヤのプロパティ
      */
-    insertLayer( index: number, layer: any )
+    insertLayer( index: number, layer: any ): void
     {
-        const viewer = this._viewer as mapray.Viewer;
-        viewer.layers.insert( index, layer );
+        this.viewer.layers.insert( index, layer );
     }
+
 
     /**
      * レイヤの削除
      *
      * @param index    レイヤ番号
      */
-    removeLayer( index: number )
+    removeLayer( index: number ): void
     {
-        const viewer = this._viewer as mapray.Viewer;
-        viewer.layers.remove( index );
+        this.viewer.layers.remove( index );
     }
+
 
     /**
      * レイヤの全削除
      */
-    clearLayer()
+    clearLayer(): void
     {
-        const viewer = this._viewer as mapray.Viewer;
-        viewer.layers.clear();
+        this.viewer.layers.clear();
     }
+
 
     /**
      * エンティティの取得
@@ -1637,9 +1583,9 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     getEntity( index: number ): mapray.Entity
     {
-        const viewer = this._viewer as mapray.Viewer;
-        return viewer.scene.getEntity( index );
+        return this.viewer.scene.getEntity( index );
     }
+
 
     /**
      * エンティティ数の取得
@@ -1648,50 +1594,41 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     getEntityNum(): number
     {
-        const viewer = this._viewer as mapray.Viewer;
-        return viewer.scene.num_entities;
+        return this.viewer.scene.num_entities;
     }
+
 
     /**
      * エンティティの追加
      *
      * @param entity    エンティティ
      */
-    addEntity( entity: mapray.Entity )
+    addEntity( entity: mapray.Entity ): void
     {
-        const viewer = this._viewer as mapray.Viewer;
-        viewer.scene.addEntity( entity );
+        this.viewer.scene.addEntity( entity );
     }
+
 
     /**
      * エンティティの削除
      *
      * @param entity    エンティティ
      */
-    removeEntity( entity: mapray.Entity )
+    removeEntity( entity: mapray.Entity ): void
     {
         const viewer = this._viewer as mapray.Viewer;
         viewer.scene.removeEntity( entity );
     }
 
+
     /**
      * エンティティの全削除
      */
-    clearEntities()
+    clearEntities(): void
     {
-        const viewer = this._viewer as mapray.Viewer;
-        viewer.scene.clearEntities();
+        this.viewer.scene.clearEntities();
     }
 
-    /**
-     * 3次元ベクトルの長さの算出
-     * @param vector 対象ベクトル
-     * @returns      長さ
-     */
-    private _getVectorLength( vector: mapray.Vector3 ): number
-    {
-        return Math.sqrt( Math.pow( vector[0], 2 ) + Math.pow( vector[1], 2 ) + Math.pow( vector[2], 2 ) );
-    }
 
     /**
      * 3次元ベクトルの任意軸の回転
@@ -1703,15 +1640,16 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     protected rotateVector( vector: mapray.Vector3, axis: mapray.Vector3, angle: number ): mapray.Vector3
     {
-        var rotate_matrix = GeoMath.rotation_matrix( axis, angle, GeoMath.createMatrix() );
+        const rotate_matrix = GeoMath.rotation_matrix( axis, angle, GeoMath.createMatrix() );
 
-        var target_vector = GeoMath.createVector3();
+        const target_vector = GeoMath.createVector3();
         target_vector[0] = vector[0] * rotate_matrix[0] + vector[1] * rotate_matrix[4] + vector[2] * rotate_matrix[8] + rotate_matrix[12];
         target_vector[1] = vector[0] * rotate_matrix[1] + vector[1] * rotate_matrix[5] + vector[2] * rotate_matrix[9] + rotate_matrix[13];
         target_vector[2] = vector[0] * rotate_matrix[2] + vector[1] * rotate_matrix[6] + vector[2] * rotate_matrix[10] + rotate_matrix[14];
 
         return target_vector;
     }
+
 
     /**
      * 任意軸回りの回転角度の算出
@@ -1723,18 +1661,18 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     protected calculateAngle( axis: mapray.Vector3, basis_vector: mapray.Vector3, target_vector: mapray.Vector3 ): number
     {
-        var a_vector = GeoMath.createVector3();
-        var dot_value = GeoMath.dot3( axis, basis_vector );
+        const a_vector = GeoMath.createVector3();
+        let dot_value = GeoMath.dot3( axis, basis_vector );
 
-        for ( var i = 0; i < 3; i++ )
+        for ( let i = 0; i < 3; i++ )
         {
             a_vector[i] = basis_vector[i] - dot_value * axis[i];
         }
 
-        var b_vector = GeoMath.createVector3();
+        const b_vector = GeoMath.createVector3();
         dot_value = GeoMath.dot3( axis, target_vector );
 
-        for ( var i = 0; i < 3; i++ )
+        for ( let i = 0; i < 3; i++ )
         {
             b_vector[i] = target_vector[i] - dot_value * axis[i];
         }
@@ -1743,16 +1681,17 @@ class StandardUIViewer extends mapray.RenderCallback
         GeoMath.normalize3( b_vector, b_vector );
 
         const flag = (
-            Math.abs( this._getVectorLength( a_vector ) ) < 1.0e-6 ||
-            Math.abs( this._getVectorLength( b_vector ) ) < 1.0e-6
+            Math.abs( GeoMath.length3( a_vector ) ) < 1.0e-6 ||
+            Math.abs( GeoMath.length3( b_vector ) ) < 1.0e-6
         );
+        let angle = 0;
         if ( flag ) {
             angle = 0;
         }
         else {
-            var angle = Math.acos( GeoMath.clamp( GeoMath.dot3( a_vector, b_vector ) / ( this._getVectorLength( a_vector ) * this._getVectorLength( b_vector ) ), -1, 1 ) ) / GeoMath.DEGREE;
+            angle = Math.acos( GeoMath.clamp( GeoMath.dot3( a_vector, b_vector ) / ( GeoMath.length3( a_vector ) * GeoMath.length3( b_vector ) ), -1, 1 ) ) / GeoMath.DEGREE;
 
-            var cross_vector = GeoMath.cross3( a_vector, b_vector, GeoMath.createVector3() );
+            let cross_vector = GeoMath.cross3( a_vector, b_vector, GeoMath.createVector3() );
             cross_vector = GeoMath.normalize3( cross_vector, GeoMath.createVector3() );
 
             if ( GeoMath.dot3( axis, cross_vector ) < 0 )
@@ -1764,6 +1703,7 @@ class StandardUIViewer extends mapray.RenderCallback
         return angle;
     }
 
+
     /**
      * 要素上での座標を取得
      *
@@ -1771,7 +1711,8 @@ class StandardUIViewer extends mapray.RenderCallback
      * @param event  イベントオブジェクト
      * @returns      要素(el)の上での座標
      */
-    private _mousePos( el: HTMLElement, event: MouseEvent ): [ x: number, y: number ] {
+    private _mousePos( el: HTMLElement, event: MouseEvent ): [x: number, y: number]
+    {
         const rect = el.getBoundingClientRect();
         return [
             event.clientX - rect.left - el.clientLeft,
@@ -1780,21 +1721,21 @@ class StandardUIViewer extends mapray.RenderCallback
     };
 
 
-
     /**
      * ２点間のカメラアニメーション
      *
-     * 指定した位置間でカメラアニメーションを行う
+     * - 指定した位置間でカメラアニメーションを行う
      * iscs_startで指定した位置、もしくは現在のカメラの位置から、
      * iscs_endで指定した位置から20km南側、上方向に+20kmの高度の位置からiscs_endを注視点とした位置と方向に
      * timeで指定された秒数でカメラアニメーションを行う。
-     * 途中、高度200kmまでカメラが上昇する
+     * 途中、高度200kmまでカメラが上昇する。
      *
      * @param  options 引数オブジェクト
+     * @returns Promise
      */
-    async startFlyCamera( options: StandardUIViewer.FlyParam ) {
-        const viewer = this._viewer;
-        if ( !viewer || this._viewerCameraMode !== StandardUIViewer.CameraMode.CAMERA_FREE ) {
+    async startFlyCamera( options: StandardUIViewer.FlyParam ): Promise<void>
+    {
+        if ( this._viewer_camera_mode !== StandardUIViewer.CameraMode.CAMERA_FREE ) {
             return;
         }
 
@@ -1808,7 +1749,7 @@ class StandardUIViewer extends mapray.RenderCallback
         this._flycamera_target_time = options.time; // km/s
 
         // create curve
-        const curves = this.createFlyCurve(viewer, options);
+        const curves = this.createFlyCurve( this.viewer, options );
         this._curve_move = curves.move;
         this._curve_rotation = curves.rotation;
 
@@ -1816,18 +1757,19 @@ class StandardUIViewer extends mapray.RenderCallback
         this._setupAnimationBindingBlock();
 
         // bind
-        this._animation.bind("position", this._updater, this._curve_move);
-        this._animation.bind("orientation", this._updater, this._curve_rotation);
+        this._animation.bind( "position", this._updater, this._curve_move );
+        this._animation.bind( "orientation", this._updater, this._curve_rotation );
 
         this._update_url_hash_backup = this._update_url_hash;   // URL更新フラグの待避
         this._update_url_hash = false;
-        this._viewerCameraMode = StandardUIViewer.CameraMode.CAMERA_FLY;
+        this._viewer_camera_mode = StandardUIViewer.CameraMode.CAMERA_FLY;
 
-        await new Promise<void>((onSuccess, onError) => {
+        await new Promise<void>( (onSuccess, onError) => {
             // onSuccess, onErrorは関数です。onSuccessを呼ぶまで、このプロミスは完了しません。
             this._flycamera_on_success = onSuccess; // onSuccessをグローバル変数に登録
         });
     }
+
 
     /**
      * KeyFrameでの位置や回転を算出
@@ -1900,7 +1842,7 @@ class StandardUIViewer extends mapray.RenderCallback
         end_top.assign( fly_iscs_end );
         end_top.altitude += highest;
 
-        this.setCameraParameter({near: 30, far:10000000});
+        this.setCameraParameter( { near: 30, far:10000000 } );
 
         return {
             fly_iscs_start,
@@ -1914,6 +1856,7 @@ class StandardUIViewer extends mapray.RenderCallback
         };
     }
 
+
     /**
      * curveの作成
      * this._curve_move と this._curve_rotation を作成 
@@ -1922,105 +1865,109 @@ class StandardUIViewer extends mapray.RenderCallback
      * @param  options 引数オブジェクト
      * @returns 移動用Curveと回転用curve
      */
-    protected createFlyCurve( viewer: mapray.Viewer, options: StandardUIViewer.FlyParam ): { move: mapray.animation.KFLinearCurve, rotation: mapray.animation.KFLinearCurve } {
-      // calculate key point
-      const fly_param = this._calculateKeyPoint(viewer, options);
+    protected createFlyCurve( viewer: mapray.Viewer, options: StandardUIViewer.FlyParam ): { move: mapray.animation.KFLinearCurve, rotation: mapray.animation.KFLinearCurve }
+    {
+        // calculate key point
+        const fly_param = this._calculateKeyPoint( viewer, options );
 
-      let keyframes_m = [];
-      let keyframes_r = [];
+        let keyframes_m = [];
+        let keyframes_r = [];
 
-      let curve_move = new mapray.animation.KFLinearCurve(mapray.animation.Type.find("vector3"));
-      let curve_rotation = new mapray.animation.KFLinearCurve(mapray.animation.Type.find("vector3"));
+        let curve_move = new mapray.animation.KFLinearCurve( mapray.animation.Type.find( "vector3" ) );
+        let curve_rotation = new mapray.animation.KFLinearCurve( mapray.animation.Type.find( "vector3" ) );
 
-      const start = fly_param.fly_iscs_start;
-      const end = fly_param.fly_iscs_end;
-      const interval = this._flycamera_target_time/3.0;
+        const start = fly_param.fly_iscs_start;
+        const end = fly_param.fly_iscs_end;
+        const interval = this._flycamera_target_time/3.0;
 
-      let up_flag = true;
-      if (start.altitude > fly_param.start_top.altitude) {
-          up_flag = false;
-      }
+        let up_flag = true;
+        if ( start.altitude > fly_param.start_top.altitude ) {
+            up_flag = false;
+        }
 
-      // @ts-ignore
-      keyframes_m.push(mapray.animation.Time.fromNumber(0));
-      keyframes_m.push(mapray.GeoMath.createVector3([start.longitude , start.latitude, start.altitude]));
-      if ( up_flag ) {
         // @ts-ignore
-        keyframes_m.push(mapray.animation.Time.fromNumber(interval));
-        keyframes_m.push(mapray.GeoMath.createVector3([fly_param.start_top.longitude, fly_param.start_top.latitude, fly_param.start_top.altitude]));
+        keyframes_m.push( mapray.animation.Time.fromNumber( 0 ) );
+        keyframes_m.push( mapray.GeoMath.createVector3( [start.longitude , start.latitude, start.altitude] ) );
+        if ( up_flag ) {
+            // @ts-ignore
+            keyframes_m.push( mapray.animation.Time.fromNumber( interval ));
+            keyframes_m.push( mapray.GeoMath.createVector3( [fly_param.start_top.longitude, fly_param.start_top.latitude, fly_param.start_top.altitude] ) );
+            // @ts-ignore
+            keyframes_m.push( mapray.animation.Time.fromNumber( interval * 2 ) );
+            keyframes_m.push( mapray.GeoMath.createVector3( [fly_param.end_top.longitude, fly_param.end_top.latitude, fly_param.end_top.altitude] ) );
+        }
         // @ts-ignore
-        keyframes_m.push(mapray.animation.Time.fromNumber(interval*2));
-        keyframes_m.push(mapray.GeoMath.createVector3([fly_param.end_top.longitude, fly_param.end_top.latitude, fly_param.end_top.altitude]));
-      }
-      // @ts-ignore
-      keyframes_m.push(mapray.animation.Time.fromNumber(this._flycamera_target_time));
-      keyframes_m.push(mapray.GeoMath.createVector3([end.longitude, end.latitude, end.altitude]));
-      curve_move.setKeyFrames(keyframes_m);
+        keyframes_m.push( mapray.animation.Time.fromNumber( this._flycamera_target_time));
+        keyframes_m.push( mapray.GeoMath.createVector3( [end.longitude, end.latitude, end.altitude] ) );
+        curve_move.setKeyFrames( keyframes_m);
 
-      // @ts-ignore
-      keyframes_r.push(mapray.animation.Time.fromNumber(0));
-      keyframes_r.push(mapray.GeoMath.createVector3([fly_param.heading, fly_param.tilt, fly_param.roll]));
-      if ( up_flag ) {
         // @ts-ignore
-        keyframes_r.push(mapray.animation.Time.fromNumber(interval));
-        keyframes_r.push(mapray.GeoMath.createVector3([fly_param.heading, 10, fly_param.roll]));
+        keyframes_r.push( mapray.animation.Time.fromNumber( 0 ) );
+        keyframes_r.push( mapray.GeoMath.createVector3( [fly_param.heading, fly_param.tilt, fly_param.roll] ) );
+        if ( up_flag ) {
+            // @ts-ignore
+            keyframes_r.push( mapray.animation.Time.fromNumber( interval ) );
+            keyframes_r.push( mapray.GeoMath.createVector3( [fly_param.heading, 10, fly_param.roll] ) );
+            // @ts-ignore
+            keyframes_r.push( mapray.animation.Time.fromNumber( interval * 2 ) );
+            keyframes_r.push( mapray.GeoMath.createVector3( [fly_param.heading, 10, fly_param.roll] ) );
+        }
         // @ts-ignore
-        keyframes_r.push(mapray.animation.Time.fromNumber(interval*2));
-        keyframes_r.push(mapray.GeoMath.createVector3([fly_param.heading, 10, fly_param.roll]));
-      }
-      // @ts-ignore
-      keyframes_r.push(mapray.animation.Time.fromNumber(this._flycamera_target_time));
-      keyframes_r.push(mapray.GeoMath.createVector3([fly_param.target_angle.heading, fly_param.target_angle.tilt*-1, this._camera_parameter.roll]));
-      curve_rotation.setKeyFrames(keyframes_r);
+        keyframes_r.push( mapray.animation.Time.fromNumber( this._flycamera_target_time ) );
+        keyframes_r.push( mapray.GeoMath.createVector3([fly_param.target_angle.heading, fly_param.target_angle.tilt*-1, this._camera_parameter.roll] ) );
+        curve_rotation.setKeyFrames( keyframes_r );
 
-      return {move: curve_move, rotation: curve_rotation};
+        return { move: curve_move, rotation: curve_rotation };
     }
 
 
     /**
-     * update処理
+     * Fly中のupdate処理
      *
-     * Fly実行中(this._viewerCameraMode が StandardUIViewer.CameraMode.CAMERA_FLY の時)は onUpdateFrame から呼び出されます
+     * Fly実行中(this._viewer_camera_mode が StandardUIViewer.CameraMode.CAMERA_FLY の時)は onUpdateFrame から呼び出されます
      */
-    protected updateFlyCamera( delta_time: number ) {
-      this._flycamera_total_time += delta_time;
+    protected updateFlyCamera( delta_time: number ): void
+    {
+        this._flycamera_total_time += delta_time;
 
-      // @ts-ignore
-      this._updater.update(mapray.animation.Time.fromNumber(this._flycamera_total_time));
+        // @ts-ignore
+        this._updater.update( mapray.animation.Time.fromNumber( this._flycamera_total_time ) );
 
-      if (this._flycamera_total_time >= this._flycamera_target_time) {
-          this.onEndFlyCamera();
-      }
-
+        if ( this._flycamera_total_time >= this._flycamera_target_time ) {
+            this.onEndFlyCamera();
+        }
     }
+
 
     /**
      * fly完了処理
      *
      * Fly完了時に呼び出されます
      */
-    protected onEndFlyCamera() {
-      // unbind
-      this._animation.unbind("position");
-      this._animation.unbind("orientation");
+    protected onEndFlyCamera(): void
+    {
+        // unbind
+        this._animation.unbind( "position" );
+        this._animation.unbind( "orientation" );
 
-      this._curve_move = undefined;
-      this._curve_rotation = undefined;
+        this._curve_move = undefined;
+        this._curve_rotation = undefined;
 
-      this._update_url_hash = this._update_url_hash_backup;       // URL更新フラグの復帰
-      this._viewerCameraMode = StandardUIViewer.CameraMode.CAMERA_FREE;
-      this._resetEventParameter();
+        this._update_url_hash = this._update_url_hash_backup;       // URL更新フラグの復帰
+        this._viewer_camera_mode = StandardUIViewer.CameraMode.CAMERA_FREE;
+        this._resetEventParameter();
 
-      if (this._flycamera_on_success) {
-          this._flycamera_on_success(); // ここで処理完了を通知する
-          this._flycamera_on_success = undefined;
-      }
+        if ( this._flycamera_on_success ) {
+            this._flycamera_on_success(); // ここで処理完了を通知する
+            this._flycamera_on_success = undefined;
+        }
     }
+
 
     /**
      * アニメーションの BindingBlock を初期化
      */
-    private _setupAnimationBindingBlock()
+    private _setupAnimationBindingBlock(): void
     {
         const block = this._animation;  // 実体は EasyBindingBlock
 
@@ -2046,27 +1993,29 @@ class StandardUIViewer extends mapray.RenderCallback
         } );
     }
 
+
     /**
      * startからtargetを見るためののheadingとtiltを算出
      *
-     * @param  start
-     * @param  target
+     * @param  start地点
+     * @param  target地点
+     * @returns HeadingとTilt
      */
     private _getLookAtAngle( start: mapray.GeoPoint, target: mapray.GeoPoint ): StandardUIViewer.HeadingTilt
     {
         // 現在の視線方向を取得
         const s_matrix = start.getMlocsToGocsMatrix( GeoMath.createMatrix() );
-        let s_y_dir = GeoMath.createVector3([s_matrix[4], s_matrix[5], s_matrix[6]]);
+        let s_y_dir = GeoMath.createVector3( [s_matrix[4], s_matrix[5], s_matrix[6]] );
         s_y_dir = GeoMath.normalize3( s_y_dir, GeoMath.createVector3() );
 
         const t_matrix = target.getMlocsToGocsMatrix( GeoMath.createMatrix() );
-        let t_dir = GeoMath.createVector3([ t_matrix[12] - s_matrix[12], t_matrix[13] - s_matrix[13],　t_matrix[14] - s_matrix[14] ]);
+        let t_dir = GeoMath.createVector3([t_matrix[12] - s_matrix[12], t_matrix[13] - s_matrix[13], t_matrix[14] - s_matrix[14]]);
         t_dir = GeoMath.normalize3( t_dir, GeoMath.createVector3() );
 
-        const rotate_axis = GeoMath.createVector3([s_matrix[8], s_matrix[9], s_matrix[10]]);
+        const rotate_axis = GeoMath.createVector3( [s_matrix[8], s_matrix[9], s_matrix[10]] );
         const heading_angle = this.calculateAngle( rotate_axis, s_y_dir, t_dir );
-        const s_x_dir = GeoMath.createVector3([s_matrix[8], s_matrix[9], s_matrix[10]]);
-        const rotate_axis2 = GeoMath.createVector3([s_matrix[0], s_matrix[1], s_matrix[2]]);
+        const s_x_dir = GeoMath.createVector3( [s_matrix[8], s_matrix[9], s_matrix[10]] );
+        const rotate_axis2 = GeoMath.createVector3( [s_matrix[0], s_matrix[1], s_matrix[2]] );
 
         t_dir[0] = -1 * t_dir[0];
         t_dir[1] = -1 * t_dir[1];
@@ -2110,30 +2059,28 @@ class StandardUIViewer extends mapray.RenderCallback
         return dst;
     }
 
+
     /**
-     * 操作可否
+     * 操作可否状態の取得
+     * 
+     * @returns 操作可否
      */
     protected getControllable(): boolean { return this._controllable; }
 
+
     /**
      * 操作可否を設定
+     * 
+     * @param flag 
      */
-    protected setControllable( flag: boolean ) {
+    protected setControllable( flag: boolean ): void
+    {
         if ( !this._controllable && flag ) {
             this._resetEventParameter();
             this._zoom_wheel = 0;
         }
         this._controllable = flag;
     }
-
-}
-
-
-
-interface CameraPositionOption {
-    camera_position: mapray.GeoPointData;
-    lookat_position: mapray.GeoPointData;
-    yaw: number;
 }
 
 
@@ -2168,13 +2115,13 @@ export interface Option extends mapray.Viewer.Option {
 
 
 export interface FlyParam {
-    /** 移動までにかかる時間（秒）。 */
+    /** 移動までにかかる時間（秒） */
     time: number;
-    
+
     /** スタート位置. 省略時は現在のカメラ位置 */
     iscs_start?: mapray.GeoPoint;
 
-    /** 終了位置でのカメラの注視点。 `target_clamp` が `true` の場合は高度を自動計算 */
+    /** 終了位置でのカメラの注視点. `target_clamp` が `true` の場合は高度を自動計算 */
     iscs_end: mapray.GeoPoint;
 
     /** 終了位置でカメラの注視点を `iscs_end` の緯度経度位置直下の標高にするなら `true` 省略時は `true` */
@@ -2210,7 +2157,10 @@ export interface FlyParamKeyPoint {
 
 
 export interface HeadingTilt {
+    /** 方向(度) */
     heading: number;
+
+    /** 傾斜角(度) */
     tilt: number;
 }
 
@@ -2231,6 +2181,7 @@ export interface CameraParameter {
 }
 
 
+
 export interface CameraParameterOption {
     /** 画角（度） */
     fov?: number;
@@ -2248,21 +2199,40 @@ export interface CameraParameterOption {
 
 
 export interface RollPitchYawData {
+    /** ロール */
     roll: number;
 
+    /** ピッチ */
     pitch: number;
 
+    /** ヨー */
     yaw: number;
 }
 
 
 
 export interface RollPitchYawOption {
+    /** ロール */
     roll?: number;
 
+    /** ピッチ */
     pitch?: number;
 
+    /** ヨー */
     yaw?: number;
+}
+
+
+
+export interface HashCameraParameter {
+    /** カメラ位置 */
+    camera_position: mapray.GeoPointData;
+
+    /** 視点位置 */
+    lookat_position: mapray.GeoPointData;
+
+    /** カメラヨー */
+    yaw: number;
 }
 
 
@@ -2272,6 +2242,7 @@ export enum CameraMode {
     CAMERA_FREE,
     CAMERA_FLY,
 }
+
 
 
 export enum OperationMode {
