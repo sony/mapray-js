@@ -110,7 +110,7 @@ class DebugViewer extends maprayui.StandardUIViewer {
 
         const camera_options = { camera_position: this._init_camera, lookat_position: this._lookat_position, url_update: true };
 
-        this.initCameraParameterFromURL( camera_options );
+        this.enableURLUpdate( true );
 
         // DEMOコンテンツ
         this._is_gis = false;

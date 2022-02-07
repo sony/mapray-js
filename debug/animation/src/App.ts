@@ -24,7 +24,7 @@ export default class App extends maprayui.StandardUIViewer {
 
     private _total_time: number;
 
-    private _anime_updater: mapray.animation.Updater;
+    private _animation_updater: mapray.animation.Updater;
 
     constructor( container: string, options: Option = {} ) {
         super( container, MAPRAY_ACCESS_TOKEN, {
@@ -65,7 +65,7 @@ export default class App extends maprayui.StandardUIViewer {
         this._total_time = 0;
 
         // Updaterの作成
-        this._anime_updater = new mapray.animation.Updater();
+        this._animation_updater = new mapray.animation.Updater();
     }
 
     override onKeyDown( event: KeyboardEvent )
@@ -79,20 +79,24 @@ export default class App extends maprayui.StandardUIViewer {
                 );
             } break;
             case "1": {
-                console.log( 'start anime 1' );
-                this._startAnime1_2(1);
+                console.log( 'start animation 1' );
+                this._startAnimation1_2(1);
             } break;
             case "2": {
-                console.log( 'start anime 2' );
-                this._startAnime1_2(2);
+                console.log( 'start animation 2' );
+                this._startAnimation1_2(2);
             } break;
             case "3": {
-                console.log( 'start anime 3' );
-                this._startAnime3();
+                console.log( 'start animation 3' );
+                this._startAnimation3();
             } break;
             case "4": {
-                console.log( 'start anime 4' );
-                this._startAnime4();
+                console.log( 'start animation 4' );
+                this._startAnimation4();
+            } break;
+            case "5": {
+                console.log( 'start animation 5' );
+                this._startAnimation5();
             } break;
             default: {
                 super.onKeyDown( event );
@@ -113,16 +117,16 @@ export default class App extends maprayui.StandardUIViewer {
             this._total_time += delta_time;
 
             // Updaterに時間を投げる
-            this._anime_updater.update( mapray.animation.Time.fromNumber( this._total_time ) );
+            this._animation_updater.update( mapray.animation.Time.fromNumber( this._total_time ) );
         }
     }
 
 
      /**
-     * Animation Example 1 or 2
-     * @param anime アニメ種類
-     */
-      _startAnime1_2( anime: number ) {
+      * Animation Example 1 or 2
+      * @param animation アニメ種類
+      */
+      _startAnimation1_2( animation: number ) {
         // Entityのクリア
         this.viewer.scene.clearEntities();
 
@@ -160,7 +164,7 @@ export default class App extends maprayui.StandardUIViewer {
         let curve1;
         let curve2;
 
-        if ( anime === 1 ) {
+        if ( animation === 1 ) {
             // KF Linear Curve
             curve1 = new mapray.animation.KFLinearCurve( mapray.animation.Type.find("number") );
             curve2 = new mapray.animation.KFLinearCurve( mapray.animation.Type.find("vector3") );
@@ -199,19 +203,19 @@ export default class App extends maprayui.StandardUIViewer {
         
         // UpdaterにBindingBlockを紐づける
         if( pin_entry ) {
-            pin_entry.animation.bind( "size", this._anime_updater, curve1 );
-            pin_entry.animation.bind( "bg_color", this._anime_updater, curve2 );
+            pin_entry.animation.bind( "size", this._animation_updater, curve1 );
+            pin_entry.animation.bind( "bg_color", this._animation_updater, curve2 );
         }
 
         // Animation開始
         this._is_animation_start = true;
-      }
+     }
 
 
-    /**
+      /**
      * Animation Example 3
      */
-     _startAnime3() {
+     _startAnimation3() {
         // Entityのクリア
         this.viewer.scene.clearEntities();
 
@@ -257,7 +261,7 @@ export default class App extends maprayui.StandardUIViewer {
 
         // UpdaterにBindingBlockを紐づける
         if ( pin_entry ) {
-            pin_entry.animation.bind( "size", this._anime_updater, curve );
+            pin_entry.animation.bind( "size", this._animation_updater, curve );
         }
 
         // Animation開始
@@ -268,7 +272,7 @@ export default class App extends maprayui.StandardUIViewer {
     /**
      * Animation Example 4
      */
-     _startAnime4() {
+     _startAnimation4() {
         // Entityのクリア
         this.viewer.scene.clearEntities();
 
@@ -382,11 +386,26 @@ export default class App extends maprayui.StandardUIViewer {
         this._total_time = 0;
 
         // UpdaterにBindingBlockを紐づける
-        block.bind( "length", this._anime_updater, curve );
+        block.bind( "length", this._animation_updater, curve );
 
         // アニメーションを開始
         this._is_animation_start = true;
      }
+
+
+    /**
+     * Animation Example 5
+     */
+     async _startAnimation5() {
+         await this.startFlyCamera({
+                 end_altitude: 800,
+                 end_from_lookat: 300,
+                 iscs_end: new mapray.GeoPoint( 139.7527, 35.6835 ),
+                 time: 3,
+         });
+         console.log( "done" );
+    }
+
 }
 
 

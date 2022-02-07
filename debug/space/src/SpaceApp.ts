@@ -438,7 +438,7 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
 
         const options = { camera_position: this._init_camera, lookat_position: this._lookat_position, url_update: true };
 
-        this.initCameraParameterFromURL( options );
+        this.enableURLUpdate( true );
 
         // コンテンツ制御
         this._isChangedGIS = false;
