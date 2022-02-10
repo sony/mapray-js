@@ -12,6 +12,10 @@ class App {
         this._current = new B3dTileViewer(this._container);
     }
 
+    changeLodFactor(factor: string) {
+        this._current.setLodFactor(factor)
+    }
+
     destroy() {
 
     }

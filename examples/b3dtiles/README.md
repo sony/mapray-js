@@ -38,4 +38,4 @@ yarn
 * `npm run build` is the production target, to create the final bundle and write to disk.
 * `npm run dev` is the target for developing mapray and ui packages, to include mapray packages from local modules to write to disk.
 
-[http://localhost:7776/apps/local/index-umd.html](http://localhost:7776/apps/local/index-umd.html)
+[http://localhost:7776](http://localhost:7776)

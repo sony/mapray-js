@@ -1,6 +1,6 @@
 {
   "name": "b3dtiles-sample",
-  "version": "1.0.0",
+  "version": "1SS.0.0",
   "license": "MIT",
   "scripts": {
     "start": "run-p server build-watch",

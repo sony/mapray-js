@@ -19,8 +19,20 @@ function startApp( container: HTMLElement | string )
     appInstance = new App( container );
 }
 
+const elem = <HTMLInputElement>document.getElementById('range')!;
+const target = document.getElementById('range-output')!;
 
+let rangeValue = (elem : HTMLInputElement, target : HTMLElement) => {
+    return function() {
+        if (appInstance) {
+            appInstance.changeLodFactor(elem.value);
+        }
+        target.innerHTML = elem.value;
+    }
+}
+elem.addEventListener('input', rangeValue(elem, target));
 
 // グローバル関数に登録
 // @ts-ignore
 window.startApp = startApp;
+
