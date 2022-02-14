@@ -206,6 +206,49 @@ class GeoMath {
 
 
     /**
+     * 3 次ベクトルの長さを計算
+     * @param  vec  ベクトル
+     * @return ベクトルの長さ
+     */
+    static length3( vec: Vector3 ): number
+    {
+        return Math.sqrt( vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2] );
+    }
+
+
+    /**
+     * 3 次ベクトルの和を計算
+     * @param  a  左のベクトル
+     * @param  b  右のベクトル
+     * @param  dst 計算結果を格納するバッファ
+     * @return    a と b の和
+     */
+    static add3( a: Vector3, b: Vector3, dst: Vector3 ): Vector3
+    {
+        dst[0] = a[0] + b[0];
+        dst[1] = a[1] + b[1];
+        dst[2] = a[2] + b[2];
+        return dst;
+    }
+
+
+    /**
+     * 3 次ベクトルの差を計算
+     * @param  a  左のベクトル
+     * @param  b  右のベクトル
+     * @param  dst 計算結果を格納するバッファ
+     * @return a と b の差
+     */
+    static sub3( a: Vector3, b: Vector3, dst: Vector3 ): Vector3
+    {
+        dst[0] = a[0] - b[0];
+        dst[1] = a[1] - b[1];
+        dst[2] = a[2] - b[2];
+        return dst;
+    }
+
+
+    /**
      * 3 次ベクトルの内積を計算
      * @param  a  左のベクトル
      * @param  b  右のベクトル
