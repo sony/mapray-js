@@ -33,6 +33,7 @@ import SunVisualizer from "./SunVisualizer";
 import Moon from "./Moon";
 import MoonVisualizer from "./MoonVisualizer";
 import CloudVisualizer from "./CloudVisualizer";
+import StarVisualizer from "./StarVisualizer";
 
 // マウス・Attribution開発
 import LogoController from "./LogoController";
@@ -115,6 +116,8 @@ class Viewer {
     private _cloudVisualizer?: CloudVisualizer;
 
     private _load_status: Viewer.LoadStatus;
+
+    private _starVisualizer?: StarVisualizer;
 
     /** @internal */
     _render_cache?: any;
@@ -201,6 +204,12 @@ class Viewer {
         if ( cloudVisualizer ) {
             this._cloudVisualizer = cloudVisualizer;
             cloudVisualizer.init( this );
+        }
+
+        const starVisualizer = options.star_visualizer;
+        if ( starVisualizer ) {
+            this._starVisualizer = starVisualizer;
+            starVisualizer.init( this );
         }
 
         // マウス・Attribution開発
@@ -573,6 +582,11 @@ class Viewer {
 
 
     /**
+     */
+     get starVisualizer() { return this._starVisualizer; }
+
+
+     /**
      * 可視性を設定
      *
      * target に属するオブジェクトを表示するかどうかを指定する。
@@ -1156,6 +1170,8 @@ export interface Option {
     moon_visualizer?: MoonVisualizer;
 
     cloud_visualizer?: CloudVisualizer;
+
+    star_visualizer?: StarVisualizer;
 }
 
 

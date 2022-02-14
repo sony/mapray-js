@@ -341,7 +341,9 @@ class JsonInit
 
         this._initializer = new Initializer( JsonInit._toDrawMode( data ), num_vertices );
 
-        this._addIndex( glenv, data.indices, num_vertices );
+        if ( data.indices ) {
+            this._addIndex( glenv, data.indices, num_vertices );
+        }
 
         var  FLT_BYTES = 4;
         var     buffer = new MeshBuffer( glenv, InitHelper.toTypedArray( data.vertices, ComponentType.FLOAT ) );
@@ -398,6 +400,7 @@ class JsonInit
         switch ( data.ptype ) {
         case "triangles": return DrawMode.TRIANGLES;
         case "lines":     return DrawMode.LINES;
+        case "points":    return DrawMode.POINTS;
         default:          return DrawMode.TRIANGLES;
         }
     }

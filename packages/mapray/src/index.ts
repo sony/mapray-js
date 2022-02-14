@@ -76,6 +76,7 @@ export { default as SunVisualizer } from "./SunVisualizer";
 export { default as TextureSunVisualizer } from "./TextureSunVisualizer";
 export { default as MoonVisualizer } from "./MoonVisualizer";
 export { default as CloudVisualizer } from "./CloudVisualizer";
+export { default as StarVisualizer } from "./StarVisualizer";
 
 // マウス・Attribution開発
 export { default as  LogoController } from "./LogoController";
