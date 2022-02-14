@@ -16,16 +16,19 @@ class SunMaterial extends Material {
 
     private _viewer: Viewer;
 
+    private _matrix: Matrix;
+
+
     /**
      * @param  viewer   所有者である Viewer
      */
     constructor( viewer: Viewer )
     {
-      super( viewer.glenv,
-             vs_code,
-             fs_code );
+        super( viewer.glenv, vs_code, fs_code );
 
         this._viewer = viewer;
+
+        this._matrix = GeoMath.createMatrix();
     }
 
 
@@ -40,57 +43,49 @@ class SunMaterial extends Material {
      * @param  intensity        SunVisualizer parameter
      * @param  parameters       大気パラメータ
      * @return                  描画の有無
-     *
      */
     setParameter( render_stage: RenderStage, gocs_to_clip: Matrix, view_to_gocs: Matrix, sun: Sun, radius: number, intensity: number, parameters: SunVisualizer.Parameters ): boolean
     {
         const camMat = view_to_gocs;
-        const cx = camMat[12];
-        const cy = camMat[13];
-        const cz = camMat[14];
+        const camera_pos = GeoMath.createVector3([ view_to_gocs[12], view_to_gocs[13], view_to_gocs[14] ]);
+        const camera_dir = GeoMath.createVector3([ view_to_gocs[ 8], view_to_gocs[ 9], view_to_gocs[10] ]);
+        const tmp_vec = GeoMath.createVector3();
 
-        const array = [ camMat[0], camMat[1], camMat[2],  0,
-                        camMat[4], camMat[5], camMat[6],  0,
-                        camMat[8], camMat[9], camMat[10], 0,
-                                0,         0,          0, 1];
+        const array = GeoMath.createMatrix([
+                camMat[ 0], camMat[ 1], camMat[ 2], 0,
+                camMat[ 4], camMat[ 5], camMat[ 6], 0,
+                camMat[ 8], camMat[ 9], camMat[10], 0,
+                         0,          0,          0, 1
+        ]);
 
-        this.setMatrix ( "u_gocs_to_clip", gocs_to_clip );
         this.setFloat  ( "u_intensity", intensity );
         this.setMatrix ( "u_camera_direction_matrix", array );
         this.setVector3( "u_sun_direction" , sun.sun_direction );
 
-        const camera_height = Math.sqrt( cx*cx + cy*cy + cz*cz ) * 0.000001;  // 1/1000000
+        const camera_height = GeoMath.length3( camera_pos ) * 0.000001;  // 1/1000000
 
-        this.setVector3( "u_camera_position" , [cx * 0.000001, cy * 0.000001, cz * 0.000001] ); // 1/1000000
+        this.setVector3( "u_camera_position" , GeoMath.scale3( 0.000001, camera_pos, GeoMath.createVector3() ) ); // 1/1000000
         this.setVector3( "u_sun_vector" , sun.sun_direction );
         this.setFloat  ( "u_camera_height", camera_height );
-        this.setFloat  ( "u_camera_height2", camera_height * camera_height );
         this.setFloat  ( "u_kr",              parameters.kr );
         this.setFloat  ( "u_km",              parameters.km );
         this.setFloat  ( "u_scale_depth",     parameters.scale_depth );
         this.setFloat  ( "u_esun",            parameters.esun );
 
-        // 平面
-        const plane_vector = GeoMath.createVector3([ camMat[8], camMat[9], camMat[10] ]);
-
-        const camera_distance = (this._viewer.camera.far - this._viewer.camera.near) / 2 + this._viewer.camera.near;
-        const camera_vector = GeoMath.createVector3([ camMat[8] * camera_distance, camMat[9] * camera_distance, camMat[10] * camera_distance ]);
-        const px = cx + camera_vector[0];
-        const py = cy + camera_vector[1];
-        const pz = cz + camera_vector[2];
+        const camera_dist = (this._viewer.camera.far + this._viewer.camera.near) / 2.0;
+        const camera_vec = GeoMath.scale3( camera_dist, camera_dir, GeoMath.createVector3() );
+        const pos = GeoMath.add3( camera_pos, camera_vec, GeoMath.createVector3() );
 
         // sun
-        const sun_length = 149597870000.0;
-        const sunx = sun_length * sun.sun_direction[0];
-        const suny = sun_length * sun.sun_direction[1];
-        const sunz = sun_length * sun.sun_direction[2];
-        const sun_vector = GeoMath.createVector3([ sunx - px, suny - py, sunz - pz ]);
+        const sun_dist = 149597870000.0;
+        const sun_pos = GeoMath.scale3( sun_dist, sun.sun_direction, GeoMath.createVector3() );
+        const sun_vec = GeoMath.sub3( sun_pos, pos, GeoMath.createVector3() );
 
-        let pan = GeoMath.dot3( camera_vector, plane_vector );
-        let pbn = GeoMath.dot3( sun_vector,    plane_vector );
+        let pan = GeoMath.dot3( camera_vec, camera_dir );
+        let pbn = GeoMath.dot3( sun_vec, camera_dir );
 
-        if ( Math.abs(pan) < 0.000001 ) { pan = 0.0; }
-        if ( Math.abs(pbn) < 0.000001 ) { pbn = 0.0; }
+        if ( Math.abs( pan ) < 0.000001 ) { pan = 0.0; }
+        if ( Math.abs( pbn ) < 0.000001 ) { pbn = 0.0; }
 
         if ( ! ( ( pan >= 0 && pbn <= 0 ) ||
                  ( pan <= 0 && pbn >= 0 ) ) ) {
@@ -101,25 +96,31 @@ class SunMaterial extends Material {
         const apan = Math.abs(pan);
         const apbn = Math.abs(pbn);
 
-        const vec_ab = [ sunx - cx, suny - cy, sunz - cz ];
+        const vec_ab = GeoMath.sub3( sun_pos, camera_pos, tmp_vec );
         const ratio = apan / ( apan + apbn );
-        const cposx = cx + ( vec_ab[0] * ratio );
-        const cposy = cy + ( vec_ab[1] * ratio );
-        const cposz = cz + ( vec_ab[2] * ratio );
+        const cpos = GeoMath.add3( camera_pos, GeoMath.scale3( ratio, vec_ab, tmp_vec ), GeoMath.createVector3() );
+
+        const tmp_mat = this._matrix;
+
+        const sun_distance = GeoMath.length3( GeoMath.sub3( cpos, camera_pos, tmp_vec ) );
+        const sun_scale = sun_distance / 2.5 * radius;
 
         // billboard
-        const billboard_matrix = array;
-        billboard_matrix[12] = cposx;
-        billboard_matrix[13] = cposy;
-        billboard_matrix[14] = cposz;
-        this.setMatrix ( "u_billboard_matrix", billboard_matrix );
-
-        const lx = cposx - cx;
-        const ly = cposy - cy;
-        const lz = cposz - cz;
-        const sun_distance = Math.sqrt( lx*lx + ly*ly + lz*lz );
-        const sun_scale = sun_distance / 2.5 * radius;
-        this.setFloat ( "u_sun_scale", sun_scale );
+        const billboard_mat = array;
+        billboard_mat[  0 ] *= sun_scale;
+        billboard_mat[  1 ] *= sun_scale;
+        billboard_mat[  2 ] *= sun_scale;
+        billboard_mat[  4 ] *= sun_scale;
+        billboard_mat[  5 ] *= sun_scale;
+        billboard_mat[  6 ] *= sun_scale;
+        billboard_mat[  8 ] *= sun_scale;
+        billboard_mat[  9 ] *= sun_scale;
+        billboard_mat[ 10 ] *= sun_scale;
+        billboard_mat[ 12 ] = cpos[ 0 ];
+        billboard_mat[ 13 ] = cpos[ 1 ];
+        billboard_mat[ 14 ] = cpos[ 2 ];
+        const gocs_to_billboard_mat = GeoMath.mul_GA( gocs_to_clip, billboard_mat, tmp_mat );
+        this.setMatrix ( "u_billboard_matrix", gocs_to_billboard_mat );
 
         return true;
     }

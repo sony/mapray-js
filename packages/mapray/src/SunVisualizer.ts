@@ -161,49 +161,12 @@ class SunVisualizer {
     _createMesh() {
 
         const SPHERE_DIV = this._divide;
-        let i, ai, si, ci;
-        let j;
+        let ai, si, ci;
         let layer_radius;
         let layer_color;
 
         const radius = 1.0;
         const circle_layer = 15;
-
-        const layer_radius_table = [
-          0.0128,
-          0.0176,
-          0.0264,
-          0.0312,
-          0.0344,
-          0.0408,
-          0.0456,
-          0.052,
-          0.064,
-          0.0792,
-          0.1,
-          0.1176,
-          0.148,
-          0.18,
-          1
-        ];
-
-        const layer_color_table = [
-          255,
-          247,
-          200,
-          172,
-          157,
-          131,
-          115,
-          99,
-          76,
-          58,
-          43,
-          35,
-          26,
-          20,
-          0
-        ];
 
         // Vertices
         let vertices = [], indices = [];
@@ -214,23 +177,23 @@ class SunVisualizer {
         vertices.push(0.0);
         vertices.push(1.0);
 
-        for (j = 0; j < circle_layer; j++) {
-          layer_radius = layer_radius_table[j];
-          layer_color = layer_color_table[j];
-          for (i = 0; i < SPHERE_DIV; i++) {
+        for ( let j = 0; j < circle_layer; j++ ) {
+          layer_radius = LAYER_RADIUS_TABLE[j];
+          layer_color = LAYER_COLOR_TABLE[j];
+          for ( let i = 0; i < SPHERE_DIV; i++ ) {
             ai = i * 2 * Math.PI / SPHERE_DIV;
-            si = Math.sin(ai);
-            ci = Math.cos(ai);
+            si = Math.sin( ai );
+            ci = Math.cos( ai );
 
-            vertices.push(si * layer_radius);
-            vertices.push(ci * layer_radius);
-            vertices.push(0.0);
+            vertices.push( si * layer_radius );
+            vertices.push( ci * layer_radius );
+            vertices.push( 0.0 );
 
             vertices.push(layer_color/255);
           }
         }
 
-        for (i = 1; i < SPHERE_DIV; i++) {
+        for ( let i = 1; i < SPHERE_DIV; i++ ) {
             indices.push(0);
             indices.push(i+1);
             indices.push(i);
@@ -239,8 +202,9 @@ class SunVisualizer {
         indices.push(1);
         indices.push(SPHERE_DIV);
 
-        for (j = 1; j < circle_layer; j++) {
-          for (i = SPHERE_DIV * j; i < SPHERE_DIV*(j+1)-1; i++) {
+        for ( let j = 1; j < circle_layer; j++ ) {
+          let i;
+          for ( i = SPHERE_DIV * j; i < SPHERE_DIV*(j+1)-1; i++ ) {
             indices.push(i - SPHERE_DIV + 1);
             indices.push(i + 2);
             indices.push(i + 1);
@@ -271,6 +235,7 @@ class SunVisualizer {
         this._mesh = new Mesh( this._glenv, mesh_data );
     }
 
+
     /**
      * マテリアルを確認してCacheにセット
      */
@@ -289,7 +254,7 @@ class SunVisualizer {
     private _deleteMaterials() {
         // @ts-ignore
         const render_cache = this._viewer._render_cache;
-        if (render_cache && render_cache.sun_material ) {
+        if ( render_cache && render_cache.sun_material ) {
             render_cache.sun_material.dispose();
         }
     }
@@ -319,16 +284,61 @@ class SunVisualizer {
 
 }
 
+
+
+const LAYER_RADIUS_TABLE = [
+    0.0128,
+    0.0176,
+    0.0264,
+    0.0312,
+    0.0344,
+    0.0408,
+    0.0456,
+    0.052,
+    0.064,
+    0.0792,
+    0.1,
+    0.1176,
+    0.148,
+    0.18,
+    1
+];
+
+const LAYER_COLOR_TABLE = [
+    255,
+    247,
+    200,
+    172,
+    157,
+    131,
+    115,
+    99,
+    76,
+    58,
+    43,
+    35,
+    26,
+    20,
+    0
+];
+
+
+
 namespace SunVisualizer {
 
 
-    export interface Parameters {
-        kr: number,
-        km: number,
-        scale_depth: number,
-        esun: number,
-    }
-    
+
+export interface Parameters {
+    kr: number,
+    km: number,
+    scale_depth: number,
+    esun: number,
+}
+
+
+
 } // namespace SunVisualizer
+
+
 
 export default SunVisualizer;

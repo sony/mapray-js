@@ -4,11 +4,9 @@
 
 precision mediump float;
 
-uniform mat4  u_gocs_to_clip;
 uniform mat4  u_billboard_matrix;
 uniform mat4  u_camera_direction_matrix;
 uniform vec3  u_sun_direction;
-uniform float u_sun_scale;
 uniform float u_intensity;
 
 attribute vec3 a_position;
@@ -22,7 +20,6 @@ const float sun_length = 149597.870000;  // 1/1000000
 uniform vec3  u_camera_position;    // The camera's current position
 uniform vec3  u_sun_vector;         // The direction vector to the light source
 uniform float u_camera_height;      // The camera's current height
-uniform float u_camera_height2;     // u_camera_height^2
 uniform float u_kr;                 // Kr
 uniform float u_km;                 // Km
 uniform float u_scale_depth;        // scale_depth
@@ -83,9 +80,8 @@ main()
     vec3  FrontSecondaryColor = exp( -scatter * ( inv_wave_length * Kr_4PI + Km_4PI ) );
     // atmosphere>
 
-    vec3 vertex_pos = a_position * u_sun_scale;
-    vec4 pos = u_gocs_to_clip * u_billboard_matrix * vec4( vertex_pos, 1.0 );
-    gl_Position = pos;
+    vec3 vertex_pos = a_position;
+    gl_Position = u_billboard_matrix * vec4( vertex_pos, 1.0 );
 
     vec3 color = vec3( a_glow * u_intensity );
     color *= FrontSecondaryColor;

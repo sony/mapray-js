@@ -40,7 +40,7 @@ class MoonVisualizer {
      *
      * @param viewer 所属するViewer
      */
-    init( viewer: Viewer )
+    init( viewer: Viewer ): void
     {
         this._viewer = viewer;
         this._glenv = viewer.glenv;
@@ -58,10 +58,10 @@ class MoonVisualizer {
     /**
      * 破棄
      */
-    destroy( )
+    destroy(): void
     {
         this._deleteMaterials();
-        if (this._mesh) this._mesh.dispose();
+        if ( this._mesh ) this._mesh.dispose();
     }
 
 
@@ -69,7 +69,7 @@ class MoonVisualizer {
      * 可視性フラグを取得
      * @readonly
      */
-     get visibility(): Boolean { return this._visibility; }
+     get visibility(): boolean { return this._visibility; }
 
 
      /**
@@ -85,7 +85,8 @@ class MoonVisualizer {
      *
      * @param value  半径係数
      */
-     setRadius( value: number ) {
+    setRadius( value: number ): void
+    {
         if ( value < 0 ) { value = 0.1; }
         this._radius = value;
     }
@@ -96,72 +97,71 @@ class MoonVisualizer {
      *
      * @param value  輝度係数
      */
-    setIntensity( value: number ) {
+    setIntensity( value: number ): void
+    {
         this._intensity = value;
     }
 
 
     /**
      * メッシュを生成
-     * 
-     * @private
      */
-     _createMesh() {
-       const SPHERE_DIV = 32;
-       let i, ai, si, ci;
-       let j, aj, sj, cj;
-       let p1, p2;
+    private _createMesh(): void
+    {
+        const SPHERE_DIV = 32;
+        let ai, si, ci;
+        let aj, sj, cj;
+        let p1, p2;
 
-       const radius = 10.25;
+        const radius = 10.25;
 
-       // Vertices
-       let vertices = [], indices = [];
-       for (j = 0; j <= SPHERE_DIV; j++) {
-         aj = j * Math.PI / SPHERE_DIV;
-         sj = Math.sin(aj);
-         cj = Math.cos(aj);
-         for (i = 0; i <= SPHERE_DIV; i++) {
-           ai = i * 2 * Math.PI / SPHERE_DIV;
-           si = Math.sin(ai);
-           ci = Math.cos(ai);
+        // Vertices
+        const vertices = [], indices = [];
+        for ( let j = 0; j <= SPHERE_DIV; j++ ) {
+            aj = j * Math.PI / SPHERE_DIV;
+            sj = Math.sin( aj );
+            cj = Math.cos( aj );
+            for ( let i = 0; i <= SPHERE_DIV; i++ ) {
+                ai = i * 2 * Math.PI / SPHERE_DIV;
+                si = Math.sin( ai );
+                ci = Math.cos( ai );
 
-           vertices.push(ci * sj * radius);
-           vertices.push(si * sj * radius);
-           vertices.push(cj * radius);
+                vertices.push( ci * sj * radius );
+                vertices.push( si * sj * radius );
+                vertices.push( cj * radius );
 
-           vertices.push(i/SPHERE_DIV + 0.5);
-           vertices.push(1-j/SPHERE_DIV);
+                vertices.push( i / SPHERE_DIV + 0.5 );
+                vertices.push( 1 - j / SPHERE_DIV );
+            }
+        }
 
-         }
-       }
+        // Indices
+        for ( let j = 0; j < SPHERE_DIV; j++ ) {
+            for ( let i = 0; i < SPHERE_DIV; i++ ) {
+                p1 = j * (SPHERE_DIV + 1) + i;
+                p2 = p1 + (SPHERE_DIV + 1);
 
-       // Indices
-       for (j = 0; j < SPHERE_DIV; j++) {
-         for (i = 0; i < SPHERE_DIV; i++) {
-           p1 = j * (SPHERE_DIV+1) + i;
-           p2 = p1 + (SPHERE_DIV+1);
+                indices.push( p1 );
+                indices.push( p2 );
+                indices.push( p1 + 1 );
 
-           indices.push(p1);
-           indices.push(p2);
-           indices.push(p1 + 1);
+                indices.push( p1 + 1 );
+                indices.push( p2 );
+                indices.push( p2 + 1 );
+            }
+        }
 
-           indices.push(p1 + 1);
-           indices.push(p2);
-           indices.push(p2 + 1);
-         }
-       }
+        const mesh_data = {
+            vtype: [
+                { name: "a_position", size: 3 },
+                { name: "a_texcoord", size: 2 },
+            ],
+            vertices: vertices,
+            indices:  indices
+        };
 
-       const mesh_data = {
-           vtype: [
-               { name: "a_position", size: 3 },
-               { name: "a_texcoord", size: 2 },
-           ],
-           vertices: vertices,
-           indices:  indices
-       };
-
-       this._mesh = new Mesh( this._glenv, mesh_data );
-     }
+        this._mesh = new Mesh( this._glenv, mesh_data );
+    }
 
 
     /**
@@ -183,7 +183,7 @@ class MoonVisualizer {
     private _deleteMaterials() {
         // @ts-ignore
         const render_cache = this._viewer._render_cache;
-        if (render_cache._render_cache && render_cache.moon_material ) {
+        if ( render_cache._render_cache && render_cache.moon_material ) {
             render_cache.moon_material.dispose();
             render_cache.moon_mask_material.dispose();
         }
@@ -201,15 +201,8 @@ class MoonVisualizer {
     {
         // @ts-ignore
         const  material = this._viewer._render_cache.moon_material;
-
-        material.bindProgram();
-        const need_draw = material.setParameter( render_stage, gocs_to_clip, view_to_gocs, this._viewer.sun, this._viewer.moon, this._radius, this._intensity );
-
-        if( need_draw ) {
-            this._mesh.draw( material );
-        }
+        this._draw( render_stage, gocs_to_clip, view_to_gocs, material );
     }
-
 
 
     /**
@@ -222,12 +215,17 @@ class MoonVisualizer {
     drawMask( render_stage: RenderStage, gocs_to_clip: Matrix, view_to_gocs: Matrix )
     {
         // @ts-ignore
-        const  material = this._viewer._render_cache.moon_mask_material;
+        const material = this._viewer._render_cache.moon_mask_material;
+        this._draw( render_stage, gocs_to_clip, view_to_gocs, material );
+    }
 
+
+    private _draw( render_stage: RenderStage, gocs_to_clip: Matrix, view_to_gocs: Matrix, material: MoonMaterial )
+    {
         material.bindProgram();
         const need_draw = material.setParameter( render_stage, gocs_to_clip, view_to_gocs, this._viewer.sun, this._viewer.moon, this._radius, this._intensity );
 
-        if( need_draw ) {
+        if ( need_draw ) {
             this._mesh.draw( material );
         }
     }
