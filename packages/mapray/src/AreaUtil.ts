@@ -92,7 +92,7 @@ class AreaUtil
         if ( type !== AreaUtil.Type.NORMAL ) {
             if ( 1 < z && z < 7 ) {
                 const n = 1 << ( z - 1 );
-                return (x < n-1 || n < x) || (y < n-1 && n < y);
+                return (x < n-1 || n < x) || (y < n-1 || n < y);
             }
         }
         return false;
