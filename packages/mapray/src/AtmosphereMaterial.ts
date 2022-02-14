@@ -41,12 +41,17 @@ class AtmosphereMaterial extends Material {
     static _getPreamble( options: AtmosphereMaterial.Options )
     {
         const from_atmosphere = (options.from_atmosphere !== undefined) ? options.from_atmosphere : false;
+        const mask = (options.mask !== undefined) ? options.mask : false;
 
         const lines = [];
 
         // UNLIT マクロの定義
         if ( from_atmosphere ) {
             lines.push( "#define SKY_IN_ATMOSPHERE" );
+        }
+
+        if ( mask ) {
+            lines.push( "#define MASK_SKY" );
         }
 
         // lines を文字列にして返す
@@ -88,6 +93,7 @@ namespace AtmosphereMaterial {
 
 export interface Options {
     from_atmosphere?: boolean;
+    mask?: boolean;
 }
 
 

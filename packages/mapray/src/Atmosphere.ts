@@ -23,6 +23,8 @@ class Atmosphere {
         ground: boolean;
     };
 
+    private _star_mask!: boolean;
+
     private _parameters!: Atmosphere.Parameters;
 
 
@@ -38,6 +40,8 @@ class Atmosphere {
         this._glenv = viewer.glenv;
 
         this._visibility = { sky: true, ground: true };
+
+        this._star_mask = true;
 
         this._parameters = {
             kr: 0.01, km: 0.001, scale_depth: 0.13, esun: 17.5, exposure: -1.4,
@@ -67,6 +71,13 @@ class Atmosphere {
 
 
     /**
+     * 昼間の恒星表示マスクを取得
+     * @readonly
+     */
+     get starMask() { return this._star_mask; }
+
+
+     /**
      * 大気層可視性フラグを設定
      *
      * @param flag   可視性フラグ
@@ -80,6 +91,13 @@ class Atmosphere {
      * @param flag  可視性フラグ
      */
     setGroundVisibility( flag: boolean ) { this._visibility.ground = flag; }
+
+
+    /**
+     * 昼間の恒星表示マスクを設定
+     * @param flag  フラグ
+     */
+     setStarMask( flag: boolean ) { this._star_mask = flag; }
 
 
     /**
@@ -269,6 +287,8 @@ class Atmosphere {
         if ( !render_cache.sky_space_material ) {
             render_cache.sky_space_material = new AtmosphereMaterial( this._viewer );
             render_cache.sky_atmosphere_material = new AtmosphereMaterial( this._viewer, { from_atmosphere: true } );
+            render_cache.mask_sky_space_material = new AtmosphereMaterial( this._viewer, { mask: true } );
+            render_cache.mask_sky_atmosphere_material = new AtmosphereMaterial( this._viewer, { from_atmosphere: true, mask: true } );
         }
     }
 
@@ -281,8 +301,12 @@ class Atmosphere {
         if ( render_cache && render_cache.sky_space_material ) {
             render_cache.sky_space_material.dispose();
             render_cache.sky_atmosphere_material.dispose();
+            render_cache.mask_sky_space_material.dispose();
+            render_cache.mask_sky_atmosphere_material.dispose();
             render_cache.sky_space_material = undefined;
             render_cache.sky_atmosphere_material = undefined;
+            render_cache.mask_sky_space_material = undefined;
+            render_cache.mask_sky_atmosphere_material = undefined;
         }
     }
 
@@ -294,8 +318,26 @@ class Atmosphere {
      * @param gocs_to_clip gocs_to_clip
      * @param view_to_gocs view_to_gocs
      */
-    draw( render_stage: RenderStage, gocs_to_clip: Matrix, view_to_gocs: Matrix )
+    draw( render_stage: RenderStage, gocs_to_clip: Matrix, view_to_gocs: Matrix ): void
     {
+        this._draw( render_stage, gocs_to_clip, view_to_gocs, false );
+    }
+
+
+    /**
+     * 大気層Maskを描画する。
+     *
+     * @param render_stage レンダリングステージ
+     * @param gocs_to_clip gocs_to_clip
+     * @param view_to_gocs view_to_gocs
+     */
+    drawMask( render_stage: RenderStage, gocs_to_clip: Matrix, view_to_gocs: Matrix ): void
+    {
+        this._draw( render_stage, gocs_to_clip, view_to_gocs, true );
+    }
+
+
+    private _draw( render_stage: RenderStage, gocs_to_clip: Matrix, view_to_gocs: Matrix, isMask: boolean ) {
         // @ts-ignore
         const gl = render_stage._glenv.context;
 
@@ -306,24 +348,24 @@ class Atmosphere {
         const camera_position = [ cx, cy, cz ];
         const camera_height = Math.sqrt( cx*cx + cy*cy + cz*cz );
 
-        let material = null;
-        if( camera_height >= 10.25 ) {
-          // space
-          // @ts-ignore
-          material = this._viewer._render_cache.sky_space_material;
-        } else {
-          // atmosphere
-          // @ts-ignore
-          material = this._viewer._render_cache.sky_atmosphere_material;
-        }
-
+        // @ts-ignore
+        const material = (
+            camera_height >= 10.25 ? ( // space
+                isMask ? this._viewer._render_cache.mask_sky_space_material :
+                this._viewer._render_cache.sky_space_material
+            ):
+            ( // atmosphere
+                isMask ? this._viewer._render_cache.mask_sky_atmosphere_material :
+                this._viewer._render_cache.sky_atmosphere_material
+            )
+        );
         material.bindProgram();
         material.setParameter( render_stage, gocs_to_clip, camera_position, camera_height, this._parameters );
 
         gl.frontFace( gl.CW );
         this._mesh.draw( material );
         gl.frontFace( gl.CCW );
-    }
+     }
 
 
     /**

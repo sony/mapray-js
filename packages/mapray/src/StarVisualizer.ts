@@ -602,6 +602,8 @@ class StarVisualizer {
             gl.frontFace( gl.CCW );
         }
 
+        gl.blendFuncSeparate( gl.ONE_MINUS_DST_COLOR, gl.ONE, gl.ZERO, gl.ONE );  // 比較(明)
+
         if ( this._constellation_visibility ) {
             // @ts-ignore
             const constellationMaterial = this._viewer._render_cache.constellation_material;
@@ -617,6 +619,8 @@ class StarVisualizer {
             material.setParameter( render_stage, gocs_to_clip_parsec, this._longitude, scale );
             this._mesh.draw( material );
         }
+
+        gl.blendFuncSeparate( gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE );  // FB のα値は変えない
     }
 }
 

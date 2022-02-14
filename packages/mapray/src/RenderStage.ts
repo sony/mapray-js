@@ -442,19 +442,24 @@ abstract class RenderStage {
         gl.enable( gl.CULL_FACE );
         gl.enable( gl.BLEND );
 
-        // sun
-        if ( this._viewer.sunVisualizer && this._viewer.sunVisualizer.visibility ) {
-            this._viewer.sunVisualizer.draw( this, this._gocs_to_clip, this._view_to_gocs );
-        }
-
         // star
         if ( this._viewer.starVisualizer && this._viewer.starVisualizer.visibility ) {
-            gl.blendFuncSeparate( gl.ONE_MINUS_DST_COLOR, gl.ONE, gl.ZERO, gl.ONE );  // 比較(明)
             this._viewer.starVisualizer.draw( this, this._width, this._height, this._gocs_to_view );
+        }
+
+        // atmosphere (mask)
+        if ( this._viewer.atmosphere && this._viewer.atmosphere.visibility.sky && this._viewer.atmosphere.starMask ) {
+            this._viewer.atmosphere.drawMask( this, this._gocs_to_clip, this._view_to_gocs );
+        }
+
+        // sun
+        if ( this._viewer.sunVisualizer && this._viewer.sunVisualizer.visibility ) {
+            gl.blendFuncSeparate( gl.ONE_MINUS_DST_COLOR, gl.ONE, gl.ZERO, gl.ONE );  // 比較(明)
+            this._viewer.sunVisualizer.draw( this, this._gocs_to_clip, this._view_to_gocs );
             gl.blendFuncSeparate( gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE );  // FB のα値は変えない
         }
 
-        // moon1
+        // moon1 (mask)
         if ( this._viewer.moonVisualizer && this._viewer.moonVisualizer.visibility ) {
             this._viewer.moonVisualizer.drawMask( this, this._gocs_to_clip, this._view_to_gocs );
         }
@@ -471,27 +476,6 @@ abstract class RenderStage {
             gl.blendFuncSeparate( gl.ONE_MINUS_DST_COLOR, gl.ONE, gl.ZERO, gl.ONE );  // 比較(明)
             this._viewer.moonVisualizer.draw( this, this._gocs_to_clip, this._view_to_gocs );
         }
-
-        /*
-        // pattern2
-        // sun
-        if ( this._viewer.sunVisualizer && this._viewer.sunVisualizer.visibility ) {
-            this._viewer.sunVisualizer.draw( this, this._gocs_to_clip, this._view_to_gocs );
-        }
-
-        // moon
-        if ( this._viewer.moonVisualizer && this._viewer.moonVisualizer.visibility ) {
-            // gl.blendFuncSeparate( gl.ONE_MINUS_DST_COLOR, gl.ONE, gl.ZERO, gl.ONE );  // FB のα値は変えない
-            // gl.blendFuncSeparate( gl.ONE, gl.ONE, gl.ZERO, gl.ONE );  // FB のα値は変えない
-            this._viewer.moonVisualizer.draw( this, this._gocs_to_clip, this._view_to_gocs );
-        }
-
-        // atmosphere
-        if ( this._viewer.atmosphere && this._viewer.atmosphere.visibility.sky ) {
-            gl.blendFuncSeparate( gl.ONE_MINUS_DST_COLOR, gl.ONE, gl.ZERO, gl.ONE );  // FB のα値は変えない
-            this._viewer.atmosphere.draw( this, this._gocs_to_clip, this._view_to_gocs );
-        }
-        */
 
         gl.disable( gl.BLEND );
         gl.frontFace( gl.CCW );

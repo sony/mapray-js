@@ -114,6 +114,11 @@ main()
     v_color.a = 1.0;
     v_color   = clamp( v_color, 0.0, 1.0 );
 
+    #ifdef MASK_SKY
+        float mask_color = clamp ( v_color.b * 2.0 + v_color.r, 0.0, 1.0 );
+        v_color = vec4 ( vec3 ( 0.0 ), mask_color );
+    #endif
+
     vec3 atmosphere_position = a_position * planet_factor;
     gl_Position = u_gocs_to_clip * vec4( atmosphere_position, 1.0 );
 }
