@@ -69,6 +69,24 @@ const RENDER_OPTION_PROPERTIES = [
         value: true,
     },
     {
+        key: "star",
+        type: "boolean",
+        description: "恒星表示",
+        value: true,
+    },
+    {
+        key: "constellation",
+        type: "boolean",
+        description: "星座線表示",
+        value: true,
+    },
+    {
+        key: "milkyway",
+        type: "boolean",
+        description: "天の川表示",
+        value: true,
+    },
+    {
         key: "sky",
         type: "boolean",
         description: "大気圏表示",
@@ -167,6 +185,44 @@ const RENDER_OPTION_PROPERTIES = [
             "1", "2", "3"
         ],
         value: "1",
+    },
+    {
+        key: "move star",
+        type: "boolean",
+        description: "恒星移動",
+        value: true,
+    },
+    {
+        key: "star speed",
+        type: "range",
+        description: "恒星の速度",
+        min: 0,
+        max: 100,
+        value: 1.0,
+    },
+    {
+        key: "star intensity",
+        type: "range",
+        description: "恒星の強度",
+        min: -1,
+        max: 1,
+        value: -0.2,
+    },
+    {
+        key: "constellation intensity",
+        type: "range",
+        description: "星座の強度",
+        min: 0,
+        max: 2,
+        value: 0.12,
+    },
+    {
+        key: "milkyway intensity",
+        type: "range",
+        description: "天の川の強度",
+        min: 0,
+        max: 2,
+        value: 0.5,
     },
     {
         key: "kr",
@@ -285,6 +341,10 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
     private _moveMoon: boolean;
     private _moonSpeed: number;
 
+    private _starElapsedTime: number;
+    private _moveStar: boolean;
+    private _starSpeed: number;
+
     private _fps: number[];
     private _fps_count: number;
 
@@ -304,6 +364,8 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
     private _cloudURLArray: string[];
 
     private _cloudImageArray: any[];
+
+    private _constellationIntensity: number;
 
     /**
      * @param container  コンテナ (ID または要素)
@@ -326,6 +388,7 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
                 // moon_visualizer: new mapray.MoonVisualizer( './data/moontest.jpg' )
                 moon_visualizer: new mapray.MoonVisualizer( './data/moon.jpg' ),
                 cloud_visualizer: new mapray.CloudVisualizer(),
+                star_visualizer: new mapray.StarVisualizer( './data/star.json', './data/starmap_512n2.jpg' ),
                 north_pole: { color: [0, 0.07, 0.12], },
                 south_pole: { color: [0.88, 0.89, 0.94], },
         });
@@ -393,6 +456,12 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
         this._moveMoon = true;
         this._moonSpeed = 10;
 
+        this._starElapsedTime = 0;
+        this._moveStar = true;
+        this._starSpeed = 1;
+
+        this._constellationIntensity = 1;
+
         this._fps = [];
         this._fps_count = 240;
         for ( let i=0; i<this._fps_count; i++ ) {
@@ -410,7 +479,7 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
         (async () => {
                 await this._loadClouds();
         })();
-    }
+}
 
     /**
      * Viewerを閉じる
@@ -682,6 +751,23 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
             this._renderOption.set("cloud stream", v + delta_time * dv > 1.0 ? 0 : v + delta_time * dv);
         }
 
+        if ( this._moveStar ) {
+            if(this.viewer.starVisualizer) {
+                this._starElapsedTime += delta_time * this._starSpeed;
+                this.viewer.starVisualizer.setLongitude( this._starElapsedTime );
+
+                // const name = this.viewer.starVisualizer.getStarName(11767);
+                // console.log(name);
+                // console.log(this.viewer.starVisualizer.getStarPoint(name));
+                // const c_name = 'Eri';
+                // console.log(this.viewer.starVisualizer.getConstellationPoint(c_name));
+                // console.log(this.viewer.starVisualizer.getConstellationAngle(c_name));
+                // console.log(this.viewer.starVisualizer.getConstellationStars(c_name));
+            }
+
+          }
+
+
         this._commander.endFrame();
     }
 
@@ -781,8 +867,7 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
     {
       if ( this._commander.isCapture() ) {
         const isPng = false;
-        const options = isPng ? {type: 'png'} : {type: 'jpeg'};
-        const blob = await this.viewer.capture( options );
+        const blob = await this.viewer.capture( isPng ? {type: 'png'} : {type: 'jpeg'} );
         const a = document.createElement('a');
         const url = URL.createObjectURL(blob);
         a.href = url;
@@ -863,6 +948,11 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
             kv2.appendChild(DomTool.createSliderOption(renderOption, "cloud intensity", { mode: "key-value-table-row" }));
             kv2.appendChild(DomTool.createSliderOption(renderOption, "cloud stream", { mode: "key-value-table-row" }));
             kv2.appendChild(DomTool.createSliderOption(renderOption, "cloud fade", { mode: "key-value-table-row" }));
+            top2.appendChild(DomTool.createCheckboxOption(renderOption, "move star"));
+            kv2.appendChild(DomTool.createSliderOption(renderOption, "star speed", { mode: "key-value-table-row" }));
+            kv2.appendChild(DomTool.createSliderOption(renderOption, "star intensity", { mode: "key-value-table-row" }));
+            kv2.appendChild(DomTool.createSliderOption(renderOption, "constellation intensity", { mode: "key-value-table-row" }));
+            kv2.appendChild(DomTool.createSliderOption(renderOption, "milkyway intensity", { mode: "key-value-table-row" }));
             kv2.appendChild(DomTool.createSelectOption(renderOption, "cloud select"));
             kv2.appendChild(DomTool.createSelectOption(renderOption, "cloud contour"));
             kv2.style.width = "100%";
@@ -882,6 +972,9 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
             top4.appendChild(DomTool.createCheckboxOption(renderOption, "sky"));
             top4.appendChild(DomTool.createCheckboxOption(renderOption, "ground"));
             top4.appendChild(DomTool.createCheckboxOption(renderOption, "cloud"));
+            top4.appendChild(DomTool.createCheckboxOption(renderOption, "star"));
+            top4.appendChild(DomTool.createCheckboxOption(renderOption, "constellation"));
+            top4.appendChild(DomTool.createCheckboxOption(renderOption, "milkyway"));
             top4.appendChild(DomTool.createCheckboxOption(renderOption, "move cloud"));
 
             const top5 = document.createElement("table");
@@ -925,6 +1018,34 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
             renderOption.onChange("moon radius", event => {
                 if ( this.viewer.moonVisualizer ) {
                     this.viewer.moonVisualizer.setRadius( event.value );
+                }
+            });
+
+            renderOption.onChange("move star", event => {
+                this._moveStar = event.value;
+            });
+            renderOption.onChange("star speed", event => {
+                this._starSpeed = event.value;
+            });
+            renderOption.onChange("star intensity", event => {
+                if ( this.viewer.starVisualizer ) {
+                    this.viewer.starVisualizer.setIntensity( event.value );
+                }
+            });
+            renderOption.onChange("constellation intensity", event => {
+                this._constellationIntensity = event.value;
+                if( this.viewer.starVisualizer ) {
+                    this.viewer.starVisualizer.setLineColor(
+                        mapray.GeoMath.createVector3([
+                        0.3 * this._constellationIntensity,
+                        0.5 * this._constellationIntensity,
+                        1.0 * this._constellationIntensity
+                    ]) );
+                }
+            });
+            renderOption.onChange("milkyway intensity", event => {
+                if( this.viewer.starVisualizer ) {
+                    this.viewer.starVisualizer.setMilkyWayIntensity( event.value );
                 }
             });
 
@@ -1056,6 +1177,23 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
                 }
             });
 
+            renderOption.onChange("star", event => {
+                if( this.viewer.starVisualizer ) {
+                    this.viewer.starVisualizer.setVisibility( event.value );
+                }
+            });
+
+            renderOption.onChange("constellation", event => {
+                if( this.viewer.starVisualizer ) {
+                    this.viewer.starVisualizer.setConstellationVisibility( event.value );
+                }
+            });
+
+            renderOption.onChange("milkyway", event => {
+                if( this.viewer.starVisualizer ) {
+                    this.viewer.starVisualizer.setMilkyWayVisibility( event.value );
+                }
+            });
 
             renderOption.onChange("kr", event => {
                 if ( this.viewer.atmosphere ) {
