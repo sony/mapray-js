@@ -801,7 +801,9 @@ class Viewer {
         }
 
         // 地表
-        if ( this._ground_visibility && (this._globe.status === Globe.Status.READY) ) {
+        // ignore this._ground_visibility at this version.
+        // if ( this._ground_visibility && (this._globe.status === Globe.Status.READY) ) {
+        if ( this._globe.status === Globe.Status.READY ) {
             const globe_dist = this._globe.findRayDistance( ray, distance );
  
             if ( globe_dist !== distance ) {
