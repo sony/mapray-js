@@ -21,8 +21,7 @@
     "doc": "doc"
   },
   "files": [
-    "dist",
-    "src"
+    "dist"
   ],
   "scripts": {
     "build": "rollup -c",
