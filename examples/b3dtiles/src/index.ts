@@ -16,23 +16,38 @@ function startApp( container: HTMLElement | string )
         appInstance.destroy();
         appInstance = undefined;
     }
-    appInstance = new App( container );
+
+    // init value
+    const atom = <HTMLInputElement>document.getElementById("AtmoON");
+    const atom_value = atom.checked;
+
+    const area = <HTMLInputElement>document.getElementById("area");
+    const area_value = area.value;
+
+    appInstance = new App( container, {"enable_atmosphere": atom_value, "camera_area": area_value} );
 }
 
-const elem = <HTMLInputElement>document.getElementById('range')!;
-const target = document.getElementById('range-output')!;
-
-let rangeValue = (elem : HTMLInputElement, target : HTMLElement) => {
-    return function() {
-        if (appInstance) {
-            appInstance.changeLodFactor(elem.value);
-        }
-        target.innerHTML = elem.value;
+function onClickCheckbox(style: string) {
+    const atom = <HTMLInputElement>document.getElementById("AtmoON");
+    if (atom && appInstance) {
+        appInstance.enableAtmosphere(atom.checked);
     }
 }
-elem.addEventListener('input', rangeValue(elem, target));
+
+function onChangeCamera() {
+    // Selectに対するリアルタイム処理
+    const elem_select = <HTMLInputElement>document.getElementById("area");
+    if (elem_select && appInstance) {
+        appInstance.changeCamera(elem_select.value);
+    }
+}
 
 // グローバル関数に登録
 // @ts-ignore
 window.startApp = startApp;
 
+// @ts-ignore
+window.onClickCheckbox = onClickCheckbox;
+
+// @ts-ignore
+window.onChangeCamera = onChangeCamera;

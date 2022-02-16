@@ -1,4 +1,4 @@
-import B3dTileViewer from './B3dTileViewer';
+import B3dTileViewer, { InitValue } from './B3dTileViewer';
 
 
 class App {
@@ -7,13 +7,17 @@ class App {
 
     private _current: B3dTileViewer;
 
-    constructor( container: HTMLElement | string ) {
+    constructor( container: HTMLElement | string, initvalue: InitValue ) {
         this._container = container;
-        this._current = new B3dTileViewer(this._container);
+        this._current = new B3dTileViewer(this._container, initvalue);
     }
 
-    changeLodFactor(factor: string) {
-        this._current.setLodFactor(factor)
+    enableAtmosphere(enable: boolean) {
+        this._current.enableAtmosphere(enable);
+    }
+
+    changeCamera(area: string) {
+        this._current.moveCameraPosition(area);
     }
 
     destroy() {
