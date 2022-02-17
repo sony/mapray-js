@@ -1,0 +1,33 @@
+{
+  "name": "debug-common",
+  "version": "0.0.0",
+  "license": "MIT",
+  "module": "./dist/es/debug-common.js",
+  "types": "./dist/es/@type/index.d.ts",
+  "scripts": {
+    "start": "run-p build-watch",
+    "build": "rollup -c",
+    "build-watch": "rollup -c -w"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.8.6",
+    "@babel/preset-env": "^7.8.6",
+    "@rollup/plugin-typescript": "^8.2.1",
+    "rollup-plugin-typescript2": "0.30.0",
+    "babel-loader": "^8.0.6",
+    "npm-run-all": "^4.1.5",
+    "rollup": "^1.32.0",
+    "rollup-plugin-babel": "^4.3.3",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "rollup-plugin-postcss": "^2.1.1",
+    "rollup-plugin-replace": "^2.2.0",
+    "rollup-plugin-preprocess": "^0.0.4",
+    "rollup-plugin-string": "^3.0.0",
+    "rollup-plugin-terser": "^5.2.0",
+    "tslib": "^2.2.0",
+    "typescript": "^4.3.2"
+  },
+  "dependencies": {
+  }
+}
