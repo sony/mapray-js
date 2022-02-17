@@ -490,6 +490,14 @@ class StandardUIViewer extends mapray.RenderCallback
         return NaN;
     }
 
+    // private _addHash()
+    // {
+    //     var self = this;
+    //     this._onHashChange = this._onHashChange.bind(this);
+    //     window.addEventListener("hashchange", self._onHashChange, { passive: false } );
+
+    // }
+
     /**
      * イベントリスナーの追加
      */
