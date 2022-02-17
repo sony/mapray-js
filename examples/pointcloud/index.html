@@ -60,6 +60,7 @@
     </style>
 </head>
 <body onload="window.startApp('mapray-container');">
+
 <div id="offcanvas-help" uk-offcanvas="mode: reveal; overlay: true; flip: true">
     <div class="uk-card uk-card-secondary uk-card-body uk-offcanvas-bar">
         <dl class="uk-description-list uk-description-list-divider">
@@ -111,22 +112,31 @@
         <div id="mapray-container">
             <div id="control-ui" class="uk-overlay uk-position-right uk-width-1-4">
                 <div class="uk-card uk-card-secondary uk-card-small uk-card-body">
-                    <h3 class="uk-card-title">Virtual Tokyo's 23 central wards</h3>
-                    <p>Data set from PLATEAU project by MLIT.</p>
-                    <p>The 3D city model is converted from Obj to b3dtiles.</p>
-                    <p>Data source: <a href="https://www.mlit.go.jp/plateau/">Project PLATEAU</a></p>
+                    <h3 class="uk-card-title">Title</h3>
+                    <p>Lorem ipsum <a href="#">dolor</a> sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
                     <div class="uk-margin">
-                        <label class="uk-form-label">Location</label>
-                        <select class="uk-select uk-form-small" id="area" onchange="(function(){window.onChangeCamera();})();">
-                            <option value="TokyoTower" selected>Tokyo Tower</option>
-                            <option value="Shinjuku">Shinjuku</option>
-                            <option value="Haneda">Tokyo International Airport</option>
-                            <option value="All">All</option>
+                        <label class="uk-form-label">Select</label>
+                        <select class="uk-select uk-form-small" id="select0102" onchange="(function(){window.onChangeSelect();})();">
+                            <option value="option01" selected>Option 01</option>
+                            <option value="option02">Option 02</option>
                         </select>
                     </div>
 
                     <div class="uk-margin uk-grid-small uk-child-width-auto uk-grid">
-                        <label><input class="uk-checkbox" type="checkbox" id="AtmoON" onclick="(function(){window.onClickCheckbox();})();" >  Atmosphere ON</label>
+                        <div class="uk-form-label">Radio</div>
+                        <label><input class="uk-radio" type="radio" name="radio2" uk-tooltip="This is A" onclick="(function(){window.onClickRadio('A');})();" checked> A</label>
+                        <label><input class="uk-radio" type="radio" name="radio2" uk-tooltip="This is B" onclick="(function(){window.onClickRadio('B');})();"> B</label>
+                    </div>
+
+                    <div class="uk-margin uk-grid-small uk-child-width-auto uk-grid">
+                        <div class="uk-form-label">Checkbox</div>
+                        <label><input class="uk-checkbox" type="checkbox" id="cbA" onclick="(function(){window.onClickCheckbox('A');})();" checked> A</label>
+                        <label><input class="uk-checkbox" type="checkbox" id="cbB" onclick="(function(){window.onClickCheckbox('B');})();"> B</label>
+                    </div>
+                    <div class="uk-margin">
+                        <div class="uk-form-label">Range</div>
+                        <input class="uk-range" id="range" type="range" value="2.0" min="0.5" max="10" step="0.1" >
+                        <output id="range-output">2</output>
                     </div>
                 </div>
             </div>
@@ -136,8 +146,9 @@
                     <a href="#offcanvas-help" uk-icon="icon: question; ratio: 1.2" uk-tooltip="How to operate" uk-toggle="target: #offcanvas-help"></a>
                 </div>
             </div>
+
+
         </div>
-    </div>
     </body>
     <script src="https://cdn.jsdelivr.net/npm/uikit@3.10.1/dist/js/uikit.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/uikit@3.10.1/dist/js/uikit-icons.min.js"></script>
