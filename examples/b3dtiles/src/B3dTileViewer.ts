@@ -58,7 +58,8 @@ class B3dTileViewer extends maprayui.StandardUIViewer {
     {
         super( container, MAPRAY_ACCESS_TOKEN, {
                 debug_stats: new mapray.DebugStats(),
-                atmosphere: new mapray.Atmosphere()
+                atmosphere: new mapray.Atmosphere(),
+                sun_visualizer: new mapray.SunVisualizer( 32 )
             }
         );
 
@@ -80,12 +81,25 @@ class B3dTileViewer extends maprayui.StandardUIViewer {
         this.setCameraParameter( this._init_camera_parameter );
         //
 
+        this._viewer?.atmosphere?.setRayleigh(0.003);
+        this._viewer?.atmosphere?.setMie(0.001);
+
+
         // Enable URL hasg
         this.setURLUpdate( true );
 
         if (initvalue.enable_atmosphere === false) {
             this.enableAtmosphere(false);
         }
+
+        // Set sun
+        const theta = - 200 * Math.PI / 180.0;
+        const x = Math.cos(theta);
+        const y = Math.sin(theta);
+        this._viewer?.sun.setSunDirection( [ x, y, 0 ] );
+        this._viewer?.sunVisualizer?.setVisibility(true);
+        this._viewer?.sunVisualizer?.setRadius(4);
+        //
 
         this.moveCameraPosition(initvalue.camera_area);
     }
