@@ -16,54 +16,61 @@ function startApp( container: HTMLElement | string )
         appInstance.destroy();
         appInstance = undefined;
     }
-    appInstance = new App( container );
+
+    // init value
+    const surface = <HTMLInputElement>document.getElementById("surface");
+    const surface_value = surface.value;
+
+    const location = <HTMLInputElement>document.getElementById("location");
+    const location_value = location.value;
+
+    const render = <HTMLInputElement>document.getElementById("render-style");
+    const render_value = render.value;
+
+    const size = <HTMLInputElement>document.getElementById("render-size");
+    const size_value = size.value;
+
+
+
+    appInstance = new App( container, {"location": location_value, "surface": surface_value , "style": render_value, "size": size_value} );
 }
 
-function onClickRadio(style: string) {
-    if ( appInstance ) {
-        console.log("OnClickRadio:" + style);
+function onChangeLocation() {
+    const elem_select = <HTMLInputElement>document.getElementById("location");
+    if (elem_select && appInstance) {
+        appInstance.changeLocation(elem_select.value);
     }
 }
 
-function onClickCheckbox(style: string) {
-    const cba = <HTMLInputElement>document.getElementById("cbA");
-    const cbb = <HTMLInputElement>document.getElementById("cbB");
-    if (cba) {
-        console.log("OnClickCheckbox A:" + cba.checked);
-    }
-    if (cbb) {
-        console.log("OnClickCheckbox B:" + cbb.checked);
+function onChangeSurface() {
+    const elem_select = <HTMLInputElement>document.getElementById("surface");
+    if (elem_select && appInstance) {
+        appInstance.changeSurface(elem_select.value);
     }
 }
 
-function onChangeSelect() {
-    // Selectに対するリアルタイム処理
-    const elem_select = <HTMLInputElement>document.getElementById("select0102");
-    if (elem_select) {
-        console.log("onChangeSelect:" + elem_select.value)
+function onChangePointCloudStyle() {
+    const elem_select = <HTMLInputElement>document.getElementById("render-style");
+    if (elem_select && appInstance) {
+        appInstance.changePointCloudStyle(elem_select.value);
     }
 }
 
-// Rangeに対するリアルタイム処理
-const elem_range = <HTMLInputElement>document.getElementById("range")!;
-const target_range = document.getElementById("range-output")!;
-
-let rangeValue = (elem : HTMLInputElement, target : HTMLElement) => {
-    return function() {
-        if (appInstance) {
-            // appInstance.hoge(elem.value);
-        }
-        target.innerHTML = elem.value;
+function onChangePointCloudSize() {
+    const elem_select = <HTMLInputElement>document.getElementById("render-size");
+    if (elem_select && appInstance) {
+        appInstance.changePointCloudSize(elem_select.value);
     }
 }
-elem_range.addEventListener("input", rangeValue(elem_range, target_range));
 
 // グローバル関数に登録
 // @ts-ignore
 window.startApp = startApp;
 // @ts-ignore
-window.onClickRadio = onClickRadio;
+window.onChangeLocation = onChangeLocation;
 // @ts-ignore
-window.onClickCheckbox = onClickCheckbox;
+window.onChangeSurface = onChangeSurface;
 // @ts-ignore
-window.onChangeSelect = onChangeSelect;
+window.onChangePointCloudStyle = onChangePointCloudStyle;
+// @ts-ignore
+window.onChangePointCloudSize = onChangePointCloudSize;
