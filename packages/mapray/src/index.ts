@@ -71,6 +71,8 @@ export { default as PointCloudMaterial } from "./PointCloudMaterial";
 
 export { default as Resource, URLResource } from "./Resource";
 
+export { default as Sun } from "./Sun";
+export { default as Moon } from "./Moon";
 export { default as Atmosphere } from "./Atmosphere";
 export { default as SunVisualizer } from "./SunVisualizer";
 export { default as TextureSunVisualizer } from "./TextureSunVisualizer";
