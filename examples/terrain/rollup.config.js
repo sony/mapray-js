@@ -4,6 +4,7 @@ import postcss from 'rollup-plugin-postcss';
 import preprocess from 'rollup-plugin-preprocess';
 import typescript from 'rollup-plugin-typescript2';
 import resolve from '@rollup/plugin-node-resolve'
+import commonjs from '@rollup/plugin-commonjs';
 
 const outdir = "dist/";
 
@@ -46,6 +47,9 @@ export default function() {
                 context: {
                     BUILD: process.env.BUILD,
                 }
+            }),
+            commonjs({
+                requireReturnsDefault: "auto"
             }),
             typescript({
                 tsconfig: './tsconfig.json',

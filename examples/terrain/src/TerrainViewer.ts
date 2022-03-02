@@ -1,6 +1,12 @@
+// import * as SunCalc from 'suncalc';
 import mapray from "@mapray/mapray-js";
 import maprayui from "@mapray/ui";
 import BingMapsImageProvider from "./BingMapsImageProvider"
+// import { getPosition } from "suncalc";
+// import * as SunCalc from "suncalc";
+import * as SunCalc from 'suncalc';
+import { DateTime } from "luxon";
+
 
 const MAPRAY_ACCESS_TOKEN = "<your access token here>";
 
@@ -23,7 +29,13 @@ const option_config = [
         mie: 0.001,
         sun_x_angle: -200,
         sun_y_angle: -200,
-        sun_z_angle: 0
+        sun_z_angle: 0,
+        year: 2022,
+        month: 2,
+        day: 14,
+        hour: 16,
+        minute: 27,
+        timezone: "Asia/Tokyo"
     },
     {
         name: "NorthernAlps",
@@ -38,7 +50,13 @@ const option_config = [
         // sun_y_angle: 110,
         sun_x_angle: 102,//phi
         sun_y_angle: 36.3055625 - 80,// theta
-        sun_z_angle: 0
+        sun_z_angle: 0,
+        year: 2020,
+        month: 8,
+        day: 1,
+        hour: 11,
+        minute: 50,
+        timezone: "Asia/Tokyo"
     },
     {
         name: "GrandCanyon",
@@ -51,7 +69,13 @@ const option_config = [
         mie: 0.001,
         sun_x_angle: -200,
         sun_y_angle: -200,
-        sun_z_angle: 0
+        sun_z_angle: 0,
+        year: 2022,
+        month: 8,
+        day: 12,
+        hour: 6,
+        minute: 30,
+        timezone: "America/Denver"
     },
     {
         name: "Everest",
@@ -64,7 +88,13 @@ const option_config = [
         mie: 0.001,
         sun_x_angle: -200,
         sun_y_angle: -200,
-        sun_z_angle: 0
+        sun_z_angle: 0,
+        year: 2022,
+        month: 10,
+        day: 12,
+        hour: 14,
+        minute: 55,
+        timezone: "Asia/Kathmandu"
     },
     {
         name: "AyersRock",
@@ -77,7 +107,13 @@ const option_config = [
         mie: 0.001,
         sun_x_angle: -200,
         sun_y_angle: -200,
-        sun_z_angle: 0
+        sun_z_angle: 0,
+        year: 2022,
+        month: 10,
+        day: 12,
+        hour: 12,
+        minute: 32,
+        timezone: "Australia/Darwin"
     },
     {
         name: "TableMountain",
@@ -90,7 +126,13 @@ const option_config = [
         mie: 0.001,
         sun_x_angle: 200,
         sun_y_angle: 200,
-        sun_z_angle: 0
+        sun_z_angle: 0,
+        year: 2022,
+        month: 10,
+        day: 12,
+        hour: 14,
+        minute: 55,
+        timezone: "Africa/Johannesburg"
     },
     {
         name: "Taranaki",
@@ -102,7 +144,13 @@ const option_config = [
         ray_leigh: 0.003,
         mie: 0.001,
         sun_x_angle: 200,
-        sun_y_angle: 200
+        sun_y_angle: 200,
+        year: 2022,
+        month: 10,
+        day: 12,
+        hour: 14,
+        minute: 55,
+        timezone: "Pacific/Auckland"
     },
     {
         name: "LakeMcDonald",
@@ -114,7 +162,13 @@ const option_config = [
         ray_leigh: 0.003,
         mie: 0.001,
         sun_x_angle: 200,
-        sun_y_angle: 200
+        sun_y_angle: 200,
+        year: 2022,
+        month: 10,
+        day: 12,
+        hour: 14,
+        minute: 55,
+        timezone: "America/Denver"
     },
     {
         name: "Darvaza",
@@ -126,7 +180,13 @@ const option_config = [
         ray_leigh: 0.003,
         mie: 0.001,
         sun_x_angle: 200,
-        sun_y_angle: 200
+        sun_y_angle: 200,
+        year: 2022,
+        month: 10,
+        day: 12,
+        hour: 14,
+        minute: 55,
+        timezone: "Asia/Ashgabat"
     },
     {
         name: "StHelens",
@@ -138,7 +198,13 @@ const option_config = [
         ray_leigh: 0.003,
         mie: 0.001,
         sun_x_angle: 200,
-        sun_y_angle: 200
+        sun_y_angle: 200,
+        year: 2022,
+        month: 10,
+        day: 12,
+        hour: 14,
+        minute: 55,
+        timezone: "America/Los_Angeles"
     }
 ]
 class TerrainViewer extends maprayui.StandardUIViewer {
@@ -206,7 +272,7 @@ class TerrainViewer extends maprayui.StandardUIViewer {
         // end_from_lookat: the distance of camera position from iscs_end
         this.startFlyCamera( { time: 0.1, iscs_end: targetpos, end_altitude: option_config[i].cam_altitude , end_from_lookat: option_config[i].cam_distance });
 
-        this._setSun( i );
+        this._setSunDirection( i );
     }
 
     selectSurface( surface: string ) {
@@ -239,56 +305,70 @@ class TerrainViewer extends maprayui.StandardUIViewer {
         }
     }
 
-    _setSun( index: number ) {
+    _setSunDirection( index: number ) {
         if ( index < 0 ) {
             return;
         }
 
-
+        // set general atomosphere's setting.
         this._viewer?.atmosphere?.setRayleigh( option_config[index].ray_leigh );
         this._viewer?.atmosphere?.setMie( option_config[index].mie );
 
-        // Set sun
-        const phi = option_config[index].sun_x_angle *  mapray.GeoMath.DEGREE;
-        const theta = option_config[index].sun_y_angle * mapray. GeoMath.DEGREE;
-        const x = Math.cos(phi) * Math.sin(theta);
-        const y = Math.sin(theta) * Math.sin(phi);
-        const z = Math.cos(theta);
-        this._viewer?.sun.setSunDirection( [ x, y, z ] );
+        // get Sun direction from date and time
+        const dt = DateTime.fromObject( {
+            year: option_config[index].year,
+            month: option_config[index].month,
+            day: option_config[index].day,
+            hour: option_config[index].hour,
+            minute: option_config[index].minute
+        }, {
+            zone: option_config[index].timezone
+        });
+
+        if( !dt.isValid ) {
+            throw new Error( "check the date and zone format" );
+        }
+
+        // getPosition can get position local spherical coordinates, called SunCalc Spherical Coordinates in this code.
+        // - sun azimuth in radians (direction along the horizon, measured from south to west), e.g. 0 is south and Math.PI * 3/4 is northwest
+        // - sun altitude above the horizon in radians, e.g. 0 at the horizon and PI/2 at the zenith (straight over your head)
+        const positionResult = SunCalc.getPosition( new Date( dt.toString() ), option_config[index].target_lat, option_config[index].target_lng );
+
+        // Convert from SunCalc Spherical Coordinates to Mapray Local Spherical Coordinates
+        // The definition of Mapray Local Spherical Coordinates as follows.
+        // The origin is a point 'P' on the earth that is defined by Longitude and Latitude
+        // Upward on the z-axis (opposite to the center of the earth)
+        // Northward y-axis (vertical to z-axis)
+        // the x-axis in the right-handed system defined by y and z-axis, x-axis is east
+        // - phi: Define phi to be the azimuthal angle in the xy-plane from the x-axis with 0<=phi<2pi A coordinate system in which the angle increases from the X axis toward the Y axis. e.g.  Math.PI * 1/2 is northeast
+        // - theta: Theta to be the polar angle from the positive z-axis with 0<=theta<=pi
+        const phi =　Math.PI * 3/2 - positionResult.azimuth; //φ
+        const theta = Math.PI * 0.5 - positionResult.altitude; //θ
+
+        // Convert from Mapray Local Spherical Coordinates to  Mlocs coordinate.
+        const x = Math.sin( theta ) * Math.cos( phi );
+        const y = Math.sin( theta ) * Math.sin( phi );
+        const z = Math.cos( theta );
+
+        // convert from Mlocs to GOCS because mapray.sunvisualizer supported GOCS coordinate when set sun's direction.
+        const geoPoint = new mapray.GeoPoint( option_config[index].target_lng, option_config[index].target_lat, 0 );
+        const mtog_mat = geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
+        // translate direction.
+        const gocs_xyz = mapray.GeoMath.transformDirection_A( mtog_mat,  mapray.GeoMath.createVector3f([x, y, z] ), mapray.GeoMath.createVector3() );
+        const n_gocs_xyz = mapray.GeoMath.normalize3( mapray.GeoMath.createVector3f([gocs_xyz[0], gocs_xyz[1], gocs_xyz[2]] ) , mapray.GeoMath.createVector3() );
+
+        this._viewer?.sun.setSunDirection( [ n_gocs_xyz[0], n_gocs_xyz[1], n_gocs_xyz[2] ] );
         this._viewer?.sunVisualizer?.setVisibility(true);
         this._viewer?.sunVisualizer?.setRadius(4);
         //
-
     }
 
     _getCameraInfoFromLocation( location: string ) {
-        const i = option_config.findIndex(p => p.name == location);
+        const i = option_config.findIndex( p => p.name == location );
         if ( i < 0 ) {
             return -1;
         }
         return i;
-    }
-
-    _getSun( year: string, month: string, day: string ) {
-
-        // Reference from
-        const to_date = new Date(year + "/" + month + "/" + day );
-        const from_date = new Date(year + "/01/01" );
-        const days = Math.floor((to_date.getTime() - from_date.getTime()) / 86400000 ) + 0.5;
-        const date_param = 2 * Math.PI / 365.0;
-        const date_omega = date_param * days;
-        const declination_sun = 0.33281 - 22.984 * Math.cos( date_omega ) - 0.34990 * Math.cos( 2 * date_omega ) - 0.13980 * Math.cos(3 * date_omega ) + 3.7872 * Math.sin( date_omega ) + 0.03250 * Math.sin(2 * date_omega ) + 0.07187 * Math.sin(3 * date_omega );
-
-        const e = 0.0072 * Math.cos( date_omega ) - 0.0528 * Math.cos(2 * date_omega ) - 0.0012 * Math.cos( 3 * date_omega ) - 0.1229 * Math.sin( date_omega ) - 0.1565 * Math.sin( 2 * date_omega ) - 0.0041 * Math.sin( 3 * date_omega )
-
-        T = Ts + (θ - 135)/15 + e
-        t = 15T - 180
-
-        sinA = cos(δ)sin(t)/cos(h)
-        cosA = (sin(h)sin(φ) - sin(δ))/cos(h)/cos(φ)
-        A = atan2(Math.cos(declination_sun) * Math.sin(), cosA) + π
-
-
     }
 
     override onKeyDown( event: KeyboardEvent )
