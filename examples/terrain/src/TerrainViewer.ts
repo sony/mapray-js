@@ -1,9 +1,7 @@
-// import * as SunCalc from 'suncalc';
 import mapray from "@mapray/mapray-js";
 import maprayui from "@mapray/ui";
+import { default_config, getCameraInfoFromLocation } from "./config";
 import BingMapsImageProvider from "./BingMapsImageProvider"
-// import { getPosition } from "suncalc";
-// import * as SunCalc from "suncalc";
 import * as SunCalc from 'suncalc';
 import { DateTime } from "luxon";
 
@@ -16,197 +14,6 @@ export type InitValue = {
     enable_atmosphere: boolean
 }
 
-
-const option_config = [
-    {
-        name: "Fuji",
-        target_lng: 138.727484,
-        target_lat: 35.3606158,
-        target_altitude: 3700,
-        cam_distance: 25000,
-        cam_altitude: 1500,
-        ray_leigh: 0.003,
-        mie: 0.001,
-        sun_x_angle: -200,
-        sun_y_angle: -200,
-        sun_z_angle: 0,
-        year: 2022,
-        month: 2,
-        day: 14,
-        hour: 16,
-        minute: 27,
-        timezone: "Asia/Tokyo"
-    },
-    {
-        name: "NorthernAlps",
-        target_lng: 137.555378,
-        target_lat: 36.3055625,
-        target_altitude: 3000,
-        cam_distance: 10000,
-        cam_altitude: 6000,
-        ray_leigh: 0.003,
-        mie: 0.001,
-        // sun_x_angle: 60,
-        // sun_y_angle: 110,
-        sun_x_angle: 102,//phi
-        sun_y_angle: 36.3055625 - 80,// theta
-        sun_z_angle: 0,
-        year: 2020,
-        month: 8,
-        day: 1,
-        hour: 11,
-        minute: 50,
-        timezone: "Asia/Tokyo"
-    },
-    {
-        name: "GrandCanyon",
-        target_lng: -112.143933,
-        target_lat: 36.105581,
-        target_altitude: 2000,
-        cam_distance: 6000,
-        cam_altitude: 3000,
-        ray_leigh: 0.003,
-        mie: 0.001,
-        sun_x_angle: -200,
-        sun_y_angle: -200,
-        sun_z_angle: 0,
-        year: 2022,
-        month: 8,
-        day: 12,
-        hour: 6,
-        minute: 30,
-        timezone: "America/Denver"
-    },
-    {
-        name: "Everest",
-        target_lng: 86.9136453,
-        target_lat: 27.9863758,
-        target_altitude: 4000,
-        cam_distance: 12000,
-        cam_altitude: 10000,
-        ray_leigh: 0.003,
-        mie: 0.001,
-        sun_x_angle: -200,
-        sun_y_angle: -200,
-        sun_z_angle: 0,
-        year: 2022,
-        month: 10,
-        day: 12,
-        hour: 14,
-        minute: 55,
-        timezone: "Asia/Kathmandu"
-    },
-    {
-        name: "AyersRock",
-        target_lng: 131.037146,
-        target_lat: -25.345657,
-        target_altitude: 0,
-        cam_distance: 5000,
-        cam_altitude: 1000,
-        ray_leigh: 0.003,
-        mie: 0.001,
-        sun_x_angle: -200,
-        sun_y_angle: -200,
-        sun_z_angle: 0,
-        year: 2022,
-        month: 10,
-        day: 12,
-        hour: 12,
-        minute: 32,
-        timezone: "Australia/Darwin"
-    },
-    {
-        name: "TableMountain",
-        target_lng: 18.4250663,
-        target_lat: -33.9830228,
-        target_altitude: 1000,
-        cam_distance: 5000,
-        cam_altitude: 500,
-        ray_leigh: 0.003,
-        mie: 0.001,
-        sun_x_angle: 200,
-        sun_y_angle: 200,
-        sun_z_angle: 0,
-        year: 2022,
-        month: 10,
-        day: 12,
-        hour: 14,
-        minute: 55,
-        timezone: "Africa/Johannesburg"
-    },
-    {
-        name: "Taranaki",
-        target_lng: 174.0546231,
-        target_lat: -39.2967528,
-        target_altitude: 5000,
-        cam_distance: 5000,
-        cam_altitude: 3500,
-        ray_leigh: 0.003,
-        mie: 0.001,
-        sun_x_angle: 200,
-        sun_y_angle: 200,
-        year: 2022,
-        month: 10,
-        day: 12,
-        hour: 14,
-        minute: 55,
-        timezone: "Pacific/Auckland"
-    },
-    {
-        name: "LakeMcDonald",
-        target_lng: -113.8670045609,
-        target_lat: 48.6096768230,
-        target_altitude: 0,
-        cam_distance: 3000,
-        cam_altitude: 1000,
-        ray_leigh: 0.003,
-        mie: 0.001,
-        sun_x_angle: 200,
-        sun_y_angle: 200,
-        year: 2022,
-        month: 10,
-        day: 12,
-        hour: 14,
-        minute: 55,
-        timezone: "America/Denver"
-    },
-    {
-        name: "Darvaza",
-        target_lng: 58.4422051896,
-        target_lat: 40.2514796768,
-        target_altitude: 0,
-        cam_distance: 1000,
-        cam_altitude: 1000,
-        ray_leigh: 0.003,
-        mie: 0.001,
-        sun_x_angle: 200,
-        sun_y_angle: 200,
-        year: 2022,
-        month: 10,
-        day: 12,
-        hour: 14,
-        minute: 55,
-        timezone: "Asia/Ashgabat"
-    },
-    {
-        name: "StHelens",
-        target_lng: -122.1781366795,
-        target_lat: 46.1982293962,
-        target_altitude: 1000,
-        cam_distance: 10000,
-        cam_altitude: 6000,
-        ray_leigh: 0.003,
-        mie: 0.001,
-        sun_x_angle: 200,
-        sun_y_angle: 200,
-        year: 2022,
-        month: 10,
-        day: 12,
-        hour: 14,
-        minute: 55,
-        timezone: "America/Los_Angeles"
-    }
-]
 class TerrainViewer extends maprayui.StandardUIViewer {
 
     private _container: HTMLElement | string;
@@ -262,17 +69,18 @@ class TerrainViewer extends maprayui.StandardUIViewer {
     }
 
     selectLocation( location: string ) {
-        const i = this._getCameraInfoFromLocation( location );
+        const i = getCameraInfoFromLocation( location );
         if ( i < 0 ) {
             return;
         }
 
-        const targetpos = new mapray.GeoPoint( option_config[i].target_lng, option_config[i].target_lat, option_config[i].target_altitude );
+        const targetpos = new mapray.GeoPoint( default_config[i].target_lng, default_config[i].target_lat, default_config[i].target_altitude );
         // end_altitude:  camera height
         // end_from_lookat: the distance of camera position from iscs_end
-        this.startFlyCamera( { time: 0.1, iscs_end: targetpos, end_altitude: option_config[i].cam_altitude , end_from_lookat: option_config[i].cam_distance });
+        this.startFlyCamera( { time: 0.1, iscs_end: targetpos, end_altitude: default_config[i].cam_altitude , end_from_lookat: default_config[i].cam_distance } );
 
-        this._setSunDirection( i );
+        const sunpos = new mapray.GeoPoint( default_config[i].target_lng, default_config[i].target_lat, 0.0 );
+        this._setSunDirection( sunpos, default_config[i].year, default_config[i].month, default_config[i].day, default_config[i].hour, default_config[i].minute, default_config[i].timezone, default_config[i].ray_leigh, default_config[i].mie );
     }
 
     selectSurface( surface: string ) {
@@ -305,24 +113,31 @@ class TerrainViewer extends maprayui.StandardUIViewer {
         }
     }
 
-    _setSunDirection( index: number ) {
-        if ( index < 0 ) {
+    selectDateTime( year: number, month: number, day: number, hour: number, minute: number, location: string ) {
+        const i = getCameraInfoFromLocation( location );
+        if ( i < 0 ) {
             return;
         }
 
+        const sunbasepos = new mapray.GeoPoint( default_config[i].target_lng, default_config[i].target_lat, 0.0 );
+        this._setSunDirection( sunbasepos, year, month, day, hour, minute, default_config[i].timezone, default_config[i].ray_leigh, default_config[i].mie );
+    }
+
+    _setSunDirection( pos: mapray.GeoPoint, year: number, month: number, day: number, hour: number, minute: number, timezone: string, ray_leigh: number, mie: number ) {
+
         // set general atomosphere's setting.
-        this._viewer?.atmosphere?.setRayleigh( option_config[index].ray_leigh );
-        this._viewer?.atmosphere?.setMie( option_config[index].mie );
+        this._viewer?.atmosphere?.setRayleigh( ray_leigh );
+        this._viewer?.atmosphere?.setMie( mie );
 
         // get Sun direction from date and time
         const dt = DateTime.fromObject( {
-            year: option_config[index].year,
-            month: option_config[index].month,
-            day: option_config[index].day,
-            hour: option_config[index].hour,
-            minute: option_config[index].minute
+            year: year,
+            month: month,
+            day: day,
+            hour: hour,
+            minute: minute
         }, {
-            zone: option_config[index].timezone
+            zone: timezone
         });
 
         if( !dt.isValid ) {
@@ -332,7 +147,7 @@ class TerrainViewer extends maprayui.StandardUIViewer {
         // getPosition can get position local spherical coordinates, called SunCalc Spherical Coordinates in this code.
         // - sun azimuth in radians (direction along the horizon, measured from south to west), e.g. 0 is south and Math.PI * 3/4 is northwest
         // - sun altitude above the horizon in radians, e.g. 0 at the horizon and PI/2 at the zenith (straight over your head)
-        const positionResult = SunCalc.getPosition( new Date( dt.toString() ), option_config[index].target_lat, option_config[index].target_lng );
+        const positionResult = SunCalc.getPosition( new Date( dt.toString() ), pos.latitude, pos.longitude );
 
         // Convert from SunCalc Spherical Coordinates to Mapray Local Spherical Coordinates
         // The definition of Mapray Local Spherical Coordinates as follows.
@@ -351,7 +166,7 @@ class TerrainViewer extends maprayui.StandardUIViewer {
         const z = Math.cos( theta );
 
         // convert from Mlocs to GOCS because mapray.sunvisualizer supported GOCS coordinate when set sun's direction.
-        const geoPoint = new mapray.GeoPoint( option_config[index].target_lng, option_config[index].target_lat, 0 );
+        const geoPoint = new mapray.GeoPoint( pos.longitude, pos.latitude, 0 );
         const mtog_mat = geoPoint.getMlocsToGocsMatrix( mapray.GeoMath.createMatrix() );
         // translate direction.
         const gocs_xyz = mapray.GeoMath.transformDirection_A( mtog_mat,  mapray.GeoMath.createVector3f([x, y, z] ), mapray.GeoMath.createVector3() );
@@ -361,14 +176,6 @@ class TerrainViewer extends maprayui.StandardUIViewer {
         this._viewer?.sunVisualizer?.setVisibility(true);
         this._viewer?.sunVisualizer?.setRadius(4);
         //
-    }
-
-    _getCameraInfoFromLocation( location: string ) {
-        const i = option_config.findIndex( p => p.name == location );
-        if ( i < 0 ) {
-            return -1;
-        }
-        return i;
     }
 
     override onKeyDown( event: KeyboardEvent )

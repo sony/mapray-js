@@ -20,6 +20,10 @@ class App {
         this._current.selectSurface( surface );
     }
 
+    changeDateTime( year: number, month: number, day: number, hour: number, minute: number, location: string ) {
+        this._current.selectDateTime( year, month, day, hour, minute, location );
+    }
+
     enableAtmosphere(enable: boolean) {
         this._current.enableAtmosphere(enable);
     }

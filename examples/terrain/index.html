@@ -57,6 +57,10 @@
             margin: 24px;
             width: 350px;
         }
+        #player-play-start {
+            color: rgb(0, 134, 209);
+
+        }
     </style>
 </head>
 <body onload="window.startApp('mapray-container');">
@@ -130,8 +134,24 @@
                             <option value="LakeMcDonald"> Lake McDonald, Glacier National Park</option>
                             <option value="Darvaza"> Darvaza Gas Crater, Turkmenistan</option>
                             <option value="StHelens"> Mt St. Helens, USA</option>
-
                         </select>
+                    </div>
+                    <div class="uk-margin">
+                        <label class="uk-form-label">Date</label>
+                        <form class="uk-grid-small" uk-grid>
+                            <div class="uk-width-1-1@s">
+                                <input class="uk-input" id="simulate-date" type="date" uk-tooltip="Please enter the date" onchange="(function(){window.onChangeDateTime();})();">
+                            </div>
+                            <div class="uk-width-1-2@s">
+                                <input class="uk-input" id="simulate-time" type="time" uk-tooltip="Please enter the time" onchange="(function(){window.onChangeDateTime();})();">
+                            </div>
+                            <div class="uk-width-1-2@s">
+                                <input class="uk-input" id="simulate-timezone" type="text" disabled>
+                            </div>
+                            <div class="uk-margin-small" id="player-sun" uk-tooltip="day animation" title aria-expanded="false">
+                                <button id="player-play-start" onclick="(function(){window.onStartDayAnimation();})();"><img src="./resources/icon/play_circle_filled-24px.svg" width="64" height="64" uk-svg></button>
+                            </div>
+                        </form>
                     </div>
                     <div class="uk-margin">
                         <label class="uk-form-label">Surface</label>
