@@ -13,7 +13,19 @@ export type InitValue = {
 const option_config = [
     {
         name: "Aogaku",
-        url: "https://opentiles.mapray.com/pc/raw/dronebird/aoyamagakuin2"
+        urls: [
+            { url: "https://opentiles.mapray.com/pc/raw/dronebird/aoyamagakuin2" }
+        ]
+    },
+    {
+        name: "Melbourne",
+        urls: [
+            { url: "https://opentiles.mapray.com/pc/raw/melbourne/003-006" },
+            { url: "https://opentiles.mapray.com/pc/raw/melbourne/007-010" },
+            { url: "https://opentiles.mapray.com/pc/raw/melbourne/011-014" },
+            { url: "https://opentiles.mapray.com/pc/raw/melbourne/015-018" },
+            { url: "https://opentiles.mapray.com/pc/raw/melbourne/019-020" }
+        ]
     }
 ]
 
@@ -38,7 +50,7 @@ class PointCloudTileViewer extends maprayui.StandardUIViewer {
         this._container = container;
 
         this._init_camera_parameter = {
-            fov: 46.0,
+            fov: 60.0
         };
 
         this.selectLocation( initvalue.location );
@@ -65,9 +77,20 @@ class PointCloudTileViewer extends maprayui.StandardUIViewer {
     }
 
     selectLocation( location: string ) {
-        const url = this._getPointCloudResourcesFromLocation( location );
-        if ( url ) {
-            this._addRawPointCloud( url );
+        const urls = this._getPointCloudResourcesFromLocation( location );
+        if ( urls && urls.length > 0 ) {
+            urls.forEach( (value, index, array) => {
+                let isDelete = false;
+                let isMove = false;
+
+                if ( index === 0 ) {
+                    isDelete = true;
+                }
+                if ( index === array.length - 1 ) {
+                    isMove = true;
+                }
+                this._addRawPointCloud( value.url, isMove, isDelete );
+            } );
         }
     }
 
@@ -139,10 +162,12 @@ class PointCloudTileViewer extends maprayui.StandardUIViewer {
         }
     }
 
-    _addRawPointCloud(　url: string　) {
+    _addRawPointCloud(　url: string, isMove: boolean, isDelete: boolean　) {
         const infojson = url + "/info.json";
-        this._moveCamera(　infojson　);
-        if (　this._current_point_cloud　) {
+        if( isMove ) {
+            this._moveCamera(infojson);
+        }
+        if (　isDelete && this._current_point_cloud　) {
             this._removePointCloud(　this._current_point_cloud　);
         }
         this._current_point_cloud = this.viewer.point_cloud_collection.add(　new mapray.RawPointCloudProvider( {　url: infojson　} ) );
@@ -157,7 +182,7 @@ class PointCloudTileViewer extends maprayui.StandardUIViewer {
         if (　i < 0　) {
             return null;
         }
-        return option_config[i].url;
+        return option_config[i].urls;
     }
 
     async _moveCamera(　infojsonURL: string　) {

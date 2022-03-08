@@ -258,10 +258,6 @@ class TerrainViewer extends maprayui.StandardUIViewer {
         console.log(dt);
         const newdt = this._current_date.plus( { minute: dt/60.0 * this._sun_speed } );
 
-        const i = getCameraInfoFromLocation( this._current_location );
-        if ( i < 0 ) {
-            return;
-        }
 
         const sunpos = new mapray.GeoPoint( default_config[i].target_lng, default_config[i].target_lat, 0.0 );
         this._setSunDirection( sunpos, newdt, default_config[i].ray_leigh, default_config[i].mie );
