@@ -205,6 +205,20 @@ class GeoMath {
     }
 
 
+
+
+
+    /**
+     * 3 次ベクトルの長さの2乗を計算
+     * @param  vec  ベクトル
+     * @return ベクトルの長さの2乗
+     */
+    static lengthSquared3( vec: Vector3 ): number
+    {
+        return vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2];
+    }
+
+
     /**
      * 3 次ベクトルの長さを計算
      * @param  vec  ベクトル
@@ -212,7 +226,7 @@ class GeoMath {
      */
     static length3( vec: Vector3 ): number
     {
-        return Math.sqrt( vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2] );
+        return Math.sqrt( GeoMath.lengthSquared3( vec ) );
     }
 
 
@@ -287,14 +301,7 @@ class GeoMath {
      */
     static normalize3( vec: Vector3, dst: Vector3 ): Vector3
     {
-        var x = vec[0];
-        var y = vec[1];
-        var z = vec[2];
-        var ilen = 1 / Math.sqrt( x*x + y*y + z*z );  // 長さの逆数
-        dst[0] = vec[0] * ilen;
-        dst[1] = vec[1] * ilen;
-        dst[2] = vec[2] * ilen;
-        return dst;
+        return GeoMath.scale3( 1.0 / GeoMath.length3( vec ), vec, dst );
     }
 
 
