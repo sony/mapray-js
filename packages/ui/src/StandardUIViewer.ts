@@ -117,6 +117,10 @@ class StandardUIViewer extends mapray.RenderCallback
 
     private _self_hash_change_flag: boolean;
 
+    private _buf_matrix1: mapray.Matrix;
+    private _buf_matrix2: mapray.Matrix;
+
+
     /**
      * コンストラクタ
      * @param container         ビューワ作成先のコンテナ（IDまたは要素）
@@ -190,6 +194,9 @@ class StandardUIViewer extends mapray.RenderCallback
             min: StandardUIViewer.ALTITUDE_RANGE.min,
             max: StandardUIViewer.ALTITUDE_RANGE.max || Number.MAX_VALUE,
         };
+
+        this._buf_matrix1 = GeoMath.createMatrix();
+        this._buf_matrix2 = GeoMath.createMatrix();
 
         // カメラパラメータの初期化
         this._initCameraParameter( options );
@@ -548,14 +555,17 @@ class StandardUIViewer extends mapray.RenderCallback
     {
         const camera = this.viewer.camera;
 
+        const mat1 = this._buf_matrix1;
+        const mat2 = this._buf_matrix2;
+
         const camera_geoPoint = new GeoPoint( this._camera_parameter.longitude, this._camera_parameter. latitude, this._camera_parameter.height );
-        const camera_matrix = camera_geoPoint.getMlocsToGocsMatrix( GeoMath.createMatrix() );
 
-        const pitch_matrix = GeoMath.rotation_matrix( [1, 0, 0], this._camera_parameter.pitch, GeoMath.createMatrix() );
-        const yaw_matrix = GeoMath.rotation_matrix( [0, 0, 1], this._camera_parameter.yaw, GeoMath.createMatrix() );
-        const eye_matrix = GeoMath.mul_AA( yaw_matrix, pitch_matrix, GeoMath.createMatrix() );
+        const pitch_matrix = GeoMath.rotation_matrix( [1, 0, 0], this._camera_parameter.pitch, mat1 ); // using => mat1
+        const yaw_matrix   = GeoMath.rotation_matrix( [0, 0, 1], this._camera_parameter.yaw, mat2 ); // using => mat1, mat2
+        const eye_matrix   = GeoMath.mul_AA( yaw_matrix, pitch_matrix, mat2 ); // using => mat2
 
-        camera.view_to_gocs = GeoMath.mul_AA( camera_matrix, eye_matrix, GeoMath.createMatrix() );
+        const camera_matrix = camera_geoPoint.getMlocsToGocsMatrix( mat1 ); // using => mat1, mat2
+        GeoMath.mul_AA( camera_matrix, eye_matrix, camera.view_to_gocs );
 
         camera.fov = this._camera_parameter.fov;
 
@@ -1640,12 +1650,12 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     protected rotateVector( vector: mapray.Vector3, axis: mapray.Vector3, angle: number ): mapray.Vector3
     {
-        const rotate_matrix = GeoMath.rotation_matrix( axis, angle, GeoMath.createMatrix() );
+        const mat = GeoMath.rotation_matrix( axis, angle, this._buf_matrix1 );
 
         const target_vector = GeoMath.createVector3();
-        target_vector[0] = vector[0] * rotate_matrix[0] + vector[1] * rotate_matrix[4] + vector[2] * rotate_matrix[8] + rotate_matrix[12];
-        target_vector[1] = vector[0] * rotate_matrix[1] + vector[1] * rotate_matrix[5] + vector[2] * rotate_matrix[9] + rotate_matrix[13];
-        target_vector[2] = vector[0] * rotate_matrix[2] + vector[1] * rotate_matrix[6] + vector[2] * rotate_matrix[10] + rotate_matrix[14];
+        target_vector[0] = vector[0] * mat[0] + vector[1] * mat[4] + vector[2] * mat[8]  + mat[12];
+        target_vector[1] = vector[0] * mat[1] + vector[1] * mat[5] + vector[2] * mat[9]  + mat[13];
+        target_vector[2] = vector[0] * mat[2] + vector[1] * mat[6] + vector[2] * mat[10] + mat[14];
 
         return target_vector;
     }
@@ -1654,53 +1664,32 @@ class StandardUIViewer extends mapray.RenderCallback
     /**
      * 任意軸回りの回転角度の算出
      *
-     * @param axis          回転軸
+     * @param axis          回転軸（長さ1とする）
      * @param basis_vector  基準ベクトル
      * @param target_vector 目標ベクトル
      * @returns             回転角度（deg.）
      */
     protected calculateAngle( axis: mapray.Vector3, basis_vector: mapray.Vector3, target_vector: mapray.Vector3 ): number
     {
-        const a_vector = GeoMath.createVector3();
-        let dot_value = GeoMath.dot3( axis, basis_vector );
+        // z成分を除去し、xy平面で計算する（basis_vectorをx軸方向とする）。
+        const x_axis = GeoMath.createVector3();
+        const y_axis = GeoMath.createVector3();
+        const z_axis = axis;
+        const t_vector = GeoMath.createVector3();
 
-        for ( let i = 0; i < 3; i++ )
-        {
-            a_vector[i] = basis_vector[i] - dot_value * axis[i];
+        GeoMath.sub3(  basis_vector, GeoMath.scale3( GeoMath.dot3( z_axis,  basis_vector ), z_axis, x_axis ), x_axis );
+        GeoMath.sub3( target_vector, GeoMath.scale3( GeoMath.dot3( z_axis, target_vector ), z_axis, t_vector ), t_vector );
+
+        if ( GeoMath.length3( x_axis ) < 1.0e-6 || GeoMath.length3( t_vector ) < 1.0e-6 ) {
+            return 0.0;
         }
 
-        const b_vector = GeoMath.createVector3();
-        dot_value = GeoMath.dot3( axis, target_vector );
+        GeoMath.normalize3( x_axis, x_axis );
+        GeoMath.normalize3( t_vector, t_vector );
+        GeoMath.cross3( z_axis, x_axis, y_axis );
 
-        for ( let i = 0; i < 3; i++ )
-        {
-            b_vector[i] = target_vector[i] - dot_value * axis[i];
-        }
-
-        GeoMath.normalize3( a_vector, a_vector );
-        GeoMath.normalize3( b_vector, b_vector );
-
-        const flag = (
-            Math.abs( GeoMath.length3( a_vector ) ) < 1.0e-6 ||
-            Math.abs( GeoMath.length3( b_vector ) ) < 1.0e-6
-        );
-        let angle = 0;
-        if ( flag ) {
-            angle = 0;
-        }
-        else {
-            angle = Math.acos( GeoMath.clamp( GeoMath.dot3( a_vector, b_vector ) / ( GeoMath.length3( a_vector ) * GeoMath.length3( b_vector ) ), -1, 1 ) ) / GeoMath.DEGREE;
-
-            let cross_vector = GeoMath.cross3( a_vector, b_vector, GeoMath.createVector3() );
-            cross_vector = GeoMath.normalize3( cross_vector, GeoMath.createVector3() );
-
-            if ( GeoMath.dot3( axis, cross_vector ) < 0 )
-            {
-                angle *= -1;
-            }
-        }
-
-        return angle;
+        const angle = Math.atan2( GeoMath.dot3( y_axis, t_vector ), GeoMath.dot3( x_axis, t_vector ) );
+        return angle / GeoMath.DEGREE;
     }
 
 
@@ -1778,33 +1767,34 @@ class StandardUIViewer extends mapray.RenderCallback
      * @returns fly_param 算出した情報
      */
     private _calculateKeyPoint( viewer: mapray.Viewer, options: StandardUIViewer.FlyParam ): StandardUIViewer.FlyParamKeyPoint {
-        /*
-        *
-        *    --- b -----------> c
-        *     ^  ^              |
-        *     |  |              v
-        *     f  |              e ---
-        *     |  |             /:  ^ 
-        *     v  |            / :  | end_altitude
-        *    --- a           /  :  v 
-        *                   d   : ---
-        *                   |<->|
-        *                     end_from_lookat
-        *
-        * a: fly_iscs_start = options.iscs_start
-        * b: start_top
-        * c: end_top
-        * d: options.iscs_end
-        * e: fly_iscs_end
-        * f: highest
-        */
+        //
+        //        b -----------> c ---- max_altitude
+        //        ^              |  ^  
+        //        |              |  height
+        //        |              v  v  
+        //        |              e --- 
+        //        |             /:  ^  
+        //        |            / :  |  
+        //        a           /  :  end_altitude
+        //                   d   :  |  
+        //        _-__           :  v  
+        //  0 --./    \__---____-h-----
+        //                   |<->|     
+        //                     end_from_lookat
+        //
+        // a: fly_iscs_start = options.iscs_start (or current position)
+        // b: start_top
+        // c: end_top
+        // d: target_iscs_end = options.iscs_end
+        // e: fly_iscs_end
 
-        const fly_iscs_start = new mapray.GeoPoint();
+        let fly_iscs_start;
         if ( options.iscs_start ) {
-            fly_iscs_start.assign( options.iscs_start );
+            fly_iscs_start = options.iscs_start;
         }
         else {
             const view_to_gocs = viewer.camera.view_to_gocs;
+            fly_iscs_start = new mapray.GeoPoint();
             fly_iscs_start.setFromGocs( GeoMath.createVector3([
                         view_to_gocs[12],
                         view_to_gocs[13],
@@ -1812,35 +1802,35 @@ class StandardUIViewer extends mapray.RenderCallback
             ]));
         }
 
-        const MAX_TOP_ALTITUDE = 1200000; // meter
+        const target_iscs_end = options.iscs_end;
+
+        const MAX_HEIGHT = 1200000; // meter
         const end_from_lookat = options.end_from_lookat !== undefined ? options.end_from_lookat : 20000;
         const end_altitude = options.end_altitude !== undefined ? options.end_altitude : 20000;
-        const target_clamp = options.target_clamp || true;
 
         // [アニメーションに利用する途中と最終の位置情報]
         // カメラの最終地点を計算
-        const fly_iscs_end = this._getOffsetPoint( options.iscs_end.longitude, options.iscs_end.latitude, end_from_lookat, 0, new GeoPoint() );
+        const fly_iscs_end = this._getOffsetPoint( target_iscs_end.longitude, target_iscs_end.latitude, end_from_lookat, 0, new GeoPoint() );
         fly_iscs_end.altitude = viewer.getElevation( fly_iscs_end.latitude, fly_iscs_end.longitude ) + end_altitude;
 
-        // カメラの注視点から最終アングル決定
-        const cam_target = options.iscs_end;
-        if ( target_clamp ) {
-            cam_target.altitude = viewer.getElevation( cam_target.latitude, cam_target.longitude );
+        if ( options.target_clamp || true ) {
+            target_iscs_end.altitude = viewer.getElevation( target_iscs_end.latitude, target_iscs_end.longitude );
         }
-        const target_angle = this._getLookAtAngle( fly_iscs_end, cam_target );
+        const target_angle = this._getLookAtAngle( fly_iscs_end, target_iscs_end );
 
         // 途中点
         const from = new GeoPoint( fly_iscs_start.longitude, fly_iscs_start.latitude, 0 );
-        const to = new GeoPoint( options.iscs_end.longitude, options.iscs_end.latitude, 0 );
-        const highest = Math.min( from.getGeographicalDistance(to), MAX_TOP_ALTITUDE );
+        const to = new GeoPoint( target_iscs_end.longitude, target_iscs_end.latitude, 0 );
+        const height = Math.min( from.getGeographicalDistance(to), MAX_HEIGHT );
+        const max_altitude = fly_iscs_end.altitude + height;
 
         const start_top = new GeoPoint();
         start_top.assign( fly_iscs_start );
-        start_top.altitude += highest;
+        start_top.altitude = max_altitude;
 
         const end_top = new GeoPoint();
         end_top.assign( fly_iscs_end );
-        end_top.altitude += highest;
+        end_top.altitude = max_altitude;
 
         this.setCameraParameter( { near: 30, far:10000000 } );
 
