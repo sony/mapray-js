@@ -159,6 +159,19 @@ class Material {
         }
     }
 
+    /**
+     * @summary 整数ベクトルパラメータを設定
+     * @param {string} name   変数名
+     * @param {Int32List} value  整数値
+     */
+    setIVector3( name, value )
+    {
+        const location = this._uniform_location[name];
+        if ( location ) {
+            this._gl.uniform3iv( location, value );
+        }
+    }
+
 
     /**
      * @summary float パラメータを設定
