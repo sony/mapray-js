@@ -27,8 +27,6 @@ import FlakeMaterial from "./FlakeMaterial";
  * 1フレーム分のレンダリングを実行
  *
  * [[Viewer]] インスタンスはフレーム毎にこのクラスのインスタンスを生成してレンダリングを実行する。
- *
- * @internal
  */
 abstract class RenderStage {
 
@@ -532,11 +530,7 @@ export class SceneRenderStage extends RenderStage {
     }
 
 
-    /**
-     * @type {RenderTarget}
-     * @override
-     */
-    getRenderTarget() {
+    override getRenderTarget(): RenderTarget {
         return RenderTarget.SCENE;
     }
 
@@ -700,8 +694,6 @@ export class PickRenderStage extends RenderStage {
     }
 
 
-    /**
-     */
     override getRenderTarget(): RenderTarget {
         return RenderTarget.RID;
     }

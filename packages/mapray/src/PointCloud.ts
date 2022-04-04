@@ -390,7 +390,7 @@ class PointCloud {
                 statistics_handler: statistics_handler,
             };
         }
-        
+
     }
 
     /** @internal */
@@ -784,9 +784,10 @@ export class Box {
     }
 
     /**
-     * @private
+     * デバッグ表示用のメッシュを生成します。
+     * @internal
      */
-     _updateDebugMeshes() {
+    _updateDebugMeshes() {
         this._updateDebugMesh();
         for (let i=0; i<this._children.length; i++) {
             const child = this._children[i];
@@ -796,6 +797,11 @@ export class Box {
         }
     }
 
+
+    /**
+     * デバッグ表示用のメッシュを生成します。
+     * @internal
+     */
     _updateDebugMesh() {
         const vertices = [];
         const indices  = [];
