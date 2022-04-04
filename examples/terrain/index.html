@@ -148,10 +148,16 @@
                             <div class="uk-width-1-2@s">
                                 <input class="uk-input" id="simulate-timezone" type="text" disabled>
                             </div>
-                            <div class="uk-margin-small" id="player-sun" uk-tooltip="day animation" title aria-expanded="false">
-                                <button id="player-play-start" onclick="(function(){window.onStartDayAnimation();})();"><img src="./resources/icon/play_circle_filled-24px.svg" width="64" height="64" uk-svg></button>
-                            </div>
                         </form>
+                    </div>
+                    <div class="uk-margin">
+                        <label class="uk-form-label">Sun Animation</label>
+                        <div class="uk-margin-small" id="player-sun" uk-tooltip="day animation" title aria-expanded="false">
+                            <button onclick="(function(){window.onStartDayAnimation();})();"><img id="sun-player-icon" src="./resources/icon/play_circle_filled-24px.svg" width="64" height="64" uk-svg></button>
+                        </div>
+                        <div class="uk-form-label">Speed</div>
+                        <input class="uk-range" id="range" type="range" value="5.0" min="1" max="10" step="1" >
+                        <output id="range-output">5</output>
                     </div>
                     <div class="uk-margin">
                         <label class="uk-form-label">Surface</label>

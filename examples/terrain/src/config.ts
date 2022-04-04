@@ -197,3 +197,8 @@ export function getCameraInfoFromLocation( location: string ) {
     }
     return i;
 }
+
+export interface updateDateInterface {
+    ( year: number, month: number, day: number, hour: number, minute: number ): void;
+}
+

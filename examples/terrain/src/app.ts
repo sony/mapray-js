@@ -1,5 +1,5 @@
 import TerrainViewer, { InitValue }  from './TerrainViewer';
-
+import { updateDateInterface } from "./config";
 
 class App {
 
@@ -30,6 +30,14 @@ class App {
 
     destroy() {
 
+    }
+
+    sunAnimation( start: boolean, year: number, month: number, day: number, hour: number, minute: number, location: string, callback: updateDateInterface ) {
+        this._current.sunAnimation( start, year, month, day, hour, minute, location, callback );
+    }
+
+    changeSunAnimationSpeed( factor: number ) {
+        this._current.changeSunAnimationSpeed( factor );
     }
 }
 
