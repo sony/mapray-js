@@ -53,9 +53,6 @@ class GeoJSONLoader extends Loader {
      */
     constructor( scene: Scene, resource: Resource | string, options: GeoJSONLoader.Option = {} )
     {
-        let v3: Vector3;
-        v3 = [1,2,3];
-        console.log(v3);
         let res: Resource;
         if (resource instanceof Resource) {
             res = resource;
