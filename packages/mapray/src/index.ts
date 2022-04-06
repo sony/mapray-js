@@ -1,8 +1,11 @@
 export * as animation from "./animation/animation";
 export * as cloud from "./cloud/cloud";
+export * as vectile from "./vectile/";
 
 export { default as Dom } from "./util/Dom";
 export { default as Color } from "./util/Color";
+export { Json } from "./util/json_type";
+export { OJson } from "./util/json_type";
 
 export { default as GeoMath, Vector2, Vector3, Vector4, Matrix, GeoPointData } from "./GeoMath";
 export { default as GeoPoint } from "./GeoPoint";

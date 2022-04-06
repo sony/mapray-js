@@ -1,0 +1,36 @@
+/**
+ * @module
+ *
+ * すべてのスタイルレイヤー型を登録する関数 [[registerLayerTypes]] を
+ * 定義する。
+ *
+ * この関数は `Viewer` モジュールが一度だけ呼び出す。
+ *
+ * 実装者は [[StyleLayer]] のサブクラスを新しく定義した場合、
+ * `layer_creator_list` 変数に情報を追加すること。
+ */
+
+import { registerLayerCreator } from "./style";
+import type { LayerCreator } from "./style";
+
+
+/**
+ * レイヤー型に対する [[StyleLayer]] サブクラスのインスタンスを生成す
+ * るための関数リストである。
+ */
+const layer_creator_list: {
+    layer_type: string,        // スタイルファイル上でのレイヤーの型名
+    creator:    LayerCreator,  // StyleLayer インスタンスを生成する関数
+}[] = [
+];
+
+
+/**
+ * `style_layers/` 定義される、すべてのレイヤー型を登録する。
+ */
+export function registerLayerTypes(): void
+{
+    for ( const { layer_type, creator } of layer_creator_list ) {
+        registerLayerCreator( layer_type, creator );
+    }
+}
