@@ -61,10 +61,6 @@ class Viewer {
 
     private _dem_provider: DemProvider<any>;
 
-    private _north_pole?: Globe.PoleOption;
-
-    private _south_pole?: Globe.PoleOption;
-
     private _image_provider: ImageProvider;
 
     private _layers: LayerCollection;
@@ -157,12 +153,10 @@ class Viewer {
         this._camera             = new Camera( canvas );
         this._animation          = this._createAnimationBindingBlock();
         this._dem_provider       = this._createDemProvider( options );
-        this._north_pole         = options.north_pole;
-        this._south_pole         = options.south_pole;
         this._image_provider     = this._createImageProvider( options );
         this._tile_texture_cache = new TileTextureCache( this._glenv, this._image_provider );
         this._layers             = this._createLayerCollection( options );
-        this._globe              = new Globe( this._glenv, this._dem_provider, options.north_pole, options.south_pole );
+        this._globe              = new Globe( this._glenv, this._dem_provider );
         this._b3d_collection     = new B3dCollection( this );
         this._scene              = new Scene( this, this._glenv );
         this._ground_visibility  = Viewer._getBoolOption( options, "ground_visibility", true );
@@ -445,14 +439,6 @@ class Viewer {
      * DEM データプロバイダ
      */
     get dem_provider(): DemProvider<any> { return this._dem_provider; }
-
-
-    /** @internal */
-    get north_pole(): Globe.PoleOption | undefined { return this._north_pole; }
-
-
-    /** @internal */
-    get south_pole(): Globe.PoleOption | undefined { return this._south_pole; }
 
 
     /**
@@ -804,8 +790,8 @@ class Viewer {
         // ignore this._ground_visibility at this version.
         // if ( this._ground_visibility && (this._globe.status === Globe.Status.READY) ) {
         if ( this._globe.status === Globe.Status.READY ) {
-            const globe_dist = this._globe.findRayDistance( ray, distance );
- 
+            const globe_dist = this._globe.root_flake.findRayDistance( ray, distance );
+
             if ( globe_dist !== distance ) {
                 // 地表と交差した
                 category = Viewer.Category.GROUND;
@@ -1130,12 +1116,6 @@ export interface Option {
      /** DEMプロバイダ */
     dem_provider?: DemProvider<any>;
 
-    /** 実験的な機能です。 */
-    north_pole?: Viewer.PoleOption;
-
-    /** 実験的な機能です。 */
-    south_pole?: Viewer.PoleOption;
-
     /** 画像プロバイダ */
     image_provider?: ImageProvider;
 
@@ -1226,16 +1206,13 @@ export interface LoadStatus {
 
 
 
-export interface PoleOption {
-    color: Vector3;
-}
-
-
 export interface CaptureOption {
     type: "jpeg" | "png",
     sync?: boolean,
     attribution_text?: string,
 }
+
+
 
 /**
  * レンダリング直後に実行する処理を表現する型です。

@@ -112,8 +112,6 @@ class FlakeMesh {
         var        array = new Float32Array( FlakeMesh.VERTEX_SIZE * num_vertices );
         var        index = 0;
 
-        var N = GeoMath.createVector3();
-
         for ( var iv = 0, my = my_min; iv < v_count + 1; ++iv, my += my_step ) {
             var ey    = Math.exp( my );
             var ey2   = ey * ey;
@@ -126,27 +124,15 @@ class FlakeMesh {
                 var height = demSampler.sample( mx, my );
                 var radius = GeoMath.EARTH_RADIUS + height;
 
-                const cosφcosλ = cosφ * cosλ;
-                if ( area.type !== AreaUtil.Type.NORMAL ) {
-                    const diff = FlakeMesh.WEB_MERCATOR_LATITUDE_MAX_COS - cosφcosλ;
-                    if ( diff > 0 ) {
-                        radius -= diff * 1000000;
-                    }
-                }
-
                 // 法線 (GOCS)
-                AreaUtil.transformVector3Values(
-                    area.type,
-                    cosφcosλ,
-                    cosφ * sinλ,
-                    sinφ,
-                    N
-                );
+                var nx = cosφ * cosλ;
+                var ny = cosφ * sinλ;
+                var nz = sinφ;
 
                 // 位置 (GOCS)
-                var gx = radius * N[0];
-                var gy = radius * N[1];
-                var gz = radius * N[2];
+                var gx = radius * nx;
+                var gy = radius * ny;
+                var gz = radius * nz;
 
                 array[index++] = gx - center[0];  // x
                 array[index++] = gy - center[1];  // y
@@ -482,13 +468,6 @@ class FlakeMesh {
      * @constant
      */
     FlakeMesh.OFFSET_UV = 12;
-
-    /**
-     * @summary ウェブメルカトル座標系での最大緯度（ラジアン）の cos値
-     * angle = 4.948871° = 90° - 85.051129°
-     * cos(angle)
-     */
-    FlakeMesh.WEB_MERCATOR_LATITUDE_MAX_COS = 0.9962720765519766;
 }
 
 

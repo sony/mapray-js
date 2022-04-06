@@ -123,18 +123,6 @@ export function floatToByte( value: number ): number
     return value === 1.0 ? 255.0 : (value * 256.0) | 0;
 }
 
-/**
- * 0~1.0 の色値を 255 までの値に正規化
- */
-export function floatColorToByteColor( src: Vector3 | Vector4, dst: Vector4 ): Vector4
-{
-    dst[0] = Color.floatToByte(src[0]);
-    dst[1] = Color.floatToByte(src[1]);
-    dst[2] = Color.floatToByte(src[2]);
-    dst[3] = GeoMath.isVector3( src ) ? 255 : Color.floatToByte(src[3]);
-    return dst;
-}
-
 
 
 } // namespace Color
