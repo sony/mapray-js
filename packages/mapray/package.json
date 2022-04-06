@@ -30,7 +30,8 @@
     "typedoc": "typedoc --tsconfig tsconfig.json",
     "typedoc-devel": "typedoc --tsconfig tsconfig-devel.json",
     "tests-devel": "cross-env webpack --watch --mode=development --env.NODE_ENV=tests",
-    "test": "jest"
+    "test": "jest",
+    "lint": "eslint ./src"
   },
   "contributors": [
     {
@@ -60,10 +61,14 @@
     "@rollup/plugin-strip": "^2.0.0",
     "@rollup/plugin-typescript": "^8.2.1",
     "rollup-plugin-typescript2": "0.30.0",
+    "@typescript-eslint/eslint-plugin": "^5.3.0",
+    "@typescript-eslint/parser": "^5.3.0",
     "babel-jest": "^25.1.0",
     "babel-loader": "^8.0.6",
     "core-js": "3",
     "cross-env": "^7.0.0",
+    "eslint": "^8.1.0",
+    "eslint-config-eslint": "^7.0.0",
     "jest": "^25.1.0",
     "jsdoc": "^3.5.0",
     "rollup": "^1.31.1",
