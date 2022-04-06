@@ -3,14 +3,10 @@ import GeoMath, { Vector3 } from "./GeoMath";
 
 /**
  * 地表領域ユーティリティー
- * @internal
  */
 class AreaUtil
 {
-    /**
-     * @ignore
-     */
-    constructor() {}
+    private constructor() {}
 
     /**
      * 地表領域の中心位置を GOCS で取得
@@ -22,7 +18,7 @@ class AreaUtil
      *
      * @return dst
      */
-    static getCenter( area: AreaUtil.Area, dst: Vector3 ): Vector3
+    static getCenter( area: Area, dst: Vector3 ): Vector3
     {
         switch ( area.z ) {
         case 0:  return getCenter_0( dst );
@@ -172,31 +168,36 @@ getCenter_N( z: number, x: number, y: number, dst: Vector3 ): Vector3
 }
 
 
-
-/**
- * @internal
- */
-namespace AreaUtil {
-
-
-
 /**
  * 地表の ZXY 領域を表現
  *
- * z, x, y プロパティから地表の領域を表す。
+ * プロパティ `z`, `y`, `x` により地表断片の領域を表現する。
  *
- * @internal
+ * 座標の定義は
+ * [ズームレベル・タイル座標](https://maps.gsi.go.jp/development/siyou.html#siyou-zm)
+ * を参照のこと。
  */
-export interface Area {
+interface Area {
+
+    /**
+     * レベル (Z)
+     */
     x: number;
+
+
+    /**
+     * x 座標
+     */
     y: number;
+
+
+    /**
+     * y 座標
+     */
     z: number;
+
 }
 
 
-
-} // namespace Area
-
-
-
 export default AreaUtil;
+export { Area };

@@ -26,7 +26,8 @@ import FlakeMaterial from "./FlakeMaterial";
 /**
  * 1フレーム分のレンダリングを実行
  *
- * [[Viewer]] インスタンスはフレーム毎にこのクラスのインスタンスを生成してレンダリングを実行する。
+ * [[Viewer]] インスタンスはフレーム毎にこのクラスのインスタンスを生成
+ * してレンダリングを実行する。
  */
 abstract class RenderStage {
 
@@ -34,9 +35,19 @@ abstract class RenderStage {
 
     protected _glenv: GLEnv;
 
-    protected _width: number;
+    /**
+     * ビューポートの水平画素数
+     *
+     * @internal
+     */
+    public readonly _width: number;
 
-    protected _height: number;
+    /**
+     * ビューポートの垂直画素数
+     *
+     * @internal
+     */
+    public readonly _height: number;
 
     protected _rendering_cancel: boolean;
 
@@ -61,30 +72,26 @@ abstract class RenderStage {
     protected _flake_material!: FlakeMaterial;
 
     // 地形
-    protected _flake_list!: RenderFlake[];
+    protected _flake_list: RenderFlake[];
 
-    protected _view_to_clip!: Matrix;
+    protected _view_to_clip: Matrix;
 
-    protected _gocs_to_view!: Matrix;
+    protected _gocs_to_view: Matrix;
 
-    protected _gocs_to_clip!: Matrix;
+    protected _gocs_to_clip: Matrix;
 
-    protected _view_to_gocs!: Matrix;
+    protected _view_to_gocs: Matrix;
 
     // 半透明化モード
     private _translucent_mode: boolean;
 
 
     /**
-     * @param {mapray.Viewer} viewer        所有者である Viewer
-     * @param {mapray.Camera} camera        カメラ
-     * @param {object} [renderInfo]         レンダリング領域
-     * @param {number} [renderInfo.sx]      レンダリング領域のx位置(ビューポート中央を0, 右方向を正とする)
-     * @param {number} [renderInfo.sy]      レンダリング領域のy位置(ビューポート中央を0, 上方向を正とする)
-     * @param {number} [renderInfo.swidth]  レンダリング領域の幅
-     * @param {number} [renderInfo.sheight] レンダリング領域の高さ
+     * @param viewer      所有者である Viewer
+     * @param camera      カメラ
+     * @param renderInfo  レンダリング領域
      */
-    constructor( viewer: Viewer, camera:Camera, renderInfo: Camera.RenderInfo )
+    protected constructor( viewer: Viewer, camera:Camera, renderInfo: Camera.RenderInfo )
     {
         this._viewer = viewer;
         this._glenv  = viewer.glenv;
@@ -102,9 +109,16 @@ abstract class RenderStage {
 
         this._debug_stats = viewer.debug_stats;
 
+        this._flake_list = [];
+
         if ( this._width === 0 || this._height === 0 ) {
             // 画素がないのでレンダリングを省略
             this._rendering_cancel = true;
+
+            this._view_to_gocs = RenderStage.IDENTITY;
+            this._gocs_to_view = RenderStage.IDENTITY;
+            this._view_to_clip = RenderStage.IDENTITY;
+            this._gocs_to_clip = RenderStage.IDENTITY;
 
             this._pixel_step = 0;
             this._volume_planes = [];
@@ -113,14 +127,20 @@ abstract class RenderStage {
 
         this._rendering_cancel = false;
 
-        // _view_to_gocs, _gocs_to_view, _view_to_clip, _gocs_to_clip
-        this._setupBasicMatrices( renderInfo, camera );
+        const { view_to_gocs,
+                gocs_to_view,
+                view_to_clip,
+                gocs_to_clip } = RenderStage._createBasicMatrices( renderInfo, camera );
+
+        this._view_to_gocs = view_to_gocs;
+        this._gocs_to_view = gocs_to_view;
+        this._view_to_clip = view_to_clip;
+        this._gocs_to_clip = gocs_to_clip;
 
         this._volume_planes = renderInfo.volume_planes;  // 視体積の平面ベクトル配列 (視点空間)
         this._pixel_step    = renderInfo.pixel_step;     // 画素の変化量 (視点空間)
 
         // フレーム間のオブジェクトキャッシュ
-        // @ts-ignore
         const render_cache = viewer._render_cache || (viewer._render_cache = {});
         if ( !render_cache.surface_material ) {
             render_cache.surface_material = new SurfaceMaterial( viewer );
@@ -164,6 +184,27 @@ abstract class RenderStage {
     }
 
 
+    /**
+     * 視点座標系から GOCS へ座標変換するための行列
+     */
+    get view_to_gocs(): Matrix
+    {
+        return this._view_to_gocs;
+    }
+
+
+    /**
+     * GOCS から視点座標系へ座標変換するための行列
+     */
+    get gocs_to_view(): Matrix
+    {
+        return this._gocs_to_view;
+    }
+
+
+    /**
+     * 視体積の平面ベクトル配列 (視点空間)
+     */
     getVolumePlanes(): Vector4[]
     {
         return this._volume_planes;
@@ -173,65 +214,68 @@ abstract class RenderStage {
      * 半透明化モードを取得。エンティティモデルを半透明化して描画する。
      * Sceneがエンティティへ"半透明化モード"を伝達するのに用いる。
      * @see mapray.Entity#anchor_mode
-     * @return {boolean}
-     * @private
      */
-    getTranslucentMode() {
+    getTranslucentMode(): boolean {
         return this._translucent_mode;
     }
 
     /**
-     * @summary 半透明化モードを設定。
+     * 半透明化モードを設定。
+     *
      * @see getTranslucentMode()
-     * @parm {boolean} transparent_mode
      */
-    setTranslucentMode( translucent_mode: boolean ) {
+    setTranslucentMode( translucent_mode: boolean ): void {
         this._translucent_mode = translucent_mode;
     }
 
     /**
      */
-    private _setupBasicMatrices( renderInfo: Camera.RenderInfo, camera: Camera )
+    private static _createBasicMatrices( renderInfo: Camera.RenderInfo,
+                                         camera:     Camera )
     {
-        this._view_to_gocs = camera.view_to_gocs;
+        const view_to_gocs = camera.view_to_gocs;
 
-        this._gocs_to_view = GeoMath.createMatrix();
-        GeoMath.inverse_A( this._view_to_gocs, this._gocs_to_view );
+        const gocs_to_view = GeoMath.createMatrix();
+        GeoMath.inverse_A( view_to_gocs, gocs_to_view );
 
-        this._view_to_clip = renderInfo.view_to_clip;
+        const view_to_clip = renderInfo.view_to_clip;
 
-        this._gocs_to_clip = GeoMath.createMatrix();
-        GeoMath.mul_PzA( this._view_to_clip, this._gocs_to_view, this._gocs_to_clip );
+        const gocs_to_clip = GeoMath.createMatrix();
+        GeoMath.mul_PzA( view_to_clip, gocs_to_view, gocs_to_clip );
+
+        return {
+            view_to_gocs,
+            gocs_to_view,
+            view_to_clip,
+            gocs_to_clip,
+        }
     }
+
 
     /**
      */
     abstract getRenderTarget(): RenderStage.RenderTarget;
 
     /**
-     * @summary Sceneがレンダリングを確定したことを通知
+     * Sceneがレンダリングを確定したことを通知
+     *
      * pick_objectは、primitiveがpickされたときに返却すべきオブジェクトを指定する。
-     * @param {Primitive} primitive
-     * @param {mapray.Entity} [pick_object]
-     * @abstract
+     *
+     * @virtual
      */
-    onPushPrimitive( primitive: Primitive, pick_object: Entity ) {
+    onPushPrimitive( primitive: Primitive, pick_object: Entity ): void {
     }
 
     /**
-     * @summary 1フレームのレンダリングを実行
-     * @abstract
+     * 1フレームのレンダリングを実行
      */
-    render() {
-        throw new Error("not implemented");
-    }
+    abstract render(): void
 
     /**
-     * @summary 1フレームのレンダリングを実行
-     * @abstract
-     * @private
+     * 1フレームのレンダリングを実行
      */
-    _render() {
+    protected _render(): void
+    {
         const gl = this._glenv.context;
 
         // 描画領域全体にビューポートを設定
@@ -292,11 +336,9 @@ abstract class RenderStage {
     }
 
     /**
-     * @summary 地表断片を描画する前の準備
-     *
-     * @private
+     * 地表断片を描画する前の準備
      */
-    _prepare_draw_flake()
+    private _prepare_draw_flake(): void
     {
         // RenderFlake#getRenderObject() の前に必要な処理
         let producers = this._scene.getFlakePrimitiveProducers();
@@ -307,15 +349,13 @@ abstract class RenderStage {
     /**
      * @summary 地表とレイヤーを描画
      *
-     * @param {mapray.RenderFlake} rflake  地表断片データ
-     * @param {mapray.FlakeMesh}   mesh    地表断片メッシュ
-     *
-     * @private
+     * @param rflake  地表断片データ
+     * @param mesh    地表断片メッシュ
      */
-    _draw_flake_base( rflake: RenderFlake, mesh: FlakeMesh )
+    private _draw_flake_base( rflake: RenderFlake, mesh: FlakeMesh ): void
     {
         const gl = this._glenv.context;
-        // @ts-ignore
+
         const flakeMaterial = this._flake_material;
 
         // @ts-ignore
@@ -371,13 +411,11 @@ abstract class RenderStage {
 
 
     /**
-     * @summary 地表断片上のエンティティを描画
+     * 地表断片上のエンティティを描画
      *
-     * @param {mapray.FlakeRenderObject} fro  FlakeRenderObject インスタンス
-     *
-     * @private
+     * @param fro  FlakeRenderObject インスタンス
      */
-    _draw_entities_on_flake( fro: FlakeRenderObject )
+    private _draw_entities_on_flake( fro: FlakeRenderObject ): void
     {
         let num_entities = fro.num_entities;
 
@@ -493,6 +531,9 @@ abstract class RenderStage {
         }
     }
 
+
+    private static readonly IDENTITY = GeoMath.setIdentity( GeoMath.createMatrix() );
+
 }
 
 
@@ -502,17 +543,15 @@ namespace RenderStage {
 
 
 /**
- * @summary 1フレーム分のレンダリングを実行
- * @desc
- * {@link mapray.Viewer} インスタンスはフレーム毎にこのクラスのインスタンスを生成してレンダリングを実行する。
+ * 1フレーム分のレンダリングを実行
  *
- * @memberof mapray
- * @private
+ * [[Viewer]] インスタンスはフレーム毎にこのクラスのインスタンスを生成
+ * してレンダリングを実行する。
  */
 export class SceneRenderStage extends RenderStage {
 
     /**
-     * @param viewer {mapray.Viewer}  所有者である Viewer
+     * @param viewer 所有者である Viewer
      */
     constructor( viewer: Viewer )
     {
@@ -536,10 +575,9 @@ export class SceneRenderStage extends RenderStage {
 
 
     /**
-     * @summary 1フレームのレンダリングを実行
-     * @override
+     * 1フレームのレンダリングを実行
      */
-    render()
+    override render()
     {
         this._render();
         if ( this._rendering_cancel ) return;
@@ -554,9 +592,7 @@ export class SceneRenderStage extends RenderStage {
 
         this._globe.endFrame();
         this._viewer.b3d_collection.endFrame();
-        // @ts-ignore
         this._tile_texture_cache.endFrame();
-        // @ts-ignore
         this._viewer.layers.endFrame();
     }
 
@@ -623,12 +659,9 @@ export class SceneRenderStage extends RenderStage {
 
 
 /**
- * @summary マウスピック用に1フレーム分のレンダリングを実行
- * @desc
- * {@link mapray.Viewer} のpick関数内でインスタンスが生成されレンダリングが実行される。
+ * マウスピック用に1フレーム分のレンダリングを実行
  *
- * @memberof mapray
- * @private
+ * [[Viewer]] のpick関数内でインスタンスが生成されレンダリングが実行される。
  */
 export class PickRenderStage extends RenderStage {
 
@@ -774,17 +807,17 @@ export class PickRenderStage extends RenderStage {
 /**
  * 描画対象
  */
-export enum RenderTarget {
+export const enum RenderTarget {
 
     /**
      * 通常のシーン描画
      */
-    SCENE,
+    SCENE = "SCENE",
 
     /**
      * マウスピックなど、RID取得を目的とした描画
      */
-    RID,
+    RID = "RID",
 
 };
 

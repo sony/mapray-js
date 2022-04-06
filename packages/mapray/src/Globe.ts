@@ -9,12 +9,11 @@ import UpdatedTileArea from "./UpdatedTileArea";
 import Mesh from "./Mesh";
 import Entity from "./Entity";
 import AvgHeightMaps from "./AvgHeightMaps";
+import { Area } from "./AreaUtil";
 
 
 /**
- * @summary 地表形状の管理
- * @memberof mapray
- * @private
+ * 地表形状の管理
  */
 class Globe {
 
@@ -32,7 +31,7 @@ class Globe {
 
     private _dem_zbias: number;
 
-    private _hist_stats: Globe.HistStats;
+    private _hist_stats: HistStats;
 
     private _flake_reduce_thresh: number;
 
@@ -83,7 +82,7 @@ class Globe {
         this._rho = dem_provider.getResolutionPower();
         this._dem_zbias = GeoMath.LOG2PI - this._rho + 1;  // b = log2(π) - ρ + 1
 
-        this._hist_stats = new Globe.HistStats();
+        this._hist_stats = new HistStats();
 
         this._flake_reduce_thresh = 1.5;  // Flake 削減比率閾値
         this._flake_reduce_factor = 1.2;  // Flake 削減比率係数
@@ -146,11 +145,9 @@ class Globe {
     }
 
     /**
-     * @summary Globe 状態を取得
-     * @type {mapray.Globe.Status}
-     * @readonly
+     * Globe 状態を取得
      */
-    get status()
+    get status(): Globe.Status
     {
         return this._status;
     }
@@ -371,7 +368,7 @@ class Globe {
                 // これ以上のレベルは存在しない
                 break;
             }
-            else if ( flake.dem_state === Globe.DemState.LOADED ) {
+            else if ( flake.dem_state === DemState.LOADED ) {
                 // より正確度が高い DEM を持つ地表断片に更新
                 dem_flake = flake;
             }
@@ -505,7 +502,7 @@ class Globe {
                 // これ以上のレベルは存在しない
                 break;
             }
-            else if ( flake.dem_state === Globe.DemState.LOADED ) {
+            else if ( flake.dem_state === DemState.LOADED ) {
                 // より正確度が高い DEM を持つ地表断片に更新
                 dem_flake = flake;
             }
@@ -617,45 +614,43 @@ class Globe {
 }
 
 
-
 namespace Globe {
-
 
 
 /**
  * Globe 状態の列挙型
+ *
  * @see [[Globe.status]]
  */
-export enum Status {
+export const enum Status {
+
     /**
      * 準備中 (初期状態)
      */
-    NOT_READY,
+    NOT_READY = '@@_NOT_READY',
 
     /**
      * 準備完了
      */
-    READY,
+    READY = '@@_READY',
 
     /**
      * 失敗状態
      */
-    FAILED,
-}
+    FAILED = '@@_FAILED',
 
+}
 
 
 /**
  * 地表断片
- * @internal
  */
-export class Flake {
+export class Flake implements Area {
 
-    private z: number;
-
-    private x: number;
-
-    private y: number;
+    // from Area
+    readonly z: number;
+    readonly x: number;
+    readonly y: number;
 
     private _parent: Flake | null;
 
@@ -712,23 +707,9 @@ export class Flake {
      */
     constructor( parent: Flake | null, z: number, x: number, y: number )
     {
-        /**
-         * 地表分割レベル
-         */
+        // 地表領域
         this.z = z;
-
-        /**
-         * @summary 地表タイル X 座標
-         * @member mapray.Globe.Flake#x
-         * @type {number}
-         */
         this.x = x;
-
-        /**
-         * @summary 地表タイル Y 座標
-         * @member mapray.Globe.Flake#y
-         * @type {number}
-         */
         this.y = y;
 
         // Flake 階層
@@ -1187,7 +1168,7 @@ export class Flake {
      *
      * @return メッシュノード
      */
-    private _getMeshNode( lod: number, cu: number, cv: number ): Globe.MeshNode
+    private _getMeshNode( lod: number, cu: number, cv: number ): MeshNode
     {
         var   dem = this._getMeshDemBinary( lod );
         var dpows = dem.getDivisionPowers( this, lod, cu, cv );
@@ -2111,68 +2092,59 @@ export class Flake {
 
         return this._entity_map;
     }
+
+
+    /**
+     * 球面分割数の係数
+     */
+    private static readonly ε = 0.0625;
+
+
+    /**
+     * 標高下限係数
+     */
+    private static readonly Fm = -2.0;
+
+
+    /**
+     * 標高上限係数
+     */
+    private static readonly Fp = 2.0;
+
+
+    private static readonly πr = Math.PI * GeoMath.EARTH_RADIUS;
+
+
+    private static readonly _temp_positions: [ Vector3, Vector3, Vector3, Vector3 ] = [
+        GeoMath.createVector3(),
+        GeoMath.createVector3(),
+        GeoMath.createVector3(),
+        GeoMath.createVector3(),
+    ];
+
+
+    private static readonly _temp_ray_1  = GeoMath.createVector3();
+    private static readonly _temp_ray_2  = GeoMath.createVector3();
+    private static readonly _temp_ray_3  = GeoMath.createVector3();
+    private static readonly _temp_ray_4  = GeoMath.createVector3();
+    private static readonly _temp_ray_5  = GeoMath.createVector3();
+    private static readonly _temp_ray_6  = GeoMath.createVector3();
+    private static readonly _temp_ray_7  = GeoMath.createVector3();
+    private static readonly _temp_ray_8  = GeoMath.createVector3();
+    private static readonly _temp_ray_9  = GeoMath.createVector3();
+    private static readonly _temp_ray_10 = GeoMath.createVector3();
+    private static readonly _temp_ray_11 = GeoMath.createVector3();
+
 }
 
 
-
-export namespace Flake {
-
-
-
-/**
- * 球面分割数の係数
- */
-export const ε: number = 0.0625;
-
-
-/**
- * 標高下限係数
- */
-export const Fm: number = -2.0;
-
-
-/**
- * 標高上限係数
- */
-export const Fp: number = 2.0;
-
-
-/**
- * @internal
- */
-export const πr: number = Math.PI * GeoMath.EARTH_RADIUS;
-
-
-export const _temp_positions: [ Vector3, Vector3, Vector3, Vector3 ] = [
-    GeoMath.createVector3(),
-    GeoMath.createVector3(),
-    GeoMath.createVector3(),
-    GeoMath.createVector3(),
-];
-
-export const _temp_ray_1  = GeoMath.createVector3();
-export const _temp_ray_2  = GeoMath.createVector3();
-export const _temp_ray_3  = GeoMath.createVector3();
-export const _temp_ray_4  = GeoMath.createVector3();
-export const _temp_ray_5  = GeoMath.createVector3();
-export const _temp_ray_6  = GeoMath.createVector3();
-export const _temp_ray_7  = GeoMath.createVector3();
-export const _temp_ray_8  = GeoMath.createVector3();
-export const _temp_ray_9  = GeoMath.createVector3();
-export const _temp_ray_10 = GeoMath.createVector3();
-export const _temp_ray_11 = GeoMath.createVector3();
-
-
-
-} // namespace Flake
-
+} // namespace Globe
 
 
 /**
  * 履歴統計
- * @internal
  */
-export class HistStats {
+class HistStats {
 
     private _history: number[];
     private _max_value: number;
@@ -2242,11 +2214,10 @@ export class HistStats {
 
 /**
  * メッシュ管理ノード
- * @internal
  */
-export class MeshNode {
+class MeshNode {
 
-    private _flake: Flake;
+    private _flake: Globe.Flake;
 
     private _dem: DemBinary;
 
@@ -2256,7 +2227,7 @@ export class MeshNode {
 
     private _base_mesh: FlakeMesh;
 
-    private _entity_meshes: Map<Entity.FlakePrimitiveProducer, Mesh | object>;
+    private _entity_meshes: Map<Entity.FlakePrimitiveProducer, Mesh | 'CACHED_EMPTY_MESH'>;
 
 
     /**
@@ -2265,7 +2236,7 @@ export class MeshNode {
      * @param dem    DEM バイナリ
      * @param dpows  分割指数
      */
-    constructor( flake: Flake, dem: DemBinary, dpows: number[] )
+    constructor( flake: Globe.Flake, dem: DemBinary, dpows: number[] )
     {
         this._flake  = flake;
         this._dem    = dem;
@@ -2276,20 +2247,16 @@ export class MeshNode {
         this._base_mesh = new FlakeMesh( flake.globe.glenv, flake, dpows, dem );
 
         // エンティティのメッシュ
-        //   key:   FlakePrimitiveProducer
-        //   value: Mesh | CACHED_EMPTY_MESH
-        this._entity_meshes = new Map<Entity.FlakePrimitiveProducer, Mesh | object>(); 
+        this._entity_meshes = new Map();
 
         // メッシュ数をカウントアップ
         flake.globe.num_cache_meshes += 1;
     }
 
     /**
-     * @summary FlakeRenderObject インスタンスを取得
-     *
-     * @return {mapray.FlakeRenderObject}
+     * FlakeRenderObject インスタンスを取得
      */
-    getRenderObject()
+    getRenderObject(): FlakeRenderObject
     {
         let flake = this._flake;
         let   fro = new FlakeRenderObject( flake, flake.globe.glenv, this._base_mesh );
@@ -2299,18 +2266,18 @@ export class MeshNode {
             // producer に対応するキャッシュされた Mesh
             let mesh = this._getEntityMesh( producer );
 
-            if ( mesh === CACHED_EMPTY_MESH ) {
-                // 空メッシュとしてキャッシュされている --> fro に追加しない
+            if ( mesh === 'CACHED_EMPTY_MESH' ) {
+                // mesh は空メッシュとしてキャッシュされている --> fro に追加しない
                 continue;
             }
 
-            if ( !mesh ) {
+            if ( mesh === undefined ) {
                 // メッシュがキャッシュに存在しないので、メッシュを生成してキャッシュする
-                mesh = producer.createMesh( flake, this._dpows, this._dem );
+                mesh = producer.createMesh( flake, this._dpows, this._dem ) ?? 'CACHED_EMPTY_MESH';
                 this._setEntityMesh( producer, mesh );
 
-                if ( !mesh ) {
-                    // 空メッシュとしてキャッシュされた --> fro に追加しない
+                if ( mesh === 'CACHED_EMPTY_MESH' ) {
+                    // mesh は空メッシュとしてキャッシュされた --> fro に追加しない
                     continue;
                 }
             }
@@ -2388,7 +2355,7 @@ export class MeshNode {
      * @return 比較値
      * @internal
      */
-    compareForReduce( other: Globe.MeshNode ): number
+    compareForReduce( other: MeshNode ): number
     {
         // 最近アクセスしたものを優先
         var a = this;
@@ -2413,35 +2380,28 @@ export class MeshNode {
     /**
      * エンティティのメッシュを取得
      *
-     * producer に対応するメッシュを取得する。
+     * `producer` に対応するメッシュを取得する。
      *
-     * ただし存在しないとき null, 空メッシュが設定されているときは CACHED_EMPTY_MESH を返す。
-     *
-     * @param producer
+     * ただし存在しないとき `undefined`, 空メッシュが設定されているとき
+     * は `"CACHED_EMPTY_MESH"` を返す。
      */
-    private _getEntityMesh( producer: Entity.FlakePrimitiveProducer ): Mesh | object | null
+    private _getEntityMesh( producer: Entity.FlakePrimitiveProducer ): Mesh | 'CACHED_EMPTY_MESH' | undefined
     {
-        let mesh = this._entity_meshes.get( producer );
-
-        return mesh ? mesh : null;
+        return this._entity_meshes.get( producer );
     }
 
 
     /**
      * エンティティのメッシュを設定
      *
-     * producer に対応するメッシュを設定する。
+     * `producer` に対応するメッシュを設定する。
      *
-     * 空メッシュを設定するときは mesh に null を指定する。
-     *
-     * @param producer
-     * @param mesh
+     * 空メッシュを設定するときは `mesh` に `"CACHED_EMPTY_MESH"` を指定する。
      */
-    private _setEntityMesh( producer: Entity.FlakePrimitiveProducer, mesh: Mesh | object | null )
+    private _setEntityMesh( producer: Entity.FlakePrimitiveProducer,
+                            mesh: Mesh | 'CACHED_EMPTY_MESH' ): void
     {
-        const value = mesh ? mesh : CACHED_EMPTY_MESH;
-
-        this._entity_meshes.set( producer, value );
+        this._entity_meshes.set( producer, mesh );
     }
 
 }
@@ -2450,37 +2410,30 @@ export class MeshNode {
 /**
  * DEM 状態の列挙型
  */
-export enum DemState {
+const enum DemState {
     /**
      * DEM タイルが存在しない
      */
-    NONE,
+    NONE = '@@_NONE',
 
     /**
      * DEM タイルが存在する
      */
-    LOADED,
+    LOADED = '@@_LOADED',
 
     /**
      * DEM タイルをリクエスト中
      */
-    REQUESTED,
+    REQUESTED = '@@_REQUESTED',
 
     /**
      * DEM タイルのリクエストに失敗
      */
-    FAILED,
+    FAILED = '@@_FAILED',
 };
 
 
-/**
- * @summary キャッシュされた空メッシュを表す
- *
- * @memberof mapray.Globe
- * @constant
- */
-const CACHED_EMPTY_MESH = { id: "CACHED_EMPTY_MESH" };
-
+namespace Globe {
 
 
 export interface DebugPickInfo {

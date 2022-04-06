@@ -8,7 +8,7 @@ import GeoPoint from "./GeoPoint";
 import GeoRegion from "./GeoRegion";
 import AltitudeMode from "./AltitudeMode";
 import EntityRegion from "./EntityRegion";
-import AreaUtil from "./AreaUtil";
+import AreaUtil, { Area } from "./AreaUtil";
 import QAreaManager from "./QAreaManager";
 import Type from "./animation/Type";
 import RenderStage from "./RenderStage";
@@ -78,7 +78,7 @@ abstract class AbstractLineEntity extends Entity {
 
     /**
      */
-    override onChangeAltitudeMode( prev_mode: AltitudeMode )
+    override onChangeAltitudeMode( _prev_mode: AltitudeMode )
     {
         if ( this.altitude_mode === AltitudeMode.CLAMP ) {
             this._producer = new AbstractLineEntity.FlakePrimitiveProducer( this );
@@ -330,7 +330,7 @@ export class PrimitiveProducer extends Entity.PrimitiveProducer {
 
     /**
      */
-    override onChangeElevation( regions: EntityRegion[] )
+    override onChangeElevation( _regions: EntityRegion[] )
     {
         this._geom_dirty = true;
     }
@@ -771,10 +771,7 @@ export class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
     }
 
 
-    /**
-     * @override
-     */
-    getAreaStatus( area: Entity.AreaStatus )
+    override getAreaStatus( area: Area ): Entity.AreaStatus
     {
         return this._area_manager.getAreaStatus( area );
     }
@@ -783,7 +780,7 @@ export class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
     /**
      * @override
      */
-    createMesh( area: AreaUtil.Area, dpows: number[], dem: any ): Mesh | null // DemBinary
+    createMesh( area: Area, dpows: number[], dem: any ): Mesh | null // DemBinary
     {
         let segments = this._divideXY( area, dpows );
         if ( segments.length == 0 ) {
@@ -867,7 +864,7 @@ export class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
      * @param msize  area 寸法 ÷ π (厳密値)
      * @param dpow   area の x 分割指数
      */
-    private _divideXOnly( area: AreaUtil.Area, msize: number, dpow: number )
+    private _divideXOnly( area: Area, msize: number, dpow: number )
     {
         let x_min = Math.PI * (area.x * msize - 1);
         let x_max = Math.PI * ((area.x + 1) * msize - 1);
@@ -959,7 +956,7 @@ export class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
      * @param area   地表断片の領域
      * @param dpows  area の xy 分割指数
      */
-    private _divideXY( area: AreaUtil.Area, dpows: number[] ): [number, number, number, number, number, number][]
+    private _divideXY( area: Area, dpows: number[] ): [number, number, number, number, number, number][]
     {
         // area 寸法 ÷ π (厳密値)
         // 線分の場合、領域の端によるクリッピングがシビアなので厳密値 (2^整数) を使う
@@ -1058,7 +1055,7 @@ export class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
      *
      * @return Mesh 用の頂点配列
      */
-    private _createVertices( area: AreaUtil.Area, dem: DemBinary, segments: [number, number, number, number, number, number][], add_length: boolean = false ): Float32Array
+    private _createVertices( area: Area, dem: DemBinary, segments: [number, number, number, number, number, number][], add_length: boolean = false ): Float32Array
     {
         let sampler = dem.newLinearSampler();
         let [ox, oy, oz] = AreaUtil.getCenter( area, GeoMath.createVector3() );

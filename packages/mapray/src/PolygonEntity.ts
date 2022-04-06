@@ -11,7 +11,7 @@ import EntityRegion from "./EntityRegion";
 import Triangulator from "./Triangulator";
 import QAreaManager from "./QAreaManager";
 import ConvexPolygon from "./ConvexPolygon";
-import AreaUtil from "./AreaUtil";
+import AreaUtil, { Area } from "./AreaUtil";
 import Type from "./animation/Type";
 import RenderStage from "./RenderStage";
 
@@ -116,7 +116,7 @@ class PolygonEntity extends Entity {
 
     /**
      */
-    override onChangeAltitudeMode( prev_mode: AltitudeMode )
+    override onChangeAltitudeMode( _prev_mode: AltitudeMode )
     {
         if ( this.altitude_mode === AltitudeMode.CLAMP ) {
             this._producer = new PolygonEntity.FlakePrimitiveProducer( this );
@@ -674,7 +674,7 @@ export class PrimitiveProducer extends Entity.PrimitiveProducer {
 
     /**
      */
-    override onChangeElevation( regions: EntityRegion[] )
+    override onChangeElevation( _regions: EntityRegion[] )
     {
         if ( this._status === Status.NORMAL ) {
             this._status = Status.MESH_DIRTY;
@@ -1090,7 +1090,7 @@ export class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
     /**
      *
      */
-    override getAreaStatus( area: Entity.AreaStatus )
+    override getAreaStatus( area: Area ): Entity.AreaStatus
     {
         return this._area_manager.getAreaStatus( area );
     }
@@ -1098,7 +1098,7 @@ export class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
 
     /**
      */
-    override createMesh( area: AreaUtil.Area, dpows: number[], dem: any ): Mesh | null
+    override createMesh( area: Area, dpows: number[], dem: any ): Mesh | null
     {
         // ConvexPolygon の配列、または Entity.AreaStatus.FULL
         let polygons = this._area_manager.getAreaContent( area );
@@ -1190,7 +1190,7 @@ export class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
      * @param area
      * @param dem
      */
-    private _createVertices( submeshes: Submesh[]|PolygonsSubmesh[], area: AreaUtil.Area, dem: any ): Float32Array
+    private _createVertices( submeshes: Submesh[]|PolygonsSubmesh[], area: Area, dem: any ): Float32Array
     {
         let  origin = AreaUtil.getCenter( area, GeoMath.createVector3() );
         let sampler = dem.newSampler( area );

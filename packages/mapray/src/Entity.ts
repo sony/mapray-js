@@ -10,7 +10,7 @@ import GeoRegion from "./GeoRegion";
 import Primitive from "./Primitive";
 import EntityRegion from "./EntityRegion";
 import EntityMaterial from "./EntityMaterial";
-import AreaUtil from "./AreaUtil";
+import { Area } from "./AreaUtil";
 
 
 /**
@@ -58,8 +58,10 @@ abstract class Entity {
      *
      * @param scene  所属可能シーン
      * @param opts   オプション集合
+     *
+     * @internal
      */
-    constructor( scene: Scene, opts?: Entity.Option )
+    protected constructor( scene: Scene, opts?: Entity.Option )
     {
         this.scene = scene;
 
@@ -416,8 +418,10 @@ export abstract class FlakePrimitiveProducer {
      * area が示す領域の状態を取得する。
      * @param  area  確認する領域
      * @return       領域の状態
+     *
+     * @virtual
      */
-    getAreaStatus( area: AreaStatus )
+    getAreaStatus( area: Area ): AreaStatus
     {
         return AreaStatus.EMPTY;
     }
@@ -432,9 +436,10 @@ export abstract class FlakePrimitiveProducer {
      * @param area  メッシュの領域
      * @param dpows  領域の分割指数
      * @param dem  DEM バイナリ
-     * @return
+     *
+     * @virtual
      */
-    createMesh( area: AreaUtil.Area | Globe.Flake, dpows: number[], dem: any ): Mesh | null // DemBinary
+    createMesh( area: Area, dpows: number[], dem: any ): Mesh | null // DemBinary
     {
         return null;
     }

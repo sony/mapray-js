@@ -19,8 +19,6 @@ import TileTextureCache from "./TileTextureCache";
 import GeoMath, { Vector2, Vector3 } from "./GeoMath";
 import GeoPoint from "./GeoPoint";
 import Scene from "./Scene";
-import SceneLoader from "./SceneLoader";
-import B3dProvider from "./B3dProvider";
 import B3dCollection from "./B3dCollection";
 import B3dScene from "./B3dScene";
 import EasyBindingBlock from "./animation/EasyBindingBlock";
@@ -159,9 +157,9 @@ class Viewer {
         this._globe              = new Globe( this._glenv, this._dem_provider );
         this._b3d_collection     = new B3dCollection( this );
         this._scene              = new Scene( this, this._glenv );
-        this._ground_visibility  = Viewer._getBoolOption( options, "ground_visibility", true );
-        this._entity_visibility  = Viewer._getBoolOption( options, "entity_visibility", true );
-        this._b3d_scene_visibility = Viewer._getBoolOption( options, "b3d_scene_visibility", true );
+        this._ground_visibility  = options.ground_visibility ?? true;
+        this._entity_visibility  = options.entity_visibility ?? true;
+        this._b3d_scene_visibility = options.b3d_scene_visibility ?? true;
         this._render_mode        = options.render_mode || Viewer.RenderMode.SURFACE;
         this._debug_stats        = options.debug_stats;
         this._point_cloud_collection = this._createPointCloudCollection( options );
@@ -310,7 +308,6 @@ class Viewer {
         if ( options.dem_provider )
             return options.dem_provider;
         else
-            // @ts-ignore
             return new StandardDemProvider( "/dem/", ".bin" );
     }
 
@@ -322,7 +319,6 @@ class Viewer {
     {
         let abb = new EasyBindingBlock();
         abb.addDescendantUnbinder( () => { this._unbindDescendantAnimations(); } );
-        // @ts-ignore
         return abb;
     }
 
@@ -335,7 +331,6 @@ class Viewer {
         if ( options.image_provider )
             return options.image_provider;
         else {
-            // @ts-ignore
             return new StandardImageProvider( "http://cyberjapandata.gsi.go.jp/xyz/std/", ".png", 256, 0, 18 );
         }
     }
@@ -403,17 +398,6 @@ class Viewer {
 
             if ( container ) { this._container_element.removeChild( container ); }
         }
-    }
-
-
-    /**
-     * ブール値のオプションを取得
-     */
-    private static _getBoolOption( options: Viewer.Option, name: string, defaultValue: boolean ): boolean
-    {
-        // @ts-ignore
-        const value = options[name] as boolean | undefined;
-        return (value !== undefined) ? value : defaultValue;
     }
 
 
@@ -1259,27 +1243,29 @@ export interface PickResult {
 /**
  * 表示対象の列挙型
  *
- * {@link mapray.Viewer.setVisibility} と {@link mapray.Viewer.getVisibility} メソッドの target 引数に指定する値の型である。
+ * [[Viewer.setVisibility]] と [[Viewer.getVisibility]] メソッドの
+ * target 引数に指定する値の型である。
+ *
+ * @see [[RayIntersectionInfo.category]]
  */
-export enum Category {
+export const enum Category {
 
     /**
      * 地表 (レイヤーも含む)
      */
-    GROUND,
+    GROUND = "@@_Viewer.Category.GROUND",
 
 
     /**
      * エンティティ
      */
-    ENTITY,
-
+    ENTITY = "@@_Viewer.Category.ENTITY",
 
 
     /**
      * B3D シーン
      */
-    B3D_SCENE,
+    B3D_SCENE = "@@_Viewer.Category.B3D_SCENE",
 
 };
 
@@ -1287,20 +1273,21 @@ export enum Category {
 /**
  * レンダリングモードの列挙型
  *
- * {@link mapray.Viewer} の構築子の options.render_mode パラメータ、または {@link mapray.Viewer.render_mode} プロパティに指定する値の型である。
+ * [[Viewer.constructor]] の `options.render_mode` パラメータ、または
+ * [[Viewer.render_mode]] プロパティに指定する値の型である。
  */
-export enum RenderMode {
+export const enum RenderMode {
 
     /**
      * ポリゴン面 (既定値)
      */
-    SURFACE,
+    SURFACE = "@@_Viewer.RenderMode.SURFACE",
 
 
     /**
      * ワイヤーフレーム
      */
-    WIREFRAME,
+    WIREFRAME = "@@_Viewer.RenderMode.WIREFRAME",
 
 }
 
