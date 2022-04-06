@@ -2335,7 +2335,7 @@ export class HistStats {
         return this._max_value;
     }
 
-    static　_find_max( history: number[] ): number
+    static _find_max( history: number[] ): number
     {
         let max_value = history[0];
 

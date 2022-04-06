@@ -262,7 +262,7 @@ class Vector3Type extends Type
     }
 
 
-    override　isConvertible( from: Type ): boolean
+    override isConvertible( from: Type ): boolean
     {
         return from === this;
     }

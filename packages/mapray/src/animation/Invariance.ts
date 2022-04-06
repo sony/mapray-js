@@ -379,7 +379,7 @@ class Invariance
      * 計算量:
      *   this の時刻区間数 k
      *   source の時刻区間数 n
-     *   this の各時刻区間範囲内の source の時刻区間数 m　(平均値)
+     *   this の各時刻区間範囲内の source の時刻区間数 m (平均値)
      *   merged_imap の時刻区間数 p
      *
      * findSuccessor() を O(1) と考えたとき

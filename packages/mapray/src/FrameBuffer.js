@@ -101,7 +101,7 @@ class FrameBuffer {
                 this._delete_container(container);
         });
         this._color_containers = [];
-        this._delete_container( container, this._depth_container );
+        this._delete_container( this._depth_container );
         this._depth_container = null;
     }
 
