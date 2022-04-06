@@ -21,6 +21,8 @@ import GeoPoint from "./GeoPoint";
 import Scene from "./Scene";
 import B3dCollection from "./B3dCollection";
 import B3dScene from "./B3dScene";
+import { StyleManager } from "./vectile/style";
+import { registerLayerTypes } from "./vectile/style_layer_defs";
 import EasyBindingBlock from "./animation/EasyBindingBlock";
 import BindingBlock from "./animation/BindingBlock";
 import Util from "./util/Util";
@@ -38,6 +40,11 @@ import LogoController from "./LogoController";
 import AttributionController from "./AttributionController";
 import ContainerController from "./ContainerController";
 
+
+/**
+ * すべての `StyleLayer` の型を登録する。
+ */
+registerLayerTypes();
 
 
 /**
@@ -74,6 +81,8 @@ class Viewer {
 
     private _b3d_collection: B3dCollection;
 
+    private _vectile_manager: StyleManager;
+
     private _scene: Scene;
 
     private _ground_visibility: boolean;
@@ -83,6 +92,8 @@ class Viewer {
     private _point_cloud_visibility: boolean;
 
     private _b3d_scene_visibility: boolean;
+
+    private _vectile_visibility: boolean;
 
     private _render_mode: Viewer.RenderMode;
 
@@ -166,11 +177,13 @@ class Viewer {
         this._layers             = this._createLayerCollection( options );
         this._globe              = new Globe( this._glenv, this._dem_provider, { pole_info } );
         this._b3d_collection     = new B3dCollection( this );
+        this._vectile_manager    = StyleManager.__createDefualtInstance();
         this._scene              = new Scene( this, this._glenv );
         this._ground_visibility  = options.ground_visibility ?? true;
         this._entity_visibility  = options.entity_visibility ?? true;
         this._point_cloud_visibility = options.point_cloud_visibility ?? true;
         this._b3d_scene_visibility = options.b3d_scene_visibility ?? true;
+        this._vectile_visibility = options.vectile_visibility ?? true;
         this._render_mode        = options.render_mode || Viewer.RenderMode.SURFACE;
         this._debug_stats        = options.debug_stats;
         this._point_cloud_collection = this._createPointCloudCollection( options );
@@ -276,6 +289,9 @@ class Viewer {
 
         // すべての B3dScene インスタンスを削除
         this._b3d_collection.clearScenes();
+
+        // ベクトルタイルの後処理
+        this._vectile_manager.__cancel();
 
         // 各 SceneLoader の読み込みを取り消す
         this._scene.cancelLoaders();
@@ -491,6 +507,15 @@ class Viewer {
 
 
     /**
+     * ベクトルタイルの管理オブジェクト
+     *
+     * @see [[setVectileManager]],
+     *      [[Category.VECTILE]]
+     */
+    get vectile_manager(): StyleManager { return this._vectile_manager; }
+
+
+    /**
      * モデルシーン
      */
     get scene(): Scene { return this._scene; }
@@ -570,15 +595,17 @@ class Viewer {
      /**
      * 可視性を設定
      *
-     * target に属するオブジェクトを表示するかどうかを指定する。
-     * 可視性は Viewer の構築子の ground_visibility, entity_visibility,
-     *    b3d_scene_visibility オプションでも指定することができる。
+     * `target` に属するオブジェクトを表示するかどうかを指定する。
+     *
+     * 可視性は [[Viewer.constructor]] の `ground_visibility`,
+     * `entity_visibility`, `b3d_scene_visibility`,
+     * `vectile_visibility`オプションでも指定することができる。
      *
      * @param target      表示対象
      * @param visibility  表示するとき true, 表示しないとき false
      * @see [[getVisibility]]
      */
-    setVisibility( target: Viewer.Category, visibility: boolean )
+    setVisibility( target: Viewer.Category, visibility: boolean ): void
     {
         switch ( target ) {
         case Viewer.Category.GROUND:
@@ -592,6 +619,9 @@ class Viewer {
             break;
         case Viewer.Category.B3D_SCENE:
             this._b3d_scene_visibility = visibility;
+            break;
+        case Viewer.Category.VECTILE:
+            this._vectile_visibility = visibility;
             break;
         default:
             throw new Error( "invalid target: " + target );
@@ -620,9 +650,35 @@ class Viewer {
             return this._point_cloud_visibility;
         case Viewer.Category.B3D_SCENE:
             return this._b3d_scene_visibility;
+        case Viewer.Category.VECTILE:
+            return this._vectile_visibility;
         default:
             throw new Error( "invalid target: " + target );
         }
+    }
+
+
+    /**
+     * ベクトルタイルの管理オブジェクトを設定
+     *
+     * ベクトルタイルを管理するオブジェクトを `manager` に切り替える。
+     *
+     * `manager` を省略したときは、レイヤーが存在しない新規のデフォル
+     * トオブジェクトを設定する。
+     *
+     * 設定されたオブジェクトは [[vectile_manager]] により参照すること
+     * ができる。
+     *
+     * @see [[vectile_manager]],
+     *      [[Category.VECTILE]]
+     */
+    setVectileManager( manager?: StyleManager ): void
+    {
+        // TODO:
+        // - Globe 内の StyleFlake のリクエスト取り消し、クリア処理
+        // - manager の modified_states のクリア処理
+
+        this._vectile_manager = manager ?? StyleManager.__createDefualtInstance();
     }
 
 
@@ -1128,6 +1184,9 @@ export interface Option {
     /** B3D シーンの可視性 */
     b3d_scene_visibility?: boolean;
 
+    /** ベクトルタイルの可視性 */
+    vectile_visibility?: boolean;
+
     /**
      * 極地に関連するオプション
      *
@@ -1370,6 +1429,15 @@ export const enum Category {
      * B3D シーン
      */
     B3D_SCENE = "@@_Viewer.Category.B3D_SCENE",
+
+
+    /**
+     * ベクトルタイル
+     *
+     * @see [[setVectileManager]],
+     *      [[vectile_manager]]
+     */
+    VECTILE = "@@_Viewer.Category.VECTILE",
 
 };
 
