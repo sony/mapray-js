@@ -11,6 +11,7 @@
     "stripInternal": true,
     "removeComments": false,
     "downlevelIteration": true,
+    "preserveConstEnums": true,
 
     "strict": true,
     "strictNullChecks": true,
