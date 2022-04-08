@@ -1,5 +1,7 @@
 import TerrainViewer, { InitValue }  from './TerrainViewer';
 import { updateDateInterface } from "./config";
+import mapray from "@mapray/mapray-js";
+import BingMapsImageProvider from "./BingMapsImageProvider";
 
 class App {
 
@@ -16,8 +18,12 @@ class App {
         this._current.selectLocation( location );
     }
 
-    changeSurface( surface: string ) {
-        this._current.selectSurface( surface );
+    changeSurface( initvalue: InitValue ) {
+        if (this._current) {
+            this._current.destroy();
+        }
+
+        this._current = new TerrainViewer( this._container, initvalue )
     }
 
     changeDateTime( year: number, month: number, day: number, hour: number, minute: number, location: string ) {
@@ -39,6 +45,10 @@ class App {
     changeSunAnimationSpeed( factor: number ) {
         this._current.changeSunAnimationSpeed( factor );
     }
+
+
+
+
 }
 
 export default App;

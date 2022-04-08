@@ -35,7 +35,7 @@ function startApp( container: HTMLElement | string )
     const atom_value = atom.checked;
 
     const elem_range = <HTMLInputElement>document.getElementById("range");
-    const speed_value =Number(elem_range.value);
+    const speed_value = Number(elem_range.value);
 
     const date_time_info = _getDate();
     if( date_time_info && date_time_info.length == 3 ) {
@@ -67,9 +67,40 @@ function onChangeLocation() {
 }
 
 function onChangeSurface() {
-    const elem_select = <HTMLInputElement>document.getElementById("surface");
-    if ( elem_select && appInstance ) {
-        appInstance.changeSurface(elem_select.value);
+
+
+    const elem_surface = <HTMLInputElement>document.getElementById("surface");
+    const surface = elem_surface!.value;
+
+    const elem_location = <HTMLInputElement>document.getElementById("location");
+    const location = elem_location.value;
+
+    const elem_atom = <HTMLInputElement>document.getElementById("AtmoON");
+    const isAtom = elem_atom.checked;
+
+    const date_time_info = _getDate();
+
+    const elem_range = <HTMLInputElement>document.getElementById("range");
+    const speed_value =Number(elem_range.value);
+
+
+    if ( date_time_info && date_time_info.length == 3 && appInstance ) {
+        const date_array = date_time_info[0];
+        const time_array = date_time_info[1];
+
+        appInstance.changeSurface( {
+            "location": location,
+            "surface": surface,
+            "enable_atmosphere": isAtom,
+            "date_time": {
+                year: Number(date_array[0]),
+                month:Number(date_array[1]),
+                day: Number(date_array[2]),
+                hour: Number(time_array[0]),
+                minute: Number(time_array[1])
+            },
+            "sun_speed": speed_value
+        });
     }
 }
 

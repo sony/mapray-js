@@ -4,6 +4,7 @@ import { default_config, getCameraInfoFromLocation, updateDateInterface } from "
 import BingMapsImageProvider from "./BingMapsImageProvider"
 import * as SunCalc from 'suncalc';
 import { DateTime } from "luxon";
+import AttributionController from "@mapray/mapray-js/dist/es/@type/AttributionController";
 
 
 const MAPRAY_ACCESS_TOKEN = "<your access token here>";
@@ -20,6 +21,11 @@ export type InitValue = {
         minute: number
     },
     sun_speed: number
+}
+
+type Attribution = {
+    display: string,
+    link: string
 }
 
 const defaultUpdateCallback = ( year: number, month: number, day: number, hour: number, minute: number ) => {}
@@ -45,12 +51,25 @@ class TerrainViewer extends maprayui.StandardUIViewer {
      */
     constructor( container: string | HTMLElement, initvalue: InitValue )
     {
+        let imageProvider = null;
+        switch( initvalue.surface ) {
+            case "bingmaps":
+                imageProvider = new BingMapsImageProvider( {
+                    uriScheme: "https",
+                    key: "<your Bing Maps Key here>"
+                });
+                break;
+            case "satellite":
+                imageProvider = new mapray.StandardImageProvider( "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", ".jpg", 256, 2, 18 );
+                break;
+            case "street":
+                imageProvider = new mapray.StandardImageProvider( "https://cyberjapandata.gsi.go.jp/xyz/std/", ".png", 256, 5, 18 );
+                break;
+        }
+
         super( container, MAPRAY_ACCESS_TOKEN, {
             debug_stats: new mapray.DebugStats(),
-            image_provider: new BingMapsImageProvider( {
-                uriScheme: "https",
-                key: "<your Bing Maps Key here>"
-            }),
+            image_provider: imageProvider!,
             atmosphere: new mapray.Atmosphere(),
             sun_visualizer: new mapray.SunVisualizer( 32 ),
         });
@@ -92,6 +111,10 @@ class TerrainViewer extends maprayui.StandardUIViewer {
         this.selectSurface( initvalue.surface );
 
         this.selectLocation( initvalue.location );
+
+        this._getAttribution( initvalue.surface ).forEach( attr => {
+            this._viewer.attribution_controller.addAttribution(attr);
+        });
 
     }
 
@@ -161,11 +184,11 @@ class TerrainViewer extends maprayui.StandardUIViewer {
     sunAnimation( start: boolean, year: number, month: number, day: number, hour: number, minute: number, location: string, callback: updateDateInterface ) {
         // init
         if ( start ) {
-            const i = getCameraInfoFromLocation(location);
+            const i = getCameraInfoFromLocation( location );
             if (i < 0) {
                 return;
             }
-            this._setCurrentDateTime(year, month, day, hour, minute, default_config[i].timezone)
+            this._setCurrentDateTime( year, month, day, hour, minute, default_config[i].timezone )
             this._updateSunAnimation = callback;
         } else {
             this._updateSunAnimation = defaultUpdateCallback;
@@ -266,6 +289,42 @@ class TerrainViewer extends maprayui.StandardUIViewer {
 
         this._updateSunAnimation( this._current_date.year, this._current_date.month, this._current_date.day, this._current_date.hour, this._current_date.minute );
     }
+
+    _getAttribution( surface: string ) {
+        let attr = AttributionController.Attribution;
+        switch( surface ) {
+            case "satellite":
+                attr = [{
+                    display: "国土地理院",
+                    link: "http://maps.gsi.go.jp/development/ichiran.html"
+                }];
+                break;
+            case "bingmaps":
+                attr = [{
+                    display: "© 2018 Microsoft Corporation",
+                    link: ""
+                },{
+                    display: "©CNES (2018) Distribution Airbus DS",
+                    link: ""
+                },{
+                    display: "© 2018 SK telecom/NGII",
+                    link: ""
+                },{
+                    display: "Earthstar Geographics SIO",
+                    link: ""
+                }
+                ];
+                break;
+            case "standard":
+                attr = [{
+                    display: "国土地理院",
+                    link: "http://maps.gsi.go.jp/development/ichiran.html"
+                }];
+                break;
+        }
+        return attr;
+    }
+
 
     override onKeyDown( event: KeyboardEvent )
     {
