@@ -52,6 +52,8 @@ class Camera {
      * canvas要素が指定される他、オフスクリーンレンダリング時にはwidth, height値を持ったオブジェクトが指定されます。
      *
      * @param canvas_size  レンダリング先サイズ
+     *
+     * @internal
      */
     constructor( canvas_size: Camera.SizeObject )
     {
@@ -341,8 +343,10 @@ class Camera {
         return new Camera.RenderInfo( this, canvas_size.width, canvas_size.height, sx, sy, swidth, sheight );
     }
 
-}
 
+    private static readonly _temp_mat = GeoMath.createMatrix();
+
+}
 
 
 namespace Camera {
@@ -351,10 +355,6 @@ namespace Camera {
 /**
  * @internal
  */
-export const _temp_mat = GeoMath.createMatrix();
-
-
-
 export interface SizeObject {
 
     /**
@@ -371,9 +371,9 @@ export interface SizeObject {
 
 
 /**
- * @summary カメラから得るレンダリング情報
- * @memberof mapray.Camera
- * @internale
+ * カメラから得るレンダリング情報
+ *
+ * @internal
  */
 export class RenderInfo {
 
