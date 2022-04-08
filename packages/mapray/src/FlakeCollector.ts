@@ -1,23 +1,85 @@
+import type { Vector3, Vector4 } from "./GeoMath";
 import GeoMath from "./GeoMath";
 import RenderFlake from "./RenderFlake";
+import type RenderStage from "./RenderStage";
+import type Globe from "./Globe";
+import type DebugStats from "./DebugStats";
 
 
 /**
- * @summary 描画地表断片を収集するツール
- * @memberof mapray.RenderStage
- * @private
+ * 描画地表断片を収集するツール
+ *
+ * [[RenderStage]] の一部
  */
 class FlakeCollector {
 
     /**
-     * @param {mapray.RenderStage} stage   所有者である RenderStage
      */
-    constructor( stage )
-    {
-        this._setupViewVectors( stage );
-        this._setupClipPlanes( stage );
+    private readonly _root_flake: Globe.Flake;
 
-        var             viewer = stage._viewer;
+
+    /**
+     * 位置ベクトル Q
+     *
+     * @see doc/ImageLevelCalculation.txt
+     */
+    private readonly _view_pos_Q: Vector3;
+
+
+    /**
+     * ベクトル w * U
+     *
+     * @see doc/ImageLevelCalculation.txt
+     */
+    private readonly _view_dir_wU: Vector3;
+
+
+    /**
+     * 視体積カリング平面と地表遮蔽カリング平面 (GOCS)
+     */
+    private readonly _clip_planes: Vector4[];
+
+
+    /**
+     * 地図画像タイルの最小ズームレベル
+     */
+    private readonly _min_image_z: number;
+
+
+    /**
+     * LOD からテクスチャの Z レベルを計算するバイアス値
+     *
+     * 地図画像タイルと DEM タイルで値が大きい方のバイアス値である。
+     */
+    private readonly _max_zbias: number;
+
+
+    private readonly _rflake_list: RenderFlake[];
+    private readonly _debug_stats: DebugStats | undefined;
+
+    // デバッグ統計
+    private _num_procA_flakes: number;
+    private _num_procB_flakes: number;
+
+    // 事前生成オブジェクト
+    private readonly _view_dir_N: Vector3;
+    private readonly _view_dir_V: Vector3;
+
+
+    /**
+     * @param stage - 所有者である [[RenderStage]] インスタンス
+     */
+    constructor( stage: RenderStage )
+    {
+        this._root_flake = stage.viewer.globe.root_flake;
+
+        const { view_pos_Q,
+                view_dir_wU } = FlakeCollector._createViewVectors( stage );
+        this._view_pos_Q  = view_pos_Q;
+        this._view_dir_wU = view_dir_wU;
+        this._clip_planes = FlakeCollector._createClipPlanes( stage, this._root_flake );
+
+        var             viewer = stage.viewer;
         var       dem_provider = viewer.dem_provider;
         var tile_texture_cache = viewer.tile_texture_cache;
 
@@ -26,15 +88,12 @@ class FlakeCollector {
         var   dem_zbias = GeoMath.LOG2PI - dem_provider.getResolutionPower() + 1;  // b = log2π - ρ + 1
         this._max_zbias = Math.max( tile_texture_cache.getImageZBias(), dem_zbias );
 
-        this._globe = viewer.globe;
         this._rflake_list = [];
 
         // デバッグ統計
         this._debug_stats = viewer.debug_stats;
-        if ( this._debug_stats ) {
-            this._num_procA_flakes = 0;
-            this._num_procB_flakes = 0;
-        }
+        this._num_procA_flakes = 0;
+        this._num_procB_flakes = 0;
 
         // 事前生成オブジェクト
         this._view_dir_N = GeoMath.createVector3();
@@ -43,12 +102,12 @@ class FlakeCollector {
 
 
     /**
-     * @private
+     * see [[_view_pos_Q]], [[_view_dir_wU]]
      */
-    _setupViewVectors( stage )
+    private static _createViewVectors( stage: RenderStage )
     {
-        var view_to_gocs = stage._view_to_gocs;
-        var   pixel_step = stage._pixel_step;
+        var view_to_gocs = stage.view_to_gocs;
+        var   pixel_step = stage.pixel_step;
 
         var view_pos_Q  = GeoMath.createVector3();
         var view_dir_wU = GeoMath.createVector3();
@@ -62,40 +121,27 @@ class FlakeCollector {
         view_dir_wU[1] = -view_to_gocs[ 9] * pixel_step;
         view_dir_wU[2] = -view_to_gocs[10] * pixel_step;
 
-        /**
-         *  @summary 位置ベクトル Q
-         *  @member mapray.FlakeCollector#_view_pos_Q
-         *  @type {mapray.Vector3}
-         *  @private
-         *  @see doc/ImageLevelCalculation.txt
-         */
-        this._view_pos_Q  = view_pos_Q;
-
-        /**
-         *  @summary ベクトル w * U
-         *  @member mapray.FlakeCollector#_view_dir_wU
-         *  @type {mapray.Vector3}
-         *  @private
-         *  @see doc/ImageLevelCalculation.txt
-         */
-        this._view_dir_wU = view_dir_wU;
+        return {
+            view_pos_Q,
+            view_dir_wU
+        };
     }
 
 
     /**
-     * @private
+     * see [[_clip_planes]]
      */
-    _setupClipPlanes( stage )
+    private static _createClipPlanes( stage:      RenderStage,
+                                      root_flake: Globe.Flake )
     {
-        var  view_to_gocs = stage._view_to_gocs;
-        var  gocs_to_view = stage._gocs_to_view;
-        var volume_planes = stage._volume_planes;
+        var  view_to_gocs = stage.view_to_gocs;
+        var  gocs_to_view = stage.gocs_to_view;
+        var volume_planes = stage.getVolumePlanes();
         var   clip_planes = [];
 
         // 地表遮蔽カリング平面
-        var root_flake = stage._viewer._globe.root_flake;
-        var       rmin = GeoMath.EARTH_RADIUS + root_flake.height_min;  // 最小半径
-        var       rmax = GeoMath.EARTH_RADIUS + root_flake.height_max;  // 最大半径
+        const rmin = GeoMath.EARTH_RADIUS + root_flake.height_min;  // 最小半径
+        const rmax = GeoMath.EARTH_RADIUS + root_flake.height_max;  // 最大半径
 
         // P (視点位置)
         var px = view_to_gocs[12];
@@ -137,17 +183,18 @@ class FlakeCollector {
             clip_planes.push( dst_plane );
         }
 
-        this._clip_planes = clip_planes;
+        return clip_planes;
     }
 
 
     /**
-     * @summary 描画地表断片を収集
-     * @return {mapray.RenderFlake[]}  収集され描画地表断片の集合
+     * 描画地表断片を収集
+     *
+     * @returns  収集され描画地表断片の集合
      */
-    traverse()
+    traverse(): RenderFlake[]
     {
-        this._collectFlakes( this._globe.root_flake );
+        this._collectFlakes( this._root_flake );
 
         // デバッグ統計
         if ( this._debug_stats ) {
@@ -160,9 +207,8 @@ class FlakeCollector {
 
 
     /**
-     * @private
      */
-    _collectFlakes( flake )
+    private _collectFlakes( flake: Globe.Flake ): void
     {
         if ( this._debug_stats !== null ) {
             this._num_procA_flakes += 1;
@@ -200,9 +246,8 @@ class FlakeCollector {
 
 
     /**
-     * @private
      */
-    _collectNextLevelFlakes( flake )
+    private _collectNextLevelFlakes( flake: Globe.Flake ): void
     {
         for ( var v = 0; v < 2; ++v ) {
             for ( var u = 0; u < 2; ++u ) {
@@ -213,10 +258,9 @@ class FlakeCollector {
 
 
     /**
-     * @summary 地表断片の詳細レベルの範囲を取得
-     * @private
+     * 地表断片の詳細レベルの範囲を取得
      */
-    _getLevelOfDetailRange( flake )
+    private _getLevelOfDetailRange( flake: Globe.Flake ): LodRange
     {
         var pi = Math.PI;
         var  z = flake.z;
@@ -291,20 +335,22 @@ class FlakeCollector {
 
 
     /**
-     * @summary 単位球メルカトル座標 x, y の地表詳細レベルを計算
-     * @desc
-     * <p>以下の値が設定されていなければならない。</p>
-     * <ul>
-     *   <li>this._view_pos_Q</li>
-     *   <li>this._view_dir_wU</li>
-     * </ul>
-     * @param  {number} x  X 座標
-     * @param  {number} y  Y 座標
-     * @param  {number} r  GOGS 原点からの距離 (Meters)
-     * @return {number}    地表詳細レベル
-     * @private
+     * 単位球メルカトル座標 x, y の地表詳細レベルを計算
+     *
+     * 以下の値が設定されていなければならない。
+     *
+     * - this._view_pos_Q
+     * - this._view_dir_wU
+     *
+     * @param x  X 座標
+     * @param y  Y 座標
+     * @param r  GOGS 原点からの距離 (Meters)
+     *
+     * @return 地表詳細レベル
      */
-    _calcLOD( x, y, r )
+    private _calcLOD( x: number,
+                      y: number,
+                      r: number ): number
     {
         var sinλ = Math.sin( x );
         var cosλ = Math.cos( x );
@@ -341,18 +387,16 @@ class FlakeCollector {
 
 
     /**
-     * @summary 四隅の LOD を設定
-     * @desc
-     * <p>rflake に以下のプロパティを設定する。</p>
-     * <ul>
-     *   <li>rflake.lod_00</li>
-     *   <li>rflake.lod_10</li>
-     *   <li>rflake.lod_01</li>
-     *   <li>rflake.lod_11</li>
-     * </ul>
-     * @private
+     * 四隅の LOD を設定
+     *
+     * rflake に以下のプロパティを設定する。
+     *
+     * - rflake.lod_00
+     * - rflake.lod_10
+     * - rflake.lod_01
+     * - rflake.lod_11
      */
-    _setCornerLODs( rflake )
+    private _setCornerLODs( rflake: RenderFlake ): void
     {
         var pi = Math.PI;
         var flake = rflake.flake;
@@ -379,10 +423,10 @@ class FlakeCollector {
 
 
     /**
-     * @summary 描画地表断片を追加
-     * @private
+     * 描画地表断片を追加
      */
-    _addRenderFlake( flake, range )
+    private _addRenderFlake( flake: Globe.Flake,
+                             range: LodRange ): void
     {
         var rflake = new RenderFlake( flake );
 
@@ -392,18 +436,29 @@ class FlakeCollector {
         this._rflake_list.push( rflake );
     }
 
+
+    /**
+     * Flake に対する LOD の許容幅
+     *
+     * 1つの Flake 全体に対する最小 LOD と最大 LOD の間の最大幅である。
+     *
+     * 有効な範囲は 0.0 < MAX_LOD_INTERVAL < 1.0 である。
+     */
+    private static readonly MAX_LOD_INTERVAL = 0.5;
+
 }
 
 
 /**
- * @summary Flake に対する LOD の許容幅
- * @desc
- * <p>1つの Flake 全体に対する最小 LOD と最大 LOD の間の最大幅である。</p>
- * <p>有効な範囲は 0.0 < MAX_LOD_INTERVAL < 1.0 である。</p>
- * @type {number}
- * @constant
+ * [[FlakeCollector._getLevelOfDetailRange]] の戻り値の型
  */
-FlakeCollector.MAX_LOD_INTERVAL = 0.5;
+interface LodRange {
+
+    min: number;
+    max: number;
+    mid: number;
+
+}
 
 
 export default FlakeCollector;
