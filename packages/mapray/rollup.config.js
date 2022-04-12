@@ -20,7 +20,7 @@ const strip_option = (
     {
         include: '**/*.(ts|js)',
         debugger: false,
-        functions: [ 'console.assert' ],
+        functions: [ 'console.assert', 'cfa_assert' ],
         labels: [ 'ASSERT', 'DEBUG' ],
         sourceMap: true,
     }:
