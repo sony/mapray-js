@@ -1,25 +1,24 @@
 import DemSampler from "./DemSampler";
+import { Area } from "./AreaUtil";
 import GeoMath from "./GeoMath";
 
 
 /**
- * @summary 線形 DEM サンプラー
- * @memberof mapray
- * @private
- * @extends mapray.DemSampler
+ * 線形 DEM サンプラー
  */
 class DemSamplerLinear extends DemSampler {
 
-    constructor( area, ρ, body )
+    constructor( area: Area,
+                 ρ:   number,
+                 body: DataView )
     {
         super( area, ρ, body );
     }
 
 
-    /**
-     * @override
-     */
-    sample( x, y )
+    // from DemSampler
+    override sample( x: number,
+                     y: number ): number
     {
         var u  = this._sx * x + this._ox;
         var u0 = Math.floor( u );  // 右位置
@@ -41,7 +40,8 @@ class DemSamplerLinear extends DemSampler {
     }
 
 
-    _sampleInt( u, v )
+    private _sampleInt( u: number,
+                        v: number ): number
     {
         var FLT_BYTES = 4;
 

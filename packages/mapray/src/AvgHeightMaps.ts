@@ -1,17 +1,20 @@
 /**
- * @summary 平均標高マップ
- * @memberof mapray
- * @private
- * @see mapray.DemBinary
- * @see mapray.DemBinaryCache
+ * 平均標高マップ
+ *
+ * @see [[DemBinary]]
  */
 class AvgHeightMaps {
 
+    private _ρ:   number;
+    private _maps: Float32Array[];
+
+
     /**
-     * @param {number}   ρ    解像度の指数
-     * @param {DataView} body  DEM 配列データの標高データ部分
+     * @param ρ   - 解像度の指数
+     * @param body - DEM 配列データの標高データ部分
      */
-    constructor( ρ, body )
+    constructor( ρ:   number,
+                 body: DataView )
     {
         this._ρ   = ρ;
         this._maps = [];   // Level: -1, -2, ..., -ρ
@@ -34,11 +37,12 @@ class AvgHeightMaps {
 
     /**
      * レベル -1 の平均標高マップを生成
-     * @param  {DataView}     src  DEM 配列データの標高データ部分
-     * @return {Float32Array}      レベル -1 の平均標高マップ
-     * @private
+     *
+     * @param src - DEM 配列データの標高データ部分
+     *
+     * @returns  レベル -1 の平均標高マップ
      */
-    _create_first_map( src )
+    private _create_first_map( src: DataView ): Float32Array
     {
         var FLT_BYTES = 4;
 
@@ -78,12 +82,14 @@ class AvgHeightMaps {
 
     /**
      * レベル -2 .. -ρ の平均標高マップを生成
-     * @param  {number}       lv   生成するマップのレベル
-     * @param  {Float32Array} src  元となる平均標高マップ (レベル lv + 1)
-     * @return {Float32Array}      レベル lv の平均標高マップ
-     * @private
+     *
+     * @param lv  - 生成するマップのレベル
+     * @param src - 元となる平均標高マップ (レベル lv + 1)
+     *
+     * @returns  レベル lv の平均標高マップ
      */
-    _create_next_map( lv, src )
+    private _create_next_map( lv:  number,
+                              src: Float32Array ): Float32Array
     {
         var size = 1 << (this._ρ + lv);
         var  dst = new Float32Array( size * size );
@@ -115,15 +121,19 @@ class AvgHeightMaps {
 
 
     /**
-     * @summary 平均標高を取得
-     * @desc
-     * <p>地表断片 <zg, xg, yg> の平均標高を取得する。</p>
-     * @param  {number} zg  地表断片分割レベル (0 <= zg < ρ)
-     * @param  {number} xg  地表断片 X 座標
-     * @param  {number} yg  地表断片 Y 座標
-     * @return {number}     平均標高
+     * 平均標高を取得
+     *
+     * 地表断片 <zg, xg, yg> の平均標高を取得する。
+     *
+     * @param zg - 地表断片分割レベル (0 <= zg < ρ)
+     * @param xg - 地表断片 X 座標
+     * @param yg - 地表断片 Y 座標
+     *
+     * @returns  平均標高
      */
-    sample( zg, xg, yg )
+    sample( zg: number,
+            xg: number,
+            yg: number ): number
     {
         var  map = this._maps[this._ρ - zg - 1];
         var size = 1 << zg;

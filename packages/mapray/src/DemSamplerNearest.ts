@@ -1,24 +1,23 @@
 import DemSampler from "./DemSampler";
+import { Area } from "./AreaUtil";
 
 
 /**
- * @summary 最近傍 DEM サンプラー
- * @memberof mapray
- * @private
- * @extends mapray.DemSampler
+ * 最近傍 DEM サンプラー
  */
 class DemSamplerNearest extends DemSampler {
 
-    constructor( area, ρ, body )
+    constructor( area: Area,
+                 ρ:   number,
+                 body: DataView )
     {
         super( area, ρ, body );
     }
 
 
-    /**
-     * @override
-     */
-    sample( x, y )
+    // from DemSampler
+    override sample( x: number,
+                     y: number ): number
     {
         var FLT_BYTES = 4;
 
