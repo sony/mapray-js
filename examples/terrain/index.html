@@ -116,14 +116,14 @@
         <div id="mapray-container">
             <div id="control-ui" class="uk-overlay uk-position-right uk-width-1-4">
                 <div class="uk-card uk-card-secondary uk-card-small uk-card-body">
-                    <h3 class="uk-card-title">Terrains</h3>
+                    <h1 class="uk-card-title">Terrains</h1>
                     <p>Reconstructed 3D terrain from DEM </p>
                     <p>of the Geospatial Information Authority of Japan and JAXA</p>
                     <p>Data source: <a href="https://maps.gsi.go.jp/#5/36.350527/138.757324/&base=std&ls=std%7Cchiikimesh%7Cfgd_dem5a_area_dtil&disp=111&lcd=fgd_dem5a_area_dtil&vs=c1j0h0k0l0u0t0z0r0s0m0f0&d=m">DEM,Geospatial Information Authority of Japan</a></p>
                     <p><a href="https://www.eorc.jaxa.jp/ALOS/aw3d/index.htm">ALOS World 3D, JAXA</a></p>
                     <div class="uk-margin">
                         <label class="uk-form-label">Location</label>
-                        <select class="uk-select uk-form-small" id="location" onchange="(function(){window.onChangeLocation();})();">
+                        <select class="uk-select uk-form-small" id="location" uk-tooltip="Select location" onchange="(function(){window.onChangeLocation();})();">
                             <option value="Fuji"> Mt.Fuji, Japan</option>
                             <option value="NorthernAlps" selected> Northern Japanese alps</option>
                             <option value="GrandCanyon"> Grand Canyon National Park, Arizona</option>
@@ -136,8 +136,15 @@
                             <option value="StHelens"> Mt St. Helens, USA</option>
                         </select>
                     </div>
+                    <hr>
                     <div class="uk-margin">
-                        <label class="uk-form-label">Date</label>
+                        <h2 class="uk-card-title" uk-tooltip="Settings for atmosphere effects">Atmosphere</h2>
+                        <div class="uk-margin uk-grid-small uk-child-width-auto uk-grid">
+                            <label><input class="uk-checkbox" type="checkbox" id="AtmoON" uk-tooltip="Enable Atmosphere" onclick="(function(){window.onClickCheckAtmosphere();})();" >  ON</label>
+                        </div>
+                    </div>
+                    <div class="uk-margin">
+                        <label class="uk-form-label" uk-tooltip="Set date and time">Date</label>
                         <form class="uk-grid-small" uk-grid>
                             <div class="uk-width-1-1@s">
                                 <input class="uk-input" id="simulate-date" type="date" uk-tooltip="Please enter the date" onchange="(function(){window.onChangeDateTime();})();">
@@ -146,32 +153,27 @@
                                 <input class="uk-input" id="simulate-time" type="time" uk-tooltip="Please enter the time" onchange="(function(){window.onChangeDateTime();})();">
                             </div>
                             <div class="uk-width-1-2@s">
-                                <input class="uk-input" id="simulate-timezone" type="text" disabled>
+                                <input class="uk-input" id="simulate-timezone" uk-tooltip="The time zone is automatically selected from the location" type="text" disabled>
                             </div>
                         </form>
                     </div>
                     <div class="uk-margin">
                         <label class="uk-form-label">Sun Animation</label>
-                        <div class="uk-margin-small" id="player-sun" uk-tooltip="day animation" title aria-expanded="false">
+                        <div class="uk-margin-small" id="player-sun" uk-tooltip="Start and stop animation" title aria-expanded="false">
                             <button onclick="(function(){window.onStartDayAnimation();})();"><img id="sun-player-icon" src="./resources/icon/play_circle_filled-24px.svg" width="64" height="64" uk-svg></button>
                         </div>
                         <div class="uk-form-label">Speed</div>
-                        <input class="uk-range" id="range" type="range" value="5.0" min="1" max="10" step="1" >
+                        <input class="uk-range" id="range" type="range" value="5.0" min="1" max="10" step="1" uk-tooltip="Change sun animation speed">
                         <output id="range-output">5</output>
                     </div>
+                    <hr>
                     <div class="uk-margin">
-                        <label class="uk-form-label">Surface</label>
-                        <select class="uk-select uk-form-small" id="surface" onchange="(function(){window.onChangeSurface();})();">
+                        <h2 class="uk-card-title" uk-tooltip="Settings for atmosphere effects">Surface</h2>
+                        <select class="uk-select uk-form-small" id="surface" uk-tooltip="Change surface texture" onchange="(function(){window.onChangeSurface();})();">
                             <option value="bingmaps" selected>Bingmaps</option>
                             <option value="street">Street</option>
                             <option value="satellite">Satellite</option>
                         </select>
-                    </div>
-                    <div class="uk-margin">
-                        <label class="uk-form-label">Rendering Settings</label>
-                        <div class="uk-margin uk-grid-small uk-child-width-auto uk-grid">
-                            <label><input class="uk-checkbox" type="checkbox" id="AtmoON" onclick="(function(){window.onClickCheckAtmosphere();})();" >  Atmosphere ON</label>
-                        </div>
                     </div>
                 </div>
             </div>

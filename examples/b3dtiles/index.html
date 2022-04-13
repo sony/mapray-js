@@ -111,13 +111,13 @@
         <div id="mapray-container">
             <div id="control-ui" class="uk-overlay uk-position-right uk-width-1-4">
                 <div class="uk-card uk-card-secondary uk-card-small uk-card-body">
-                    <h3 class="uk-card-title">Virtual Tokyo's 23 central wards</h3>
+                    <h1 class="uk-card-title">Virtual Tokyo's 23 central wards</h1>
                     <p>Data set from PLATEAU project by MLIT.</p>
                     <p>The 3D city model is converted from Obj to b3dtiles.</p>
                     <p>Data source: <a href="https://www.mlit.go.jp/plateau/">Project PLATEAU</a></p>
                     <div class="uk-margin">
                         <label class="uk-form-label">Location</label>
-                        <select class="uk-select uk-form-small" id="area" onchange="(function(){window.onChangeCamera();})();">
+                        <select class="uk-select uk-form-small" id="area" uk-tooltip="Select location" onchange="(function(){window.onChangeCamera();})();">
                             <option value="TokyoTower" selected>Tokyo Tower</option>
                             <option value="Shinjuku">Shinjuku</option>
                             <option value="Haneda">Tokyo International Airport</option>
@@ -126,7 +126,7 @@
                     </div>
 
                     <div class="uk-margin uk-grid-small uk-child-width-auto uk-grid">
-                        <label><input class="uk-checkbox" type="checkbox" id="AtmoON" onclick="(function(){window.onClickCheckbox();})();" >  Atmosphere ON</label>
+                        <label><input class="uk-checkbox" type="checkbox" uk-tooltip="Enable atmosphere effects" id="AtmoON" onclick="(function(){window.onClickCheckbox();})();" >  Atmosphere ON</label>
                     </div>
                 </div>
             </div>
