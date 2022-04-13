@@ -467,7 +467,7 @@ export class PrimitiveProducer extends Entity.PrimitiveProducer {
         const region = new EntityRegion();
 
         // @ts-ignore
-        region.addPoint( this.entity._position );
+        region.addPoint( this.getEntity()._position );
 
         return [region];
     }
