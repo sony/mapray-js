@@ -18,12 +18,14 @@ var outdir = "dist/"
 const strip_option = (
     process.env.BUILD === "production" ?
     {
+        include: '**/*.(ts|js)',
         debugger: false,
         functions: [ 'console.assert' ],
         labels: [ 'ASSERT', 'DEBUG' ],
         sourceMap: true,
     }:
     {
+        include: '**/*.(ts|js)',
         debugger: false,
         functions: [],
         labels: [],
@@ -52,7 +54,6 @@ export default [
       base64({
         include: '**/*.wasm'
       }),
-      strip(strip_option),
       string({
         include: extensions
       }),
@@ -69,6 +70,7 @@ export default [
           }
         }
       }),
+      strip(strip_option),
     ]
   },
 
@@ -85,7 +87,6 @@ export default [
       base64({
         include: '**/*.wasm'
       }),
-      strip(strip_option),
       string({
         include: extensions
       }),
@@ -98,6 +99,7 @@ export default [
           }
         }
       }),
+      strip(strip_option),
       terser()
     ]
   },
@@ -119,7 +121,6 @@ export default [
       base64({
         include: '**/*.wasm'
       }),
-      strip(strip_option),
       string({
         include: extensions
       }),
@@ -138,6 +139,7 @@ export default [
           }
         }
       }),
+      strip(strip_option),
       babel({ // this is for js file in src dir
         exclude: 'node_modules/**'
       }),
@@ -160,7 +162,6 @@ export default [
       base64({
         include: '**/*.wasm'
       }),
-      strip(strip_option),
       string({
         include: extensions
       }),
@@ -175,6 +176,7 @@ export default [
           }
         }
       }),
+      strip(strip_option),
       babel({ // this is for js file in src dir
         exclude: 'node_modules/**'
       }),
