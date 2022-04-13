@@ -4,8 +4,6 @@ import { default_config, getCameraInfoFromLocation, updateDateInterface } from "
 import BingMapsImageProvider from "./BingMapsImageProvider"
 import * as SunCalc from 'suncalc';
 import { DateTime } from "luxon";
-import AttributionController from "@mapray/mapray-js/dist/es/@type/AttributionController";
-
 
 const MAPRAY_ACCESS_TOKEN = "<your access token here>";
 
@@ -21,11 +19,6 @@ export type InitValue = {
         minute: number
     },
     sun_speed: number
-}
-
-type Attribution = {
-    display: string,
-    link: string
 }
 
 const defaultUpdateCallback = ( year: number, month: number, day: number, hour: number, minute: number ) => {}
@@ -113,7 +106,7 @@ class TerrainViewer extends maprayui.StandardUIViewer {
         this.selectLocation( initvalue.location );
 
         this._getAttribution( initvalue.surface ).forEach( attr => {
-            this._viewer.attribution_controller.addAttribution(attr);
+            this._viewer?.attribution_controller.addAttribution(attr);
         });
 
     }
@@ -170,13 +163,13 @@ class TerrainViewer extends maprayui.StandardUIViewer {
     }
 
     enableAtmosphere( enable: boolean ) {
-        if (this._viewer && this._viewer.atmosphere) {
-            if (enable) {
-                this._viewer.atmosphere.setSkyVisibility(true);
-                this._viewer.atmosphere.setGroundVisibility(true);
+        if ( this._viewer && this._viewer.atmosphere ) {
+            if ( enable ) {
+                this._viewer.atmosphere.setSkyVisibility( true );
+                this._viewer.atmosphere.setGroundVisibility( true );
             } else{
-                this._viewer.atmosphere.setSkyVisibility(false);
-                this._viewer.atmosphere.setGroundVisibility(false);
+                this._viewer.atmosphere.setSkyVisibility( false );
+                this._viewer.atmosphere.setGroundVisibility( false );
             }
         }
     }
@@ -266,7 +259,7 @@ class TerrainViewer extends maprayui.StandardUIViewer {
             minute: minute
         }, {
             zone: timezone
-        });
+        } );
 
         if( !dt.isValid ) {
             throw new Error( "check the date and zone format" );
@@ -281,6 +274,10 @@ class TerrainViewer extends maprayui.StandardUIViewer {
         console.log(dt);
         const newdt = this._current_date.plus( { minute: dt/60.0 * this._sun_speed } );
 
+        const i = getCameraInfoFromLocation( this._current_location );
+        if ( i < 0 ) {
+            return;
+        }
 
         const sunpos = new mapray.GeoPoint( default_config[i].target_lng, default_config[i].target_lat, 0.0 );
         this._setSunDirection( sunpos, newdt, default_config[i].ray_leigh, default_config[i].mie );
@@ -290,8 +287,8 @@ class TerrainViewer extends maprayui.StandardUIViewer {
         this._updateSunAnimation( this._current_date.year, this._current_date.month, this._current_date.day, this._current_date.hour, this._current_date.minute );
     }
 
-    _getAttribution( surface: string ) {
-        let attr = AttributionController.Attribution;
+    _getAttribution( surface: string ) : mapray.AttributionController.Attribution[] {
+        let attr : mapray.AttributionController.Attribution[] = [];
         switch( surface ) {
             case "satellite":
                 attr = [{
@@ -312,8 +309,7 @@ class TerrainViewer extends maprayui.StandardUIViewer {
                 },{
                     display: "Earthstar Geographics SIO",
                     link: ""
-                }
-                ];
+                }];
                 break;
             case "standard":
                 attr = [{
@@ -324,7 +320,6 @@ class TerrainViewer extends maprayui.StandardUIViewer {
         }
         return attr;
     }
-
 
     override onKeyDown( event: KeyboardEvent )
     {
