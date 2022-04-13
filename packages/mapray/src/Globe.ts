@@ -133,8 +133,10 @@ class Globe {
         if ( this._status === Globe.Status.READY ) {
             // root の真子孫を破棄 (リクエストをキャンセル)
             const children = (this._root_flake as Globe.Flake).children;
-            for ( var i = 0; i < 4; ++i ) {
-                (children[i] as Globe.Flake).dispose();
+            for ( const child of children ) {
+                if ( child !== null ) {
+                    child.dispose();
+                }
             }
         }
         else if ( this._status === Globe.Status.NOT_READY ) {
