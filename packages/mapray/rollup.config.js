@@ -10,8 +10,8 @@ import typescript from 'rollup-plugin-typescript2';
 
 
 
-const extensions = ['**/*.vert', '**/*.frag', '**/*.glsl', '**/*.svg']
-var outdir = "dist/"
+const extensions = ['**/*.vert', '**/*.frag', '**/*.glsl', '**/*.svg'];
+var outdir = "dist/";
 
 
 
