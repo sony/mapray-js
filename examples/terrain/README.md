@@ -1,7 +1,7 @@
-# maprayJS Rumbler 
-This is a demo application with interactive mouse operation on [Mapray](https://mapray.com) website.
+# Example: Terrain and atmospheric representation
+This is a demonstration of terrain and atmospheric representation
 
-## Preparing your Development Environment
+## Setup your Development Environment
 Install [node.js](https://nodejs.org/)
 ```bash
 brew install node
@@ -22,7 +22,7 @@ To see the terrian data, you need a [Mapray access token](/doc/developer-guide/G
 export MAPRAY_ACCESS_TOKEN=<mapray_access_token>
 ```
 
-Or set accsess token to `<your access token here>` directly in `NextRambler.js`.
+Or set accsess token to `<your access token here>` directly in [TerrainViewer.ts](./src/TerrainViewer.ts).
 
 
 **To install dependencies:**
@@ -36,6 +36,5 @@ yarn
 **Commands:**
 * `npm start` is the development target, to serves the app and hot reload.
 * `npm run build` is the production target, to create the final bundle and write to disk.
-* `npm run dev` is the target for developing mapray and ui packages, to include mapray packages from local modules to write to disk.
 
 [http://localhost:7776](http://localhost:7776)
