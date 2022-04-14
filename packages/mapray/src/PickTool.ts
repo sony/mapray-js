@@ -1,3 +1,5 @@
+import { Vector3, Matrix } from "./GeoMath";
+import GLEnv from "./GLEnv";
 import FrameBuffer from "./FrameBuffer";
 import Material from "./Material";
 import Camera from "./Camera";
@@ -8,17 +10,42 @@ import depth_fs_code from "./shader/depth.frag";
 
 
 /**
- * @summary マウスピック処理に関連する処理を行う
- *
- * @memberof mapray
- * @private
+ * マウスピック処理に関連する処理を行う
+ * @internal
  */
 class PickTool {
 
+    private _glenv: GLEnv;
+
+    /** width of pick canvas */
+    private _width: number;
+
+    /** height of pick canvas */
+    private _height: number;
+
+    private _camera: Camera;
+
+    private _frame_buffer: FrameBuffer;
+
+    private _depth_to_color_frame_buffer: FrameBuffer;
+
+    private _depth_to_color_materials: Material[];
+
+    private _indices_length: number;
+
+    private _index_buf: WebGLBuffer | null;
+
+    private _vertex_attribs: object;
+
+    private _rid_value: Uint8Array;
+
+    private _depth_value: Uint8Array;
+
+
     /**
-     * @param {mapray.GLEnv} glenv     WebGL 環境
+     * @param glenv     WebGL 環境
      */
-    constructor( glenv, option={} ) {
+    constructor( glenv: GLEnv, option: PickTool.Option = {} ) {
         this._glenv = glenv;
         const gl = this._glenv.context;
 
@@ -30,27 +57,31 @@ class PickTool {
         this._frame_buffer = new FrameBuffer( this._glenv, this._width, this._height, {
                 color_containers: [{
                         type: FrameBuffer.ContainerType.RENDER_BUFFER,
-                        options: {
+                        option: {
                             internal_format: gl.RGBA4,
+                            format: gl.RGBA4,
+                            type: gl.UNSIGNED_BYTE,
                         }
                 }],
                 depth_container: {
                     type: FrameBuffer.ContainerType.TEXTURE,
                     attach_type: gl.DEPTH_STENCIL_ATTACHMENT,
-                    options: {
+                    option: {
                         internal_format: gl.DEPTH_STENCIL,
                         format: gl.DEPTH_STENCIL,
                         type: glenv.WEBGL_depth_texture.UNSIGNED_INT_24_8_WEBGL,
-                    }
+                    },
                 },
-        });
+        } as FrameBuffer.Option );
 
         this._depth_to_color_frame_buffer = new FrameBuffer( this._glenv, this._width, this._height, {
                 color_containers: [{
                         type: FrameBuffer.ContainerType.RENDER_BUFFER,
-                        options: {
+                        option: {
                             internal_format: gl.RGBA4,
-                        }
+                            format: gl.RGBA4,
+                            type: gl.UNSIGNED_BYTE,
+                        },
                 }],
         });
 
@@ -79,7 +110,11 @@ class PickTool {
             {
                 const indices = [ 0, 1, 2,  0, 2, 3 ];
                 this._indices_length = indices.length;
-                this._index_buf = gl.createBuffer()
+                const buffer = gl.createBuffer();
+                if ( !buffer ) {
+                    throw new Error("couldn't create buffer");
+                }
+                this._index_buf = buffer;
                 gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this._index_buf);
                 gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
                 gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
@@ -109,11 +144,13 @@ class PickTool {
         this._depth_value = new Uint8Array( 4 * this._width * this._height );
     }
 
+
     /**
-     * @summary ピック用カメラを返却する。同じインスタンスが返却される。
-     * @param {mapray.Camera}  viewer_camera  Viewreのカメラ
+     * ピック用カメラを返却する。同じインスタンスが返却される。
+     * @param viewer_camera Viewreのカメラ
      */
-    pickCamera( viewer_camera ) {
+    pickCamera( viewer_camera: Camera ): Camera
+    {
         const cw = viewer_camera.canvas_size.width;
         const ch = viewer_camera.canvas_size.height;
         this._camera.copyViewParameters( viewer_camera );
@@ -125,32 +162,39 @@ class PickTool {
         return this._camera;
     }
 
+
     /**
-     * @summary Scene描画処理直前に呼ばれる
+     * Scene描画処理直前に呼ばれる
      */
-    beforeRender() {
+    beforeRender(): void
+    {
         this._frame_buffer.bind();
     }
 
+
     /**
-     * @summary Scene描画処理直後に呼ばれる
+     * Scene描画処理直後に呼ばれる
      */
-    afterRender() {
+    afterRender(): void
+    {
         this._frame_buffer.unbind();
     }
 
+
     /**
-     * @summary Scene描画処理がキャンセルされたときに呼ばれる
+     * Scene描画処理がキャンセルされたときに呼ばれる
      */
-    renderCanceled() {
+    renderCanceled(): void
+    {
         this._frame_buffer.unbind();
     }
 
+
     /**
-     * @summary ridを、描画済みテクスチャから読む（1ステップ前の値が返却される）
-     * @return {number}
+     * ridを、描画済みテクスチャから読む（1ステップ前の値が返却される）
      */
-    readRid() {
+    readRid(): number
+    {
         const gl = this._glenv.context;
         const startRid = Date.now();
         this._frame_buffer.bind();
@@ -181,37 +225,39 @@ class PickTool {
         this._frame_buffer.unbind();
 
         const endRid = Date.now();
-        if ( endRid - startRid > 7 ) {
-            console.log("Render and Read Index: " + (endRid - startRid) + "ms gl.readPixels:" + (endRidRead - startRidRead) + "ms");
+        DEBUG: {
+            if ( endRid - startRid > 7 ) {
+                console.log("Render and Read Index: " + (endRid - startRid) + "ms gl.readPixels:" + (endRidRead - startRidRead) + "ms");
+            }
         }
 
         return rid;
     }
 
 
-
     /**
-     * @summary 深度値を、描画済みテクスチャから読み（1ステップ前の値が返却される）、Gocs座標系に変換する
-     * @return {mapray.Matrix} view_to_clip View座標系からクリップ座標系への変換マトリックス
-     * @return {mapray.Matrix} view_to_gocs View座標系からView座標系への変換マトリックス
-     * @return {mapray.Vector3}
+     * 深度値を、描画済みテクスチャから読み（1ステップ前の値が返却される）、Gocs座標系に変換する
+     * @param view_to_clip View座標系からクリップ座標系への変換マトリックス
+     * @param view_to_gocs View座標系からView座標系への変換マトリックス
      */
-    readDepth( view_to_clip, view_to_gocs ) {
+    readDepth( view_to_clip: Matrix, view_to_gocs: Matrix ): Vector3
+    {
         const gl = this._glenv.context;
 
         const startDepth = Date.now();
-        let startDepthRead, endDepthRead;
+        let startDepthRead = -1, endDepthRead = -1;
 
         this._depth_to_color_frame_buffer.bind();
 
         let depth_clip = 0;
         gl.viewport( 0, 0, this._width, this._height );
         for ( let i=0; i<2; i++ ) {
+            const depth_buffer = this._frame_buffer.depth_container as WebGLTexture | WebGLRenderbuffer;
             const material = this._depth_to_color_materials[ i ];
             material.bindProgram();
             material.bindVertexAttribs(this._vertex_attribs);
             material.setInteger( "u_sampler", 0 );
-            material.bindTexture2D( 0, this._frame_buffer.depth_container );
+            material.bindTexture2D( 0, depth_buffer );
             gl.depthFunc( gl.ALWAYS );
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this._index_buf);
             gl.drawElements(gl.TRIANGLES, this._indices_length, gl.UNSIGNED_SHORT, 0);
@@ -262,20 +308,39 @@ class PickTool {
         ]);
 
         const endDepth = Date.now();
-        if ( endDepth - startDepth > 7 ) {
-            console.log("Render and Read Depth: " + (endDepth - startDepth) + "ms gl.readPixels:" + (endDepthRead - startDepthRead) + "ms");
+        DEBUG: {
+            if ( endDepth - startDepth > 7 ) {
+                console.log("Render and Read Depth: " + (endDepth - startDepth) + "ms gl.readPixels:" + (endDepthRead - startDepthRead) + "ms");
+            }
         }
 
         return point;
     }
 }
 
-const COEFFICIENTS_RID = [];
+
+
+namespace PickTool {
+
+
+
+export interface Option {
+    width?: number;
+    height?: number;
+}
+
+
+
+} // PickTool
+
+
+
+const COEFFICIENTS_RID: number[] = [];
 for ( let i=0; i<4; i++ ) {
     COEFFICIENTS_RID[ i ] = Math.pow(16, 3 - i);
 }
 
-const COEFFICIENTS_DEPTH = [[],[]];
+const COEFFICIENTS_DEPTH: number[][] = [[],[]];
 for ( let i=0; i<4; i++ ) {
     COEFFICIENTS_DEPTH[ 0 ][ i ] = Math.pow(2, -3 * (i+1)) / 17.0;
     COEFFICIENTS_DEPTH[ 1 ][ i ] = Math.pow(2, -3 * (i+5)) / 17.0;
