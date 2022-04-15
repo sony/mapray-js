@@ -100,4 +100,4 @@ npm run jsdoc
 ```
 
 ## License
-maprayJS is licensed under the [MIT license](/LICENSE).
+maprayJS is licensed under the [Apatch License Version 2.0](/LICENSE).
