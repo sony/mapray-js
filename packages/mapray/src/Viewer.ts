@@ -160,9 +160,9 @@ class Viewer {
         this._north_pole         = options.north_pole;
         this._south_pole         = options.south_pole;
         this._image_provider     = this._createImageProvider( options );
+        this._tile_texture_cache = new TileTextureCache( this._glenv, this._image_provider );
         this._layers             = this._createLayerCollection( options );
         this._globe              = new Globe( this._glenv, this._dem_provider, options.north_pole, options.south_pole );
-        this._tile_texture_cache = new TileTextureCache( this._glenv, this._image_provider );
         this._b3d_collection     = new B3dCollection( this );
         this._scene              = new Scene( this, this._glenv );
         this._ground_visibility  = Viewer._getBoolOption( options, "ground_visibility", true );

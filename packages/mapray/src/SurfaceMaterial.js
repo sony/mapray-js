@@ -34,7 +34,6 @@ class SurfaceMaterial extends FlakeMaterial {
 
         this._viewer             = viewer;
         this._tile_texture_cache = viewer.tile_texture_cache;
-        this._layers             = viewer.layers;
         this._dummy_tile_texture = this._createDummyTileTexture( viewer.glenv, [128, 128, 128, 255] );
 
         if ( options.nightMaterial === true ) {
@@ -97,7 +96,7 @@ class SurfaceMaterial extends FlakeMaterial {
      */
     numDrawings()
     {
-        return 1 + this._layers.num_drawing_layers;
+        return 1 + this._viewer.layers.num_drawing_layers;
     }
 
 
@@ -111,7 +110,7 @@ class SurfaceMaterial extends FlakeMaterial {
         var param = this._getMaterialParamater( rflake, index );
 
         if ( param !== null ) {
-            const layer = this._layers.getDrawingLayer( index - 1 );
+            const layer = this._viewer.layers.getDrawingLayer( index - 1 );
 
             this.setVector4( "u_corner_lod", param.corner_lod );
 
@@ -182,7 +181,7 @@ class SurfaceMaterial extends FlakeMaterial {
      */
     _getMaterialParamater( rflake, index )
     {
-        var tex_cache = (index == 0) ? this._tile_texture_cache : this._layers.getDrawingLayer( index - 1 ).tile_cache;
+        var tex_cache = (index == 0) ? this._tile_texture_cache : this._viewer.layers.getDrawingLayer( index - 1 ).tile_cache;
         this._image_zbias = tex_cache.getImageZBias();
 
         var flake = rflake.flake;
