@@ -411,11 +411,6 @@ export interface Json extends Entity.Json {
 }
 
 
-export function isTextEntityJson( entityJson: Entity.Json ): entityJson is TextEntity.Json {
-    return entityJson.type === "";
-}
-
-
 
 export interface EntryJson {
     position: [ x: number, y: number, z: number ];

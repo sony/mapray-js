@@ -207,22 +207,16 @@ class SceneLoader extends Loader {
             var   type = item.type;
             var entity = null;
 
-            if ( TextEntity.isTextEntityJson( item ) ) {
-                entity = new TextEntity( scene, { json: item, refs: this._references } );
-            }
-            else {
-                switch ( type ) {
+            switch ( type ) {
                 case "markerline":
                     entity = new MarkerLineEntity( scene, { json: item, refs: this._references } as MarkerLineEntity.Option );
                     break;
                 case "path":
                     entity = new PathEntity( scene, { json: item, refs: this._references } as PathEntity.Option );
                     break;
-                /*
                 case "text":
-                    entity = new TextEntity( scene, { json: item, refs: this._references } );
+                    entity = new TextEntity( scene, { json: item, refs: this._references } as TextEntity.Option );
                     break;
-                */
                 case "model":
                     // @ts-ignore
                     entity = new ModelEntity( scene, { json: item, refs: this._references } as ModelEntity.Option );
@@ -233,7 +227,6 @@ class SceneLoader extends Loader {
                 default:
                     console.error( "mapray: unknown entity type: " + type );
                     break;
-                }
             }
 
             if ( entity ) {
