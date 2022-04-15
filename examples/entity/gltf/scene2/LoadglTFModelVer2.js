@@ -59,22 +59,22 @@ class LoadModel {
     // シーンの読み込み
     LoadScene() {
         var scene_File_URL = "./data/glTFLoadVer2.json";
-        /* glTFLoadVer2.json links glTF file "./kokura_castle/scene.gltf". 
+        /* glTFLoadVer2.json links glTF file "./kokura_castle/scene.gltf".
         You need to get this glTF file from the web. The following is how to download it.
-        
+
         - Access [Sketchfab] (https://sketchfab.com/3d-models/kokura-castle-aba23531911c45439067a6e0aaccad07) and download the data in glTF file format
-        - Click [Download link] (https://storage.cloud.google.com/mapray-examples/model/download/kokura_castle.zip) to download it
-        
-        If you download from the download link, please unzip and use it. 
-        The following explanation is based on the assumption that 
-        the expanded data is stored in the following directory 
+        - Click [Download link] (https://resource.mapray.com/assets/www/download/kokura_castle.zip) to download it
+
+        If you download from the download link, please unzip and use it.
+        The following explanation is based on the assumption that
+        the expanded data is stored in the following directory
         with the relative path from the root directory of mapray-js.
 
         ```
         ./examples/entity/gltf/data/
         ```
 
-        The data is not our copyrighted contents. The copyright belongs to the creator of each data. 
+        The data is not our copyrighted contents. The copyright belongs to the creator of each data.
         Please refer to the LICENSE file in the folder for details.
         Please note that we do not take any responsibility if you infringe on the content rights.
         */

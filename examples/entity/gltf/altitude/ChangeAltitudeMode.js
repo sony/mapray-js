@@ -65,22 +65,22 @@ class ChangeAltitudeMode {
     LoadScene() {
         var scene_File_URL = "./data/glTFChangeAltitudeMode.json";
 
-        /* glTFChangeAltitudeMode.json links glTF file "./plane/scene.gltf". 
+        /* glTFChangeAltitudeMode.json links glTF file "./plane/scene.gltf".
         You need to get this glTF file from the web. The following is how to download it.
-        
+
         - Access [Sketchfab] (https://sketchfab.com/3d-models/plane-cedc8a07370747f7b0d14400cdf2faf9) and download the data in glTF file format
-        - Click [Download link] (https://storage.cloud.google.com/mapray-examples/model/download/plane.zip) to download it
-        
-        If you download from the download link, please unzip and use it. 
-        The following explanation is based on the assumption that 
-        the expanded data is stored in the following directory 
+        - Click [Download link] (https://resource.mapray.com/assets/www/download/plane.zip) to download it
+
+        If you download from the download link, please unzip and use it.
+        The following explanation is based on the assumption that
+        the expanded data is stored in the following directory
         with the relative path from the root directory of mapray-js.
 
         ```
         ./examples/entity/gltf/data/
         ```
 
-        The data is not our copyrighted contents. The copyright belongs to the creator of each data. 
+        The data is not our copyrighted contents. The copyright belongs to the creator of each data.
         Please refer to the LICENSE file in the folder for details.
         Please note that we do not take any responsibility if you infringe on the content rights.
         */
@@ -109,7 +109,7 @@ class ChangeAltitudeMode {
             this.UpdateModelPosition();
         }
     }
-    
+
     UpdateModelPosition() {
         // sceneのEntityを取得
         var entity = this.viewer.scene.getEntity(0);
@@ -119,12 +119,12 @@ class ChangeAltitudeMode {
 
         // モデルの位置を設定
         entity.setPosition(this.model_Point);
-        
+
         // モデルの回転
-        entity.setOrientation(new mapray.Orientation(130, -90, 0)); 
+        entity.setOrientation(new mapray.Orientation(130, -90, 0));
 
         // モデルのスケールを設定
-        entity.setScale([0.2, 0.2, 0.2]); 
+        entity.setScale([0.2, 0.2, 0.2]);
     }
 
     ChangeAltitudeMode() {
@@ -158,7 +158,7 @@ class ChangeAltitudeMode {
 
         this.UpdateModelPosition();
     }
-    
+
 }
 
 function CreateChangeAltitudeModeInstance(container) {

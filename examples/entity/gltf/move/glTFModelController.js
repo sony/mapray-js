@@ -68,22 +68,22 @@ class ModelController {
     LoadScene() {
         var scene_File_URL = "./data/glTFController.json";
 
-        /* glTFController.json links glTF file "./truck_wip/scene.gltf". 
+        /* glTFController.json links glTF file "./truck_wip/scene.gltf".
         You need to get this glTF file from the web. The following is how to download it.
-        
+
         - Access [Sketchfab] (https://sketchfab.com/3d-models/truck-wip-33e925207e134652bd8c2465e5c16957) and download the data in glTF file format
-        - Click [Download link] (https://storage.cloud.google.com/mapray-examples/model/download/truck_wip.zip) to download it
-        
-        If you download from the download link, please unzip and use it. 
-        The following explanation is based on the assumption that 
-        the expanded data is stored in the following directory 
+        - Click [Download link] (https://resource.mapray.com/assets/www/download/truck_wip.zip) to download it
+
+        If you download from the download link, please unzip and use it.
+        The following explanation is based on the assumption that
+        the expanded data is stored in the following directory
         with the relative path from the root directory of mapray-js.
 
         ```
         ./examples/entity/gltf/data/
         ```
 
-        The data is not our copyrighted contents. The copyright belongs to the creator of each data. 
+        The data is not our copyrighted contents. The copyright belongs to the creator of each data.
         Please refer to the LICENSE file in the folder for details.
         Please note that we do not take any responsibility if you infringe on the content rights.
         */
@@ -95,7 +95,7 @@ class ModelController {
                 this.onLoadScene(loader, isSuccess);
             }
         });
-        
+
         loader.load();
     }
 
@@ -123,7 +123,7 @@ class ModelController {
         entity.setPosition(this.model_Point);
 
         // モデルの回転
-        entity.setOrientation(new mapray.Orientation(-this.model_Angle, 0, 0)); 
+        entity.setOrientation(new mapray.Orientation(-this.model_Angle, 0, 0));
     }
 
     UpdateMoveVec() {
@@ -145,7 +145,7 @@ class ModelController {
         // 回転後マトリックスから座標を取得
         this.move_Vec = [rot_move_mat[12], rot_move_mat[13], rot_move_mat[14]];
     }
-    
+
     Forward() {
         if (this.isLoadedModel == false) {
             return;

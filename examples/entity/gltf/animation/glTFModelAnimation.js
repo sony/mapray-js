@@ -36,9 +36,9 @@ class ModelAnimation extends mapray.RenderCallback {
 
         this.LoadScene();
     }
-    
+
     // override
-    onStart()  
+    onStart()
     {
         // 初期の割合
         this.ratio = 0.0;
@@ -107,27 +107,27 @@ class ModelAnimation extends mapray.RenderCallback {
     // シーンの読み込み
     LoadScene() {
         var scene_File_URL = "./data/glTFAnimation.json";
-        
-        /* glTFAnimation.json links glTF file "./truck_wip/scene.gltf". 
+
+        /* glTFAnimation.json links glTF file "./truck_wip/scene.gltf".
         You need to get this glTF file from the web. The following is how to download it.
-        
+
         - Access [Sketchfab] (https://sketchfab.com/3d-models/truck-wip-33e925207e134652bd8c2465e5c16957) and download the data in glTF file format
-        - Click [Download link] (https://storage.cloud.google.com/mapray-examples/model/download/truck_wip.zip) to download it
-        
-        If you download from the download link, please unzip and use it. 
-        The following explanation is based on the assumption that 
-        the expanded data is stored in the following directory 
+        - Click [Download link] (https://resource.mapray.com/assets/www/download/truck_wip.zip) to download it
+
+        If you download from the download link, please unzip and use it.
+        The following explanation is based on the assumption that
+        the expanded data is stored in the following directory
         with the relative path from the root directory of mapray-js.
 
         ```
         ./examples/entity/gltf/data/
         ```
 
-        The data is not our copyrighted contents. The copyright belongs to the creator of each data. 
+        The data is not our copyrighted contents. The copyright belongs to the creator of each data.
         Please refer to the LICENSE file in the folder for details.
         Please note that we do not take any responsibility if you infringe on the content rights.
         */
-        
+
         // シーンを読み込む
         var loader = new mapray.SceneLoader(this.viewer.scene, scene_File_URL, {
             transform: (url, type) => this.onTransform(url, type),
@@ -135,7 +135,7 @@ class ModelAnimation extends mapray.RenderCallback {
                 this.onLoadScene(loader, isSuccess);
             }
         });
-        
+
         loader.load();
     }
 
