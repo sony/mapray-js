@@ -9,8 +9,8 @@ const MAPRAY_ACCESS_TOKEN = "<your access token here>";
 
 const BINGMAP_TOKEN = "<your Bing Maps Key here>";
 
-const ICON_URL = "https://storage.googleapis.com/inou-dev-mapray-additional-resources/2d/image/mapray.png";
-const SCENE_3D_URL = "https://storage.googleapis.com/inou-dev-mapray-additional-resources/3d/gltf/mapray-box-with-texture/scene.json";
+const ICON_URL =     "https://resource.mapray.com/assets/www/logo/mapray.png";
+const SCENE_3D_URL = "https://resource.mapray.com/assets/www/model/mapray-box-with-texture/scene.json";
 
 
 
@@ -374,8 +374,7 @@ export default class App extends maprayui.StandardUIViewer {
 
         {// Icon
             const entity = new mapray.ImageIconEntity( this.viewer.scene );
-            const url = "https://storage.googleapis.com/inou-dev-mapray-additional-resources/2d/image/mapray.png";
-            // const url = "../resources/image/mapray.png";
+            const url = ICON_URL;
             entity.addImageIcon( url, new mapray.GeoPoint(142.619, 43.017), { origin: [ 0.5, 1.0 ] });
             this.addEntity( entity );
         }

@@ -5,7 +5,7 @@ import maprayui from "@mapray/ui";
 
 const MAPRAY_ACCESS_TOKEN = "<your access token here>";
 
-const SCENE_3D_URL = "https://storage.googleapis.com/inou-dev-mapray-additional-resources/3d/gltf/mapray-box-with-texture/scene.json";
+const SCENE_3D_URL = "https://resource.mapray.com/assets/www/model/mapray-box-with-texture/scene.json";
 
 
 

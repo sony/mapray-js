@@ -49,7 +49,7 @@ class DatasetViewer extends DebugViewer {
 
         // Night Layer
         this.addLayer( { 
-            image_provider: new mapray.StandardImageProvider("https://storage.googleapis.com/inou-dev-mapray-additional-resources/image-tile/night/", ".png", 256, 0, 8),
+            image_provider: new mapray.StandardImageProvider("https://opentiles.mapray.com/xyz/night-satellite/", ".png", 256, 0, 8),
             opacity: 1.0,
             type: mapray.Layer.LayerType.NIGHT
         } );

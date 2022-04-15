@@ -5,7 +5,6 @@ import BingMapsImageProvider from "./BingMapsImageProvider"
 import StatusBar from "./StatusBar";
 import Commander from "./Commander";
 
-import { snakeToCamel } from "./utils";
 import Option, { DomTool } from "./Option";
 
 const accessToken = "<your access token here>";
@@ -14,11 +13,6 @@ const MAPRAY_API_BASE_PATH = "https://cloud.mapray.com";
 const MAPRAY_API_ACCESS_TOKEN = accessToken;
 const MAPRAY_API_USER_ID = "<your api user id here>";
 const POINT_CLOUD_DATASET_ID = "<your point cloud dataset id here>";
-
-const NATS_JSON_URL = "https://firebasestorage.googleapis.com/v0/b/ino-sandbox.appspot.com/o/inousample%2FthreeDModel%2FNATS%2FNATS.json?alt=media&token=081ad161-ad70-449e-b279-c2ea2beb109b";
-const NATS_MARKER_JSON_URL = "https://firebasestorage.googleapis.com/v0/b/ino-sandbox.appspot.com/o/inousample%2Fmarker%2FDemoNATS.json?alt=media&token=ba0298fb-042a-4ae0-b0fd-3427b457cf8a";
-const AED_JSON_URL = "https://firebasestorage.googleapis.com/v0/b/ino-sandbox.appspot.com/o/inousample%2Fmarker%2FDemoAED.json?alt=media&token=04715b01-d890-4f18-b22f-aa831598ab39";
-const MOUNTAIN_JSON_URL = "https://firebasestorage.googleapis.com/v0/b/ino-sandbox.appspot.com/o/inousample%2Fmarker%2FDemoMountain.json?alt=media&token=18b2b427-bac0-43ec-aace-8d34cdc30d07";
 
 // Attirbute
 const DEM_ATTRIBUTE = "この地図の作成に当たっては、国土地理院の承認を得て、同院発行の基盤地図情報を使用した。（承認番号　平30情使、 第626号）";
@@ -44,12 +38,6 @@ const RENDER_OPTION_PROPERTIES = [
         description: "夜間レイヤー",
         value: true,
     },
-    // {
-    //     key: "atmosphere",
-    //     type: "boolean",
-    //     description: "　大気表現",
-    //     value: false,
-    // },
     {
         key: "sun",
         type: "boolean",
@@ -179,9 +167,9 @@ const RENDER_OPTION_PROPERTIES = [
         type: "select",
         description: "cloud data",
         options: [
-            "000", "003", "006"
+            "0", "1", "2"
         ],
-        value: "000",
+        value: "0",
     },
     {
         key: "cloud contour",
@@ -382,19 +370,14 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
 
         super( container, accessToken, {
                 debug_stats: new mapray.DebugStats(),
-                // dem_provider: new mapray.FlatDemProvider(),
                 image_provider: new BingMapsImageProvider( {
                         uriScheme: "https",
                         key: "<your Bing Maps Key here>"
                 } ),
                 atmosphere: new mapray.Atmosphere(),
                 sun_visualizer: new mapray.SunVisualizer( 32 ),
-                // sun_visualizer: new mapray.TextureSunVisualizer( './data/sun_tex.jpg' ),
                 moon_visualizer: new mapray.MoonVisualizer( './data/moon.jpg' ),
                 cloud_visualizer: new mapray.CloudVisualizer(),
-                // star_visualizer: new mapray.StarVisualizer( './data/star.json', './data/starmap_512n2.jpg' ),
-                // star_visualizer: new mapray.StarVisualizer( './data/star65.json', './data/starmap_512n2.jpg' ),
-                // star_visualizer: new mapray.StarVisualizer( './data/star70.json', './data/starmap_512n2.jpg' ),
                 star_visualizer: new mapray.StarVisualizer( './data/star75.json', './data/starmap_512n2.jpg' ),
                 north_pole: { color: [0, 0.07, 0.12], },
                 south_pole: { color: [0.88, 0.89, 0.94], },
@@ -502,9 +485,8 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
      */
      private _createLayerImageProvider()
     {
-      return new mapray.StandardImageProvider("https://storage.googleapis.com/inou-dev-mapray-additional-resources/image-tile/night/", ".png", 256, 0, 8);
-      // return new mapray.StandardImageProvider("https://cyberjapandata.gsi.go.jp/xyz/std/", ".png", 256, 2, 8);
-      // return new mapray.StandardImageProvider( "https://cyberjapandata.gsi.go.jp/xyz/20160414kumamoto_0429dol1/", ".png", 256, 10, 18 );
+        // night image
+        return new mapray.StandardImageProvider("https://opentiles.mapray.com/xyz/night-satellite/", ".png", 256, 0, 8);
     }
 
     /**
@@ -518,40 +500,6 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
         var pin = new mapray.PinEntity( this.viewer.scene );
         pin.addMakiIconPin( "landmark-15", targetPos);
         this.addEntity(pin);
-
-/*
-        // Point Cloud
-        this._point_cloud_mode = "raw";
-        this._updatePointCloud();
-
-
-        // 3D
-        var scene_File_URL = "./data/yakushiji.json";
-        new mapray.SceneLoader( this._viewer.scene, scene_File_URL, {
-              transform: (url, type) => this._onTransform( url, type ),
-              callback: (loader, isSuccess) => {
-                  this._onLoadScene( loader, isSuccess );
-                  // console.log('loaded');
-              }
-          } ).load();
-
-          scene_File_URL = "./data/iss.json";
-          new mapray.SceneLoader( this._viewer.scene, scene_File_URL, {
-                transform: (url, type) => this._onTransform( url, type ),
-                callback: (loader, isSuccess) => {
-                    this._onLoadScene( loader, isSuccess );
-                }
-            } ).load();
-
-        // GeoJSON
-        new mapray.GeoJSONLoader( this._viewer.scene, "./data/shinjukulink.geojson", {
-            onLoad: ( loader, isSuccess ) => { console.log( "success load geojson" ) },
-            getLineColor: d => d.properties && d.properties.color ? d.properties.color : [0, 255, 255, 255],
-            getLineWidth: d => d.properties && d.properties.width ? d.properties.width : 3,
-            getExtrudedHeight: () => null,
-            getAltitude: () => 40
-        } ).load();
-*/
 
         // 直線のエンティティを作成
         {
@@ -575,17 +523,6 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
            var second_font_geopoint = new mapray.GeoPoint(second_font_position.longitude, second_font_position.latitude, second_font_position.height);
            font_entity.addText("Tokyo Tower", second_font_geopoint, { color: mapray.Color.createOpaqueColor([ 1, 1, 0 ]), font_size: 25 });
            this.viewer.scene.addEntity(font_entity);
-         }
-
-         {
-           // イメージアイコンのエンティティを作成
-           var imag_icon_entity = new mapray.ImageIconEntity(this.viewer.scene);
-           // 東京タワーの座標を求める
-           var image_icon_Point = new mapray.GeoPoint(139.745340, 35.658694, 100);
-           // イメージアイコンを追加
-           imag_icon_entity.addImageIcon("./data/japan.jpg", image_icon_Point, { size: [300, 200] });
-           // エンティティをシーンに追加
-           this.viewer.scene.addEntity(imag_icon_entity);
          }
     }
 
@@ -739,16 +676,6 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
           const x = Math.cos(theta);
           const y = Math.sin(theta);
           this.viewer.moon.setMoonDirection( [ x, y, 0 ] );
-/*
-          const moonOrbit = (23.44 + 5.14) * mapray.GeoMath.DEGREE;
-          const sinTheta = Math.sin(moonOrbit);
-          const cosTheta = Math.cos(moonOrbit);
-
-          const mx = x;
-          const my =       y*cosTheta;  // + z*sinTheta;
-          const mz =       y*-sinTheta;  // + z*cosTheta;
-          this._viewer.moon.setMoonDirection( [ mx, my, mz ] );
-*/
         }
 
         if ( this._moveCloud ) {
@@ -758,20 +685,11 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
         }
 
         if ( this._moveStar ) {
-            if(this.viewer.starVisualizer) {
+            if( this.viewer.starVisualizer)  {
                 this._starElapsedTime += delta_time * this._starSpeed;
-                this.viewer.starVisualizer.setLongitude( this._starElapsedTime );
-
-                // const name = this.viewer.starVisualizer.getStarName(11767);
-                // console.log(name);
-                // console.log(this.viewer.starVisualizer.getStarPoint(name));
-                // const c_name = 'Eri';
-                // console.log(this.viewer.starVisualizer.getConstellationPoint(c_name));
-                // console.log(this.viewer.starVisualizer.getConstellationAngle(c_name));
-                // console.log(this.viewer.starVisualizer.getConstellationStars(c_name));
+                this.viewer.starVisualizer.setLongitude( -this._starElapsedTime );
             }
-
-          }
+        }
 
 
         this._commander.endFrame();
@@ -891,359 +809,319 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
     }
 
     private _updateDebugUI() {
-
-        // if ( this._point_cloud_mode ) {
-            // const tools = document.getElementById("tools");
-            const tools = document.getElementById("tools") || (()=>{
-                    const maprayContainer = document.getElementById("mapray-container");
-                    const tools = document.createElement("div");
-                    tools.setAttribute("id", "tools");
-                    if ( maprayContainer ) {
-                        maprayContainer.appendChild(tools);
-                    }
-                    return tools;
-            })();
-            const ui = document.createElement("div");
-            ui.setAttribute("class", "tool-item");
-            tools.appendChild(ui);
-
-            const top = document.createElement("div");
-            top.setAttribute("class", "top");
-
-            top.appendChild(document.createTextNode("Option "));
-/*
-            const items = ["item1", "item2"];
-
-            const mode = "1";
-
-            top.appendChild(DomTool.createSelect(items, {
-                        initialValue: mode,
-                        onchange: event => {
-                            console.log("select", event);
-                        },
-            }));
-            ui.appendChild(top);
-*/
-
-            const top2 = document.createElement("div");
-            top2.setAttribute("class", "top");
-            ui.appendChild(top2);
-
-            const renderOption = this._renderOption;
-            top2.appendChild(DomTool.createCheckboxOption(renderOption, "move sun"));
-
-            /*
-            top2.appendChild(DomTool.createButton("Button", {
-                        class: "box-statistics",
-                        onclick: async (event) => {
-                          console.log('click button');
-                        }
-            }));
-            */
-            const kv = document.createElement("table");
-            kv.appendChild(DomTool.createSliderOption(renderOption, "sun speed", { mode: "key-value-table-row" }));
-            kv.appendChild(DomTool.createSliderOption(renderOption, "sun radius", { mode: "key-value-table-row" }));
-            kv.appendChild(DomTool.createSliderOption(renderOption, "sun intensity", { mode: "key-value-table-row" }));
-            kv.style.width = "100%";
-            top2.appendChild(kv);
-
-            top2.appendChild(DomTool.createCheckboxOption(renderOption, "move moon"));
-            const kv2 = document.createElement("table");
-            kv2.appendChild(DomTool.createSliderOption(renderOption, "moon speed", { mode: "key-value-table-row" }));
-            kv2.appendChild(DomTool.createSliderOption(renderOption, "moon radius", { mode: "key-value-table-row" }));
-            kv2.appendChild(DomTool.createSliderOption(renderOption, "cloud intensity", { mode: "key-value-table-row" }));
-            kv2.appendChild(DomTool.createSliderOption(renderOption, "cloud stream", { mode: "key-value-table-row" }));
-            kv2.appendChild(DomTool.createSliderOption(renderOption, "cloud fade", { mode: "key-value-table-row" }));
-            top2.appendChild(DomTool.createCheckboxOption(renderOption, "move star"));
-            kv2.appendChild(DomTool.createSliderOption(renderOption, "star speed", { mode: "key-value-table-row" }));
-            kv2.appendChild(DomTool.createSliderOption(renderOption, "star intensity", { mode: "key-value-table-row" }));
-            kv2.appendChild(DomTool.createSliderOption(renderOption, "constellation intensity", { mode: "key-value-table-row" }));
-            kv2.appendChild(DomTool.createSliderOption(renderOption, "milkyway intensity", { mode: "key-value-table-row" }));
-            kv2.appendChild(DomTool.createSelectOption(renderOption, "cloud select"));
-            kv2.appendChild(DomTool.createSelectOption(renderOption, "cloud contour"));
-            kv2.style.width = "100%";
-            top2.appendChild(kv2);
-
-            const top3 = document.createElement("div");
-            top3.setAttribute("class", "top");
-            ui.appendChild(top3);
-            top3.appendChild(DomTool.createCheckboxOption(renderOption, "night layer"));
-
-
-            const top4 = document.createElement("div");
-            top4.setAttribute("class", "top");
-            ui.appendChild(top4);
-            top4.appendChild(DomTool.createCheckboxOption(renderOption, "sun"));
-            top4.appendChild(DomTool.createCheckboxOption(renderOption, "moon"));
-            top4.appendChild(DomTool.createCheckboxOption(renderOption, "sky"));
-            top4.appendChild(DomTool.createCheckboxOption(renderOption, "ground"));
-            top4.appendChild(DomTool.createCheckboxOption(renderOption, "star mask"));
-            top4.appendChild(DomTool.createCheckboxOption(renderOption, "cloud"));
-            top4.appendChild(DomTool.createCheckboxOption(renderOption, "star"));
-            top4.appendChild(DomTool.createCheckboxOption(renderOption, "constellation"));
-            top4.appendChild(DomTool.createCheckboxOption(renderOption, "milkyway"));
-            top4.appendChild(DomTool.createCheckboxOption(renderOption, "move cloud"));
-
-            const top5 = document.createElement("table");
-            top5.setAttribute("class", "top");
-            top5.style.width = "100%";
-            ui.appendChild(top5);
-            top5.appendChild(DomTool.createSliderOption(renderOption, "kr", { mode: "key-value-table-row" }));
-            top5.appendChild(DomTool.createSliderOption(renderOption, "km", { mode: "key-value-table-row" }));
-            top5.appendChild(DomTool.createSliderOption(renderOption, "scale depth", { mode: "key-value-table-row" }));
-            top5.appendChild(DomTool.createSliderOption(renderOption, "eSun", { mode: "key-value-table-row" }));
-            top5.appendChild(DomTool.createSliderOption(renderOption, "exposure", { mode: "key-value-table-row" }));
-            top5.appendChild(DomTool.createSliderOption(renderOption, "g_kr", { mode: "key-value-table-row" }));
-            top5.appendChild(DomTool.createSliderOption(renderOption, "g_km", { mode: "key-value-table-row" }));
-            top5.appendChild(DomTool.createSliderOption(renderOption, "g_scale depth", { mode: "key-value-table-row" }));
-            top5.appendChild(DomTool.createSliderOption(renderOption, "g_eSun", { mode: "key-value-table-row" }));
-            top5.appendChild(DomTool.createSliderOption(renderOption, "g_exposure", { mode: "key-value-table-row" }));
-
-            renderOption.onChange("move sun", event => {
-                this._moveSun = event.value;
-            });
-            renderOption.onChange("sun speed", event => {
-                this._sunSpeed = event.value;
-            });
-            renderOption.onChange("sun radius", event => {
-                if ( this.viewer.sunVisualizer ) {
-                    this.viewer.sunVisualizer.setRadius( event.value );
+        const tools = document.getElementById("tools") || (()=>{
+                const maprayContainer = document.getElementById("mapray-container");
+                const tools = document.createElement("div");
+                tools.setAttribute("id", "tools");
+                if ( maprayContainer ) {
+                    maprayContainer.appendChild(tools);
                 }
-            });
-            renderOption.onChange("sun intensity", event => {
-                if ( this.viewer.sunVisualizer ) {
-                    this.viewer.sunVisualizer.setIntensity( event.value );
-                }
-            });
+                return tools;
+        })();
+        const ui = document.createElement("div");
+        ui.setAttribute("class", "tool-item");
+        tools.appendChild(ui);
 
-            renderOption.onChange("move moon", event => {
-                this._moveMoon = event.value;
-            });
-            renderOption.onChange("moon speed", event => {
-                this._moonSpeed = event.value;
-            });
-            renderOption.onChange("moon radius", event => {
-                if ( this.viewer.moonVisualizer ) {
-                    this.viewer.moonVisualizer.setRadius( event.value );
-                }
-            });
+        const top = document.createElement("div");
+        top.setAttribute("class", "top");
 
-            renderOption.onChange("move star", event => {
-                this._moveStar = event.value;
-            });
-            renderOption.onChange("star speed", event => {
-                this._starSpeed = event.value;
-            });
-            renderOption.onChange("star intensity", event => {
-                if ( this.viewer.starVisualizer ) {
-                    this.viewer.starVisualizer.setIntensity( event.value );
-                }
-            });
-            renderOption.onChange("constellation intensity", event => {
-                this._constellationIntensity = event.value;
-                if( this.viewer.starVisualizer ) {
-                    this.viewer.starVisualizer.setLineColor(
-                        mapray.GeoMath.createVector3([
-                        0.3 * this._constellationIntensity,
-                        0.5 * this._constellationIntensity,
-                        1.0 * this._constellationIntensity
-                    ]) );
-                }
-            });
-            renderOption.onChange("milkyway intensity", event => {
-                if( this.viewer.starVisualizer ) {
-                    this.viewer.starVisualizer.setMilkyWayIntensity( event.value );
-                }
-            });
+        top.appendChild(document.createTextNode("Option "));
 
-            renderOption.onChange("move cloud", event => {
-                this._moveCloud = event.value;
-            });
-            renderOption.onChange("cloud intensity", event => {
-                if ( this.viewer.cloudVisualizer ) {
-                    this.viewer.cloudVisualizer.setIntensity( event.value );
-                }
-            });
-            renderOption.onChange("cloud stream", event => {
-                if ( this.viewer.cloudVisualizer ) {
-                    // this.viewer.cloudVisualizer.setFade( event.value );
-                    if ( event.value >= 1.0) {
-                        const nowStep = this._cloudURLArray.length - 2;
-                        const nowFade = 1.0;
-                        // this.viewer.cloudVisualizer.loadData( this._cloudURLArray[nowStep], this._cloudURLArray[nowStep+1], nowFade );
-                        this.viewer.cloudVisualizer.loadData( this._cloudImageArray[nowStep], this._cloudImageArray[nowStep+1], nowFade );
-                        // console.log('load:', nowStep, nowStep+1, nowFade);
-                    }
-                    else {
-                        const step = 1 / (this._cloudURLArray.length - 1);
-                        // URLを決定
-                        const nowStep = Math.floor ( event.value / step );
-                        // fadeを決定
-                        const nowFade = ( event.value / step ) - nowStep;
-                        // this.viewer.cloudVisualizer.loadData( this._cloudURLArray[nowStep], this._cloudURLArray[nowStep+1], nowFade );
-                        this.viewer.cloudVisualizer.loadData( this._cloudImageArray[nowStep], this._cloudImageArray[nowStep+1], nowFade );
-                        // console.log('load:', nowStep, nowStep+1, nowFade);
-                        // console.log('from: ', this._cloudURLArray[nowStep]);
-                        // console.log('to  : ', this._cloudURLArray[nowStep+1]);
-                    }
-                }
-            });
+        const top2 = document.createElement("div");
+        top2.setAttribute("class", "top");
+        ui.appendChild(top2);
+
+        const renderOption = this._renderOption;
+        top2.appendChild(DomTool.createCheckboxOption(renderOption, "move sun"));
+
+        const kv = document.createElement("table");
+        kv.appendChild(DomTool.createSliderOption(renderOption, "sun speed", { mode: "key-value-table-row" }));
+        kv.appendChild(DomTool.createSliderOption(renderOption, "sun radius", { mode: "key-value-table-row" }));
+        kv.appendChild(DomTool.createSliderOption(renderOption, "sun intensity", { mode: "key-value-table-row" }));
+        kv.style.width = "100%";
+        top2.appendChild(kv);
+
+        top2.appendChild(DomTool.createCheckboxOption(renderOption, "move moon"));
+        const kv2 = document.createElement("table");
+        kv2.appendChild(DomTool.createSliderOption(renderOption, "moon speed", { mode: "key-value-table-row" }));
+        kv2.appendChild(DomTool.createSliderOption(renderOption, "moon radius", { mode: "key-value-table-row" }));
+        kv2.appendChild(DomTool.createSliderOption(renderOption, "cloud intensity", { mode: "key-value-table-row" }));
+        kv2.appendChild(DomTool.createSliderOption(renderOption, "cloud stream", { mode: "key-value-table-row" }));
+        kv2.appendChild(DomTool.createSliderOption(renderOption, "cloud fade", { mode: "key-value-table-row" }));
+        top2.appendChild(DomTool.createCheckboxOption(renderOption, "move star"));
+        kv2.appendChild(DomTool.createSliderOption(renderOption, "star speed", { mode: "key-value-table-row" }));
+        kv2.appendChild(DomTool.createSliderOption(renderOption, "star intensity", { mode: "key-value-table-row" }));
+        kv2.appendChild(DomTool.createSliderOption(renderOption, "constellation intensity", { mode: "key-value-table-row" }));
+        kv2.appendChild(DomTool.createSliderOption(renderOption, "milkyway intensity", { mode: "key-value-table-row" }));
+        kv2.appendChild(DomTool.createSelectOption(renderOption, "cloud select"));
+        kv2.appendChild(DomTool.createSelectOption(renderOption, "cloud contour"));
+        kv2.style.width = "100%";
+        top2.appendChild(kv2);
+
+        const top3 = document.createElement("div");
+        top3.setAttribute("class", "top");
+        ui.appendChild(top3);
+        top3.appendChild(DomTool.createCheckboxOption(renderOption, "night layer"));
 
 
-            renderOption.onChange("cloud fade", event => {
-                if ( this.viewer.cloudVisualizer !== undefined ) {
-                    this.viewer.cloudVisualizer.setFade( event.value );
-                }
-            });
+        const top4 = document.createElement("div");
+        top4.setAttribute("class", "top");
+        ui.appendChild(top4);
+        top4.appendChild(DomTool.createCheckboxOption(renderOption, "sun"));
+        top4.appendChild(DomTool.createCheckboxOption(renderOption, "moon"));
+        top4.appendChild(DomTool.createCheckboxOption(renderOption, "sky"));
+        top4.appendChild(DomTool.createCheckboxOption(renderOption, "ground"));
+        top4.appendChild(DomTool.createCheckboxOption(renderOption, "star mask"));
+        top4.appendChild(DomTool.createCheckboxOption(renderOption, "cloud"));
+        top4.appendChild(DomTool.createCheckboxOption(renderOption, "star"));
+        top4.appendChild(DomTool.createCheckboxOption(renderOption, "constellation"));
+        top4.appendChild(DomTool.createCheckboxOption(renderOption, "milkyway"));
+        top4.appendChild(DomTool.createCheckboxOption(renderOption, "move cloud"));
 
+        const top5 = document.createElement("table");
+        top5.setAttribute("class", "top");
+        top5.style.width = "100%";
+        ui.appendChild(top5);
+        top5.appendChild(DomTool.createSliderOption(renderOption, "kr", { mode: "key-value-table-row" }));
+        top5.appendChild(DomTool.createSliderOption(renderOption, "km", { mode: "key-value-table-row" }));
+        top5.appendChild(DomTool.createSliderOption(renderOption, "scale depth", { mode: "key-value-table-row" }));
+        top5.appendChild(DomTool.createSliderOption(renderOption, "eSun", { mode: "key-value-table-row" }));
+        top5.appendChild(DomTool.createSliderOption(renderOption, "exposure", { mode: "key-value-table-row" }));
+        top5.appendChild(DomTool.createSliderOption(renderOption, "g_kr", { mode: "key-value-table-row" }));
+        top5.appendChild(DomTool.createSliderOption(renderOption, "g_km", { mode: "key-value-table-row" }));
+        top5.appendChild(DomTool.createSliderOption(renderOption, "g_scale depth", { mode: "key-value-table-row" }));
+        top5.appendChild(DomTool.createSliderOption(renderOption, "g_eSun", { mode: "key-value-table-row" }));
+        top5.appendChild(DomTool.createSliderOption(renderOption, "g_exposure", { mode: "key-value-table-row" }));
 
-            renderOption.onChange("cloud select", event => {
-                // console.log ( event.value );
-                if ( this.viewer.cloudVisualizer !== undefined ) {
-                    // this.viewer.cloudVisualizer.loadFrom( './data/170_' + event.value + 'M.png');
-                    this.viewer.cloudVisualizer.pushFront( './data/170_' + event.value + 'M.png', 1);
-                    // this.viewer.cloudVisualizer.pushBack( './data/170_' + event.value + 'M.png', 0);
-                }
-           });
+        renderOption.onChange("move sun", event => {
+            this._moveSun = event.value;
+        });
+        renderOption.onChange("sun speed", event => {
+            this._sunSpeed = event.value;
+        });
+        renderOption.onChange("sun radius", event => {
+            if ( this.viewer.sunVisualizer ) {
+                this.viewer.sunVisualizer.setRadius( event.value );
+            }
+        });
+        renderOption.onChange("sun intensity", event => {
+            if ( this.viewer.sunVisualizer ) {
+                this.viewer.sunVisualizer.setIntensity( event.value );
+            }
+        });
 
+        renderOption.onChange("move moon", event => {
+            this._moveMoon = event.value;
+        });
+        renderOption.onChange("moon speed", event => {
+            this._moonSpeed = event.value;
+        });
+        renderOption.onChange("moon radius", event => {
+            if ( this.viewer.moonVisualizer ) {
+                this.viewer.moonVisualizer.setRadius( event.value );
+            }
+        });
 
-           renderOption.onChange("cloud contour", event => {
-                // console.log ( event.value );
-                this._setCloudContour( event.value );
-            });
+        renderOption.onChange("move star", event => {
+            this._moveStar = event.value;
+        });
+        renderOption.onChange("star speed", event => {
+            this._starSpeed = event.value;
+        });
+        renderOption.onChange("star intensity", event => {
+            if ( this.viewer.starVisualizer ) {
+                this.viewer.starVisualizer.setIntensity( event.value );
+            }
+        });
+        renderOption.onChange("constellation intensity", event => {
+            this._constellationIntensity = event.value;
+            if( this.viewer.starVisualizer ) {
+                this.viewer.starVisualizer.setLineColor(
+                    mapray.GeoMath.createVector3([
+                    0.3 * this._constellationIntensity,
+                    0.5 * this._constellationIntensity,
+                    1.0 * this._constellationIntensity
+                ]) );
+            }
+        });
+        renderOption.onChange("milkyway intensity", event => {
+            if( this.viewer.starVisualizer ) {
+                this.viewer.starVisualizer.setMilkyWayIntensity( event.value );
+            }
+        });
 
+        renderOption.onChange("move cloud", event => {
+            this._moveCloud = event.value;
+        });
+        renderOption.onChange("cloud intensity", event => {
+            if ( this.viewer.cloudVisualizer ) {
+                this.viewer.cloudVisualizer.setIntensity( event.value );
+            }
+        });
+        renderOption.onChange("cloud stream", event => {
+            if ( this.viewer.cloudVisualizer ) {
+                if ( event.value >= 1.0) {
+                    const nowStep = this._cloudURLArray.length - 2;
+                    const nowFade = 1.0;
+                    this.viewer.cloudVisualizer.loadData( this._cloudImageArray[nowStep], this._cloudImageArray[nowStep+1], nowFade );
+                }
+                else {
+                    const step = 1 / (this._cloudURLArray.length - 1);
+                    // URLを決定
+                    const nowStep = Math.floor ( event.value / step );
+                    // fadeを決定
+                    const nowFade = ( event.value / step ) - nowStep;
+                    this.viewer.cloudVisualizer.loadData( this._cloudImageArray[nowStep], this._cloudImageArray[nowStep+1], nowFade );
+                }
+            }
+        });
 
-            renderOption.onChange("night layer", event => {
-              if (this.viewer.layers && this.viewer.layers.getLayer(0)) {
-                  this.viewer.layers.getLayer(0).setOpacity(event.value);
-              }
-            });
+        renderOption.onChange("cloud fade", event => {
+            if ( this.viewer.cloudVisualizer !== undefined ) {
+                this.viewer.cloudVisualizer.setFade( event.value );
+            }
+        });
 
-            renderOption.onChange("sun", event => {
-                if ( this.viewer.sunVisualizer ) {
-                    this.viewer.sunVisualizer.setVisibility( event.value );
-                }
-            });
+        renderOption.onChange("cloud select", event => {
+            if ( this.viewer.cloudVisualizer !== undefined ) {
+                this.viewer.cloudVisualizer.pushFront( './data/cloud_' + event.value + '.png', 1);
+            }
+        });
 
-            renderOption.onChange("moon", event => {
-                if ( this.viewer.moonVisualizer ) {
-                    this.viewer.moonVisualizer.setVisibility( event.value );
-                }
-            });
+        renderOption.onChange("cloud contour", event => {
+            this._setCloudContour( event.value );
+        });
 
-            renderOption.onChange("sky", event => {
-                if ( this.viewer.atmosphere ) {
-                    this.viewer.atmosphere.setSkyVisibility( event.value );
-                }
-            });
+        renderOption.onChange("night layer", event => {
+            if (this.viewer.layers && this.viewer.layers.getLayer(0)) {
+                this.viewer.layers.getLayer(0).setOpacity(event.value);
+            }
+        });
 
-            renderOption.onChange("ground", event => {
-                if ( this.viewer.atmosphere ) {
-                    this.viewer.atmosphere.setGroundVisibility( event.value );
-                }
-            });
+        renderOption.onChange("sun", event => {
+            if ( this.viewer.sunVisualizer ) {
+                this.viewer.sunVisualizer.setVisibility( event.value );
+            }
+        });
 
-            renderOption.onChange("star mask", event => {
-                if ( this.viewer.atmosphere ) {
-                    this.viewer.atmosphere.setStarMask( event.value );
-                }
-            });
+        renderOption.onChange("moon", event => {
+            if ( this.viewer.moonVisualizer ) {
+                this.viewer.moonVisualizer.setVisibility( event.value );
+            }
+        });
 
-            renderOption.onChange("cloud", event => {
-                if ( this.viewer.cloudVisualizer ) {
-                    this.viewer.cloudVisualizer.setVisibility( event.value );
-                }
-            });
+        renderOption.onChange("sky", event => {
+            if ( this.viewer.atmosphere ) {
+                this.viewer.atmosphere.setSkyVisibility( event.value );
+            }
+        });
 
-            renderOption.onChange("star", event => {
-                if( this.viewer.starVisualizer ) {
-                    this.viewer.starVisualizer.setVisibility( event.value );
-                }
-            });
+        renderOption.onChange("ground", event => {
+            if ( this.viewer.atmosphere ) {
+                this.viewer.atmosphere.setGroundVisibility( event.value );
+            }
+        });
 
-            renderOption.onChange("constellation", event => {
-                if( this.viewer.starVisualizer ) {
-                    this.viewer.starVisualizer.setConstellationVisibility( event.value );
-                }
-            });
+        renderOption.onChange("star mask", event => {
+            if ( this.viewer.atmosphere ) {
+                this.viewer.atmosphere.setStarMask( event.value );
+            }
+        });
 
-            renderOption.onChange("milkyway", event => {
-                if( this.viewer.starVisualizer ) {
-                    this.viewer.starVisualizer.setMilkyWayVisibility( event.value );
-                }
-            });
+        renderOption.onChange("cloud", event => {
+            if ( this.viewer.cloudVisualizer ) {
+                this.viewer.cloudVisualizer.setVisibility( event.value );
+            }
+        });
 
-            renderOption.onChange("kr", event => {
-                if ( this.viewer.atmosphere ) {
-                    this.viewer.atmosphere.setRayleigh( event.value );
-                }
-            });
-            renderOption.onChange("km", event => {
-                if ( this.viewer.atmosphere ) {
-                    this.viewer.atmosphere.setMie( event.value );
-                }
-            });
-            renderOption.onChange("scale depth", event => {
-                if ( this.viewer.atmosphere ) {
-                    this.viewer.atmosphere.setScaleDepth( event.value );
-                }
-            });
-            renderOption.onChange("eSun", event => {
-                if ( this.viewer.atmosphere ) {
-                    this.viewer.atmosphere.setSunRate( event.value );
-                }
-            });
-            renderOption.onChange("exposure", event => {
-                if ( this.viewer.atmosphere ) {
-                    this.viewer.atmosphere.setExposure( event.value );
-                }
-            });
+        renderOption.onChange("star", event => {
+            if( this.viewer.starVisualizer ) {
+                this.viewer.starVisualizer.setVisibility( event.value );
+            }
+        });
 
-            renderOption.onChange("g_kr", event => {
-                if ( this.viewer.atmosphere ) {
-                    this.viewer.atmosphere.setGroundRayleigh( event.value );
-                }
-            });
-            renderOption.onChange("g_km", event => {
-                if ( this.viewer.atmosphere ) {
-                    this.viewer.atmosphere.setGroundMie( event.value );
-                }
-            });
-            renderOption.onChange("g_scale depth", event => {
-                if ( this.viewer.atmosphere ) {
-                    this.viewer.atmosphere.setGroundScaleDepth( event.value );
-                }
-            });
-            renderOption.onChange("g_eSun", event => {
-                if ( this.viewer.atmosphere ) {
-                    this.viewer.atmosphere.setGroundSunRate( event.value );
-                }
-            });
-            renderOption.onChange("g_exposure", event => {
-                if ( this.viewer.atmosphere ) {
-                    this.viewer.atmosphere.setGroundExposure( event.value );
-                }
-            });
+        renderOption.onChange("constellation", event => {
+            if( this.viewer.starVisualizer ) {
+                this.viewer.starVisualizer.setConstellationVisibility( event.value );
+            }
+        });
 
-            renderOption.onChangeAny(event => {
-                    if ( ["check1", "check2", "check3"].indexOf( event.key ) === -1 ) return;
-                    switch( event.key ) {
-                        case "check1":
-                          console.log('check1', event.value);
-                          break;
-                        case "check2":
-                          console.log('check2', event.value);
-                          break;
-                        case "check3":
-                          console.log('check3', event.value);
-                          break;
-                    }
-            });
+        renderOption.onChange("milkyway", event => {
+            if( this.viewer.starVisualizer ) {
+                this.viewer.starVisualizer.setMilkyWayVisibility( event.value );
+            }
+        });
 
-            const log_area = document.createElement("pre");
-            log_area.setAttribute("class", "log-area");
-            ui.appendChild(log_area);
-        // }
+        renderOption.onChange("kr", event => {
+            if ( this.viewer.atmosphere ) {
+                this.viewer.atmosphere.setRayleigh( event.value );
+            }
+        });
+        renderOption.onChange("km", event => {
+            if ( this.viewer.atmosphere ) {
+                this.viewer.atmosphere.setMie( event.value );
+            }
+        });
+        renderOption.onChange("scale depth", event => {
+            if ( this.viewer.atmosphere ) {
+                this.viewer.atmosphere.setScaleDepth( event.value );
+            }
+        });
+        renderOption.onChange("eSun", event => {
+            if ( this.viewer.atmosphere ) {
+                this.viewer.atmosphere.setSunRate( event.value );
+            }
+        });
+        renderOption.onChange("exposure", event => {
+            if ( this.viewer.atmosphere ) {
+                this.viewer.atmosphere.setExposure( event.value );
+            }
+        });
+
+        renderOption.onChange("g_kr", event => {
+            if ( this.viewer.atmosphere ) {
+                this.viewer.atmosphere.setGroundRayleigh( event.value );
+            }
+        });
+        renderOption.onChange("g_km", event => {
+            if ( this.viewer.atmosphere ) {
+                this.viewer.atmosphere.setGroundMie( event.value );
+            }
+        });
+        renderOption.onChange("g_scale depth", event => {
+            if ( this.viewer.atmosphere ) {
+                this.viewer.atmosphere.setGroundScaleDepth( event.value );
+            }
+        });
+        renderOption.onChange("g_eSun", event => {
+            if ( this.viewer.atmosphere ) {
+                this.viewer.atmosphere.setGroundSunRate( event.value );
+            }
+        });
+        renderOption.onChange("g_exposure", event => {
+            if ( this.viewer.atmosphere ) {
+                this.viewer.atmosphere.setGroundExposure( event.value );
+            }
+        });
+
+        renderOption.onChangeAny(event => {
+                if ( ["check1", "check2", "check3"].indexOf( event.key ) === -1 ) return;
+                switch( event.key ) {
+                    case "check1":
+                        console.log('check1', event.value);
+                        break;
+                    case "check2":
+                        console.log('check2', event.value);
+                        break;
+                    case "check3":
+                        console.log('check3', event.value);
+                        break;
+                }
+        });
+
+        const log_area = document.createElement("pre");
+        log_area.setAttribute("class", "log-area");
+        ui.appendChild(log_area);
     }
 
     private _setCloudContour( value: string ) {
@@ -1400,14 +1278,13 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
     }
 
     private async _loadClouds() {
-        const CLOUD_URL = "https://weather-cloud-dot-inou-dev.an.r.appspot.com/raster/weather/cloud/x/y/z";
-        const startDate = new Date("2021-09-28T00:00:00.000Z");
-        const   endDate = new Date("2021-10-01T00:00:00.000Z");
+        // set cloud image
+        // 1440 x 722 pixel
+        // 8bit gray
 
         const cloudURLArray = [];
-        for ( let date=startDate; date < endDate; ) {
-            cloudURLArray.push( CLOUD_URL + "?date=" + date.toISOString().slice(0, -5) + "Z" );
-            date.setHours(date.getHours() + 3);
+        for ( let num=0; num < 3; num++ ) {
+            cloudURLArray.push( './data/cloud_' + num + '.png' );
         }
         this._cloudURLArray = cloudURLArray;
 

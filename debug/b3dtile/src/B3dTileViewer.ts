@@ -294,8 +294,8 @@ class B3DTileViewer extends maprayui.StandardUIViewer {
 
             // 
             const urls = [
-                "https://storage.googleapis.com/inou-dev-mapray-additional-resources/b3dtiles/tokyo_n_z/",
-                "https://storage.googleapis.com/inou-dev-mapray-additional-resources/b3dtiles/tokyo_s_z/",
+                "https://opentiles.mapray.com/3dcity/tokyo_n/",
+                "https://opentiles.mapray.com/3dcity/tokyo_s/",
             ];
             const scenes = urls.map(url => {
                     const provider = new mapray.StandardB3dProvider(url, ".bin");
