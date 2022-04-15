@@ -91,16 +91,14 @@ class TerrainViewer extends maprayui.StandardUIViewer {
 
         // setting for camera
         this.setCameraParameter( this._init_camera_parameter );
-        //
 
         // Enable URL hash
-        this.setURLUpdate( true );
+        this.enableURLUpdate( false );
 
         if ( initvalue.enable_atmosphere === false ) {
             this.enableAtmosphere( false );
         }
 
-        //
         this.selectSurface( initvalue.surface );
 
         this.selectLocation( initvalue.location );

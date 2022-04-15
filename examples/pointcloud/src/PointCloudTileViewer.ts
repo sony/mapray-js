@@ -57,12 +57,10 @@ class PointCloudTileViewer extends maprayui.StandardUIViewer {
 
         // setting for camera
         this.setCameraParameter( this._init_camera_parameter );
-        //
 
         // Enable URL hash
-        this.setURLUpdate( true );
+        this.enableURLUpdate( false );
 
-        //
         this.selectSurface( initvalue.surface );
         this.selectPointCloudRenderStyle( initvalue.style );
         this.selectPointCloudSize( initvalue.size );

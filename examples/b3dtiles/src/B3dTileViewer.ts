@@ -79,14 +79,12 @@ class B3dTileViewer extends maprayui.StandardUIViewer {
 
         // Set camera
         this.setCameraParameter( this._init_camera_parameter );
-        //
 
         this._viewer?.atmosphere?.setRayleigh(0.003);
         this._viewer?.atmosphere?.setMie(0.001);
 
-
-        // Enable URL hasg
-        this.setURLUpdate( true );
+        // Enable URL hash
+        this.enableURLUpdate( false );
 
         if (initvalue.enable_atmosphere === false) {
             this.enableAtmosphere(false);
