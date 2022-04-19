@@ -541,9 +541,8 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
             return;
         }
 
-        const maprayApi = new mapray.MaprayApi({
+        const maprayApi = new mapray.cloud.CloudApiV1({
             basePath: MAPRAY_API_BASE_PATH,
-            version: "v1",
             userId: MAPRAY_API_USER_ID,
             token: MAPRAY_API_ACCESS_TOKEN,
         });

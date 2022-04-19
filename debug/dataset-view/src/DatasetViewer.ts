@@ -40,9 +40,8 @@ class DatasetViewer extends DebugViewer {
                 south_pole: { color: [0.88, 0.89, 0.94], },
         } );
 
-        this.setMaprayApi( new mapray.MaprayApi({
+        this.setCloudApi( new mapray.cloud.CloudApiV1({
                     basePath: MAPRAY_API_BASE_PATH,
-                    version: "v1",
                     userId: MAPRAY_API_USER_ID,
                     token: MAPRAY_API_ACCESS_TOKEN,
         }));

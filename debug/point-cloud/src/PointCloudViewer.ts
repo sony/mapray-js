@@ -10,7 +10,7 @@ import Option, { DomTool } from "./Option";
 const MAPRAY_ACCESS_TOKEN = "<your access token here>";
 const MAPRAY_API_BASE_PATH = "https://cloud.mapray.com";
 const MAPRAY_API_ACCESS_TOKEN = MAPRAY_ACCESS_TOKEN;
-const MAPRAY_API_USER_ID = "<user id>";
+const MAPRAY_API_USER_ID = "<your user id>";
 const POINT_CLOUD_DATASET_ID = "<point cloud dataset id>";
 const DATASET_3D_ID = "<3d dataset id>";
 
@@ -293,9 +293,8 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
             return;
         }
 
-        const maprayApi = new mapray.MaprayApi({
+        const maprayApi = new mapray.cloud.CloudApiV1({
             basePath: MAPRAY_API_BASE_PATH,
-            version: "v1",
             userId: MAPRAY_API_USER_ID,
             token: MAPRAY_API_ACCESS_TOKEN,
         });

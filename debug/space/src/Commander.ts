@@ -1,5 +1,4 @@
 import mapray from "@mapray/mapray-js";
-import { MaprayApi } from "../../../packages/mapray/dist/es/@type";
 
 /**
  * @summary 操作コマンドの発行

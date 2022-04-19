@@ -54,7 +54,7 @@ class DebugViewer extends maprayui.StandardUIViewer {
 
     private _tools_container: HTMLElement;
 
-    private _maprayApi?: mapray.MaprayApi;
+    private _cloudApi?: mapray.cloud.CloudApi;
 
 
     /**
@@ -142,15 +142,15 @@ class DebugViewer extends maprayui.StandardUIViewer {
     }
 
 
-    setMaprayApi( maprayApi: mapray.MaprayApi ): void
+    setCloudApi( cloudApi: mapray.cloud.CloudApi ): void
     {
-        this._maprayApi = maprayApi;
+        this._cloudApi = cloudApi;
     }
 
 
-    get maprayApi(): mapray.MaprayApi | undefined
+    get cloudApi(): mapray.cloud.CloudApi | undefined
     {
-        return this._maprayApi;
+        return this._cloudApi;
     }
 
 
@@ -411,13 +411,12 @@ class DebugViewer extends maprayui.StandardUIViewer {
 
     /**
      * GeoJsonEntityの追加
-     * @param maprayApi 
      * @param dataset_id 
      */
      async addGeoJson( dataset_id: string )
      {
-         const maprayApi = this.maprayApi as mapray.MaprayApi;
-         const resource = maprayApi.getDatasetAsResource( dataset_id );
+         const cloudApi = this.cloudApi as mapray.cloud.CloudApi;
+         const resource = cloudApi.getDatasetAsResource( dataset_id );
          const loader = new mapray.GeoJSONLoader( this.viewer.scene, resource, {
              onEntity: ( loader, entity, prop ) => {
                  this._geojson_list.push( entity );
@@ -440,13 +439,12 @@ class DebugViewer extends maprayui.StandardUIViewer {
 
      /**
      * ModelEntityの追加
-     * @param maprayApi 
      * @param dataset_id 
      */
     async addModelEntity( dataset_id: string )
     {
-        const maprayApi = this.maprayApi as mapray.MaprayApi;
-        const resource = maprayApi.get3DDatasetAsResource( [dataset_id] );
+        const cloudApi = this.cloudApi as mapray.cloud.CloudApi;
+        const resource = cloudApi.get3DDatasetAsResource( [dataset_id] );
         const loader = new mapray.SceneLoader( this.viewer.scene, resource, {
             onEntity: ( loader, entity, prop ) => {
                 this._model_3d_list.push( entity as mapray.ModelEntity );
@@ -472,14 +470,14 @@ class DebugViewer extends maprayui.StandardUIViewer {
      */
     async addPointCloud( dataset_id: string ): Promise<mapray.PointCloud>
     {
-        const maprayApi = this.maprayApi as mapray.MaprayApi;
+        const cloudApi = this.cloudApi as mapray.cloud.CloudApi;
         const point_cloud_collection = this.viewer.point_cloud_collection;
-        const resource = maprayApi.getPointCloudDatasetAsResource( dataset_id );
+        const resource = cloudApi.getPointCloudDatasetAsResource( dataset_id );
         const point_cloud = point_cloud_collection.add( new mapray.RawPointCloudProvider( resource ) );
 
-        const datasets = await maprayApi.loadPointCloudDatasets();
+        const datasets = await cloudApi.loadPointCloudDatasets();
         console.log( datasets );
-        const dataset = await maprayApi.loadPointCloudDataset( dataset_id );
+        const dataset = await cloudApi.loadPointCloudDataset( dataset_id );
         console.log( dataset );
 
         this.pointCloudList.push( point_cloud );

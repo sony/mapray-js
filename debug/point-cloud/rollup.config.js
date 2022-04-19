@@ -19,6 +19,8 @@ export default function() {
     const isProd = process.env.BUILD === 'production';
     const maprayAccessToken = process.env.MAPRAY_ACCESS_TOKEN;
     const bingAccessToken = process.env.BINGMAP_ACCESS_TOKEN;
+    const maprayApiUserID = process.env.MAPRAY_API_USER_ID;
+    const datasetPointCloudID = process.env.DATASET_POINT_CLOUD_ID;
 
     const bundle = {
         input: 'src/index.ts',
@@ -41,6 +43,20 @@ export default function() {
                 replace({
                     '"<your Bing Maps Key here>"': JSON.stringify( bingAccessToken ),
                     delimiters: ['', ''],
+                }):
+                null
+            ),
+            (maprayApiUserID ?
+                replace({
+                    '"<your user id>"': JSON.stringify( maprayApiUserID ),
+                    delimiters: ["", ""],
+                }):
+                null
+            ),
+            (datasetPointCloudID ?
+                replace({
+                    '"<point cloud dataset id>"': JSON.stringify( datasetPointCloudID ),
+                    delimiters: ["", ""],
                 }):
                 null
             ),
