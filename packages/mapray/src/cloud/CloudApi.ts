@@ -1,43 +1,10 @@
-import HTTP from "./HTTP";
-import { Dataset, Dataset3D, PointCloudDataset } from "./MaprayApiModel";
-import Resource from "./Resource";
-import SceneLoader from "./SceneLoader";
-import { DatasetResource, Dataset3DSceneResource, PointCloudDatasetResource,  }  from "./MaprayApiResource";
-import GeoJSON from "./GeoJSON";
-
-
-/**
- * MaprayApiへのアクセスに関わるエラー
- */
-class MaprayApiError extends HTTP.FetchError {
-
-    /** エラーコード */
-    code: number;
-
-    /** エラー名 */
-    name: string;
-
-    /** レスポンスオブジェクト */
-    response?: Response;
-
-    /** エラーの原因となったエラー */
-    cause?: Error;
-
-    constructor( code: number, message: string, url: string, response?: Response, cause?: Error )
-    {
-        super( message + " [" + code + "]", url );
-        if ( Error.captureStackTrace ) {
-            Error.captureStackTrace( this, MaprayApiError );
-        }
-        this.name = "MaprayApiError";
-        this.code = code;
-        this.response = response;
-        this.cause = cause;
-        if (cause) {
-            this.stack += "\nCaused-By: " + cause.stack;
-        }
-    }
-}
+import HTTP from "../HTTP";
+import { Dataset, Dataset3D, PointCloudDataset } from "./CloudApiModel";
+import Resource from "../Resource";
+import SceneLoader from "../SceneLoader";
+import { DatasetResource, Dataset3DSceneResource, PointCloudDatasetResource } from "./CloudApiResource";
+import GeoJSON from "../GeoJSON";
+import { cfa_assert } from "../util/assertion";
 
 
 
@@ -61,49 +28,47 @@ class MaprayApiError extends HTTP.FetchError {
  *   Mapray Cloudへデータをアップロードし、そのデータを使用するには、[データセットページ](https://cloud.mapray.com/datasetslist)
  *   からGeoJsonやglTFデータをアップロードしておき、アップロードしたデータのIDを確認します。
  *
- * ```ts
- * const maprayApi = new mapray.MaprayApi({
- *         basePath: "https://api.mapray.com",
- *         version: "v1",
- *         userId: "...",
- *         token: "..."
- * });
+ * MaprayCloudバージョンごとに具象クラスが定義されています。
+ * 利用するバージョンのクラスを利用します。
  *
- * const datasets = await maprayApi.getDatasets();
- * // ...
- * ```
+ * | Version | Class           |
+ * |---------|-----------------|
+ * | v1      | [mapray.cloud.CloudApiV1](mapray.cloud.CloudApiV1-1.html) |
+ * | v2      | [mapray.cloud.CloudApiV2](mapray.cloud.CloudApiV2-1.html) |
  *
- * MaprayCloudへアクセスする関数は下記のように分類される。
+ * MaprayCloudへアクセスする関数は下記のように分類されます。
  *
  * - `get***AsResource()`:<br>
- *     Maprayの各種ローダは、Resourceクラスを受け取るようになっている。[[mapray.GeoJSONLoader]]
+ *     Maprayの各種ローダは、Resourceクラスを受け取るようになっています。[[mapray.GeoJSONLoader]]
  *
  * - `load***()`:<br>
- *    適切なクラスのインスタンスを返却する。
+ *    適切なクラスのインスタンスを返却します。
  *
  * - `get***()`:<br>
  *     最も低レベルのAPI呼び出しを行う。返却値はJSONです。
  */
-class MaprayApi {
+abstract class CloudApi {
 
-    private _option: MaprayApi.InnerOption;
+    public readonly version: string;
+    public readonly basePath: string;
+
+    private _header_key: string;
+    private _header_value: string;
 
     /**
-     * @param option
+     * @param version 
+     * @param basePath 
+     * @param header_key header key for cloud api
+     * @param header_value header value for cloud api
      */
-    constructor( option: MaprayApi.Option )
+    constructor( version: string, basePath: string | undefined, header_key: string, header_value:string )
     {
-        const basePath = option.basePath;
-        this._option = {
-            basePath: (
-                !basePath ? MaprayApi.DEFAULT_BASE_PATH:
-                basePath.endsWith("/") ? basePath.slice(0, -1):
-                basePath
-            ),
-            version: option.version,
-            token: option.token,
-            userId: option.userId
-        };
+        this.version = version;
+        this.basePath = !basePath ? DEFAULT_BASE_PATH:
+                        basePath.endsWith("/") ? basePath.slice(0, -1):
+                        basePath;
+        this._header_key = header_key;
+        this._header_value = header_value;
     }
 
 
@@ -117,7 +82,8 @@ class MaprayApi {
      * @param limit 1ページに含まれる要素数。最大100まで指定することができます。
      * @return データセットの配列
      */
-    async loadDatasets( page: number = 1, limit: number = 5 ): Promise<Dataset[]> {
+    async loadDatasets( page: number = 1, limit: number = 5 ): Promise<Dataset[]>
+    {
         const datasets_json = await this.getDatasets( page, limit );
         return datasets_json.map( (dataset_json: Dataset.Json) => Dataset.createFromJson( this, dataset_json ) );
     }
@@ -127,7 +93,8 @@ class MaprayApi {
      * @param datasetId データセットのID
      * @return データセット
      */
-    async loadDataset( datasetId: string ): Promise<Dataset> {
+    async loadDataset( datasetId: string ): Promise<Dataset>
+    {
         const dataset_json = await this.getDataset( datasetId );
         return Dataset.createFromJson( this, dataset_json );
     }
@@ -139,7 +106,8 @@ class MaprayApi {
      * @param limit 1ページに含まれる要素数。最大100まで指定することができます。
      * @return 3Dデータセットの配列
      */
-    async load3DDatasets( page: number = 1, limit: number = 5 ): Promise<Dataset3D[]> {
+    async load3DDatasets( page: number = 1, limit: number = 5 ): Promise<Dataset3D[]>
+    {
         const datasets_json = await this.get3DDatasets( page, limit );
         return datasets_json.map( (dataset_json: Dataset3D.Json) => Dataset3D.createFromJson( this, dataset_json ) );
     }
@@ -149,7 +117,8 @@ class MaprayApi {
      * @param datasetId
      * @return 3Dデータセット
      */
-    async load3DDataset( datasetId: string ): Promise<Dataset3D> {
+    async load3DDataset( datasetId: string ): Promise<Dataset3D>
+    {
         const dataset_json = await this.get3DDataset( datasetId );
         return Dataset3D.createFromJson( this, dataset_json )
     }
@@ -161,7 +130,8 @@ class MaprayApi {
      * @param limit 1ページに含まれる要素数。最大100まで指定することができます。
      * @return 点群データセットの配列
      */
-    async loadPointCloudDatasets( page: number = 1, limit: number = 5 ) {
+    async loadPointCloudDatasets( page: number = 1, limit: number = 5 )
+    {
         const datasets_json = await this.getPointCloudDatasets( page, limit );
         return datasets_json.map( (dataset_json: PointCloudDataset.Json) => PointCloudDataset.createFromJson( this, dataset_json ) );
     }
@@ -171,7 +141,8 @@ class MaprayApi {
      * @param datasetId データセットID
      * @return 点群データセット
      */
-    async loadPointCloudDataset( datasetId: string ) {
+    async loadPointCloudDataset( datasetId: string )
+    {
         const dataset_json = await this.getPointCloudDataset( datasetId );
         return PointCloudDataset.createFromJson( this, dataset_json );
     }
@@ -184,7 +155,8 @@ class MaprayApi {
      * @param datasetId データセットID
      * @return データセットのリソース
      */
-    getDatasetAsResource( datasetId: string ): Resource {
+    getDatasetAsResource( datasetId: string ): Resource
+    {
         return new DatasetResource( this, datasetId );
     }
 
@@ -193,7 +165,8 @@ class MaprayApi {
      * @param datasetId データセットIDのリスト
      * @return 3Dデータセットのリソース
      */
-    get3DDatasetAsResource( datasetIds: string[] ): Resource {
+    get3DDatasetAsResource( datasetIds: string[] ): Resource
+    {
         return new Dataset3DSceneResource( this, datasetIds );
     }
 
@@ -202,7 +175,8 @@ class MaprayApi {
      * @param datasetId データセットID
      * @return 点群データのリソース
      */
-    getPointCloudDatasetAsResource( datasetId: string ): Resource {
+    getPointCloudDatasetAsResource( datasetId: string ): Resource
+    {
         return new PointCloudDatasetResource( this, datasetId );
     }
 
@@ -213,24 +187,22 @@ class MaprayApi {
      * データセットリストを取得します
      * @param page 取得する要素のページ番号
      * @param limit 1ページに含まれる要素数。最大100まで指定することができます。
-     * @return json
+     * @return json[]
      */
-    async getDatasets( page: number = 1, limit: number = 5 ): Promise<Dataset.Json[]>
-    {
-        var opt = this._option;
-        return await this.get( "datasets", [ opt.userId ], { page, limit } ) as Dataset.Json[];
-    }
+    abstract getDatasets( page: number, limit: number ): Promise<Dataset.Json[]>;
+
+    /**
+     * 登録されているデータセットの数を取得します
+     * @returns json
+     */
+    abstract countDatasets(): Promise<Dataset.Count>;
 
     /**
      * get dataset
      * @param datasetId
      * @return json
      */
-    async getDataset( datasetId: string ): Promise<Dataset.Json>
-    {
-        var opt = this._option;
-        return await this.get( "datasets", [ opt.userId, datasetId ], undefined ) as Dataset.Json;
-    }
+    abstract getDataset( datasetId: string ): Promise<Dataset.Json>;
 
     /**
      * @internal
@@ -239,35 +211,20 @@ class MaprayApi {
      * @param description 説明
      * @return json
      */
-    async createDataset( name: string, description: string ): Promise<Dataset.Json>
-    {
-        var opt = this._option;
-        var body = {
-            name,
-            description
-        };
-        return await this.post( "datasets", [ opt.userId ], undefined, body ) as Dataset.Json;
-    }
+    abstract createDataset( name: string, description: string ): Promise<Dataset.Json>;
 
     /**
      * @internal
      * データセットを削除します。
      */
-    async deleteDataset( datasetId: string/*, option={ wait: true }*/ ): Promise<void>
-    {
-        var opt = this._option;
-        return await this.delete<void>( "datasets", [ opt.userId, datasetId ] );
-    }
+    abstract deleteDataset( datasetId: string/*, option={ wait: true }*/ ): Promise<Dataset.Json>;
 
     /**
      * GeoJSONの内容を取得します。
      * @param datasetId データセットID
      * @return json
      */
-    async getFeatures( datasetId: string ): Promise<GeoJSON.FeatureCollectionJson> {
-        var opt = this._option;
-        return await this.get( "datasets", [ opt.userId, datasetId, "features" ] );
-    }
+    abstract getFeatures( datasetId: string ): Promise<GeoJSON.FeatureCollectionJson>;
 
     /**
      * @internal
@@ -275,36 +232,40 @@ class MaprayApi {
      * @param datasetId データセットID
      * @return json
      */
-    async insertFeature( datasetId: string, feature: MaprayApi.FeatureRequestJson ): Promise<GeoJSON.FeatureJson> {
-        var opt = this._option;
-        return await this.post( "datasets", [ opt.userId, datasetId, "features" ], undefined, feature ) as GeoJSON.FeatureJson;
-    }
+    abstract insertFeature( datasetId: string, feature: CloudApi.FeatureRequestJson ): Promise<GeoJSON.FeatureJson>;
 
     /**
      * @internal
      * GeoJSON要素を更新（上書き）します。
-     * @param datasetId データセットID
      * @param featureId GeoJSON要素ID
      * @param feature GeoJSON要素
      * @return json
      */
-    async updateFeature( datasetId: string, featureId: string, feature: GeoJSON.FeatureJson )
-    {
-        var opt = this._option;
-        return await this.put( "datasets", [ opt.userId, "features", featureId ], undefined, feature );
-    }
+    abstract updateFeature( featureId: string, feature: GeoJSON.FeatureJson ): Promise<GeoJSON.FeatureJson>;
 
     /**
+     * @internal
+     * GeoJSON要素を作事をします。
+     * @param datasetId データセットID
+     * @param featureId GeoJSON要素ID
+     * @return json
+     */
+     abstract deleteFeature( featureId: string ): Promise<GeoJSON.FeatureJson>;
+
+     /**
      * 3Dデータセットのリストを取得します。
      * @param page 取得する要素のページ番号
      * @param limit 1ページに含まれる要素数。最大100まで指定することができます。
      * @return json
      */
-    async get3DDatasets( page: number = 1, limit: number = 5 ): Promise<Dataset3D.Json[]> {
-        const opt = this._option;
-        return await this.get( "3ddatasets", [ opt.userId ], { page, limit } ) as Dataset3D.Json[];
-    }
+    abstract get3DDatasets( page: number, limit: number ): Promise<Dataset3D.Json[]>;
 
+    /**
+     * 登録されている3Dデータセットの数を取得します
+     * @returns json
+     */
+    abstract count3DDatasets(): Promise<Dataset3D.Count>;
+ 
     /**
      * @internal
      * 3D datastを作成します。
@@ -313,20 +274,7 @@ class MaprayApi {
      * @param option
      * @return json
      */
-    async create3DDataset( name: string, description: string, option: Dataset3D.Json ): Promise<Dataset3D.Json> {
-        const opt = this._option;
-        const body = {
-            name,
-            description,
-            path: option.path,
-            format: option.format,
-            srid: option.srid,
-            x: option.x,
-            y: option.y,
-            z: option.z
-        };
-        return await this.post( "3ddatasets", [ opt.userId ], undefined, body ) as Dataset3D.Json;
-    }
+    abstract create3DDataset( name: string, description: string, option: Dataset3D.Json ): Promise<Dataset3D.Json>;
 
     /**
      * @internal
@@ -336,20 +284,7 @@ class MaprayApi {
      * @param description 説明
      * @return json
      */
-    async update3DDataset( datasetId: string, name: string, description: string, option: Dataset3D.RequestJson ): Promise<Dataset3D.Json> {
-        const opt = this._option;
-        const body = {
-            name,
-            description,
-            path: option.path,
-            format: option.format,
-            srid: option.srid,
-            x: option.x,
-            y: option.y,
-            z: option.z
-        };
-        return await this.patch( "3ddatasets", [ opt.userId, datasetId ], undefined, body ) as Dataset3D.Json;
-    }
+    abstract update3DDataset( datasetId: string, name: string, description: string, option: Dataset3D.RequestJson ): Promise<Dataset3D.Json>;
 
     /**
      * @internal
@@ -357,10 +292,7 @@ class MaprayApi {
      * @param datasetId データセットId
      * @return json
      */
-    async create3DDatasetUploadUrl( datasetId: string ) {
-        const opt = this._option;
-        return await this.post( "3ddatasets", [ "uploads", opt.userId, datasetId ], undefined, {} );
-    }
+    abstract create3DDatasetUploadUrl( datasetId: string, fileInfo: Dataset3D.UploadFileInfo[] ): Promise<Dataset3D.UploadUrlInfo>;
 
     /**
      * @internal
@@ -369,10 +301,7 @@ class MaprayApi {
      * @param datasetId データセットId
      * @return json
      */
-    async get3DDataset( datasetId: string ): Promise<Dataset3D.Json> {
-        const opt = this._option;
-        return await this.get( "3ddatasets", [ opt.userId, datasetId ], undefined ) as Dataset3D.Json;
-    }
+    abstract get3DDataset( datasetId: string ): Promise<Dataset3D.Json>;
 
     /**
      * @internal
@@ -380,30 +309,14 @@ class MaprayApi {
      * @param datasetId データセットId
      * @return json
      */
-    async delete3DDataset( datasetId: string ) {
-        const opt = this._option;
-        return await this.delete( "3ddatasets", [ opt.userId, datasetId ] );
-    }
+    abstract delete3DDataset( datasetId: string ): Promise<Dataset3D.Json>;
 
     /**
      * 3Dデータセットに含まれる scene情報 を取得します。
      * @param datasetIds
      * @return シーンファイルの実体
      */
-    async get3DDatasetScene( datasetIds: string | string[] ): Promise<SceneLoader.SceneJson> {
-        const opt = this._option;
-        const datasetIdsText = Array.isArray(datasetIds) ? datasetIds.join(",") : datasetIds;
-        const response = await this.get( "3ddatasets", [ "scene", opt.userId ], { "3ddatasets_ids": datasetIdsText } ) as SceneLoader.SceneJson;
-        response.entity_list.forEach((entity: any) => {
-                const indexStr = entity.index;
-                const index = parseInt(indexStr);
-                if (index.toString() !== indexStr) {
-                    throw new Error("Internal Error: ID couldn't be convert to 'number'");
-                }
-                entity.index = index;
-        });
-        return response;
-    }
+    abstract get3DDatasetScene( datasetIds: string | string[] ): Promise<SceneLoader.SceneJson>;
 
     /**
      * 点群データセットリストを取得します。
@@ -411,20 +324,20 @@ class MaprayApi {
      * @param limit 1ページに含まれる要素数。最大100まで指定することができます。
      * @return json
      */
-    async getPointCloudDatasets( page: number = 1, limit: number = 5 ): Promise<PointCloudDataset.Json[]> {
-        const opt = this._option;
-        return await this.get( "pcdatasets", [ opt.userId ], { page, limit } ) as PointCloudDataset.Json[];
-    }
+    abstract getPointCloudDatasets( page: number, limit: number ): Promise<PointCloudDataset.Json[]>;
+
+    /**
+     * 登録されている点群データセットの数を取得します
+     * @returns json
+     */
+    abstract countPointCloudDatasets(): Promise<PointCloudDataset.Count>;
 
     /**
      * 点群データセットを取得します。
      * @param datasetId データセットId
      * @return json
      */
-    async getPointCloudDataset( datasetId: string ): Promise<PointCloudDataset.Json> {
-        const opt = this._option;
-        return await this.get( "pcdatasets", [ opt.userId, datasetId ] ) as PointCloudDataset.Json;
-    }
+    abstract getPointCloudDataset( datasetId: string ): Promise<PointCloudDataset.Json>;
 
     /**
      * 低レベルAPI。このクラスの別関数から呼び出される。
@@ -486,12 +399,12 @@ class MaprayApi {
      */
     protected async fetchAPI<T>( method: string, api: string, args: string[], query?: HTTP.Query, body?: HTTP.Body, option={} ): Promise<T>
     {
-        var opt = this._option;
-        var url = opt.basePath + "/" + api + "/" + opt.version + (args.length > 0 ? "/" + args.join("/") : "");
-        // console.log( "MaprayAPI: " + method + " " + api + " (" + args.join("/") + ")" );
+        const url = this.basePath + "/" + api + "/" + this.version + (args.length > 0 ? "/" + args.join("/") : "");
+        // console.log( "CloudApi: " + method + " " + api + " (" + args.join("/") + ")" );
         const response = await this.fetch( method, url, query, body, option );
         return await response.json() as T;
     }
+
 
     /**
      * 低レベルAPI。このクラスの別関数から呼び出される。
@@ -499,17 +412,18 @@ class MaprayApi {
      */
     protected async fetch( method: string, url: string, query?: HTTP.Query, body?: HTTP.Body, option: RequestInit = {} ): Promise<Response>
     {
-        var opt = this._option;
-        var headers = option.headers || (option.headers = {});
+        const headers = option.headers || (option.headers = {});
+
         // @ts-ignore
-        headers["x-api-key"] = opt.token;
+        headers[this._header_key] = this._header_value;
 
         let response;
         try {
             response = await HTTP.fetch( method, url, query, body, option );
         }
-        catch( error ) {
-            if ( error.name === "FetchError" && error.response ) {
+        catch( error: any ) {
+            cfa_assert( error instanceof Error );
+            if ( error instanceof HTTP.FetchError && error.response ) {
                 let errorResponseJson;
                 try {
                     errorResponseJson = await error.response.json();
@@ -517,12 +431,12 @@ class MaprayApi {
                 catch( additionalError ) {
                     // Couldn't get additional info of the error.
                     // throw original error.
-                    throw new MaprayApiError( -1, "Failed to fetch", url, undefined, error );
+                    throw new CloudApiError( -1, "Failed to fetch", url, undefined, error );
                 }
-                throw new MaprayApiError( errorResponseJson.code, errorResponseJson.error, url, error.response, error );
+                throw new CloudApiError( errorResponseJson.code, errorResponseJson.error, url, error.response, error );
             }
             else {
-                throw new MaprayApiError( -1, "Failed to fetch", url, undefined, error );
+                throw new CloudApiError( -1, "Failed to fetch", url, undefined, error );
             }
         }
         return response;
@@ -531,50 +445,65 @@ class MaprayApi {
 
 
 
-namespace MaprayApi {
-
-
-
-export interface Option {
-    /** Mapray CloudのURLを指定します。通常は省略します。 */
-    basePath?: string;
-
-    /** Mapray Cloud の APIバージョン "v1" のように指定します。 */
-    version: string;
-
-    /** Mapray Cloud アカウントの User ID を指定します。 */
-    userId: string;
-
-    /** Mapray Cloud で生成した Token を指定します。 */
-    token: string;
-}
-
-
-
-export interface InnerOption {
-    basePath: string;
-    version: string;
-    token: string;
-    userId: string;
-}
-
+namespace CloudApi {
 
 export interface FeatureRequestJson {
 }
-
 
 
 export interface LoadDatasetsJson {
 }
 
 
+export enum TokenType {
+    /** api key */
+    API_KEY      = "@@_CloudApi.TokenType.API_KEY",
 
-export const DEFAULT_BASE_PATH = "https://cloud.mapray.com";
+    /** access token */
+    ACCESS_TOKEN = "@@_CloudApi.TokenType.ACCESS_TOKEN",
+}
+
+
+} // namespace CloudApi
 
 
 
-} // namespace MaprayApi
+/**
+ * CloudApiへのアクセスに関わるエラー
+ */
+class CloudApiError extends HTTP.FetchError {
+
+    /** エラーコード */
+    code: number;
+
+    /** エラー名 */
+    name: string;
+
+    /** レスポンスオブジェクト */
+    response?: Response;
+
+    /** エラーの原因となったエラー */
+    cause?: Error;
+
+    constructor( code: number, message: string, url: string, response?: Response, cause?: Error )
+    {
+        super( message + " [" + code + "]", url );
+        if ( Error.captureStackTrace ) {
+            Error.captureStackTrace( this, CloudApiError );
+        }
+        this.name = "CloudApiError";
+        this.code = code;
+        this.response = response;
+        this.cause = cause;
+        if ( cause ) {
+            this.stack += "\nCaused-By: " + cause.stack;
+        }
+    }
+}
+
+
+const DEFAULT_BASE_PATH = "https://cloud.mapray.com";
 
 
 
-export default MaprayApi;
+export default CloudApi;

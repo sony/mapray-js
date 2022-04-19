@@ -1,5 +1,5 @@
-import MaprayApi from "./MaprayApi";
-import GeoPoint from "./GeoPoint";
+import CloudApi from "./CloudApi";
+import GeoPoint from "../GeoPoint";
 
 
 /**
@@ -7,7 +7,7 @@ import GeoPoint from "./GeoPoint";
  */
 class AbstractDataset {
 
-    private _api: MaprayApi;
+    private _api: CloudApi;
 
     // @ts-ignore
     private _id: string;
@@ -30,7 +30,7 @@ class AbstractDataset {
     /**
      * @param api
      */
-    constructor( api: MaprayApi ) {
+    constructor( api: CloudApi ) {
         this._api = api;
     }
 
@@ -103,6 +103,13 @@ export interface Json {
     updated_at: Date;
 }
 
+export interface Count {
+    /**
+     * データセット数
+     */
+    count: number;
+}
+
 } // namespace AbstractDataset
 
 
@@ -115,7 +122,7 @@ class Dataset extends AbstractDataset {
     /**
      * @param api
      */
-    private constructor( api: MaprayApi ) {
+    private constructor( api: CloudApi ) {
         super( api );
     }
 
@@ -128,7 +135,7 @@ class Dataset extends AbstractDataset {
      * @param api
      * @param サーバから返却されたjson
      */
-    static createFromJson( api: MaprayApi, json: Dataset.Json ): Dataset {
+    static createFromJson( api: CloudApi, json: Dataset.Json ): Dataset {
         const dataset = new Dataset( api );
         dataset._restoreFromJson( json );
         return dataset;
@@ -143,6 +150,8 @@ namespace Dataset {
 export interface Json extends AbstractDataset.Json {
 }
 
+export interface Count extends AbstractDataset.Count {
+}
 
 } // namespace Dataset
 
@@ -163,18 +172,24 @@ class Dataset3D extends AbstractDataset {
     private _path: string;
 
     // @ts-ignore
-    private _format: string;
-
-    // @ts-ignore
     private _srid: string;
 
     // @ts-ignore
     private _origin: GeoPoint;
 
+    // @ts-ignore
+    private _src_file_type: string;
+
+    // @ts-ignore
+    private _dst_file_type: string;
+
+    // @ts-ignore
+    private _extensions: object;
+
     /**
      * @param api
      */
-    private constructor( api: MaprayApi ) {
+    private constructor( api: CloudApi ) {
         super( api );
     }
 
@@ -190,13 +205,6 @@ class Dataset3D extends AbstractDataset {
      */
     getUrl(): string {
         return this._url;
-    }
-
-    /**
-     * フォーマット
-     */
-    getFormat(): string {
-        return this._format;
     }
 
     /**
@@ -219,6 +227,28 @@ class Dataset3D extends AbstractDataset {
     getSRID(): string {
         return this._srid;
     }
+
+    /**
+     * ソースファイルの形式
+     */
+     getSrcFileType(): string {
+        return this._src_file_type;
+    }
+
+    /**
+     * 変換後ファイルの形式
+     */
+     getDstFileType(): string {
+        return this._dst_file_type;
+    }
+
+    /**
+     * 拡張指定
+     */
+     getExtensions(): object {
+        return this._extensions;
+    }
+
 
     protected override _restoreFromJson( json: Dataset3D.Json ) {
         /* missing options
@@ -246,18 +276,20 @@ class Dataset3D extends AbstractDataset {
         this._url = json.url;
         this._scene_id = json.scene_id;
         this._path = json.path;
-        this._format = json.format;
         this._srid = json.srid;
         this._origin = new GeoPoint(json.x, json.y, json.z);
+        this._src_file_type = json.src_file_type;
+        this._dst_file_type = json.dst_file_type;
+        this._extensions = json.extensions;
     }
 
     /**
      * @internal
-     * @param {MaprayApi} api
+     * @param {CloudApi} api
      * @param {json} サーバから返却されたjson
      * @return {Dataset3D}
      */
-    static createFromJson( api: MaprayApi, json: Dataset3D.Json ) {
+    static createFromJson( api: CloudApi, json: Dataset3D.Json ) {
         const dataset = new Dataset3D( api );
         dataset._restoreFromJson( json );
         return dataset;
@@ -274,11 +306,6 @@ export interface RequestJson extends AbstractDataset.Json {
      * glTFファイルのパスを指定します（アップロードする際はディレクトリを指定するため、ディレクトリルートからのglTFファイルへのパスを指定します）
      */
     path: string;
-
-    /**
-     * "glTF"を指定します
-     */
-    format: string;
 
     /**
      * 現在は4326（WGS 84）を指定します
@@ -299,6 +326,21 @@ export interface RequestJson extends AbstractDataset.Json {
      * 高さ
      */
     z: number;
+
+    /**
+     * アップロードするファイル種類 ("glTF"等) を指定します
+     */
+    src_file_type: string;
+
+    /**
+     * "glTF"を指定します
+     */
+    dst_file_type: string;
+
+    /**
+     * 拡張指定
+     */
+    extensions: object
 }
 
 
@@ -315,6 +357,29 @@ export interface Json extends RequestJson {
 }
 
 
+export interface UploadFileInfo {
+    /**
+     * ファイル名
+     */
+    filename: string;
+
+    /**
+     * ファイルタイプ
+     */
+    content_type: string;
+}
+
+
+export interface UploadUrlInfo extends UploadFileInfo {
+    /**
+     * URL
+     */
+    url: string;
+}
+
+
+export interface Count extends AbstractDataset.Count {
+}
 
 } // namespace Dataset3D
 
@@ -340,7 +405,7 @@ class PointCloudDataset extends AbstractDataset {
     /**
      * @param api
      */
-    constructor( api: MaprayApi ) {
+    constructor( api: CloudApi ) {
         super( api );
     }
 
@@ -380,13 +445,13 @@ class PointCloudDataset extends AbstractDataset {
         super._restoreFromJson( json );
         // this._srid = json.srid;
         this._url = json.url;
-        const bbox = json.bbox;
+        const bbox = json.fileinfo.bbox;
         this._bounding_box = (
             GeoJson.isBBox3d(bbox) ? bbox:
             [ bbox[0], bbox[1], 0, bbox[2], bbox[3], 0, ]
         );
-        this._content_root = Array.isArray(json.content_root) ? json.content_root.join("/") : json.content_root;
-        this._format = json.format;
+        this._content_root = Array.isArray(json.fileinfo.content_root) ? json.fileinfo.content_root.join("/") : json.fileinfo.content_root;
+        this._format = json.fileinfo.format;
     }
 
     /**
@@ -394,7 +459,7 @@ class PointCloudDataset extends AbstractDataset {
      * @param api
      * @param サーバから返却されたjson
      */
-    static createFromJson( api: MaprayApi, json: PointCloudDataset.Json ): PointCloudDataset {
+    static createFromJson( api: CloudApi, json: PointCloudDataset.Json ): PointCloudDataset {
         const dataset = new PointCloudDataset( api );
         dataset._restoreFromJson( json );
         return dataset;
@@ -405,14 +470,19 @@ class PointCloudDataset extends AbstractDataset {
 
 namespace PointCloudDataset {
 
-
 export interface Json extends AbstractDataset.Json {
     url?: string;
+    fileinfo: PointCloudDataset.FileInfo;
+}
+
+export interface FileInfo {
     bbox: GeoJson.BBox;
     content_root: [ level: number, x: number, y: number, z: number ];
     format: string;
 }
 
+export interface Count extends AbstractDataset.Count {
+}
 
 } // namespace PointCloudDataset
 

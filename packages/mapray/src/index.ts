@@ -1,4 +1,5 @@
 export * as animation from "./animation/animation";
+export * as cloud from "./cloud/cloud";
 
 export { default as Dom } from "./util/Dom";
 export { default as Color } from "./util/Color";
@@ -51,10 +52,6 @@ export { default as ImageIconEntity } from "./ImageIconEntity"
 export { default as SceneLoader } from "./SceneLoader";
 export { default as GeoJSONLoader } from "./GeoJSONLoader";
 export { default as GeoJSON } from "./GeoJSON";
-
-export { default as MaprayApi } from "./MaprayApi";
-export * from "./MaprayApiModel";
-export * from "./MaprayApiResource";
 
 // B3d
 export { default as B3dProvider } from "./B3dProvider";

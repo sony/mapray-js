@@ -1,8 +1,8 @@
-import HTTP from "./HTTP";
-import Dom from "./util/Dom";
-import Resource from "./Resource";
-import MaprayApi from "./MaprayApi";
-import { PointCloudDataset } from "./MaprayApiModel";
+import HTTP from "../HTTP";
+import Dom from "../util/Dom";
+import Resource from "../Resource";
+import CloudApi from "./CloudApi";
+import { PointCloudDataset } from "./CloudApiModel";
 
 
 
@@ -21,7 +21,7 @@ import { PointCloudDataset } from "./MaprayApiModel";
  */
 class ApiUrlResource extends Resource {
 
-    private _api: MaprayApi;
+    private _api: CloudApi;
 
     private _url: string;
 
@@ -31,7 +31,7 @@ class ApiUrlResource extends Resource {
      * @param api
      * @param url
      */
-    constructor( api: MaprayApi, url: string ) {
+    constructor( api: CloudApi, url: string ) {
         const index = url.lastIndexOf( "/" );
         if ( index === -1 ) throw new Error( "invalid url" );
         //super( api, url.substr( 0, index + 1 ) );
@@ -83,11 +83,11 @@ class ApiUrlResource extends Resource {
  */
 export class DatasetResource extends Resource {
 
-    private _api: MaprayApi;
+    private _api: CloudApi;
 
     private _datasetId: string;
 
-    constructor( api: MaprayApi, datasetId: string ) {
+    constructor( api: CloudApi, datasetId: string ) {
         super();
         this._api = api;
         this._datasetId = datasetId;
@@ -109,15 +109,15 @@ export class DatasetResource extends Resource {
  */
 export class Dataset3DSceneResource extends Resource {
 
-    private _api: MaprayApi;
+    private _api: CloudApi;
 
     private _datasetIds: string[];
 
     /**
-     * @param {MaprayApi} api
+     * @param {CloudApi} api
      * @param {string|string[]} datasetIds データセットのid。複数指定する場合は配列を指定する。
      */
-    constructor( api: MaprayApi, datasetIds: string | string[] ) {
+    constructor( api: CloudApi, datasetIds: string | string[] ) {
         super();
         this._api = api;
         this._datasetIds = Array.isArray( datasetIds ) ? datasetIds : [ datasetIds ];
@@ -148,7 +148,7 @@ export class Dataset3DSceneResource extends Resource {
  */
 export class PointCloudDatasetResource extends Resource {
 
-    private _api: MaprayApi;
+    private _api: CloudApi;
 
     private _datasetId: string;
 
@@ -156,7 +156,7 @@ export class PointCloudDatasetResource extends Resource {
      * @param api
      * @param datasetId データセットのid
      */
-    constructor( api: MaprayApi, datasetId: string ) {
+    constructor( api: CloudApi, datasetId: string ) {
         super();
         this._api = api;
         this._datasetId = datasetId;
