@@ -102,4 +102,4 @@ npm run jsdoc
 ```
 
 ## License
-maprayJS is licensed under the [Apatch License Version 2.0](/LICENSE).
+maprayJS is licensed under the [Apache License Version 2.0](/LICENSE).
