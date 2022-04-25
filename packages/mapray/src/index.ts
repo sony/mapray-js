@@ -1,4 +1,5 @@
-export * as animation from "./animation/";
+export * as animation from "./animation/animation";
+
 export { default as Dom } from "./util/Dom";
 export { default as Color } from "./util/Color";
 
