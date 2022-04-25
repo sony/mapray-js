@@ -1,7 +1,7 @@
 import mapray from "@mapray/mapray-js";
 
-const GeoMath = mapray.GeoMath;
-const GeoPoint = mapray.GeoPoint;
+import GeoMath = mapray.GeoMath;
+import GeoPoint = mapray.GeoPoint;
 
 
 
@@ -230,16 +230,16 @@ class StandardUIViewer extends mapray.RenderCallback
                 image_provider: this.createImageProvider( options ),
                 layers: options.layers,
                 render_callback: this,
-                ground_visibility: ( options && options.ground_visibility ) ? options.ground_visibility : true,
-                entity_visibility: ( options && options.entity_visibility ) ? options.entity_visibility : true,
-                render_mode: ( options && options.render_mode ) || mapray.Viewer.RenderMode.SURFACE,
-                debug_stats: ( options && options.debug_stats ),
-                attribution_controller: ( options && options.attribution_controller ),
-                atmosphere: ( options && options.atmosphere ),
-                sun_visualizer: ( options && options.sun_visualizer ),
-                moon_visualizer: ( options && options.moon_visualizer ),
-                cloud_visualizer: ( options && options.cloud_visualizer ),
-                star_visualizer: ( options && options.star_visualizer ),
+                ground_visibility: !(options.ground_visibility === false),
+                entity_visibility: !(options.entity_visibility === false),
+                render_mode: options.render_mode || mapray.Viewer.RenderMode.SURFACE,
+                debug_stats: options.debug_stats,
+                attribution_controller: options.attribution_controller,
+                atmosphere: options.atmosphere,
+                sun_visualizer: options.sun_visualizer,
+                moon_visualizer: options.moon_visualizer,
+                cloud_visualizer: options.cloud_visualizer,
+                star_visualizer: options.star_visualizer,
             }
         );
 
