@@ -1,4 +1,4 @@
-Mouse Pick
+Render Phase
 ================================================================================
 
 
@@ -19,6 +19,13 @@ You need to serve root directory (`../../`) because files in `../../node_modules
 ```
 python -m SimpleHTTPServer 7776
 ```
+
+
+Key binding
+--------------------------------------------------------------------------------
+### Key binding
+g: Toggle Dataset Visible
+
 
 Access [http://localhost:7776/debug/picking/](http://localhost:7776/debug/picking/).
 

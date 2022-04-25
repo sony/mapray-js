@@ -53,9 +53,8 @@ weight: 1050
 例として、[最小構成アプリケーション](../gettingstarted/)にmapray cloudに保存された点群データを読み込む例を示します。最小構成アプリケーションのhtmlの`<script>`に下記のコードを追加します。追加する場所は、`var viewer = new mapray.Viewer(...);`の部分以降であればどこでも構いません。
 ```javascript
     // Mapray Cloud へのアクセス情報を生成します。
-    var maprayApi = new mapray.MaprayApi({
+    var maprayApi = new mapray.cloud.CloudApiV1({
             basePath: "https://cloud.mapray.com",
-            version: "v1",
             userId: "<userId>",
             token: "<token>",
     });

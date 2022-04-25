@@ -1,5 +1,5 @@
-# SpaceApp based on maprayJS Rambler (ES modules version)
-This is a demo application with interactive mouse operation on [Mapray](https://mapray.com) website.
+# SpaceApp
+This is a space demo application.
 
 
 ## Preparing your Development Environment
@@ -24,7 +24,7 @@ To see the terrian data, you need a [Mapray access token](/doc/developer-guide/G
 export MAPRAY_ACCESS_TOKEN=<mapray_access_token>
 ```
 
-Or set accsess token to `<your access token here>` directly in `SpaceApp.js`.
+Or set accsess token to `<your access token here>` directly in `SpaceApp.ts`.
 
 
 ### To set bing map access token (Option)
@@ -36,7 +36,7 @@ You can either set an environment variable:
 export BINGMAP_ACCESS_TOKEN=<bingmap_access_token>
 ```
 
-Or set accsess token to `<your Bing Maps Key here>` directly in `SpaceApp.js`.
+Or set accsess token to `<your Bing Maps Key here>` directly in `SpaceApp.ts`.
 
 
 ### To install dependencies

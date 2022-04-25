@@ -1,5 +1,5 @@
-# maprayJS Rumbler 
-This is a demo application with interactive mouse operation on [Mapray](https://mapray.com) website.
+# b3dtile
+This is a b3dtile demo application.
 
 ## Preparing your Development Environment
 Install [node.js](https://nodejs.org/)
@@ -49,5 +49,11 @@ yarn
 * `npm start` is the development target, to serves the app and hot reload.
 * `npm run build` is the production target, to create the final bundle and write to disk.
 * `npm run dev` is the target for developing mapray and ui packages, to include mapray packages from local modules to write to disk.
+
+
+**Key binding:**
+
+g: Toggle Dataset Visible
+
 
 [http://localhost:7776/apps/local/index-umd.html](http://localhost:7776/apps/local/index-umd.html)

@@ -28,7 +28,7 @@ To see the terrian data, you need a [Mapray access token](/doc/developer-guide/G
 export MAPRAY_ACCESS_TOKEN=<mapray_access_token>
 ```
 
-Or set accsess token to `<your access token here>` directly in `DatasetView.ts`.
+Or set accsess token to `<your access token here>` directly in `DatasetViewer.ts`.
 
 
 **To set bing map access token (Option):**
@@ -40,7 +40,7 @@ You can either set an environment variable:
 export BINGMAP_ACCESS_TOKEN=<bingmap_access_token>
 ```
 
-Or set accsess token to `<your Bing Maps Key here>` directly in `DatasetView.ts`.
+Or set accsess token to `<your Bing Maps Key here>` directly in `DatasetViewer.ts`.
 
 
 **To set user id:**
@@ -55,7 +55,7 @@ const DATASET_2D_ID = "<2d dataset id>";
 const DATASET_3D_ID = "<3d dataset id>";
 const DATASET_POINT_CLOUD_ID = "<point cloud dataset id>";
 
-Or set accsess token to `<your user id>` directly in `DatasetView.ts`.
+Or set accsess token to `<your user id>` directly in `DatasetViewer.ts`.
 
 
 **To set user dataset id:**
@@ -68,7 +68,7 @@ export DATASET_3D_ID = <3d dataset id>;
 export DATASET_POINT_CLOUD_ID = <point cloud dataset id>;
 ```
 
-Or set accsess token to `<2d/3d/pointcloud dataset id>` directly in `DatasetView.ts`.
+Or set accsess token to `<2d/3d/pointcloud dataset id>` directly in `DatasetViewer.ts`.
 
 
 **To install dependencies:**

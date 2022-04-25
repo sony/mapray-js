@@ -5,12 +5,42 @@ Mouse Pick
 Setup
 --------------------------------------------------------------------------------
 ### Setup tokens
+mapray access token(`MAPRAY_ACCESS_TOKEN`) and bing map access token(`BINGMAP_ACCESS_TOKEN`) needs to be defined.
 
-1. mapray access token(`MAPRAY_ACCESS_TOKEN`) and bing map access token(`BINGMAP_ACCESS_TOKEN`) needs to be defined.
-2. `yarn` to install dependencies
+**To set access token:**
+
+To see the terrian data, you need a [Mapray access token](/doc/developer-guide/GettingStarted/index.md). You can either set an environment variable:
+
+```bash
+export MAPRAY_ACCESS_TOKEN=<mapray_access_token>
+```
+
+Or set accsess token to `<your access token here>` directly in `App.ts`.
+
+
+**To set bing map access token (Option):**
+
+To see Bing Maps Imagery, you need a Bing Maps access token. 
+Before set access token in Rumber you should get [Bing Maps Access Token](https://docs.microsoft.com/en-us/bingmaps/getting-started/bing-maps-dev-center-help/getting-a-bing-maps-key) yourself.
+You can either set an environment variable:
+```bash
+export BINGMAP_ACCESS_TOKEN=<bingmap_access_token>
+```
+
+Or set accsess token to `<your Bing Maps Key here>` directly in `App.ts`.
+
+
+### Setup dependencies
+`yarn` to install dependencies
 
 
 Launch
 --------------------------------------------------------------------------------
 - `yarn start` to start watch and server
 - `yarn build-prod` to build in production mode
+
+
+Key binding
+--------------------------------------------------------------------------------
+### Key binding
+g: Toggle Dataset Visible
