@@ -26,7 +26,7 @@ jobs:
       - name: Setup
         run: yarn install
       - name: Generate documents
-        run: yarn typedoc
+        run: yarn doc
       - name: Copy core built files to dist directory
         run: |
           mkdir -p ${{ env.DOC_DEPLOY_DIR }}/v${{ steps.get_version.outputs.next_version }}

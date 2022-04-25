@@ -1,6 +1,5 @@
 build/
 dist/
-doc/jsdoc/
 doc/typedoc/
 doc/typedoc-devel/
 node_modules/

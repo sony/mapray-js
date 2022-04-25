@@ -98,7 +98,7 @@ Documentation on Mapray official [website](https://mapray.com/documents/overview
 
 **API documents**
 ```bash
-npm run jsdoc
+npm run doc
 ```
 
 ## License

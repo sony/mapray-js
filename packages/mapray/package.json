@@ -25,10 +25,8 @@
   "scripts": {
     "build": "rollup -c",
     "build-watch": "rollup -c -w",
-    "jsdoc": "jsdoc --recurse --destination ./../../doc/jsdoc --package ./package.json --readme ./../../doc/config/reference_top.md --access undefined,public,protected  --configure ./../../doc/config/jsdoc.json ./src/",
-    "jsdoc-devel": "jsdoc --recurse --destination ./../../doc/jsdoc --package ./package.json --readme ./../../doc/config/reference_top.md --private  --configure ./../../doc/config/jsdoc.json ./src/",
-    "typedoc": "typedoc --tsconfig tsconfig.json",
-    "typedoc-devel": "typedoc --tsconfig tsconfig-devel.json",
+    "doc": "typedoc --tsconfig tsconfig.json",
+    "doc-devel": "typedoc --tsconfig tsconfig-devel.json",
     "tests-devel": "cross-env webpack --watch --mode=development --env.NODE_ENV=tests",
     "test": "jest",
     "lint": "eslint ./src"
@@ -60,7 +58,6 @@
     "@babel/preset-env": "^7.8.4",
     "@rollup/plugin-strip": "^2.1.0",
     "@rollup/plugin-typescript": "^8.2.1",
-    "rollup-plugin-typescript2": "0.30.0",
     "@typescript-eslint/eslint-plugin": "^5.3.0",
     "@typescript-eslint/parser": "^5.3.0",
     "babel-jest": "^25.1.0",
@@ -70,7 +67,6 @@
     "eslint": "^8.1.0",
     "eslint-config-eslint": "^7.0.0",
     "jest": "^25.1.0",
-    "jsdoc": "^3.5.0",
     "rollup": "^1.31.1",
     "rollup-plugin-babel": "^4.3.3",
     "rollup-plugin-base64": "^1.0.1",
@@ -78,8 +74,9 @@
     "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-string": "^3.0.0",
     "rollup-plugin-terser": "^5.2.0",
-    "typescript": "4.3.2",
-    "whatwg-fetch": "^3.6.2"
+    "whatwg-fetch": "^3.6.2",
+    "rollup-plugin-typescript2": "0.30.0",
+    "typescript": "4.3.2"
   },
   "dependencies": {
     "tslib": "^2.2.0"

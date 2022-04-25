@@ -28,7 +28,7 @@
     "build-watch": "rollup -c -w",
     "css": "postcss -c ./postcss.config.js -o dist/mapray.css src/css/mapray.css",
     "css-dev": "postcss --watch -c ./postcss.config.js -o dist/mapray.css src/css/mapray.css",
-    "typedoc": "typedoc --tsconfig tsconfig.json"
+    "doc": "typedoc --tsconfig tsconfig.json"
   },
   "contributors": [
     {
