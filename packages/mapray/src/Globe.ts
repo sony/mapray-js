@@ -12,6 +12,7 @@ import Entity from "./Entity";
 import AvgHeightMaps from "./AvgHeightMaps";
 import { Area } from "./AreaUtil";
 import type { PoleInfo } from "./Viewer";
+import { StyleFlake } from "./vectile/style";
 import { cfa_assert } from "./util/assertion";
 
 
@@ -982,6 +983,8 @@ export class Flake implements Area {
 
     private _meshes: MeshNode[];
 
+    private _style_flake: StyleFlake | null;
+
     /**
      * 標高代表値
      *
@@ -1047,6 +1050,9 @@ export class Flake implements Area {
 
         // MeshNode
         this._meshes = [];
+
+        // ベクトルタイル
+        this._style_flake = null;
 
         // 標高代表値
         this._prev_Za_dem = null;
@@ -1356,6 +1362,41 @@ export class Flake implements Area {
     }
 
     /**
+     * [[StyleFlake]] インスタンスを用意する。
+     *
+     * 対応する DEM データが存在しないときは `null` を返し、必要なら
+     * DEM データをリクエストする。
+     *
+     * 非 `null` を返したときは `this.getDemBinary()` により DEM データを取得
+     * することができる。
+     */
+    ensureStyleFlake(): StyleFlake | null
+    {
+        if ( this._style_flake === null ) {
+            /* まだ StyleFlake インスタンスが存在しない */
+
+            if ( this._dem_state === DemState.LOADED ) {
+                // DEM が存在するので StyleFlake インスタンスを生成
+                this._style_flake = new StyleFlake();
+            }
+            else if ( this._dem_state === DemState.NONE ) {
+                // DEM が存在しないので、一番近い祖先または自己の DEM をリクエスト
+                const nDem = this._findNearestDemTile( this.z );
+                cfa_assert( nDem.z < this.z );
+
+                const qlevel = nDem.getQuadLevel( this.z, this.x, this.y );
+                if ( qlevel > 0 ) {
+                    this._requestAncestorDemTile( Math.min( nDem.z + qlevel, this.z ) );
+                }
+            }
+        }
+
+        cfa_assert( this._style_flake === null || this._dem_state === DemState.LOADED );
+
+        return this._style_flake;
+    }
+
+    /**
      * 自己と子孫を破棄
      */
     dispose(): void
@@ -1399,6 +1440,11 @@ export class Flake implements Area {
         if ( this._dem_state === DemState.REQUESTED ) {
             belt.dem_provider.cancelRequest( this._dem_data );
             belt.decrement_dem_requesteds();
+        }
+
+        if ( this._style_flake !== null ) {
+            this._style_flake.cancelRequest();
+            this._style_flake = null;
         }
 
         // Flake 数を減らす
