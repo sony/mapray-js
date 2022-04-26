@@ -7,14 +7,6 @@ import { snakeToCamel } from "./utils";
 import Option, { DomTool } from "./Option";
 
 
-const MAPRAY_ACCESS_TOKEN = "<your access token here>";
-const MAPRAY_API_BASE_PATH = "https://cloud.mapray.com";
-const MAPRAY_API_ACCESS_TOKEN = MAPRAY_ACCESS_TOKEN;
-const MAPRAY_API_USER_ID = "<your user id>";
-const POINT_CLOUD_DATASET_ID = "<point cloud dataset id>";
-const DATASET_3D_ID = "<3d dataset id>";
-
-
 
 // Attirbute
 const GSI_ATTRIBUTE = "国土地理院";
@@ -153,7 +145,7 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
      */
     constructor( container: string | HTMLElement )
     {
-        super( container, MAPRAY_ACCESS_TOKEN, { 
+        super( container, process.env.MAPRAY_ACCESS_TOKEN as string, {
             debug_stats: new mapray.DebugStats(),
             // render_mode: mapray.Viewer.RenderMode.WIREFRAME,
           }
@@ -294,9 +286,9 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
         }
 
         const maprayApi = new mapray.cloud.CloudApiV1({
-            basePath: MAPRAY_API_BASE_PATH,
-            userId: MAPRAY_API_USER_ID,
-            token: MAPRAY_API_ACCESS_TOKEN,
+            basePath: process.env.MAPRAY_API_BASE_PATH || undefined,
+            userId: process.env.MAPRAY_API_USER_ID as string,
+            token: process.env.MAPRAY_API_KEY as string,
         });
 
         const point_cloud_collection = this.viewer.point_cloud_collection;
@@ -487,13 +479,13 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
             const pointCloudList = [];
             const bbox_geoms: mapray.MarkerLineEntity[] = [];
             if ( mode === "raw" ) {
-                const resource = maprayApi.getPointCloudDatasetAsResource( POINT_CLOUD_DATASET_ID );
+                const resource = maprayApi.getPointCloudDatasetAsResource( process.env.DATASET_POINT_CLOUD_ID as string );
                 const point_cloud = point_cloud_collection.add( new mapray.RawPointCloudProvider( resource ) );
                 pointCloudList.push( point_cloud );
 
                 const datasets = await maprayApi.loadPointCloudDatasets();
                 console.log( datasets );
-                const dataset = await maprayApi.loadPointCloudDataset( POINT_CLOUD_DATASET_ID );
+                const dataset = await maprayApi.loadPointCloudDataset( process.env.DATASET_POINT_CLOUD_ID as string );
                 console.log( dataset );
             }
 

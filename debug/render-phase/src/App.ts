@@ -2,9 +2,6 @@ import mapray from "@mapray/mapray-js";
 import maprayui from "@mapray/ui";
 
 
-
-const MAPRAY_ACCESS_TOKEN = "<your access token here>";
-
 const SCENE_3D_URL = "https://resource.mapray.com/assets/www/model/mapray-box-with-texture/scene.json";
 
 
@@ -39,9 +36,9 @@ class App extends maprayui.StandardUIViewer {
 
 
     constructor( container: string | HTMLElement, options: App.Option ) {
-        super( container, MAPRAY_ACCESS_TOKEN, {
+        super( container, process.env.MAPRAY_ACCESS_TOKEN as string, {
                 debug_stats: new mapray.DebugStats(),
-        } );
+        });
 
         const init_camera = {
             longitude: 137.724919, //138.339704796544,

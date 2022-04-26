@@ -3,6 +3,7 @@ import { terser } from 'rollup-plugin-terser';
 import replace from 'rollup-plugin-replace';
 import postcss from 'rollup-plugin-postcss';
 import resolve from 'rollup-plugin-node-resolve';
+import injectProcessEnv from 'rollup-plugin-inject-process-env';
 // import typescript from '@rollup/plugin-typescript';
 import typescript from 'rollup-plugin-typescript2';
 
@@ -10,13 +11,19 @@ import typescript from 'rollup-plugin-typescript2';
 
 const outdir = "dist/";
 
+const env = {
+    MAPRAY_ACCESS_TOKEN:    process.env.MAPRAY_ACCESS_TOKEN,
+    BINGMAP_ACCESS_TOKEN:   process.env.BINGMAP_ACCESS_TOKEN,
+};
+
+[
+    "MAPRAY_ACCESS_TOKEN",
+]
+.forEach( key => { if ( !env[key] ) throw new Error( `${key} is missing` ); });
+
 
 
 export default function() {
-
-    const isProd = process.env.BUILD === 'production';
-    const maprayAccessToken = process.env.MAPRAY_ACCESS_TOKEN;
-    const bingAccessToken = process.env.BINGMAP_ACCESS_TOKEN;
 
     const bundle = {
         input: 'src/App.ts',
@@ -24,25 +31,12 @@ export default function() {
             file: outdir + 'bundle.js',
             format: 'iife',
             indent: false,
-            sourcemap: !isProd,
+            sourcemap: process.env.BUILD !== 'production',
             name: "App",
         },
         plugins: [
             postcss(),
-            (maprayAccessToken ?
-                replace({
-                    '"<your access token here>"': JSON.stringify( maprayAccessToken ),
-                    delimiters: ['', ''],
-                }):
-                null
-            ),
-            (bingAccessToken ?
-                replace({
-                    '"<your Bing Maps Key here>"': JSON.stringify( bingAccessToken ),
-                    delimiters: ['', ''],
-                }):
-                null
-            ),
+            injectProcessEnv( env ),
             resolve(),
             typescript({
                 tsconfig: './tsconfig.json',
@@ -52,7 +46,7 @@ export default function() {
                     }
                 }
             }),
-            (isProd ?
+            (process.env.BUILD === 'production' ?
                 terser({
                     compress: {
                         unused: false,

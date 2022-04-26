@@ -12,26 +12,13 @@ import debugCommon, {
 
 
 
-const MAPRAY_ACCESS_TOKEN = "<your access token here>";
-const MAPRAY_API_BASE_PATH = "https://cloud.mapray.com";
-const MAPRAY_API_ACCESS_TOKEN = MAPRAY_ACCESS_TOKEN;
-const MAPRAY_API_USER_ID = "<your user id>";
-const DATASET_2D_ID = "<2d dataset id>";
-const DATASET_3D_ID = "<3d dataset id>";
-
-const DATASET_POINT_CLOUD_ID = "<point cloud dataset id>";
-const DATASET_B3D_ID = "<b3d dataset id>";
-
-const BINGMAP_TOKEN = "<your Bing Maps Key here>";
-
-
 class DatasetViewer extends DebugViewer {
 
     constructor( container: string | HTMLElement )
     {
         super( container, {
-                mapray_access_token: MAPRAY_ACCESS_TOKEN,
-                bingmap_token: BINGMAP_TOKEN,
+                mapray_access_token: process.env.MAPRAY_ACCESS_TOKEN as string,
+                bingmap_token: process.env.BINGMAP_ACCESS_TOKEN as string,
                 atmosphere: new mapray.Atmosphere(),
                 sun_visualizer: new mapray.SunVisualizer( 32 ),
                 moon_visualizer: new mapray.MoonVisualizer( './data/moon.jpg' ),
@@ -41,9 +28,9 @@ class DatasetViewer extends DebugViewer {
         } );
 
         this.setCloudApi( new mapray.cloud.CloudApiV1({
-                    basePath: MAPRAY_API_BASE_PATH,
-                    userId: MAPRAY_API_USER_ID,
-                    token: MAPRAY_API_ACCESS_TOKEN,
+                    basePath: process.env.MAPRAY_API_BASE_PATH || undefined,
+                    userId: process.env.MAPRAY_API_USER_ID as string,
+                    token: process.env.MAPRAY_API_KEY as string,
         }));
 
         // Night Layer
@@ -58,22 +45,23 @@ class DatasetViewer extends DebugViewer {
     protected override populateModules( modules: Module[] ): void
     {
         // GeoJson
-        if ( !DATASET_2D_ID.startsWith( "<" ) ) {
+        if ( process.env.DATASET_2D_ID ) {
             modules.push( new Dataset2dModule({
-                        datasets: [ DATASET_2D_ID ],
+                        datasets: [ process.env.DATASET_2D_ID ],
             }) );
         }
 
         // 3D
-        if ( !DATASET_3D_ID.startsWith( "<" ) ) {
+        if ( process.env.DATASET_3D_ID ) {
             modules.push( new Dataset3dModule({
-                        datasets: [ DATASET_3D_ID ],
+                        datasets: [ process.env.DATASET_3D_ID ],
             }) );
         }
 
-        if ( !DATASET_POINT_CLOUD_ID.startsWith( "<" ) ) {
+        // Point Cloud
+        if ( process.env.DATASET_POINT_CLOUD_ID ) {
             modules.push( new PointCloudModule({
-                        datasets: [ DATASET_POINT_CLOUD_ID ],
+                        datasets: [ process.env.DATASET_POINT_CLOUD_ID ],
             }));
         }
 

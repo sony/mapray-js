@@ -5,15 +5,8 @@ import maprayui from "@mapray/ui";
 import BingMapsImageProvider from "./BingMapsImageProvider";
 
 
-const MAPRAY_ACCESS_TOKEN = "<your access token here>";
-
-const BINGMAP_TOKEN = "<your Bing Maps Key here>";
-
 const ICON_URL =     "https://resource.mapray.com/assets/www/logo/mapray.png";
 const SCENE_3D_URL = "https://resource.mapray.com/assets/www/model/mapray-box-with-texture/scene.json";
-
-
-
 
 
 
@@ -57,17 +50,17 @@ export default class App extends maprayui.StandardUIViewer {
 
 
     constructor( container: string, options: Option = {} ) {
-        super( container, MAPRAY_ACCESS_TOKEN, {
+        super( container, process.env.MAPRAY_ACCESS_TOKEN as string, {
                 debug_stats: new mapray.DebugStats(),
                 image_provider: (
-                    BINGMAP_TOKEN !== "<your Bing Maps Key here" + ">" ?
+                    process.env.BINGMAP_ACCESS_TOKEN ?
                     new BingMapsImageProvider( {
                             uriScheme: "https",
-                            key: BINGMAP_TOKEN,
+                            key: process.env.BINGMAP_ACCESS_TOKEN,
                             maxLevel: 19
                     } ): undefined
                 ),
-                // dem_provider: new mapray.CloudDemProvider( MAPRAY_ACCESS_TOKEN ),
+                // dem_provider: new mapray.CloudDemProvider( process.env.MAPRAY_ACCESS_TOKEN as string ),
                 // dem_provider: new mapray.FlatDemProvider(),
                 north_pole: { color: [0, 0.07, 0.12], },
                 south_pole: { color: [0.88, 0.89, 0.94], },
@@ -88,8 +81,9 @@ export default class App extends maprayui.StandardUIViewer {
         };
         this.setCameraPosition( init_camera );
         this.setLookAtPosition( lookat_position );
-         this.setCameraParameter( init_camera );
-         */
+        this.setCameraParameter( init_camera );
+        */
+
         const tools = this._tools = options.tools;
         if ( tools ) {
             this._mouse_log = tools.querySelector("pre") || undefined;

@@ -5,16 +5,14 @@ import CosCurve from "./CosCurve";
 
 import BingMapsImageProvider from "./BingMapsImageProvider";
 
-const MAPRAY_ACCESS_TOKEN = "<your access token here>";
-
-const BINGMAP_TOKEN = "<your Bing Maps Key here>";
-
 // FLAT DEMを使用
 const USE_FLATDEM = false;
 
 interface Option {
     tools?: HTMLElement;
 }
+
+
 
 export default class App extends maprayui.StandardUIViewer {
 
@@ -27,13 +25,13 @@ export default class App extends maprayui.StandardUIViewer {
     private _animation_updater: mapray.animation.Updater;
 
     constructor( container: string, options: Option = {} ) {
-        super( container, MAPRAY_ACCESS_TOKEN, {
+        super( container, process.env.MAPRAY_ACCESS_TOKEN as string, {
                 debug_stats: new mapray.DebugStats(),
                 image_provider: (
-                    BINGMAP_TOKEN !== "<your Bing Maps Key here" + ">" ?
+                    process.env.BINGMAP_ACCESS_TOKEN ?
                     new BingMapsImageProvider( {
                             uriScheme: "https",
-                            key: BINGMAP_TOKEN,
+                            key: process.env.BINGMAP_ACCESS_TOKEN,
                             maxLevel: 19
                     } ): undefined
                 ),

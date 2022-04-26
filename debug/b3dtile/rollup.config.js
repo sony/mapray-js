@@ -5,12 +5,23 @@ import replace from 'rollup-plugin-replace';
 import postcss from 'rollup-plugin-postcss';
 import resolve from 'rollup-plugin-node-resolve';
 import preprocess from 'rollup-plugin-preprocess';
+import injectProcessEnv from 'rollup-plugin-inject-process-env';
 // import typescript from '@rollup/plugin-typescript';
 import typescript from 'rollup-plugin-typescript2';
 
 
 
 const outdir = "dist/";
+
+const env = {
+    MAPRAY_ACCESS_TOKEN:    process.env.MAPRAY_ACCESS_TOKEN,
+    BINGMAP_ACCESS_TOKEN:   process.env.BINGMAP_ACCESS_TOKEN,
+};
+
+[
+    "MAPRAY_ACCESS_TOKEN",
+]
+.forEach( key => { if ( !env[key] ) throw new Error( `${key} is missing` ); });
 
 
 
@@ -30,20 +41,7 @@ export default function() {
         },
         plugins: [
             postcss(),
-            (maprayAccessToken ?
-                replace({
-                    '"<your access token here>"': JSON.stringify( maprayAccessToken ),
-                    delimiters: ['', ''],
-                }):
-                null
-            ),
-            (bingAccessToken ?
-                replace({
-                    '"<your Bing Maps Key here>"': JSON.stringify( bingAccessToken ),
-                    delimiters: ['', ''],
-                }):
-                null
-            ),
+            injectProcessEnv( env ),
             resolve(),
             preprocess({
                 include: ([

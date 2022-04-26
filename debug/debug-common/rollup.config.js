@@ -1,10 +1,4 @@
-// import path from 'path';
-// import { terser } from 'rollup-plugin-terser';
-// import { string } from 'rollup-plugin-string';
-// import replace from 'rollup-plugin-replace';
-// import postcss from 'rollup-plugin-postcss';
 import resolve from 'rollup-plugin-node-resolve';
-// import preprocess from 'rollup-plugin-preprocess';
 // import typescript from '@rollup/plugin-typescript';
 import typescript from 'rollup-plugin-typescript2';
 import babel from 'rollup-plugin-babel'
@@ -30,7 +24,7 @@ export default function() {
           'tslib',
           '@mapray/mapray-js',
           '@mapray/ui',
-        ],        
+        ],
         plugins: [
             resolve(),
             typescript({
@@ -46,9 +40,6 @@ export default function() {
                 }
               }
             }),
-            // babel({ // this is for js file in src dir
-            //   exclude: 'node_modules/**'
-            // }),
         ],
     }
 

@@ -2,7 +2,6 @@
 import mapray from "@mapray/mapray-js";
 import maprayui from "@mapray/ui";
 
-const accessToken = "<your access token here>";
 
 
 class AppViewer extends maprayui.StandardUIViewer {
@@ -21,7 +20,7 @@ class AppViewer extends maprayui.StandardUIViewer {
      */
     constructor( container: string | HTMLElement )
     {
-        super( container, accessToken, {
+        super( container, process.env.MAPRAY_ACCESS_TOKEN as string, {
             debug_stats: new mapray.DebugStats()
         });
 

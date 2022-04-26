@@ -3,6 +3,7 @@ import replace from "rollup-plugin-replace";
 import postcss from "rollup-plugin-postcss";
 import resolve from "rollup-plugin-node-resolve";
 import preprocess from "rollup-plugin-preprocess";
+import injectProcessEnv from "rollup-plugin-inject-process-env";
 // import typescript from "@rollup/plugin-typescript";
 import typescript from "rollup-plugin-typescript2";
 
@@ -10,18 +11,29 @@ import typescript from "rollup-plugin-typescript2";
 
 const outdir = "dist/";
 
+const env = {
+    MAPRAY_ACCESS_TOKEN:    process.env.MAPRAY_ACCESS_TOKEN,
+    BINGMAP_ACCESS_TOKEN:   process.env.BINGMAP_ACCESS_TOKEN,
+    MAPRAY_API_KEY:         process.env.MAPRAY_API_KEY,
+    MAPRAY_API_USER_ID:     process.env.MAPRAY_API_USER_ID,
+    MAPRAY_API_BASE_PATH:   process.env.MAPRAY_API_BASE_PATH,
+    BINGMAP_ACCESS_TOKEN:   process.env.BINGMAP_ACCESS_TOKEN,
+    DATASET_2D_ID:          process.env.DATASET_2D_ID,
+    DATASET_3D_ID:          process.env.DATASET_3D_ID,
+    DATASET_POINT_CLOUD_ID: process.env.DATASET_POINT_CLOUD_ID,
+};
+
+[
+    "MAPRAY_ACCESS_TOKEN",
+    "BINGMAP_ACCESS_TOKEN",
+    "MAPRAY_API_KEY",
+    "MAPRAY_API_USER_ID",
+]
+.forEach( key => { if ( !env[key] ) throw new Error( `${key} is missing` ); });
+
 
 
 export default function() {
-
-    const isProd = process.env.BUILD === "production";
-    const maprayAccessToken = process.env.MAPRAY_ACCESS_TOKEN;
-    const bingAccessToken = process.env.BINGMAP_ACCESS_TOKEN;
-    const maprayApiUserID = process.env.MAPRAY_API_USER_ID;
-    const dataset2dID = process.env.DATASET_2D_ID;
-    const dataset3dID = process.env.DATASET_3D_ID;
-    const datasetPointCloudID = process.env.DATASET_POINT_CLOUD_ID;
-    const datasetb3dID = process.env.DATASET_B3D_ID;
 
     const bundle = {
         input: "src/index.ts",
@@ -29,7 +41,7 @@ export default function() {
             file: outdir + "bundle.js",
             format: "iife",
             indent: false,
-            sourcemap: !isProd,
+            sourcemap: env.BUILD !== "production",
             name: "window",
             extend: true,
         },
@@ -41,55 +53,7 @@ export default function() {
                 }
             },
             postcss(),
-            (maprayAccessToken ?
-                replace({
-                    '"<your access token here>"': JSON.stringify( maprayAccessToken ),
-                    delimiters: ["", ""],
-                }):
-                null
-            ),
-            (bingAccessToken ?
-                replace({
-                    '"<your Bing Maps Key here>"': JSON.stringify( bingAccessToken ),
-                    delimiters: ["", ""],
-                }):
-                null
-            ),
-            (maprayApiUserID ?
-                replace({
-                    '"<your user id>"': JSON.stringify( maprayApiUserID ),
-                    delimiters: ["", ""],
-                }):
-                null
-            ),
-            (dataset2dID ?
-                replace({
-                    '"<2d dataset id>"': JSON.stringify( dataset2dID ),
-                    delimiters: ["", ""],
-                }):
-                null
-            ),
-            (dataset3dID ?
-                replace({
-                    '"<3d dataset id>"': JSON.stringify( dataset3dID ),
-                    delimiters: ["", ""],
-                }):
-                null
-            ),
-            (datasetPointCloudID ?
-                replace({
-                    '"<point cloud dataset id>"': JSON.stringify( datasetPointCloudID ),
-                    delimiters: ["", ""],
-                }):
-                null
-            ),
-            (datasetb3dID ?
-                replace({
-                    '"<b3d dataset id>"': JSON.stringify( datasetb3dID ),
-                    delimiters: ["", ""],
-                }):
-                null
-            ),
+            injectProcessEnv( env ),
             resolve(),
             preprocess({
                 include: ([
@@ -108,7 +72,7 @@ export default function() {
                     }
                 }
             }),
-            (isProd ?
+            (env.BUILD === "production" ?
                 terser({
                     compress: {
                         unused: false,

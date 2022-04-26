@@ -1,4 +1,3 @@
-
 import mapray from "@mapray/mapray-js";
 import maprayui from "@mapray/ui";
 import BingMapsImageProvider from "./BingMapsImageProvider"
@@ -7,12 +6,7 @@ import Commander from "./Commander";
 
 import Option, { DomTool } from "./Option";
 
-const accessToken = "<your access token here>";
 
-const MAPRAY_API_BASE_PATH = "https://cloud.mapray.com";
-const MAPRAY_API_ACCESS_TOKEN = accessToken;
-const MAPRAY_API_USER_ID = "<your api user id here>";
-const POINT_CLOUD_DATASET_ID = "<your point cloud dataset id here>";
 
 // Attirbute
 const DEM_ATTRIBUTE = "この地図の作成に当たっては、国土地理院の承認を得て、同院発行の基盤地図情報を使用した。（承認番号　平30情使、 第626号）";
@@ -368,11 +362,11 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
     {
         const renderOption = new Option( RENDER_OPTION_PROPERTIES );
 
-        super( container, accessToken, {
+        super( container, process.env.MAPRAY_ACCESS_TOKEN as string, {
                 debug_stats: new mapray.DebugStats(),
                 image_provider: new BingMapsImageProvider( {
                         uriScheme: "https",
-                        key: "<your Bing Maps Key here>"
+                        key: process.env.BINGMAP_ACCESS_TOKEN as string,
                 } ),
                 atmosphere: new mapray.Atmosphere(),
                 sun_visualizer: new mapray.SunVisualizer( 32 ),
@@ -542,9 +536,9 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
         }
 
         const maprayApi = new mapray.cloud.CloudApiV1({
-            basePath: MAPRAY_API_BASE_PATH,
-            userId: MAPRAY_API_USER_ID,
-            token: MAPRAY_API_ACCESS_TOKEN,
+            basePath: process.env.MAPRAY_API_BASE_PATH || undefined,
+            userId: process.env.MAPRAY_API_USER_ID as string,
+            token: process.env.MAPRAY_API_ACCESS_TOKEN as string,
         });
 
         const point_cloud_collection = this.viewer.point_cloud_collection;
@@ -574,13 +568,13 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
             const pointCloudList = [];
             const bbox_geoms: mapray.MarkerLineEntity[] = [];
             if ( mode === "raw" ) {
-                const resource = maprayApi.getPointCloudDatasetAsResource( POINT_CLOUD_DATASET_ID );
+                const resource = maprayApi.getPointCloudDatasetAsResource( DATASET_POINT_CLOUD_ID );
                 const point_cloud = point_cloud_collection.add( new mapray.RawPointCloudProvider( resource ) );
                 pointCloudList.push( point_cloud );
 
                 const datasets = await maprayApi.loadPointCloudDatasets();
                 console.log( datasets );
-                const dataset = await maprayApi.loadPointCloudDataset( POINT_CLOUD_DATASET_ID );
+                const dataset = await maprayApi.loadPointCloudDataset( DATASET_POINT_CLOUD_ID );
                 console.log( dataset );
             }
 
@@ -745,7 +739,7 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
                 this._isBing = false;
                 this.createViewer(
                     this._container,
-                    accessToken,
+                    process.env.MAPRAY_ACCESS_TOKEN as string,
                     {
                         debug_stats: new mapray.DebugStats()
                     }
@@ -757,7 +751,7 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
                 this._isBing = true;
                 this.createViewer(
                     this._container,
-                    accessToken,
+                    process.env.MAPRAY_ACCESS_TOKEN as string,
                     {
                         debug_stats: new mapray.DebugStats(),
                         image_provider: this._createBingImageProvider()

@@ -8,13 +8,6 @@ import { snakeToCamel } from "./utils";
 import Option, { DomTool } from "./Option";
 
 
-const MAPRAY_ACCESS_TOKEN = "<your access token here>";
-const MAPRAY_API_BASE_PATH = "https://cloud.mapray.com";
-const MAPRAY_API_ACCESS_TOKEN = MAPRAY_ACCESS_TOKEN;
-const MAPRAY_API_USER_ID = "<user id>";
-const DATASET_3D_ID = "<3d dataset id>";
-
-
 
 // Attirbute
 const GSI_ATTRIBUTE = "国土地理院";
@@ -89,12 +82,15 @@ class B3DTileViewer extends maprayui.StandardUIViewer {
      */
     constructor( container: string | HTMLElement )
     {
-        super( container, MAPRAY_ACCESS_TOKEN, { 
+        super( container, process.env.MAPRAY_ACCESS_TOKEN as string, { 
             debug_stats: new mapray.DebugStats(),
-            image_provider: new BingMapsImageProvider( {
+            image_provider: (
+                process.env.BINGMAP_ACCESS_TOKEN ?
+                new BingMapsImageProvider({
                     uriScheme: "https",
-                    key: "<your Bing Maps Key here>",
-            } ),
+                    key: process.env.BINGMAP_ACCESS_TOKEN,
+                }): undefined
+            ),
             // render_mode: mapray.Viewer.RenderMode.WIREFRAME,
           }
         );
