@@ -1,0 +1,212 @@
+#+STARTUP: noindent showall
+# https://github.com/snosov1/toc-org の toc-org-mode を使うと保存時に目次を
+# 自動更新できる
+
+* 目次                                                                 :TOC:
+- [[#ビルド環境の準備][ビルド環境の準備]]
+  - [[#事前準備][事前準備]]
+  - [[#emscripten-sdk-のインストール][Emscripten SDK のインストール]]
+- [[#wasm-モジュールのビルド方法][wasm モジュールのビルド方法]]
+  - [[#環境変数の設定][環境変数の設定]]
+  - [[#wasm-モジュールの一括ビルド][wasm モジュールの一括ビルド]]
+  - [[#個別の-wasm-モジュールのビルド][個別の wasm モジュールのビルド]]
+- [[#単体テスト][単体テスト]]
+  - [[#conan-と-cmake-の準備][Conan と CMake の準備]]
+  - [[#テストのビルド][テストのビルド]]
+  - [[#テストの実行][テストの実行]]
+
+* ビルド環境の準備
+
+** 事前準備
+
+   Emscripten SDK による wasm モジュールのビルド環境を構築するためには、事前に以
+   下のパッケージがインストールされている必要がある。
+
+   - bash
+   - git
+   - make
+   - CMake (3.10 以上)
+   - Python3 (3.6 以上)
+
+
+   この文書では、以下の記号を使って特定のディレクトリを表す。
+
+   | 記号     | ディレクトリ                          |
+   |----------+---------------------------------------|
+   | {EMSDK}  | Emscripten SDK のインストール先       |
+   | {MAPRAY} | mapray-jsディレクトリ/packages/mapray |
+
+
+*** Windows 環境での開発
+
+    Windows 環境で開発する場合は、wasm モジュール部分を WSL 環境でビルドする。
+    WSL のディストリビューションは Ubuntu 18.04 LTS またはそれ以降を推奨する。
+
+    なお、mapray-js ライブラリ自体は、通常の Windows 環境でも WSL 環境でもビルド
+    することができる。
+
+** Emscripten SDK のインストール
+
+   次の手順で Emscripten SDK をインストールする。
+
+   #+begin_example
+     $ git clone --branch=2.0.9 --depth=1 https://github.com/emscripten-core/emsdk.git {EMSDK}
+     $ cd {EMSDK}
+     $ ./emsdk install latest
+     $ ./emsdk activate latest
+     $ git apply -p1 {MAPRAY}/wasm/emsdk.patch
+   #+end_example
+
+   ※ この Emscripten SDK は Mapray 用の特殊バージョンなので、他のプロジェクトで
+      使うことは推奨しない。
+
+   ※ M1 Mac(Apple silicon)の場合は zsh を x86_64 にした状態でインストールする必要がある。
+
+      ターミナルの「情報を見る」で「Rosettaを使用して開く」を設定してからターミナルを起動するか zsh上で =arch -x86_64 zsh= として切り替える。
+
+* wasm モジュールのビルド方法
+
+** 環境変数の設定
+
+   wasm モジュールをビルドするときは Emscripten SDK の環境変数が設定されている必
+   要がある。Emscripten SDK の環境変数は、次のコマンドを実行すると設定される。
+
+   #+begin_example
+     $ source {EMSDK}/emsdk_env.sh
+   #+end_example
+
+   このコマンドを実行すると、Node のバージョンが古いバージョンに変化する場合がありる。
+   引き続き mapray-js をビルドする際は Node バージョンが適していることを確認する必要がある。
+
+** wasm モジュールの一括ビルド
+
+   次の操作で、すべての wasm モジュールをリビルドしてから ={MAPRAY}/src/wasm/= に
+   配置する。
+
+   #+begin_example
+     $ bash {MAPRAY}/wasm/rebuild_and_install.sh
+   #+end_example
+
+   この後は =yarn build= など、通常の方法で mapray-js ライブラリをビルドすること
+   ができる。
+
+   =git clone= や =git pull= などの実行で、 ={MAPRAY}/wasm/= 内の内容が変化する可能性
+   があるときは、一括ビルドを行ったほうがよい。
+
+** 個別の wasm モジュールのビルド
+
+   例えば b3dtile の wasm モジュールをビルドするときは、次のようにビルドする。
+
+   #+begin_example
+     $ cd {MAPRAY}/wasm/b3dtile
+     $ mkdir build
+     $ cd build
+     $ emcmake cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+     $ make -j
+     $ make install            # {MAPRAY}/src/wasm/ にモジュールを配置
+   #+end_example
+
+   デバッグ版をビルドするときは cmake に ~-DCMAKE_BUILD_TYPE=Debug~ を指定する。
+
+   実行するブラウザでソースレベルでバッグを行うときは、ブラウザから =http://localhost:8080/=
+   にアクセスしたときに、開発環境の ~{MAPRAY}/wasm/~ を参照できるようにしなければな
+   らない。
+
+* 単体テスト
+
+  現在のブラウザ環境のデバッガでは、ソースレベルで変数が参照できないなど、いくつ
+  かの機能が不足している。
+
+  そのため Linux や Windows などのホスト環境向けに一部のコードをビルドして、一般
+  的なデバッガで確認できるようにする。
+
+  動作確認プログラムは [[https://www.boost.org/doc/libs/1_71_0/libs/test/doc/html/index.html][Boost.Test]] のフレームワークで記述する。
+
+  Windows での単体テストの場合は、WSL 環境は必要ない。
+
+** Conan と CMake の準備
+
+   1. C++ パッケージマネージャ Conan 1.25 以上のクライアントをインストール
+
+      <https://conan.io/>
+
+   2. CMake 3.10 以上 (Windows の場合は 3.17 以上) をインストール
+
+      <https://cmake.org/>
+
+   #+begin_note
+     GCC でビルドする場合は GCC 8.4 以上が必要になる。そのため
+     =~/.conan/profiles/default= の =compiler.libcxx= を次のように設定したほうが良い。
+
+     : compiler.libcxx=libstdc++11
+
+     詳細は <https://docs.conan.io/en/latest/howtos/manage_gcc_abi.html>
+   #+end_note
+
+** テストのビルド
+
+   ={MAPRAY}/wasm/tests/= の直下に適当なディレクトリを作成して、そこでビルドを行う。
+   ディレクトリ名は任意で、いくつ作っても良い。
+
+   #+begin_example
+     $ mkdir build
+     $ cd build
+   #+end_example
+
+   構成ごとのビルドは次のように行う。
+
+   - リリース版
+
+     - UNIX 系
+
+       #+begin_example
+         $ conan install --build=missing .. -s build_type=Release
+         $ cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+         $ make
+       #+end_example
+
+     - Visual Studio 2017
+
+       #+begin_example
+         > conan install --build=missing .. -s build_type=Release
+         > cmake .. -G "Visual Studio 15 2017" -A x64
+         > cmake --build . --config Release
+       #+end_example
+
+   - デバッグ版
+
+     - UNIX 系
+
+       #+begin_example
+         $ conan install --build=missing .. -s build_type=Debug
+         $ cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug
+         $ make
+       #+end_example
+
+     - Visual Studio 2017
+
+       #+begin_example
+         > conan install --build=missing .. -s build_type=Debug
+         > cmake .. -G "Visual Studio 15 2017" -A x64
+         > cmake --build . --config Debug
+       #+end_example
+
+** テストの実行
+
+   すべてのテストを実行する。
+
+   #+begin_example
+     $ bin/unit_test
+   #+end_example
+
+   =b3dtile_suite= のみを実行する。
+
+   #+begin_example
+     $ bin/unit_test --run_test=b3dtile_suite
+   #+end_example
+
+   オプションの詳細は以下で確認できる。
+
+   #+begin_example
+     $ bin/unit_test --help
+   #+end_example
