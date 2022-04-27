@@ -1,7 +1,7 @@
 {
   "name": "debug-common",
   "version": "0.0.0",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "module": "./dist/es/debug-common.js",
   "types": "./dist/es/@type/index.d.ts",
   "scripts": {
