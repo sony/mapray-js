@@ -364,10 +364,11 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
 
         super( container, process.env.MAPRAY_ACCESS_TOKEN as string, {
                 debug_stats: new mapray.DebugStats(),
-                image_provider: new BingMapsImageProvider( {
+                image_provider: process.env.BINGMAP_ACCESS_TOKEN ?
+                    new BingMapsImageProvider( {
                         uriScheme: "https",
                         key: process.env.BINGMAP_ACCESS_TOKEN as string,
-                } ),
+                    } ) : undefined,
                 atmosphere: new mapray.Atmosphere(),
                 sun_visualizer: new mapray.SunVisualizer( 32 ),
                 moon_visualizer: new mapray.MoonVisualizer( './data/moon.jpg' ),
@@ -568,13 +569,13 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
             const pointCloudList = [];
             const bbox_geoms: mapray.MarkerLineEntity[] = [];
             if ( mode === "raw" ) {
-                const resource = maprayApi.getPointCloudDatasetAsResource( DATASET_POINT_CLOUD_ID );
+                const resource = maprayApi.getPointCloudDatasetAsResource( process.env.DATASET_POINT_CLOUD_ID as string );
                 const point_cloud = point_cloud_collection.add( new mapray.RawPointCloudProvider( resource ) );
                 pointCloudList.push( point_cloud );
 
                 const datasets = await maprayApi.loadPointCloudDatasets();
                 console.log( datasets );
-                const dataset = await maprayApi.loadPointCloudDataset( DATASET_POINT_CLOUD_ID );
+                const dataset = await maprayApi.loadPointCloudDataset( process.env.DATASET_POINT_CLOUD_ID as string );
                 console.log( dataset );
             }
 

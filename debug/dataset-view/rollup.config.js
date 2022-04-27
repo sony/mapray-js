@@ -25,7 +25,6 @@ const env = {
 
 [
     "MAPRAY_ACCESS_TOKEN",
-    "BINGMAP_ACCESS_TOKEN",
     "MAPRAY_API_KEY",
     "MAPRAY_API_USER_ID",
 ]

@@ -66,7 +66,7 @@ class DebugViewer extends maprayui.StandardUIViewer {
         const super_options = options;
         super_options.debug_stats = new mapray.DebugStats(),
         super_options.image_provider = (
-            !options.bingmap_token.startsWith("<") ?
+            options.bingmap_token ?
             new BingMapsImageProvider( {
                     uriScheme: "https",
                     key: options.bingmap_token,

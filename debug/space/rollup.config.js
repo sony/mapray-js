@@ -14,11 +14,11 @@ const outdir = "dist/";
 const env = {
     MAPRAY_ACCESS_TOKEN: process.env.MAPRAY_ACCESS_TOKEN,
     BINGMAP_ACCESS_TOKEN: process.env.BINGMAP_ACCESS_TOKEN,
+    DATASET_POINT_CLOUD_ID: process.env.DATASET_POINT_CLOUD_ID,
 };
 
 [
     "MAPRAY_ACCESS_TOKEN",
-    "BINGMAP_ACCESS_TOKEN",
 ]
 .forEach( key => { if ( !env[key] ) throw new Error( `${key} is missing` ); });
 
