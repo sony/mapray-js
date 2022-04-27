@@ -1,8 +1,6 @@
 import mapray, { PointCloud } from "@mapray/mapray-js";
 import maprayui from "@mapray/ui";
 
-const MAPRAY_ACCESS_TOKEN = "<your access token here>";
-
 export type InitValue = {
     location: string,
     surface: string,
@@ -42,7 +40,7 @@ class PointCloudTileViewer extends maprayui.StandardUIViewer {
      */
     constructor( container: string | HTMLElement, initvalue: InitValue )
     {
-        super( container, MAPRAY_ACCESS_TOKEN, {
+        super( container, process.env.MAPRAY_ACCESS_TOKEN as string, {
             debug_stats: new mapray.DebugStats()
           }
         );

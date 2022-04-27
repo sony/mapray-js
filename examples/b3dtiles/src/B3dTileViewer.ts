@@ -1,8 +1,6 @@
 import mapray from "@mapray/mapray-js";
 import maprayui from "@mapray/ui";
 
-const MAPRAY_ACCESS_TOKEN = "<your access token here>";
-
 export type InitValue = {
     enable_atmosphere: boolean,
     camera_area: string
@@ -56,7 +54,7 @@ class B3dTileViewer extends maprayui.StandardUIViewer {
      */
     constructor( container: string | HTMLElement, initvalue: InitValue )
     {
-        super( container, MAPRAY_ACCESS_TOKEN, {
+        super( container, process.env.MAPRAY_ACCESS_TOKEN as string, {
                 debug_stats: new mapray.DebugStats(),
                 atmosphere: new mapray.Atmosphere(),
                 sun_visualizer: new mapray.SunVisualizer( 32 )

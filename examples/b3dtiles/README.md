@@ -22,7 +22,7 @@ To see the terrian data, you need a [Mapray access token](/doc/developer-guide/G
 export MAPRAY_ACCESS_TOKEN=<mapray_access_token>
 ```
 
-Or set accsess token to `<your access token here>` directly in [B3dTileViewer.ts](./src/B3dTileViewer.ts).
+Or set access token to `process.env.MAPRAY_ACCESS_TOKEN` directly in [B3dTileViewer.ts](./src/B3dTileViewer.ts).
 
 
 **To install dependencies:**

@@ -2,15 +2,25 @@ import { terser } from 'rollup-plugin-terser';
 import replace from 'rollup-plugin-replace';
 import postcss from 'rollup-plugin-postcss';
 import preprocess from 'rollup-plugin-preprocess';
+import injectProcessEnv from 'rollup-plugin-inject-process-env';
 import typescript from 'rollup-plugin-typescript2';
 import resolve from '@rollup/plugin-node-resolve'
 
 const outdir = "dist/";
 
+const env = {
+    MAPRAY_ACCESS_TOKEN:    process.env.MAPRAY_ACCESS_TOKEN,
+};
+
+[
+    "MAPRAY_ACCESS_TOKEN",
+]
+.forEach( key => { if ( !env[key] ) throw new Error( `${key} is missing` ); });
+
+
 export default function() {
 
     const isProd = process.env.BUILD === 'production';
-    const maprayAccessToken = process.env.MAPRAY_ACCESS_TOKEN;
 
     const bundle = {
         input: 'src/index.ts',
@@ -22,13 +32,7 @@ export default function() {
         },
         plugins: [
             postcss(),
-            (maprayAccessToken ?
-                replace({
-                    '"<your access token here>"': JSON.stringify( maprayAccessToken ),
-                    delimiters: ['', ''],
-                }):
-                null
-            ),
+            injectProcessEnv( env ),
             resolve(),
             preprocess({
                 include: ([

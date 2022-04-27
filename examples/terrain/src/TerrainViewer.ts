@@ -5,8 +5,6 @@ import BingMapsImageProvider from "./BingMapsImageProvider"
 import * as SunCalc from 'suncalc';
 import { DateTime } from "luxon";
 
-const MAPRAY_ACCESS_TOKEN = "<your access token here>";
-
 export type InitValue = {
     location: string,
     surface: string,
@@ -49,7 +47,7 @@ class TerrainViewer extends maprayui.StandardUIViewer {
             case "bingmaps":
                 imageProvider = new BingMapsImageProvider( {
                     uriScheme: "https",
-                    key: "<your Bing Maps Key here>"
+                    key: process.env.BINGMAP_ACCESS_TOKEN
                 });
                 break;
             case "satellite":
@@ -60,7 +58,7 @@ class TerrainViewer extends maprayui.StandardUIViewer {
                 break;
         }
 
-        super( container, MAPRAY_ACCESS_TOKEN, {
+        super( container, process.env.MAPRAY_ACCESS_TOKEN as string, {
             debug_stats: new mapray.DebugStats(),
             image_provider: imageProvider!,
             atmosphere: new mapray.Atmosphere(),
@@ -226,7 +224,7 @@ class TerrainViewer extends maprayui.StandardUIViewer {
         // the x-axis in the right-handed system defined by y and z-axis, x-axis is east
         // - phi: Define phi to be the azimuthal angle in the xy-plane from the x-axis with 0<=phi<2pi A coordinate system in which the angle increases from the X axis toward the Y axis. e.g.  Math.PI * 1/2 is northeast
         // - theta: Theta to be the polar angle from the positive z-axis with 0<=theta<=pi
-        const phi =　Math.PI * 3/2 - positionResult.azimuth; //φ
+        const phi = Math.PI * 3/2 - positionResult.azimuth; //φ
         const theta = Math.PI * 0.5 - positionResult.altitude; //θ
 
         // Convert from Mapray Local Spherical Coordinates to  Mlocs coordinate.

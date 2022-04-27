@@ -22,7 +22,19 @@ To see the terrian data, you need a [Mapray access token](/doc/developer-guide/G
 export MAPRAY_ACCESS_TOKEN=<mapray_access_token>
 ```
 
-Or set accsess token to `<your access token here>` directly in [TerrainViewer.ts](./src/TerrainViewer.ts).
+Or set access token to `process.env.MAPRAY_ACCESS_TOKEN` directly in [TerrainViewer.ts](./src/TerrainViewer.ts).
+
+
+**To set bing map access token:**
+
+To see Bing Maps Imagery, you need a Bing Maps access token. 
+Before set access token in Rumber you should get [Bing Maps Access Token](https://docs.microsoft.com/en-us/bingmaps/getting-started/bing-maps-dev-center-help/getting-a-bing-maps-key) yourself.
+You can either set an environment variable:
+```bash
+export BINGMAP_ACCESS_TOKEN=<bingmap_access_token>
+```
+
+Or set token to `process.env.BINGMAP_ACCESS_TOKEN` directly in [TerrainViewer.ts](./src/TerrainViewer.ts).
 
 
 **To install dependencies:**
