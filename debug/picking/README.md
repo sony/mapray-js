@@ -15,7 +15,7 @@ To see the terrian data, you need a [Mapray access token](/doc/developer-guide/G
 export MAPRAY_ACCESS_TOKEN=<mapray_access_token>
 ```
 
-Or set accsess token to `<your access token here>` directly in `App.ts`.
+Or set access token to `process.env.MAPRAY_ACCESS_TOKEN` directly in `App.ts`.
 
 
 **To set bing map access token (Option):**
@@ -27,7 +27,7 @@ You can either set an environment variable:
 export BINGMAP_ACCESS_TOKEN=<bingmap_access_token>
 ```
 
-Or set accsess token to `<your Bing Maps Key here>` directly in `App.ts`.
+Or set token to `process.env.BINGMAP_ACCESS_TOKEN` directly in `App.ts`.
 
 
 ### Setup dependencies

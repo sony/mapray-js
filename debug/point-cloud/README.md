@@ -22,7 +22,7 @@ To see the terrian data, you need a [Mapray access token](/doc/developer-guide/G
 export MAPRAY_ACCESS_TOKEN=<mapray_access_token>
 ```
 
-Or set accsess token to `<your access token here>` directly in `PointCloudViewer.ts`.
+Or set access token to `process.env.MAPRAY_ACCESS_TOKEN` directly in `PointCloudViewer.ts`.
 
 
 **To set bing map access token (Option):**
@@ -34,7 +34,19 @@ You can either set an environment variable:
 export BINGMAP_ACCESS_TOKEN=<bingmap_access_token>
 ```
 
-Or set accsess token to `<your Bing Maps Key here>` directly in `PointCloudViewer.ts`.
+Or set token to `process.env.BINGMAP_ACCESS_TOKEN` directly in `PointCloudViewer.ts`.
+
+
+**To set api key:**
+
+To access the cloud data, you need a [Mapray access token](/doc/developer-guide/GettingStarted/index.md). You can either set an environment variable:
+
+```bash
+export MAPRAY_API_KEY=<mapray_api_key>
+```
+
+Or set api key to `process.env.MAPRAY_API_KEY` directly in `PointCloudViewer.ts`.
+
 
 **To set user id:**
 
@@ -44,7 +56,8 @@ To use the dataset, you need a [Mapray API user id ](/doc/developer-guide/Accoun
 export MAPRAY_API_USER_ID=<your user id>
 ```
 
-Or set accsess token to `<your user id>` directly in `PointCloudViewer.ts`.
+Or set user id to `process.env.MAPRAY_API_USER_ID` directly in `PointCloudViewer.ts`.
+
 
 **To set user dataset id:**
 
@@ -54,7 +67,7 @@ To use the dataset, you need a [Point Cloud Dataset id](/doc/developer-guide/Con
 export DATASET_POINT_CLOUD_ID = <point cloud dataset id>;
 ```
 
-Or set accsess token to `<pointcloud dataset id>` directly in `PointCloudViewer.ts`.
+Or set dataset id to `process.env.DATASET_POINT_CLOUD_ID` directly in `PointCloudViewer.ts`.
 
 
 **To install dependencies:**

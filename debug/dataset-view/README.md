@@ -28,7 +28,7 @@ To see the terrian data, you need a [Mapray access token](/doc/developer-guide/G
 export MAPRAY_ACCESS_TOKEN=<mapray_access_token>
 ```
 
-Or set accsess token to `<your access token here>` directly in `DatasetViewer.ts`.
+Or set access token to `process.env.MAPRAY_ACCESS_TOKEN` directly in `DatasetViewer.ts`.
 
 
 **To set bing map access token (Option):**
@@ -40,7 +40,18 @@ You can either set an environment variable:
 export BINGMAP_ACCESS_TOKEN=<bingmap_access_token>
 ```
 
-Or set accsess token to `<your Bing Maps Key here>` directly in `DatasetViewer.ts`.
+Or set token to `process.env.BINGMAP_ACCESS_TOKEN` directly in `DatasetViewer.ts`.
+
+
+**To set api key:**
+
+To access the cloud data, you need a [Mapray access token](/doc/developer-guide/GettingStarted/index.md). You can either set an environment variable:
+
+```bash
+export MAPRAY_API_KEY=<mapray_api_key>
+```
+
+Or set api key to `process.env.MAPRAY_API_KEY` directly in `DatasetViewer.ts`.
 
 
 **To set user id:**
@@ -55,7 +66,7 @@ const DATASET_2D_ID = "<2d dataset id>";
 const DATASET_3D_ID = "<3d dataset id>";
 const DATASET_POINT_CLOUD_ID = "<point cloud dataset id>";
 
-Or set accsess token to `<your user id>` directly in `DatasetViewer.ts`.
+Or set user id to `process.env.MAPRAY_API_USER_ID` directly in `DatasetViewer.ts`.
 
 
 **To set user dataset id:**
@@ -68,7 +79,9 @@ export DATASET_3D_ID = <3d dataset id>;
 export DATASET_POINT_CLOUD_ID = <point cloud dataset id>;
 ```
 
-Or set accsess token to `<2d/3d/pointcloud dataset id>` directly in `DatasetViewer.ts`.
+Or set dataset id to `process.env.DATASET_2D_ID` directly in `DatasetViewer.ts`.
+Or set dataset id to `process.env.DATASET_3D_ID` directly in `DatasetViewer.ts`.
+Or set dataset id to `process.env.DATASET_POINT_CLOUD_ID` directly in `DatasetViewer.ts`.
 
 
 **To install dependencies:**
