@@ -1,7 +1,12 @@
-Hello, and thanks in advance for contributing to maprayJS. Here's how we work. We haven't written a contributor guide or coding rules yet, so we will continue to enhance the content in the future.
+Hello, and thanks in advance for contributing to maprayJS. Here's how we work.
+We haven't written a contributor guide or coding rules yet, so we will continue to enhance the content in the future.
 This document first explains how to build maprayJS.
 
+
 ## Preparing your Development Environment
+
+Node version needs to be v16 or later.
+
 Yarn workspace is used in maprayJS.
 
 Note: on MacOS it is often convenient to install yarn with brew
@@ -22,8 +27,19 @@ Dependent packages are installed under ui and mapray packages.
 cd mapray-js
 yarn install
 ```
+
+
 ## Creating a Standalone Build
-A standalone build allows you to turn the contents of this repository into mapray.js, mapray.mjs,maprayui.js, maprayui.mjs and mapray.css files that can be included on html pages through umd and es modules.
+
+
+### Build wasm module before mapray-js
+
+To build mapray-js, you need to build the wasm module first.
+Follow build instraction part of [the README](./packages/mapray/wasm/README.org) to install and build wasm module.
+
+
+### Build mapray-js
+A standalone build allows you to turn the contents of this repository into js files, mapray.js,maprayui.js, and mapray.css files that can be included on html pages through umd and es modules.
 
 ```bash
 yarn build
@@ -44,7 +60,4 @@ yarn ui-watch
 ```
 
 ## Serving the application for development
-You  can use our [applications](/apps/) for development.
-- [Fall](/apps/fall/) 
-- [Turning](/apps/turning/)
-- [Rambler](/apps/rambler/)
+You can use our debug applications under [debug](./debug/) for development.

@@ -1,26 +1,23 @@
 #+STARTUP: noindent showall
-# https://github.com/snosov1/toc-org の toc-org-mode を使うと保存時に目次を
-# 自動更新できる
 
-* 目次                                                                 :TOC:
-- [[#ビルド環境の準備][ビルド環境の準備]]
-  - [[#事前準備][事前準備]]
-  - [[#emscripten-sdk-のインストール][Emscripten SDK のインストール]]
-- [[#wasm-モジュールのビルド方法][wasm モジュールのビルド方法]]
-  - [[#環境変数の設定][環境変数の設定]]
-  - [[#wasm-モジュールの一括ビルド][wasm モジュールの一括ビルド]]
-  - [[#個別の-wasm-モジュールのビルド][個別の wasm モジュールのビルド]]
-- [[#単体テスト][単体テスト]]
-  - [[#conan-と-cmake-の準備][Conan と CMake の準備]]
-  - [[#テストのビルド][テストのビルド]]
-  - [[#テストの実行][テストの実行]]
+* Index                                                                 :TOC:
+- [[#preparing-your-development-environment][Preparing your Development Environment]]
+  - [[#preparing-installation][Preparing installation]]
+  - [[#install-emscripten-sdk][Install Emscripten SDK]]
+- [[#build-wasm-module][Build Wasm Module]]
+  - [[#setting-environment-variables][Setting Environment Variables]]
+  - [[#build-entire-wasm-module][Build Entire Wasm Module]]
+  - [[#build-individual-wasm-module][Build Individual Wasm Module]]
+- [[#unit-test][Unit Test]]
+  - [[#preparing-conan-and-cmake][Preparing Conan and CMake]]
+  - [[#build-test-code][Build Test Code]]
+  - [[#run-the-test][Run the Test]]
 
-* ビルド環境の準備
+* Preparing your Development Environment
 
-** 事前準備
+** Preparing installation
 
-   Emscripten SDK による wasm モジュールのビルド環境を構築するためには、事前に以
-   下のパッケージがインストールされている必要がある。
+   Following packages are required to install build environment for wasm module.
 
    - bash
    - git
@@ -28,26 +25,24 @@
    - CMake (3.10 以上)
    - Python3 (3.6 以上)
 
+   In this document, the following symbols are used to represent a particular directory.
 
-   この文書では、以下の記号を使って特定のディレクトリを表す。
-
-   | 記号     | ディレクトリ                          |
-   |----------+---------------------------------------|
-   | {EMSDK}  | Emscripten SDK のインストール先       |
-   | {MAPRAY} | mapray-jsディレクトリ/packages/mapray |
+   | Symbol   | Directory                                |
+   |----------+------------------------------------------|
+   | {EMSDK}  | Installation directory of Emscripten SDK |
+   | {MAPRAY} | [mapray-js directory]/packages/mapray    |
 
 
-*** Windows 環境での開発
+*** Development Environment on Windows
 
-    Windows 環境で開発する場合は、wasm モジュール部分を WSL 環境でビルドする。
-    WSL のディストリビューションは Ubuntu 18.04 LTS またはそれ以降を推奨する。
+    To install development environment on Windows, wasm module part needs to be build in WSL environment.
+    Ubuntu 18.04 or newer is recommended as distribution of WSL.
 
-    なお、mapray-js ライブラリ自体は、通常の Windows 環境でも WSL 環境でもビルド
-    することができる。
+    The other part could be build on normal Windows environment.
 
-** Emscripten SDK のインストール
+** Install Emscripten SDK
 
-   次の手順で Emscripten SDK をインストールする。
+   Follo the steps below to install the Emscripten SDK.
 
    #+begin_example
      $ git clone --branch=2.0.9 --depth=1 https://github.com/emscripten-core/emsdk.git {EMSDK}
@@ -57,44 +52,37 @@
      $ git apply -p1 {MAPRAY}/wasm/emsdk.patch
    #+end_example
 
-   ※ この Emscripten SDK は Mapray 用の特殊バージョンなので、他のプロジェクトで
-      使うことは推奨しない。
+   * The Emscripten SDK might not be used for other projects, since it is patched for Mapray.
+   * zsh needs to be launched as x86_64 mode in M1 Mac(Apple silicon).
+     Execute =arch -x86_64 zsh= to switch the mode on zsh.
 
-   ※ M1 Mac(Apple silicon)の場合は zsh を x86_64 にした状態でインストールする必要がある。
+* Build Wasm Module
 
-      ターミナルの「情報を見る」で「Rosettaを使用して開く」を設定してからターミナルを起動するか zsh上で =arch -x86_64 zsh= として切り替える。
+** Setting Environment Variables
 
-* wasm モジュールのビルド方法
-
-** 環境変数の設定
-
-   wasm モジュールをビルドするときは Emscripten SDK の環境変数が設定されている必
-   要がある。Emscripten SDK の環境変数は、次のコマンドを実行すると設定される。
+   Emscripten SDK should be activated before building wasm module.
+   The following command activates the SDK.
 
    #+begin_example
      $ source {EMSDK}/emsdk_env.sh
    #+end_example
 
-   このコマンドは一般的にログイン後に一度実行するだけでよい。
+   The command changes the version of node.
+   You need to carefully check the version of node when you build mapray-js.
 
-** wasm モジュールの一括ビルド
+** Build Entire Wasm Module
 
-   次の操作で、すべての wasm モジュールをリビルドしてから ={MAPRAY}/src/wasm/= に
-   配置する。
+   The following command builds the wasm module and places results to the correct position ( ={MAPRAY}/src/wasm/= ).
 
    #+begin_example
      $ bash {MAPRAY}/wasm/rebuild_and_install.sh
    #+end_example
 
-   この後は =yarn build= など、通常の方法で mapray-js ライブラリをビルドすること
-   ができる。
+   Now you can build mapray-js.
 
-   =git clone= や =git pull= などの実行で、 ={MAPRAY}/wasm/= 内の内容が変化する可能性
-   があるときは、一括ビルドを行ったほうがよい。
+** Build Individual Wasm Module
 
-** 個別の wasm モジュールのビルド
-
-   例えば b3dtile の wasm モジュールをビルドするときは、次のようにビルドする。
+   In the case of b3dtile, the following commands build only the module.
 
    #+begin_example
      $ cd {MAPRAY}/wasm/b3dtile
@@ -102,61 +90,49 @@
      $ cd build
      $ emcmake cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
      $ make -j
-     $ make install            # {MAPRAY}/src/wasm/ にモジュールを配置
+     $ make install            # place results into {MAPRAY}/src/wasm/
    #+end_example
 
-   デバッグ版をビルドするときは cmake に ~-DCMAKE_BUILD_TYPE=Debug~ を指定する。
+   To build in debug mode, put ~-DCMAKE_BUILD_TYPE=Debug~ option in the cmake command.
 
-   実行するブラウザでソースレベルでバッグを行うときは、ブラウザから =http://localhost:8080/=
-   にアクセスしたときに、開発環境の ~{MAPRAY}/wasm/~ を参照できるようにしなければな
-   らない。
+* Unit Test
 
-* 単体テスト
+  This test works with [[https://www.boost.org/doc/libs/1_71_0/libs/test/doc/html/index.html][Boost.Test]].
 
-  現在のブラウザ環境のデバッガでは、ソースレベルで変数が参照できないなど、いくつ
-  かの機能が不足している。
+  WSL environment is not required on Windows.
 
-  そのため Linux や Windows などのホスト環境向けに一部のコードをビルドして、一般
-  的なデバッガで確認できるようにする。
+** Preparing Conan and CMake
 
-  動作確認プログラムは [[https://www.boost.org/doc/libs/1_71_0/libs/test/doc/html/index.html][Boost.Test]] のフレームワークで記述する。
-
-  Windows での単体テストの場合は、WSL 環境は必要ない。
-
-** Conan と CMake の準備
-
-   1. C++ パッケージマネージャ Conan 1.25 以上のクライアントをインストール
+   1. Install Conan 1.25 or later (C++ package manager)
 
       <https://conan.io/>
 
-   2. CMake 3.10 以上 (Windows の場合は 3.17 以上) をインストール
+   2. Install CMake 3.10 or later (3.17 or later on Windows)
 
       <https://cmake.org/>
 
    #+begin_note
-     GCC でビルドする場合は GCC 8.4 以上が必要になる。そのため
-     =~/.conan/profiles/default= の =compiler.libcxx= を次のように設定したほうが良い。
+     GCC 8.4 or later is required if build tool is GCC.
+     =compiler.libcxx= property of =~/.conan/profiles/default= should be set as following.
 
      : compiler.libcxx=libstdc++11
 
-     詳細は <https://docs.conan.io/en/latest/howtos/manage_gcc_abi.html>
+     See <https://docs.conan.io/en/latest/howtos/manage_gcc_abi.html> for more information.
    #+end_note
 
-** テストのビルド
+** Build Test Code
 
-   ={MAPRAY}/wasm/tests/= の直下に適当なディレクトリを作成して、そこでビルドを行う。
-   ディレクトリ名は任意で、いくつ作っても良い。
+   Create a directory under ={MAPRAY}/wasm/tests/=. And build the test code in the directory.
 
    #+begin_example
      $ mkdir build
      $ cd build
    #+end_example
 
-   構成ごとのビルドは次のように行う。
+   
+   - Release Build
 
-   - リリース版
-
-     - UNIX 系
+     - UNIX
 
        #+begin_example
          $ conan install --build=missing .. -s build_type=Release
@@ -172,9 +148,9 @@
          > cmake --build . --config Release
        #+end_example
 
-   - デバッグ版
+   - Debug Build
 
-     - UNIX 系
+     - UNIX
 
        #+begin_example
          $ conan install --build=missing .. -s build_type=Debug
@@ -190,21 +166,21 @@
          > cmake --build . --config Debug
        #+end_example
 
-** テストの実行
+** Run the Test
 
-   すべてのテストを実行する。
+   Run all the tests.
 
    #+begin_example
      $ bin/unit_test
    #+end_example
 
-   =b3dtile_suite= のみを実行する。
+   Run only =b3dtile_suite= test.
 
    #+begin_example
      $ bin/unit_test --run_test=b3dtile_suite
    #+end_example
 
-   オプションの詳細は以下で確認できる。
+   The following command show options of the command.
 
    #+begin_example
      $ bin/unit_test --help
