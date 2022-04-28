@@ -1,4 +1,4 @@
-import * as animation from "../dist/es/animation";
+import * as animation from "../dist/es/animation/animation";
 import GeoMath from "../dist/es/GeoMath";
 
 const Time             = animation.Time;
