@@ -3,61 +3,103 @@ We haven't written a contributor guide or coding rules yet, so we will continue 
 This document first explains how to build maprayJS.
 
 
-## Preparing your Development Environment
+# Preparing your Development Environment
 
-Node version needs to be v16 or later.
+Following packages are required to build maprayJS.
 
-Yarn workspace is used in maprayJS.
+- node (v16 or later)
+- yarn
+  - Yarn workspace is used in maprayJS.
+  - Note: on MacOS it is often convenient to install node and yarn with brew
 
-Note: on MacOS it is often convenient to install yarn with brew
-Install [yarn](https://yarnpkg.com/en/)
-```bash
-brew install yarn
-```
 
-Clone the repository:
+# Build
+
+
+## Clone the repository
+
 ```bash
 git clone https://github.com/sony/mapray-js.git
 ```
 
-To install dependencies:
+
+## Build wasm module before building maprayJS
+
+To build maprayJS, you need to build the wasm module first.
+Follow build instraction part of the [README](./packages/mapray/wasm/README.org) to install and build wasm module.
+
+
+## Build maprayJS
+
+
+### install dependencies
 
 Dependent packages are installed under ui and mapray packages.
+
 ```bash
 cd mapray-js
 yarn install
 ```
 
 
-## Creating a Standalone Build
+### build
 
-
-### Build wasm module before mapray-js
-
-To build mapray-js, you need to build the wasm module first.
-Follow build instraction part of [the README](./packages/mapray/wasm/README.org) to install and build wasm module.
-
-
-### Build mapray-js
-A standalone build allows you to turn the contents of this repository into js files, mapray.js,maprayui.js, and mapray.css files that can be included on html pages through umd and es modules.
+A standalone build allows you to turn the contents of this repository into js files, mapray.js, maprayui.js, and mapray.css files that can be included on html pages through umd and es modules.
 
 ```bash
 yarn build
 ```
 
-### watch mode
-Runnning automatic build when modified and updated source code under packages.
+Following files will be generated in each directory.
 
-mapray package:
+| path                  | summary                        |
+|-----------------------|--------------------------------|
+| /packages/mapray/dist | build result of mapray package |
+| /packages/ui/dist     | build result of ui package     |
+| /doc/typedoc          | API Referende                  |
+
+
+### API Reference
+
+You can create integrated document accross workspaces with the following command.
 
 ```bash
-yarn mapray-watch
+yarn run typedoc
 ```
 
-ui package:
+The document is generated in `/doc/typedoc`.
+
+
+### Other Commands
+
+You can also use following commands.
+
 ```bash
-yarn ui-watch
+yarn run <command>
 ```
 
-## Serving the application for development
-You can use our debug applications under [debug](./debug/) for development.
+| command             | summary                                       |
+|---------------------|-----------------------------------------------|
+| build               | run mapray, ui, css and typedoc               |
+| mapray              | build mapray package                          |
+| mapray-watch        | build and watch mapray package                |
+| ui                  | build ui package                              |
+| ui-watch            | build and watch ui package                    |
+| css                 | build css for ui package                      |
+| typedoc             | generate typedoc(for SDK user)                |
+| typedoc-watch       | generate typedoc(for SDK user) and watch      |
+| typedoc-devel       | generate typedoc(for SDK developer)           |
+| typedoc-devel-watch | generate typedoc(for SDK developer) and watch |
+| test                | execute test                                  |
+
+
+# Serving the application for development
+
+You can use debug applications under [debug](./debug/) for development.
+
+
+# Contributing by Pull Request
+
+We appreciate contributors in the community, that are willing to improve maprayJS.
+Please create a pull request of your development branch to master branch.
+Our maintainers will then review your changes.

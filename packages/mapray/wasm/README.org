@@ -22,8 +22,8 @@
    - bash
    - git
    - make
-   - CMake (3.10 以上)
-   - Python3 (3.6 以上)
+   - CMake (3.10 or later)
+   - Python3 (3.6 or later)
 
    In this document, the following symbols are used to represent a particular directory.
 
