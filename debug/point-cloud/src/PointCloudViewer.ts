@@ -13,10 +13,6 @@ const GSI_ATTRIBUTE = "国土地理院";
 
 
 
-const targetPos = new mapray.GeoPoint(137.7238014361, 34.7111256306);
-
-
-
 function getPointShapeText( pointShapeType: mapray.PointCloud.PointShapeType ): string
 {
     switch (pointShapeType) {
@@ -116,11 +112,7 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
 
     private _container: HTMLElement | string;
 
-    private _init_camera: mapray.GeoPointData;
-
     private _init_camera_parameter: maprayui.StandardUIViewer.CameraParameterOption;
-
-    private _lookat_position: mapray.GeoPointData;
 
     private _isChangedGIS: boolean;
 
@@ -155,30 +147,14 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
         this._statusbar = new StatusBar( this._viewer, GSI_ATTRIBUTE );
         this._container = container;
 
-        this._init_camera = {
-            latitude: targetPos.latitude,
-            longitude: targetPos.longitude,
-            height: targetPos.altitude + 1000000,
-        };
-
         this._init_camera_parameter = {
             fov: 46.0,
         };
 
-        this._lookat_position = {
-            latitude: targetPos.latitude,
-            longitude: targetPos.longitude,
-            height: targetPos.altitude
-        };
-
-        // カメラ位置
-        this.setCameraPosition( this._init_camera );
-
-        // 注視点
-        this.setLookAtPosition( this._lookat_position );
-
         // カメラパラメータ
         this.setCameraParameter( this._init_camera_parameter );
+
+        this.enableURLUpdate( true );
 
         // コンテンツ制御
         this._isChangedGIS = false;
@@ -209,10 +185,6 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
      */
     async _loadGISInfo() 
     {
-        var pin = new mapray.PinEntity( this.viewer.scene );
-        pin.addMakiIconPin( "landmark-15", targetPos);
-        this.addEntity(pin);
-
         const tools = document.getElementById("tools") || (()=>{
                 const maprayContainer = document.getElementById("mapray-container");
                 if ( !maprayContainer ) throw new Error("?");
@@ -487,6 +459,30 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
                 console.log( datasets );
                 const dataset = await maprayApi.loadPointCloudDataset( process.env.DATASET_POINT_CLOUD_ID as string );
                 console.log( dataset );
+                const bbox = dataset.getBoundingBox();
+                const center = new mapray.GeoPoint(
+                    (bbox[0] + bbox[3]) / 2.0,
+                    (bbox[1] + bbox[4]) / 2.0,
+                    (bbox[2] + bbox[5]) / 2.0,
+                );
+                const pin = new mapray.PinEntity( this.viewer.scene );
+                pin.addMakiIconPin( "landmark-15", center);
+                this.addEntity(pin);
+
+                ZOOM_TO_PC: {
+                    const canvas = this.viewer.canvas_element;
+                    const ray = this.viewer.camera.getCanvasRay( mapray.GeoMath.createVector2([ canvas.width/2, canvas.height/2 ]));
+                    const position = this.viewer.getRayIntersection( ray );
+                    if ( position ) {
+                        const geoPoint = new mapray.GeoPoint();
+                        geoPoint.setFromGocs( position );
+                        const distance = center.getGeographicalDistance( geoPoint );
+                        if ( distance < 1000 ) {
+                            break ZOOM_TO_PC;
+                        }
+                    }
+                    this.startFlyCamera({ iscs_end: center, end_altitude: 100, end_from_lookat: 500, time: 1 });
+                }
             }
 
             // @ts-ignore
