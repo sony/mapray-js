@@ -7,7 +7,7 @@ import GeoPoint from "./GeoPoint";
 import PointCloudMaterial, { PointCloudDebugWireMaterial, PointCloudDebugFaceMaterial, PointCloudPickMaterial } from "./PointCloudMaterial";
 import PointCloudProvider from "./PointCloudProvider";
 import PointCloudBoxCollector from "./PointCloudBoxCollector";
-
+import { AttributeBindInfoDict } from "./Material";
 
 
 /**
@@ -685,7 +685,7 @@ export class Box {
     /**
      * @internal
      */
-    private _vertex_attribs!: object;
+    private _vertex_attribs!: AttributeBindInfoDict;
 
     /**
      * @internal

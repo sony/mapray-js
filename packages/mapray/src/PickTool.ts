@@ -1,7 +1,7 @@
 import { Vector3, Matrix } from "./GeoMath";
 import GLEnv from "./GLEnv";
 import FrameBuffer from "./FrameBuffer";
-import Material from "./Material";
+import Material, { AttributeBindInfoDict } from "./Material";
 import Camera from "./Camera";
 import GeoMath from "./GeoMath";
 
@@ -33,9 +33,9 @@ class PickTool {
 
     private _indices_length: number;
 
-    private _index_buf: WebGLBuffer | null;
+    private _index_buf: WebGLBuffer;
 
-    private _vertex_attribs: object;
+    private _vertex_attribs: AttributeBindInfoDict;
 
     private _rid_value: Uint8Array;
 
@@ -70,6 +70,9 @@ class PickTool {
 
         {
             const vertex_buf = gl.createBuffer();
+            if ( !vertex_buf ) {
+                throw new Error("couldn't create buffer");
+            }
             {
                 const vertices = [ -1.0, 1.0,  -1.0, -1.0,  1.0, -1.0,  1.0, +1.0 ];
                 gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buf);
@@ -78,6 +81,9 @@ class PickTool {
             }
 
             const texcoord_buf = gl.createBuffer();
+            if ( !texcoord_buf ) {
+                throw new Error("couldn't create buffer");
+            }
             {
                 const texcoord = [ 0, 1,  0, 0,  1, 0,  1, 1 ];
                 gl.bindBuffer(gl.ARRAY_BUFFER, texcoord_buf);
