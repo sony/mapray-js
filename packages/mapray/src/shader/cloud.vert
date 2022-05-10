@@ -1,5 +1,5 @@
 /**
- * 月 (頂点シェーダ)
+ * 雲 (頂点シェーダ)
  */
 
 precision mediump float;
