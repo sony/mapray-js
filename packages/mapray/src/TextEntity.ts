@@ -17,6 +17,7 @@ import BindingBlock from "./animation/BindingBlock";
 import EasyBindingBlock from "./animation/EasyBindingBlock";
 import Type from "./animation/Type";
 import AbstractPointEntity from "./AbstractPointEntity";
+import EntityMaterial from "./EntityMaterial";
 
 /**
  * テキストエンティティ
@@ -500,7 +501,8 @@ export class PrimitiveProducer extends Entity.PrimitiveProducer {
         };
 
         // プリミティブ
-        var material = null, pickMaterial = null;
+        let material: EntityMaterial | null = null;
+        let pickMaterial: EntityMaterial | null = null;
         if ( this._isSimpleText() ) {
             // @ts-ignore
             material = entity._getSimpleTextMaterial( RenderStage.RenderTarget.SCENE );

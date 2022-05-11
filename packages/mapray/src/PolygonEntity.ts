@@ -696,7 +696,9 @@ export class PrimitiveProducer extends Entity.PrimitiveProducer {
             this._triangles = this.getEntity()._createTriangles();
             if ( this._triangles === undefined ) {
                 // 多角形の三角形化に失敗
+                // @ts-ignore
                 this._primitive.mesh = null;
+                // @ts-ignore
                 this._pickPrimitive.mesh = null;
                 this._status = Status.INVALID;
                 return [];
