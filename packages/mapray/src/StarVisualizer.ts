@@ -1,4 +1,4 @@
-import Mesh from "./Mesh";
+import Mesh, { MeshData } from "./Mesh";
 import GeoMath, { Matrix, Vector3 } from "./GeoMath";
 import Resource, { URLResource } from "./Resource";
 import StarMaterial from "./StarMaterial";
@@ -389,7 +389,7 @@ class StarVisualizer {
             vertices.push( GeoMath.clamp( size, 3.0, 30.0 ) );   //rank
         }
 
-        const mesh_data = {
+        const mesh_data: MeshData = {
             vtype: [
                 { name: "a_position", size: 3 },
                 { name: "a_color", size: 3 },
@@ -446,7 +446,7 @@ class StarVisualizer {
             vertices.push( star[ 7 ] ); // z
         }
 
-        const mesh_data = {
+        const mesh_data: MeshData = {
             vtype: [
                 { name: "a_position", size: 3 },
             ],

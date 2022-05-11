@@ -1,6 +1,6 @@
 import GLEnv from "./GLEnv";
 import Scene from "./Scene";
-import Mesh from "./Mesh";
+import Mesh, { MeshData } from "./Mesh";
 import RenderStage from "./RenderStage";
 import GeoMath, { Vector3, Vector4 } from "./GeoMath";
 import GeoPoint from "./GeoPoint";
@@ -884,7 +884,7 @@ export class Box {
 
         const meshes = [];
         if (indices.length > 0) {
-            const mesh_data = {
+            const mesh_data: MeshData = {
                 vtype: [
                     { name: "a_position", size: 3 }
                 ],
@@ -895,7 +895,7 @@ export class Box {
             meshes.push( new Mesh( this._owner.glenv, mesh_data ) );
         }
         if (tindices.length > 0) {
-            const mesh_data = {
+            const mesh_data: MeshData = {
                 vtype: [
                     { name: "a_position", size: 3 }
                 ],
@@ -1317,7 +1317,7 @@ export class Box {
 
         gl.disable( gl.CULL_FACE );
         for ( let debugMesh of this._debugMesh ) {
-            const debug_material = (debugMesh._draw_mode === 1 ?
+            const debug_material = (debugMesh.gl_draw_mode === 1 ?
                 render_cache.point_cloud_debug_wire_material:
                 render_cache.point_cloud_debug_face_material
             );
