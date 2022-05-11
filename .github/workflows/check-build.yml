@@ -22,10 +22,10 @@ jobs:
       UI_DEPLOY_DIR: "./_deploy/public/ui"
       EMSDK_DIR: "./_deploy/emsdk"
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
-          node-version: '14.x'
+          node-version: 14
       - name: Setup EMSDK
         run: |
           mkdir -p ${{ env.EMSDK_DIR }}/../

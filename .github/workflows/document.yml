@@ -1,4 +1,4 @@
-name: <CDN> Publish API Document
+name: Publish API Document
 on:
   release:
     types: [released, prereleased]
@@ -10,10 +10,10 @@ jobs:
       DOC_DIR: "./doc/typedoc"
       DOC_DEPLOY_DIR: "./_deploy/doc/"
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
-          node-version: '14.x'
+          node-version: 14
       - run:  git fetch --prune --unshallow
       - name: Get deploy version
         run: |
@@ -32,11 +32,14 @@ jobs:
           mkdir -p ${{ env.DOC_DEPLOY_DIR }}/v${{ steps.get_version.outputs.next_version }}
           cp -r ${{ env.DOC_DIR }}/* ${{ env.DOC_DEPLOY_DIR }}/v${{ steps.get_version.outputs.next_version }}/
         shell: bash
+      - name: Ahtorization for GCP
+        uses: 'google-github-actions/auth@v0'
+        with:
+          credentials_json: '${{ secrets.STORE_CREDENTIALS }}'
       - name: Upload API documents files
-        uses: google-github-actions/upload-cloud-storage@main
+        uses: 'google-github-actions/upload-cloud-storage@v0'
         with:
           path: ${{ env.DOC_DEPLOY_DIR }}
           destination: inou-pro-released/doc/api
-          credentials: ${{ secrets.STORE_CREDENTIALS }}
           parent: false
 
