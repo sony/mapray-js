@@ -1,8 +1,8 @@
-name: <NPM pre-release> Publish node packages
+name: <NPM release> Publish node packages
 
 on:
   release:
-    types: [prereleased]
+    types: [released]
 
 jobs:
   npm:
@@ -12,10 +12,10 @@ jobs:
       UI_PACKAGE_DIR: "./packages/ui"
       EMSDK_DIR: "./_deploy/emsdk"
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
-          node-version: '14.x'
+          node-version: 14
           registry-url: https://registry.npmjs.org
           scope: '@mapray'
       - name: Setup EMSDK
@@ -32,12 +32,6 @@ jobs:
           echo "Apply the patch to EMSDK"
           git apply -p1 emsdk.patch
       - run:  git fetch --prune --unshallow
-      - name: Get current version
-        run: |
-          TAG_NAME=$(echo ${{ github.ref }} |  grep -o -E "(dev|alpha|beta|rc)")
-          echo "::set-output name=tag_name::${TAG_NAME}"
-        id: get_version
-        shell: bash
       - name: Build wasm code
         run: |
           echo "Activate EMSDK"
@@ -52,17 +46,17 @@ jobs:
         run: yarn build
       - name: Packing core package
         run: yarn pack
-        working-directory: ${{ env.CORE_PACKAGE_DIR }}
+        working-directory: ./packages/mapray
       - name: Packing ui package
         run: yarn pack
-        working-directory: ${{ env.UI_PACKAGE_DIR }}
+        working-directory: ./packages/ui
       - name: Publish core to npm packages
-        run: find ./ -name "*.tgz" -type f | xargs npm publish --tag ${{ steps.get_version.outputs.tag_name }}
+        run: find ./ -name "*.tgz" -type f | xargs npm publish
         working-directory: ${{ env.CORE_PACKAGE_DIR }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Publish ui to Github packages
-        run: find ./ -name "*.tgz" -type f | xargs npm publish --tag ${{ steps.get_version.outputs.tag_name }}
+        run: find ./ -name "*.tgz" -type f | xargs npm publish
         working-directory: ${{ env.UI_PACKAGE_DIR }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
