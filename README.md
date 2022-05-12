@@ -8,13 +8,24 @@ maprayJS is a JavaScript library for a high quality interactive 3D globes and di
 
 ## Installation
 ### Script Tag
+#### core packages
 ```html
   <script src="https://resource.mapray.com/mapray-js/v0.9.0/mapray.min.js"></script>
 ```
+#### ui packages
+```html
+  <script src="https://resource.mapray.com/mapray-js/v0.9.0/maprayui.min.js"></script>
+```
 
 ### NPM module
+#### core packages
 ```bash
 npm install --save @mapray/mapray-js
+```
+
+### ui packages
+```bash
+npm install --save @mapray/ui
 ```
 
 ## Usage
@@ -97,6 +108,8 @@ Mapray Cloud managed by [Sony Group Corporation.](https://www.sony.com/) If you 
 Documentation on Mapray official [website](https://mapray.com/documents/overview/gettingstarted/index.html)
 
 **API documents**
+
+Execute the following command in the root directory.
 ```bash
 npm run doc
 ```

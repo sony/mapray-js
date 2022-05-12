@@ -1,16 +1,32 @@
 # Change Log
+## 0.9.0
+### Features and improvements
+- Improve b3dtiles, building data　[#177](https://github.com/sony/mapray-js/issues/177)
+- Support texture in b3dtiles [#185](https://github.com/sony/mapray-js/issues/185)
+- Add select and pick functions for point cloud [#230](https://github.com/sony/mapray-js/issues/230)
+- Change the language used from ES6 to Typescript [#227](https://github.com/sony/mapray-js/issues/227)
+- Add atmospheric expression [#186](https://github.com/sony/mapray-js/issues/186)
+- Add new data visualization method for cloud in the sky [#225](https://github.com/sony/mapray-js/issues/225)
+- Support star and moon in the night sky [#226](https://github.com/sony/mapray-js/issues/226)
+- Support Mapray Cloud API for v2 [#224](https://github.com/sony/mapray-js/issues/224)
+- Add new example and debug applications [#229](https://github.com/sony/mapray-js/issues/229)
+### Breaking Changes
+- The old b3dtiles format in the prototype can no longer be loaded because b3dtiles has been updated to the latest format.
+### Bug fix
+- Set default url for Mapray Cloud [#213](https://github.com/sony/mapray-js/issues/213)
+- 
 ## 0.8.8
 ### Bug fix
 - Exported FlatDemProvider [#207](https://github.com/sony/mapray-js/issues/207), [#210](https://github.com/sony/mapray-js/pull/210)
 
 ## 0.8.7
-### Added
+### Features and improvements
 - Flat terrain at zero altitude [#202](https://github.com/sony/mapray-js/issues/202), [#203](https://github.com/sony/mapray-js/pull/203)
 - Change visibility of entity and ground in UI Package [#205](https://github.com/sony/mapray-js/issues/205), [#206](https://github.com/sony/mapray-js/pull/206)
 - Add GOCS_MATRIX transform mode to ModelEntity [#201](https://github.com/sony/mapray-js/pull/201)
 
 ## 0.8.6
-### Added
+### Features
 - Night imagey layer [#193](https://github.com/sony/mapray-js/issues/193), [#194](https://github.com/sony/mapray-js/pull/194)
 - Capturing image buffer [#192](https://github.com/sony/mapray-js/issues/192), [#194](https://github.com/sony/mapray-js/pull/194)
 
@@ -24,7 +40,7 @@
 - Fixed CI build error in loal build [183](https://github.com/sony/mapray-js/issues/183)
   
 ## 0.8.5
-### Added
+### Features
 - Implement bounding box from entities [#166](https://github.com/sony/mapray-js/issues/166), [#167](https://github.com/sony/mapray-js/pull/167)
 - Sample code for animation [#142](https://github.com/sony/mapray-js/issues/142) 
 
@@ -32,7 +48,7 @@
 - Fixed histroy stack is filled with mapray's URL [#168](https://github.com/sony/mapray-js/issues/168), [#169](https://github.com/sony/mapray-js/pull/169)
 
 ## 0.8.4
-### Added
+### Features
 - Implement mouse event for each entities [#105](https://github.com/sony/mapray-js/issues/105), [#132](https://github.com/sony/mapray-js/pull/132)
 - Support overlay entity[#145](https://github.com/sony/mapray-js/issues/145)
 - compute geographical distance between two GePoints[#152](https://github.com/sony/mapray-js/issues/152), [#155](https://github.com/sony/mapray-js/pull/155)
@@ -53,7 +69,7 @@
 ### Bug fix
 - material for flake will not be loaded [#139](https://github.com/sony/mapray-js/issues/139), [#138](https://github.com/sony/mapray-js/pull/138)
 ## 0.8.2
-### Added
+### Features
 - Support Animation in each entity and added path entity[#106](https://github.com/sony/mapray-js/issues/106), [#126](https://github.com/sony/mapray-js/pull/126)
 - Support Point Cloud [#127](https://github.com/sony/mapray-js/issues/127),  [#130](https://github.com/sony/mapray-js/pull/130)
 
@@ -80,7 +96,7 @@
 - fixed deployment error for npmcom [#89](https://github.com/sony/mapray-js/pull/89)
 
 ## 0.7.1
-### Added
+### Features
 - Support ClampTpTerrian mode for all entities [#60](https://github.com/sony/mapray-js/issues/60)
 - Support altitude mode and extruded mode for GeoJSON Loader [#63](https://github.com/sony/mapray-js/issues/63), [#69](https://github.com/sony/mapray-js/issues/69)
 - Add attribution controller [#85](https://github.com/sony/mapray-js/issues/85)
@@ -99,12 +115,12 @@
 - [#80](https://github.com/sony/mapray-js/issues/80)
 - [#81](https://github.com/sony/mapray-js/issues/81)
 
-### Breaking change
+### Breaking Changes
 Renamed `height` variable to `altitude` in GeoPoint. 
 [#73](https://github.com/sony/mapray-js/issues/73)
 
 ## 0.7.0
-### Added
+### Features
 - Altitude mode for each entites and schema of scene file [#49](https://github.com/sony/mapray-js/issues/49)
 - GeoJSON Loader [#46](https://github.com/sony/mapray-js/issues/46)
 - Support Polygon Entity [#35](https://github.com/sony/mapray-js/issues/35)
@@ -113,12 +129,12 @@ Renamed `height` variable to `altitude` in GeoPoint.
 - Support Mapray API [#52](https://github.com/sony/mapray-js/issues/52)
 - Support Model entity [#50](https://github.com/sony/mapray-js/issues/50)
 
-### Breaking changes
+### Breaking Changes
 - Change the coordination for mapray scene file and API [#50](https://github.com/sony/mapray-js/issues/50)
 - Remove Generic Entity [#50](https://github.com/sony/mapray-js/issues/50)
 
 ## 0.6.0
-### Added
+### Features
 - Added options and methods to specify object visibility in mapray.Viewer
   - Options
     - ground_visibility: Ground visibility
@@ -200,7 +216,7 @@ It can be selected by specifying.
 
 
 ## 0.5.1
-### Added
+### Features
 - Published to [npm.com](https://www.npmjs.com/package/mapray-js)
 
 
@@ -214,26 +230,26 @@ It can be selected by specifying.
 
 ## 0.4.2
 
-### Added
+### Features
 - Add new application nextRambler to access the cloud
 
 
 ## 0.4.1
 
-### Fixed
+### Bug fixed
 - Fixed the issue with texture cache not being reduced (Occurred in Version 0.4.0).
 - Fixed the issue that the `div` tag in rambler.html was not closed.
 
 
 ## 0.4.0
 
-### Added
+### Features
 - Added destroy () method to destroy Inou.Viewer instance.
 
 
 ## 0.3.1
 
-### Added
+### Features
 - Added Inou Content Developer Guide in `doc/InouDeveloperGuide.md`
 - Added sample source code `Turning`
 
@@ -244,7 +260,7 @@ It can be selected by specifying.
 
 ## 0.3.0
 
-### Added
+### Features
 
 - Added the function to get the intersection of ray and ground
   - Inou.Ray
@@ -265,7 +281,7 @@ It can be selected by specifying.
 
 ## 0.2.0
 
-### Added
+### Features
 
 - Changed Inou.DemProvider of the DEM data provider from the abstract class to public class 
   - Added an option of dem_provider to Inou.Viewer constructor
@@ -284,7 +300,7 @@ It can be selected by specifying.
 
 ## 0.1.0
 
-### Added
+### Features
 
 - Packaged inou engine to npm package
 - Added Text Entity
