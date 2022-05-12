@@ -43,8 +43,8 @@ export { default as mapray } from "./packages/mapray/src/mapray";
  * ### CDN
  * HTML
  * ```html
- * <script src="https://resource.mapray.com/mapray-js/v0.8.8/mapray.js"></script>
- * <script src="https://resource.mapray.com/ui/v0.8.8/maprayui.js"></script>
+ * <script src="https://resource.mapray.com/mapray-js/v0.9.0/mapray.js"></script>
+ * <script src="https://resource.mapray.com/ui/v0.9.0/maprayui.js"></script>
  * ```
  *
  * JavaScript
