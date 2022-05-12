@@ -4,6 +4,7 @@ import TileTexture from "./TileTexture";
 import GeoMath from "./GeoMath";
 
 
+
 /**
  * @summary タイルテクスチャの管理
  * @memberof mapray
@@ -36,8 +37,6 @@ class TileTextureCache {
             }
         };
 
-        this._resetImageProvider( (provider.status( status_callback ) === ImageProvider.Status.READY) ? provider : new EmptyImageProvider() );
-
         // キャッシュを初期化
         this._croot = new CacheNode();
 
@@ -62,6 +61,8 @@ class TileTextureCache {
             this._max_aniso = gl.getParameter( aniso_ext.MAX_TEXTURE_MAX_ANISOTROPY_EXT );
         }
         this._use_mipmap = false;
+
+        this._resetImageProvider( (provider.status( status_callback ) === ImageProvider.Status.READY) ? provider : new EmptyImageProvider() );
     }
 
 
@@ -83,7 +84,19 @@ class TileTextureCache {
         this._min_image_z = renge.min;
         this._max_image_z = renge.max;
 
-        this._image_zbias = Math.maprayLog2( 2 * Math.PI / provider.getImageSize() );
+        this._image_zbias = GeoMath.maprayLog2( 2 * Math.PI / provider.getImageSize() );
+
+        if ( !( this._provider instanceof EmptyImageProvider ) ) {
+            if ( this._provider._min_level === 0 ) {
+                this.findNearestAncestors( 0, 0, 0, 1, 100 );
+            }
+            else if ( this._provider._min_level === 1 ) {
+                this.findNearestAncestors( 1, 0, 0, 1, 100 );
+                this.findNearestAncestors( 1, 0, 1, 1, 100 );
+                this.findNearestAncestors( 1, 1, 0, 1, 100 );
+                this.findNearestAncestors( 1, 1, 1, 1, 100 );
+            }
+        }
     }
 
 
@@ -158,9 +171,10 @@ class TileTextureCache {
      * @param  {number}          x   X タイル座標
      * @param  {number}          y   Y タイル座標
      * @param  {number}     zlimit   先祖レベルの上限
+     * @param  {number}   req_power   node.req_power
      * @return {mapray.TileTexture[]}  先祖タイルテクスチャ配列 [hi, lo]
      */
-    findNearestAncestors( z, x, y, zlimit )
+    findNearestAncestors( z, x, y, zlimit, req_power = -1 )
     {
         var depth = 0;
         var d_min = this._min_image_z;
@@ -211,7 +225,7 @@ class TileTextureCache {
                 else if ( node.state === NodeState.NONE ) {
                     // 新規リクエスト
                     node.state     = NodeState.REQUESTED;
-                    node.req_power = zlimit - depth;
+                    node.req_power = req_power !== -1 ? req_power : zlimit - depth;
                     this._new_requesteds.push( [node, depth, Math.floor( 0.5 * xf ), Math.floor( 0.5 * yf )] );
                 }
                 else if ( node.state === NodeState.REQUESTED ) {
@@ -244,7 +258,7 @@ class TileTextureCache {
             else if ( node.state === NodeState.NONE ) {
                 // 新規リクエスト
                 node.state     = NodeState.REQUESTED;
-                node.req_power = zlimit - depth;
+                node.req_power = req_power !== -1 ? req_power : zlimit - depth;
                 this._new_requesteds.push( [node, depth, Math.floor( 0.5 * xf ), Math.floor( 0.5 * yf )] );
             }
             else if ( node.state === NodeState.REQUESTED ) {
@@ -263,7 +277,7 @@ class TileTextureCache {
                 else if ( node.state === NodeState.NONE ) {
                     // 新規リクエスト
                     node.state     = NodeState.REQUESTED;
-                    node.req_power = zlimit - depth;
+                    node.req_power = req_power !== -1 ? req_power : zlimit - depth;
                     this._new_requesteds.push( [node, depth, Math.floor( 0.5 * xf ), Math.floor( 0.5 * yf )] );
                 }
                 else if ( node.state === NodeState.REQUESTED ) {
@@ -462,7 +476,11 @@ class TileTextureCache {
 
         // 後半のノードを削除
         var gl = this._glenv.context;
+        const force_keep_level = this._provider._min_level <= 1 ? this._provider._min_level : -1;
         collector.nodes.slice( num_nodes ).forEach( function( node ) {
+            if ( node.data && node.data.z === force_keep_level ) {
+                return;
+            }
             if ( node.state === NodeState.LOADED ) {
                 node.data.dispose( gl );
             }

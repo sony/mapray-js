@@ -1,5 +1,5 @@
-import animation from "../src/animation/index";
-import GeoMath from "../src/GeoMath";
+import * as animation from "../dist/es/animation/animation";
+import GeoMath from "../dist/es/GeoMath";
 
 const Time             = animation.Time;
 const Interval         = animation.Interval;
@@ -187,8 +187,8 @@ describe( "EasyBindingBlock tests", () => {
 
         expect( bb.enumSupportedParameters() ).toHaveLength( 0 );
         expect( bb.isBound( "a" ) ).toBe( false );
-        expect( bb.getBoundUpdater( "a" ) ).toBeNull();
-        expect( bb.getBoundCurve( "a" ) ).toBeNull();
+        expect( bb.getBoundUpdater( "a" ) ).toBeUndefined();
+        expect( bb.getBoundCurve( "a" ) ).toBeUndefined();
 
         const updater = new Updater();
         const   curve = new ConstantCurve( Type.find( "number" ) );
@@ -214,8 +214,8 @@ describe( "EasyBindingBlock tests", () => {
         expect( bb.enumSupportedParameters()[0].types ).toHaveLength( types.length );
         expect( bb.enumSupportedParameters()[0].types ).toContain( number );
         expect( bb.isBound( "param" ) ).toBe( false );
-        expect( bb.getBoundUpdater( "param" ) ).toBeNull();
-        expect( bb.getBoundCurve( "param" ) ).toBeNull();
+        expect( bb.getBoundUpdater( "param" ) ).toBeUndefined();
+        expect( bb.getBoundCurve( "param" ) ).toBeUndefined();
 
         const updater = new Updater();
         const   curve = new ConstantCurve( number );
@@ -227,8 +227,8 @@ describe( "EasyBindingBlock tests", () => {
 
         expect( () => bb.unbind( "param" ) ).not.toThrow();
         expect( bb.isBound( "param" ) ).toBe( false );
-        expect( bb.getBoundUpdater( "param" ) ).toBeNull();
-        expect( bb.getBoundCurve( "param" ) ).toBeNull();
+        expect( bb.getBoundUpdater( "param" ) ).toBeUndefined();
+        expect( bb.getBoundCurve( "param" ) ).toBeUndefined();
 
         expect( () => bb.unbindAll() ).not.toThrow();
         expect( () => bb.unbindAllRecursively() ).not.toThrow();

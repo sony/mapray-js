@@ -10,7 +10,7 @@ class Mesh {
 
     /**
      * @param {mapray.GLEnv}       glenv
-     * @param {mapray.Mesh.Initializer|ArrayBuffer|object} data   メッシュデータ
+     * @param {mapray.Mesh.Initializer|object} data   メッシュデータ
      */
     constructor( glenv, data )
     {
@@ -24,10 +24,6 @@ class Mesh {
         if ( data instanceof Initializer ) {
             // Mesh.Initializer
             this._initByInitializer( data );
-        }
-        else if ( data instanceof ArrayBuffer ) {
-            // メッシュバイナリ
-            this._initByInitializer( (new BinaryInit( glenv, data )).initializer );
         }
         else {
             // JSON オブジェクト
@@ -137,9 +133,10 @@ class Mesh {
      * @summary メッシュを描画
      *
      * @desc
-     * <p>事前に material.bindProgram(), material.setParameters() すること。</p>
+     * <p>事前に material.bindProgram(), material.setFloat() 等のパラメータ設定、
+     *    material.bindTexture2D() によるテクスチャのバインドを実行すること。</p>
      *
-     * @param {mapray.EntityMaterial} material  マテリアル
+     * @param {mapray.Material} material  マテリアル
      */
     draw( material )
     {
@@ -344,7 +341,9 @@ class JsonInit
 
         this._initializer = new Initializer( JsonInit._toDrawMode( data ), num_vertices );
 
-        this._addIndex( glenv, data.indices, num_vertices );
+        if ( data.indices ) {
+            this._addIndex( glenv, data.indices, num_vertices );
+        }
 
         var  FLT_BYTES = 4;
         var     buffer = new MeshBuffer( glenv, InitHelper.toTypedArray( data.vertices, ComponentType.FLOAT ) );
@@ -401,209 +400,12 @@ class JsonInit
         switch ( data.ptype ) {
         case "triangles": return DrawMode.TRIANGLES;
         case "lines":     return DrawMode.LINES;
+        case "points":    return DrawMode.POINTS;
         default:          return DrawMode.TRIANGLES;
         }
     }
 
 
-}
-
-
-/**
- * @summary メッシュバイナリを Mesh.Initializer に変換
- *
- * @memberof mapray.Mesh
- * @private
- */
-class BinaryInit
-{
-
-    /**
-     * @param {mapray.GLEnv} glenv
-     * @param {ArrayBuffer}  data   メッシュデータ
-     */
-    constructor( glenv, data )
-    {
-        var header = new DataView( data, 0 );
-
-        var vtype        = header.getUint8( BinaryInit.OFFSET_VTYPE );
-        var itype        = header.getUint8( BinaryInit.OFFSET_ITYPE );
-        var ptype        = header.getUint8( BinaryInit.OFFSET_PTYPE );
-        var num_vertices = header.getUint32( BinaryInit.OFFSET_NUM_VERTICES, true );
-        var num_indices  = header.getUint32( BinaryInit.OFFSET_NUM_INDICES,  true );
-
-        this._initializer = new Initializer( BinaryInit._toDrawMode( ptype ), num_vertices );
-
-        var vinfo = InitHelper.createVertexInfo( vtype );
-
-        var indices = this._createIndexArray( glenv, data, itype, num_indices, vinfo, num_vertices );
-        this._addIndex( glenv, itype, indices );
-
-        var  FLT_BYTES = 4;
-        var     buffer = new MeshBuffer( glenv, this._createVertexArray( data, vinfo, num_vertices ) );
-        var byteStride = InitHelper.numVertexComponents( vinfo ) * FLT_BYTES;
-        var byteOffset = 0;
-
-        for ( var i = 0; i < vinfo.length; ++i ) {
-            var num_compos = vinfo[i].size;
-            this._initializer.addAttribute( vinfo[i].name, buffer, num_compos, ComponentType.FLOAT,
-                                            { byte_stride: byteStride, byte_offset: byteOffset } );
-            byteOffset += num_compos * FLT_BYTES;
-        }
-    }
-
-
-    /**
-     * @summary Mesh.Initializer インスタンスを取得
-     * @type {Mesh.Initializer}
-     * @readonly
-     */
-    get initializer() { return this._initializer; }
-
-
-    /**
-     * @summary インデックスバッファを作成 (バイナリデータから)
-     *
-     * @param  {mapray.GLEnv} glenv
-     * @param  {ArrayBuffer}  src_buffer   バイナリデータ
-     * @param  {number}       itype        インデックス型 (ENUM_ITYPE_UINT16 | ENUM_ITYPE_UINT32)
-     * @param  {number}       num_indices  インデックス数
-     * @param  {array}        vinfo        頂点情報
-     * @param  {number}       num_vertices 頂点数
-     * @return {Uint16Array|Uint32Array}   インデックス配列
-     * @private
-     */
-    _createIndexArray( glenv, src_buffer, itype, num_indices, vinfo, num_vertices )
-    {
-        // 入力配列を作成
-        var      FLT_BYTES = 4;
-        var vertices_bytes = InitHelper.numVertexComponents( vinfo ) * num_vertices * FLT_BYTES;
-        var       src_view = new DataView( src_buffer, BinaryInit.OFFSET_BODY + vertices_bytes );
-
-        var i;
-        var dst_array;
-        var index_bytes;
-
-        switch ( itype ) {
-        case BinaryInit.ENUM_ITYPE_UINT16:
-            dst_array   = new Uint16Array( num_indices );
-            index_bytes = 2;
-            for ( i = 0; i < num_indices; ++i ) {
-                dst_array[i] = src_view.getUint16( index_bytes * i, true );
-            }
-            break;
-        case BinaryInit.ENUM_ITYPE_UINT32:
-            dst_array   = new Uint32Array( num_indices );
-            index_bytes = 4;
-            for ( i = 0; i < num_indices; ++i ) {
-                dst_array[i] = src_view.getUint32( index_bytes * i, true );
-            }
-            break;
-        default:
-            throw new Error( "mapray: unknown itype: " + itype );
-        }
-
-        return dst_array;
-    }
-
-
-    /**
-     * @summary 頂点バッファを作成 (バイナリデータから)
-     *
-     * @param  {ArrayBuffer} src_buffer    バイナリデータ
-     * @param  {array}       vinfo         頂点情報
-     * @param  {number}      num_vertices  頂点数
-     * @return {Float32Array}              頂点データを格納した配列
-     * @private
-     */
-    _createVertexArray( src_buffer, vinfo, num_vertices )
-    {
-        var FLT_BYTES = 4;
-
-        // 入力配列を作成
-        var num_elements = InitHelper.numVertexComponents( vinfo ) * num_vertices;
-        var src_view     = new DataView( src_buffer, BinaryInit.OFFSET_BODY );
-        var dst_array    = new Float32Array( num_elements );
-        for ( var i = 0; i < num_elements; ++i ) {
-            dst_array[i] = src_view.getFloat32( i * FLT_BYTES, true );
-        }
-
-        return dst_array;
-    }
-
-
-    /**
-     * @summary インデックスデータを追加
-     *
-     * @param {mapray.GLEnv}            glenv
-     * @param {number}                  itype    インデックス型 (ENUM_ITYPE_UINT16 | ENUM_ITYPE_UINT32)
-     * @param {Uint16Array|Uint32Array} indices  インデックス配列
-     * @private
-     */
-    _addIndex( glenv, itype, indices )
-    {
-        var buffer = new MeshBuffer( glenv, indices, { target: MeshBuffer.Target.INDEX } );
-        var   type = BinaryInit._indexTypeToComponentType( itype );
-
-        this._initializer.addIndex( buffer, indices.length, type );
-    }
-
-
-    /**
-     * @summary Mesh.DrawMode に変換
-     *
-     * @param  {number} ptype          プリミティブタイプ
-     * @return {mapray.Mesh.DrawMode}  描画モード
-     * @private
-     */
-    static
-    _toDrawMode( ptype )
-    {
-        switch ( ptype ) {
-        case BinaryInit.ENUM_PTYPE_TRIANGLES: return DrawMode.TRIANGLES;
-        case BinaryInit.ENUM_PTYPE_LINES:     return DrawMode.LINES;
-        default: throw new Error( "mapray: invalid ptype: " + ptype );
-        }
-    }
-
-
-    /**
-     * @summary インデックス型から要素型へ変換
-     *
-     * @param  {number} itype               インデックス型 (ENUM_ITYPE_UINT16 | ENUM_ITYPE_UINT32)
-     * @return {mapray.Mesh.ComponentType}  要素型 (UNSIGNED_SHORT | UNSIGNED_INT)
-     * @private
-     */
-    static
-    _indexTypeToComponentType( itype )
-    {
-        switch ( itype ) {
-        case BinaryInit.ENUM_ITYPE_UINT16:
-            return ComponentType.UNSIGNED_SHORT;
-        case BinaryInit.ENUM_ITYPE_UINT32:
-        default:
-            return ComponentType.UNSIGNED_INT;
-        }
-    }
-
-}
-
-{
-    // バイナリデータのオフセット
-    BinaryInit.OFFSET_VTYPE = 0;
-    BinaryInit.OFFSET_ITYPE = 1;
-    BinaryInit.OFFSET_PTYPE = 2;
-    BinaryInit.OFFSET_NUM_VERTICES = 4;
-    BinaryInit.OFFSET_NUM_INDICES  = 8;
-    BinaryInit.OFFSET_BODY  = 12;
-
-    // ITYPE 列挙値
-    BinaryInit.ENUM_ITYPE_UINT16 = 0;
-    BinaryInit.ENUM_ITYPE_UINT32 = 1;
-
-    // PTYPE 列挙値
-    BinaryInit.ENUM_PTYPE_TRIANGLES = 0;
-    BinaryInit.ENUM_PTYPE_LINES     = 1;
 }
 
 

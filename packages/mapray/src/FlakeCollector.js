@@ -1,5 +1,6 @@
 import GeoMath from "./GeoMath";
 import RenderFlake from "./RenderFlake";
+import AreaUtil from "./AreaUtil";
 
 
 /**
@@ -147,6 +148,8 @@ class FlakeCollector {
      */
     traverse()
     {
+        if ( this._globe.north_pole_flake ) this._collectFlakes( this._globe.north_pole_flake );
+        if ( this._globe.south_pole_flake ) this._collectFlakes( this._globe.south_pole_flake );
         this._collectFlakes( this._globe.root_flake );
 
         // デバッグ統計
@@ -186,6 +189,24 @@ class FlakeCollector {
         // 地表断片の詳細レベルの範囲
         var range = this._getLevelOfDetailRange( flake );
         var    zt = range.mid + this._max_zbias;   // 最大タイルレベル
+
+        if ( flake.type !== AreaUtil.Type.NORMAL ) {
+            if ( flake.z < 2 ) {
+                this._collectNextLevelFlakes( flake );   // 地表断片を分割
+                return;
+            }
+            if ( flake.z < 7 ) {
+                if ( !AreaUtil.isOutOfRange( flake.type, flake.x, flake.y, flake.z ) ) {
+                    if ( range.max - range.min > FlakeCollector.MAX_LOD_INTERVAL || zt > flake.z ) {
+                        this._collectNextLevelFlakes( flake );   // 地表断片を分割
+                    }
+                    else {
+                        this._addRenderFlake( flake, range );
+                    }
+                }
+                return;
+            }
+        }
 
         if ( range.max - range.min > FlakeCollector.MAX_LOD_INTERVAL || zt > flake.z ) {
             //    地表断片の LOD 幅が閾値より大きい
@@ -252,9 +273,13 @@ class FlakeCollector {
                 var cosλ = Math.cos( mx );
 
                 // N
-                N[0] = cosφ * cosλ;
-                N[1] = cosφ * sinλ;
-                N[2] = sinφ;
+                AreaUtil.transformVector3Values(
+                    flake.type,
+                    cosφ * cosλ,
+                    cosφ * sinλ,
+                    sinφ,
+                    N
+                );
 
                 // V = r N - Q
                 V[0] = r * N[0] - Q[0];
@@ -279,8 +304,8 @@ class FlakeCollector {
             }
         }
 
-        var lodMin = -Math.maprayLog2( dMax );  // Log2[1/dMax]
-        var lodMax = -Math.maprayLog2( dMin );  // Log2[1/dMin]
+        var lodMin = -GeoMath.maprayLog2( dMax );  // Log2[1/dMax]
+        var lodMax = -GeoMath.maprayLog2( dMin );  // Log2[1/dMin]
 
         return {
             min: lodMin,
@@ -301,10 +326,11 @@ class FlakeCollector {
      * @param  {number} x  X 座標
      * @param  {number} y  Y 座標
      * @param  {number} r  GOGS 原点からの距離 (Meters)
+     * @param  {AreaUtil.Type}  flake 地表タイプ
      * @return {number}    地表詳細レベル
      * @private
      */
-    _calcLOD( x, y, r )
+    _calcLOD( x, y, r, type )
     {
         var sinλ = Math.sin( x );
         var cosλ = Math.cos( x );
@@ -314,10 +340,13 @@ class FlakeCollector {
         var cosφ =   2 * ey  / (ey2 + 1);
 
         // N
-        var N = this._view_dir_N;
-        N[0] = cosφ * cosλ;
-        N[1] = cosφ * sinλ;
-        N[2] = sinφ;
+        var N = AreaUtil.transformVector3Values(
+            type,
+            cosφ * cosλ,
+            cosφ * sinλ,
+            sinφ,
+            this._view_dir_N
+        );
 
         // V = r N - Q
         var V = this._view_dir_V;
@@ -336,7 +365,7 @@ class FlakeCollector {
         var inv_d = r * cosφ / wUV;
 
         // Log2[1/d]
-        return Math.maprayLog2( inv_d );
+        return GeoMath.maprayLog2( inv_d );
     }
 
 
@@ -371,10 +400,10 @@ class FlakeCollector {
         var r = GeoMath.EARTH_RADIUS + flake.base_height;
 
         // 四隅の地表詳細レベル
-        rflake.lod_00 = this._calcLOD( mx_min, my_min, r );
-        rflake.lod_10 = this._calcLOD( mx_max, my_min, r );
-        rflake.lod_01 = this._calcLOD( mx_min, my_max, r );
-        rflake.lod_11 = this._calcLOD( mx_max, my_max, r );
+        rflake.lod_00 = this._calcLOD( mx_min, my_min, r, flake.type );
+        rflake.lod_10 = this._calcLOD( mx_max, my_min, r, flake.type );
+        rflake.lod_01 = this._calcLOD( mx_min, my_max, r, flake.type );
+        rflake.lod_11 = this._calcLOD( mx_max, my_max, r, flake.type );
     }
 
 

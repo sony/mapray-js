@@ -1,0 +1,63 @@
+name: <NPM release> Publish node packages
+
+on:
+  release:
+    types: [released]
+
+jobs:
+  npm:
+    runs-on: ubuntu-latest
+    env:
+      CORE_PACKAGE_DIR: "./packages/mapray"
+      UI_PACKAGE_DIR: "./packages/ui"
+      EMSDK_DIR: "./_deploy/emsdk"
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 14
+          registry-url: https://registry.npmjs.org
+          scope: '@mapray'
+      - name: Setup EMSDK
+        run: |
+          mkdir -p ${{ env.EMSDK_DIR }}/../
+          echo "Cloning EMSDK from github"
+          git clone --branch=2.0.9 --depth=1 https://github.com/emscripten-core/emsdk.git ${{ env.EMSDK_DIR }}
+          echo "Coping patch file to the EMSDK directory"
+          cp ${{ env.CORE_PACKAGE_DIR }}/wasm/emsdk.patch ${{ env.EMSDK_DIR }}/emsdk.patch
+          echo "Install and Activate EMSDK"
+          cd ${{ env.EMSDK_DIR }}
+          ./emsdk install latest
+          ./emsdk activate latest
+          echo "Apply the patch to EMSDK"
+          git apply -p1 emsdk.patch
+      - run:  git fetch --prune --unshallow
+      - name: Build wasm code
+        run: |
+          echo "Activate EMSDK"
+          source ${{ env.EMSDK_DIR }}/emsdk_env.sh
+          echo "Build wasm code"
+          cd ${{ env.CORE_PACKAGE_DIR }}
+          ./wasm/rebuild_and_install.sh
+        shell: bash
+      - name: Setup
+        run: yarn install
+      - name: Build maprayJS
+        run: yarn build
+      - name: Packing core package
+        run: yarn pack
+        working-directory: ./packages/mapray
+      - name: Packing ui package
+        run: yarn pack
+        working-directory: ./packages/ui
+      - name: Publish core to npm packages
+        run: find ./ -name "*.tgz" -type f | xargs npm publish
+        working-directory: ${{ env.CORE_PACKAGE_DIR }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish ui to Github packages
+        run: find ./ -name "*.tgz" -type f | xargs npm publish
+        working-directory: ${{ env.UI_PACKAGE_DIR }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+

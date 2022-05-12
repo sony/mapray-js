@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "lib": [ "es6", "dom" ],
+    "module": "esnext",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+
+    "allowJs": true,
+    "removeComments": true,
+    "downlevelIteration": true,
+
+    "strict": true,
+    "strictNullChecks": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "noImplicitAny": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+
+    "outDir": "dist",
+  },
+  "include": [
+    "src/**/*",
+  ],
+  "exclude": [
+    "node_module",
+    "dist",
+  ]
+}

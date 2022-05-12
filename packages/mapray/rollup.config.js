@@ -4,19 +4,28 @@ import { string } from 'rollup-plugin-string'
 import resolve from 'rollup-plugin-node-resolve'
 import commonjs from 'rollup-plugin-commonjs'
 import strip from '@rollup/plugin-strip';
+import { base64 } from 'rollup-plugin-base64';
+// import typescript from '@rollup/plugin-typescript'
+import typescript from 'rollup-plugin-typescript2';
 
-const extensions = ['**/*.vert', '**/*.frag', '**/*.glsl']
-var outdir = "dist/"
+
+
+const extensions = ['**/*.vert', '**/*.frag', '**/*.glsl', '**/*.svg'];
+var outdir = "dist/";
+
+
 
 const strip_option = (
     process.env.BUILD === "production" ?
     {
+        include: '**/*.(ts|js)',
         debugger: false,
-        functions: [ 'console.assert' ],
-        labels: [ 'ASSERT' ],
+        functions: [ 'console.assert', 'cfa_assert' ],
+        labels: [ 'ASSERT', 'DEBUG' ],
         sourceMap: true,
     }:
     {
+        include: '**/*.(ts|js)',
         debugger: false,
         functions: [],
         labels: [],
@@ -24,90 +33,153 @@ const strip_option = (
     }
 );
 
-export default [  
+
+
+export default [
   // ES
   {
-    input: 'src/index.js',
-    output: { 
-      file: outdir+'es/mapray.js', 
-      format: 'es', 
-      indent: false, 
-      sourcemap: true
+    input: 'src/mapray.ts',
+    preserveModules: true,
+    output: {
+      dir: outdir + 'es/',
+      format: 'es',
+      indent: false,
+      sourcemap: false,
     },
+    external: [
+      'tslib',
+    ],
     plugins: [
-      commonjs(),
       resolve(),
-      strip(strip_option),
+      base64({
+        include: '**/*.wasm'
+      }),
       string({
         include: extensions
       }),
-      babel({
-        exclude: 'node_modules/**'
-      })
+      typescript({
+        tsconfig: './tsconfig.json',
+        useTsconfigDeclarationDir: true,
+        tsconfigOverride: {
+          compilerOptions: {
+            outDir: outdir + 'es/',
+            sourceMap: false,
+            declaration: true,
+            declarationDir: outdir + 'es/@type',
+            declarationMap: true,
+          }
+        }
+      }),
+      strip(strip_option),
     ]
   },
-  
+
   // ES for Browsers
   {
-    input: 'src/index.js',
-    output: { file: outdir+'es/mapray.mjs', format: 'es', indent: false },
+    input: 'src/mapray.ts',
+    output: {
+      file: outdir + 'es/mapray.mjs',
+      format: 'es',
+      indent: false,
+    },
     plugins: [
-      commonjs(),
       resolve(),
-      strip(strip_option),
+      base64({
+        include: '**/*.wasm'
+      }),
       string({
         include: extensions
       }),
-      babel({
-        exclude: 'node_modules/**'
+      typescript({
+        tsconfig: './tsconfig.json',
+        useTsconfigDeclarationDir: true,
+        tsconfigOverride: {
+          compilerOptions: {
+            outDir: outdir + 'es/',
+          }
+        }
       }),
+      strip(strip_option),
       terser()
     ]
   },
-  
+
   // UMD Development
   {
-    input: 'src/index.js',
+    input: 'src/index.ts',
     output: {
-      file: outdir+'umd/mapray.js',
+      file: outdir + 'umd/mapray.js',
       format: 'umd',
       name: 'mapray',
+      exports: 'named',
       indent: false,
       sourcemap: true
     },
     plugins: [
-      commonjs(),
       resolve(),
-      strip(strip_option),
+      commonjs(),
+      base64({
+        include: '**/*.wasm'
+      }),
       string({
         include: extensions
       }),
-      babel({
+      typescript({
+        tsconfig: './tsconfig.json',
+        useTsconfigDeclarationDir: true,
+        tsconfigOverride: {
+          compilerOptions: {
+            outDir: outdir + 'umd/',
+            sourceMap: true,
+            declaration: true,
+            declarationDir: outdir + 'umd/@type',
+            declarationMap: false,
+            target: 'es5',
+            module: 'es2015',
+          }
+        }
+      }),
+      strip(strip_option),
+      babel({ // this is for js file in src dir
         exclude: 'node_modules/**'
-      })
+      }),
     ]
   },
-  
+
   // UMD Production
   {
-    input: 'src/index.js',
+    input: 'src/index.ts',
     output: {
-      file: outdir+'umd/mapray.min.js',
+      file: outdir + 'umd/mapray.min.js',
       format: 'umd',
       name: 'mapray',
-      indent: false
+      exports: 'named',
+      indent: false,
     },
     plugins: [
-      commonjs(),
       resolve(),
-      strip(strip_option),
+      commonjs(),
+      base64({
+        include: '**/*.wasm'
+      }),
       string({
         include: extensions
       }),
-      babel({
+      typescript({
+        tsconfig: './tsconfig.json',
+        useTsconfigDeclarationDir: true,
+        tsconfigOverride: {
+          compilerOptions: {
+            outDir: outdir + 'umd/',
+            target: 'es5',
+            module: 'es2015',
+          }
+        }
+      }),
+      strip(strip_option),
+      babel({ // this is for js file in src dir
         exclude: 'node_modules/**'
       }),
-      terser()
     ]
-  }
+  },
 ]

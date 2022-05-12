@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Mapray Rambler</title>
+    <noscript>
+        <div style="
+            padding: 0.5em 1em;
+            margin: 2em 0;
+            color: black;
+            background: #fcefb7;
+            border: solid 2px #f8d450;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.22);
+        ">
+            <p style="
+                margin: 0;
+                padding: 0;">JavaScriptが無効になっています。MaprayのWebサイトを正しく表示するためにはJavaScriptを有効にして下さい。</p>
+        </div>
+    </noscript>
+    <style>
+        html, body {
+            height:  100%;
+            margin:  0;
+            padding: 0;
+        }
+        div#contents {
+            display:        flex;
+            flex-direction: column;
+            flex-wrap:      nowrap;
+            height:         100%;
+        }
+        div#mapray-container {
+            height:    0;
+            flex-grow: 1;
+            position: relative;
+        }
+        div#statusbar {
+            display:          flex;
+            flex-direction:   row;
+            flex-wrap:        wrap;
+            justify-content:  space-between;
+            background-color: #ddd;
+            font-family: Noto Sans JP,sans-serif;
+            font-size: 12px;
+        }
+
+        table {
+            border-collapse: collapse;
+        }
+        td, th {
+            padding: 0px 5px;
+        }
+
+        div#mapInfo {
+            display: flex;
+            width: 50px;
+            height: 25px;
+            margin-left: auto;
+            margin-right: 10px;
+            align-items: center;
+        }
+
+        #tools {
+            position: absolute;
+            bottom: 29px;
+            right: 5px;
+            width: 400px;
+            margin: 0;
+        }
+
+        .tool-item {
+            font-family: 'Courier New';
+            color: #00FF00;
+            min-width: 300px;
+            max-width: 100%;
+            background: rgba( 0, 0, 0, 0.7 );
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .log-area {
+            bottom: 70px;
+            right:  10px;
+            margin: 0;
+        }
+
+        div#rec-controller {
+            position: absolute;
+            top: 64px;
+            right: 0px;
+            width: 24px;
+            padding: 12px;
+            background-color: rgba(0, 0, 200, 0.6);
+        }
+        #rec-controller-items {
+            display: flex;
+            flex-flow: column;
+            justify-content: space-between;
+        }
+        #rec-controller-items>div>span {
+            color: rgb(214, 214, 214);
+        }
+        #rec-controller-items>div>span:hover {
+            color: rgb(0, 134, 209);
+        }
+
+    </style>
+</head>
+
+<body onload="window.startApp('mapray-container');">
+
+<div id="contents">
+    <div id="mapray-container">
+    </div>
+
+    <div id="statusbar">
+            <table id="left-table" border="1">
+            <tr>
+                <th width="80">緯度</th>
+                <th width="80">経度</th>
+                <th width="80">高度 (カメラ)</th>
+                <th width="80">標高 (地表面)</th>
+                <th width="60">方位角</th>
+                <th width="60">仰俯角</th>
+                <th width="60">画角</th>
+                <th width="60">layer</th>
+                <th width="60">fps</th>
+            </tr>
+            <tr align="center">
+                <td id="latitude">---</td>
+                <td id="longitude">---</td>
+                <td id="cam-height">---</td>
+                <td id="elevation">---</td>
+                <td id="yaw-angle">---</td>
+                <td id="pitch-angle">---</td>
+                <td id="fov-angle">---</td>
+                <td id="layer">---</td>
+                <td id="fps">---</td>
+            </tr>
+        </table>
+
+        <table id="right-table" border="1">
+            <tr>
+                <th width="60">cnt.mesh</th>
+                <th width="60">cnt.vert</th>
+                <th width="60">reqs.dem</th>
+                <th width="60">reqs.img</th>
+                <th>データ提供</th>
+            </tr>
+            <tr align="center">
+                <td id="cnt-mesh">---</td>
+                <td id="cnt-vert">---</td>
+                <td id="reqs-dem">---</td>
+                <td id="reqs-img">---</td>
+                <td id="provider">---</td>
+            </tr>
+        </table>
+    </div>
+</div>
+    </body>
+    <script type="text/javascript" src="./dist/bundle.js"></script>
+</html>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Mapray Terrain Simple Sample</title>
+    <noscript>
+        <div style="
+            padding: 0.5em 1em;
+            margin: 2em 0;
+            color: black;
+            background: #fcefb7;
+            border: solid 2px #f8d450;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.22);
+        ">
+            <p style="
+                margin: 0;
+                padding: 0;">JavaScriptが無効になっています。MaprayのWebサイトを正しく表示するためにはJavaScriptを有効にして下さい。</p>
+        </div>
+    </noscript>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.10.1/dist/css/uikit.min.css">
+    <style>
+        html, body {
+            height:  100%;
+            margin:  0;
+            padding: 0;
+        }
+        div#contents2 {
+            height:         100%;
+        }
+        div#mapray-container2 {
+            height:    0;
+            flex-grow: 1;
+            position: relative;
+        }
+        div#mapray-container {
+            height: 100vh;
+        }
+
+        table {
+            border-collapse: collapse;
+        }
+        td, th {
+            padding: 0px 5px;
+        }
+
+
+        #offcanvas-help>div>dl>dt {
+            color: white;
+        }
+        div#help-controller {
+            background-color: rgba(0, 0, 0, 0.6);
+        }
+        div#control-ui2 {
+            position: absolute;
+            top: 0px;
+            right: 0px;
+            margin: 24px;
+            width: 350px;
+        }
+        #player-play-start {
+            color: rgb(0, 134, 209);
+
+        }
+    </style>
+</head>
+<body onload="window.startApp('mapray-container');">
+
+<div id="offcanvas-help" uk-offcanvas="mode: reveal; overlay: true; flip: true">
+    <div class="uk-card uk-card-secondary uk-card-body uk-offcanvas-bar">
+        <dl class="uk-description-list uk-description-list-divider">
+            <dt class="uk-margin-small-bottom">Pan</dt>
+            <dd>
+                <img src="./resources/icon/mouse-white-36dp.svg" width="40" height="40" uk-svg>
+                Left click + drag
+            </dd>
+            <dt class="uk-margin-small-bottom">Zoom</dt>
+            <dd>
+                <img src="./resources/icon/mouse-white-36dp.svg" width="40" height="40" uk-svg>
+                Mouse wheel
+            </dd>
+            <dd class="uk-padding uk-padding-remove-horizontal uk-padding-remove-bottom">
+                <img src="./resources/icon/mouse-white-36dp.svg" width="40" height="40" uk-svg>
+                Right click + drag
+            </dd>
+            <dt class="uk-margin-small-bottom">Rotate</dt>
+            <dd>
+                <img src="./resources/icon/mouse-white-36dp.svg" width="40" height="40" uk-svg>
+                SHIFT + Left click + drag, or Middle Click
+            </dd>
+            <dt class="uk-margin-small-bottom">Altitude</dt>
+            <dd>
+                <img src="./resources/icon/mouse-white-36dp.svg" width="40" height="40" uk-svg>
+                SHIFT + Right click + drag
+            </dd>
+            <dt class="uk-margin-small-bottom">Rotate heading</dt>
+            <dd>
+                <img src="./resources/icon/mouse-white-36dp.svg" width="40" height="40" uk-svg>
+                CTRL + Left click + drag
+            </dd>
+            <dt class="uk-margin-small-bottom">Change camera fov</dt>
+            <dd>
+                <img src="./resources/icon/keyboard-white-36dp.svg" width="40" height="40" uk-svg>
+                Z: increase, C: decrease, X: reset
+            </dd>
+            <dt class="uk-margin-small-bottom">Flight view</dt>
+            <dd>
+                <img src="./resources/icon/keyboard-white-36dp.svg" width="40" height="40" uk-svg>
+                Arrow key
+            </dd>
+
+        </dl>
+    </div>
+</div>
+
+    <div id="contents" class="uk-cover-container">
+        <div id="mapray-container">
+            <div id="control-ui" class="uk-overlay uk-position-right uk-width-1-4">
+                <div class="uk-card uk-card-secondary uk-card-small uk-card-body">
+                    <h1 class="uk-card-title">Terrains</h1>
+                    <p>Reconstructed 3D terrain from DEM </p>
+                    <p>of the Geospatial Information Authority of Japan and JAXA</p>
+                    <p>Data source: <a href="https://maps.gsi.go.jp/#5/36.350527/138.757324/&base=std&ls=std%7Cchiikimesh%7Cfgd_dem5a_area_dtil&disp=111&lcd=fgd_dem5a_area_dtil&vs=c1j0h0k0l0u0t0z0r0s0m0f0&d=m">DEM,Geospatial Information Authority of Japan</a></p>
+                    <p><a href="https://www.eorc.jaxa.jp/ALOS/aw3d/index.htm">ALOS World 3D, JAXA</a></p>
+                    <div class="uk-margin">
+                        <label class="uk-form-label">Location</label>
+                        <select class="uk-select uk-form-small" id="location" uk-tooltip="Select location" onchange="(function(){window.onChangeLocation();})();">
+                            <option value="Fuji"> Mt.Fuji, Japan</option>
+                            <option value="NorthernAlps" selected> Northern Japanese alps</option>
+                            <option value="GrandCanyon"> Grand Canyon National Park, Arizona</option>
+                            <option value="Everest">Mt Everest, Himalayas</option>
+                            <option value="AyersRock"> Ayers Rock, Australia</option>
+                            <option value="TableMountain"> Table Mountain, Cape Town</option>
+                            <option value="Taranaki"> Mt Taranaki, New Zealand</option>
+                            <option value="LakeMcDonald"> Lake McDonald, Glacier National Park</option>
+                            <option value="Darvaza"> Darvaza Gas Crater, Turkmenistan</option>
+                            <option value="StHelens"> Mt St. Helens, USA</option>
+                        </select>
+                    </div>
+                    <hr>
+                    <div class="uk-margin">
+                        <h2 class="uk-card-title" uk-tooltip="Settings for atmosphere effects">Atmosphere</h2>
+                        <div class="uk-margin uk-grid-small uk-child-width-auto uk-grid">
+                            <label><input class="uk-checkbox" type="checkbox" id="AtmoON" uk-tooltip="Enable Atmosphere" onclick="(function(){window.onClickCheckAtmosphere();})();" >  ON</label>
+                        </div>
+                    </div>
+                    <div class="uk-margin">
+                        <label class="uk-form-label" uk-tooltip="Set date and time">Date</label>
+                        <form class="uk-grid-small" uk-grid>
+                            <div class="uk-width-1-1@s">
+                                <input class="uk-input" id="simulate-date" type="date" uk-tooltip="Please enter the date" onchange="(function(){window.onChangeDateTime();})();">
+                            </div>
+                            <div class="uk-width-1-2@s">
+                                <input class="uk-input" id="simulate-time" type="time" uk-tooltip="Please enter the time" onchange="(function(){window.onChangeDateTime();})();">
+                            </div>
+                            <div class="uk-width-1-2@s">
+                                <input class="uk-input" id="simulate-timezone" uk-tooltip="The time zone is automatically selected from the location" type="text" disabled>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="uk-margin">
+                        <label class="uk-form-label">Sun Animation</label>
+                        <div class="uk-margin-small" id="player-sun" uk-tooltip="Start and stop animation" title aria-expanded="false">
+                            <button onclick="(function(){window.onStartDayAnimation();})();"><img id="sun-player-icon" src="./resources/icon/play_circle_filled-24px.svg" width="64" height="64" uk-svg></button>
+                        </div>
+                        <div class="uk-form-label">Speed</div>
+                        <input class="uk-range" id="range" type="range" value="5.0" min="1" max="10" step="1" uk-tooltip="Change sun animation speed">
+                        <output id="range-output">5</output>
+                    </div>
+                    <hr>
+                    <div class="uk-margin">
+                        <h2 class="uk-card-title" uk-tooltip="Settings for atmosphere effects">Surface</h2>
+                        <select class="uk-select uk-form-small" id="surface" uk-tooltip="Change surface texture" onchange="(function(){window.onChangeSurface();})();">
+                            <option value="bingmaps" selected>Bingmaps</option>
+                            <option value="street">Street</option>
+                            <option value="satellite">Satellite</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div id="help-controller" class="uk-overlay uk-position-bottom-right">
+                <div>
+                    <a href="#offcanvas-help" uk-icon="icon: question; ratio: 1.2" uk-tooltip="How to operate" uk-toggle="target: #offcanvas-help"></a>
+                </div>
+            </div>
+        </div>
+    </div>
+    </body>
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.10.1/dist/js/uikit.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.10.1/dist/js/uikit-icons.min.js"></script>
+    <script type="text/javascript" src="./dist/bundle.js"></script>
+</html>

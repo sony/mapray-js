@@ -1,0 +1,44 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "lib": [ "es6", "dom" ],
+    "module": "esnext",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+
+    "allowJs": true,
+    "importHelpers": true,
+    "stripInternal": true,
+    "removeComments": false,
+    "downlevelIteration": true,
+    "preserveConstEnums": true,
+
+    "strict": true,
+    "strictNullChecks": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "noImplicitAny": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+
+    "rootDir": "src",
+    "baseUrl": "src/",
+    "outDir": "out",
+  },
+  "typedocOptions": {
+    "entryPoints": [ "src/mapray.ts" ],
+    "out": "docs",
+    "theme": "default",
+    "hideGenerator": true,
+    "gitRevision": "master",
+    "excludeInternal": true,
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules/**/*",
+    "dist/**/*"
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.json",
+
+  "typedocOptions": {
+    "name": "@mapray",
+    "entryPoints": [
+      "meta-info.ts",
+      // "packages/mapray/src/mapray.ts",
+      // "packages/ui/src/index.ts",
+    ],
+    "out": "doc/typedoc-devel",
+    "hideGenerator": true,
+    "excludeInternal": false,
+    "listInvalidSymbolLinks": true,
+  },
+
+  "include": [
+    "./meta-info.ts",
+    "packages/mapray/src/**/*",
+    "packages/ui/src/**/*",
+  ],
+}

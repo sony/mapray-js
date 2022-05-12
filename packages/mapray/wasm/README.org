@@ -1,0 +1,187 @@
+#+STARTUP: noindent showall
+
+* Index                                                                 :TOC:
+- [[#preparing-your-development-environment][Preparing your Development Environment]]
+  - [[#preparing-installation][Preparing installation]]
+  - [[#install-emscripten-sdk][Install Emscripten SDK]]
+- [[#build-wasm-module][Build Wasm Module]]
+  - [[#setting-environment-variables][Setting Environment Variables]]
+  - [[#build-entire-wasm-module][Build Entire Wasm Module]]
+  - [[#build-individual-wasm-module][Build Individual Wasm Module]]
+- [[#unit-test][Unit Test]]
+  - [[#preparing-conan-and-cmake][Preparing Conan and CMake]]
+  - [[#build-test-code][Build Test Code]]
+  - [[#run-the-test][Run the Test]]
+
+* Preparing your Development Environment
+
+** Preparing installation
+
+   Following packages are required to install build environment for wasm module.
+
+   - bash
+   - git
+   - make
+   - CMake (3.10 or later)
+   - Python3 (3.6 or later)
+
+   In this document, the following symbols are used to represent a particular directory.
+
+   | Symbol   | Directory                                |
+   |----------+------------------------------------------|
+   | {EMSDK}  | Installation directory of Emscripten SDK |
+   | {MAPRAY} | [mapray-js directory]/packages/mapray    |
+
+
+*** Development Environment on Windows
+
+    To install development environment on Windows, wasm module part needs to be build in WSL environment.
+    Ubuntu 18.04 or newer is recommended as distribution of WSL.
+
+    The other part could be build on normal Windows environment.
+
+** Install Emscripten SDK
+
+   Follo the steps below to install the Emscripten SDK.
+
+   #+begin_example
+     $ git clone --branch=2.0.9 --depth=1 https://github.com/emscripten-core/emsdk.git {EMSDK}
+     $ cd {EMSDK}
+     $ ./emsdk install latest
+     $ ./emsdk activate latest
+     $ git apply -p1 {MAPRAY}/wasm/emsdk.patch
+   #+end_example
+
+   * The Emscripten SDK might not be used for other projects, since it is patched for Mapray.
+   * zsh needs to be launched as x86_64 mode in M1 Mac(Apple silicon).
+     Execute =arch -x86_64 zsh= to switch the mode on zsh.
+
+* Build Wasm Module
+
+** Setting Environment Variables
+
+   Emscripten SDK should be activated before building wasm module.
+   The following command activates the SDK.
+
+   #+begin_example
+     $ source {EMSDK}/emsdk_env.sh
+   #+end_example
+
+   The command changes the version of node.
+   You need to carefully check the version of node when you build mapray-js.
+
+** Build Entire Wasm Module
+
+   The following command builds the wasm module and places results to the correct position ( ={MAPRAY}/src/wasm/= ).
+
+   #+begin_example
+     $ bash {MAPRAY}/wasm/rebuild_and_install.sh
+   #+end_example
+
+   Now you can build mapray-js.
+
+** Build Individual Wasm Module
+
+   In the case of b3dtile, the following commands build only the module.
+
+   #+begin_example
+     $ cd {MAPRAY}/wasm/b3dtile
+     $ mkdir build
+     $ cd build
+     $ emcmake cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+     $ make -j
+     $ make install            # place results into {MAPRAY}/src/wasm/
+   #+end_example
+
+   To build in debug mode, put ~-DCMAKE_BUILD_TYPE=Debug~ option in the cmake command.
+
+* Unit Test
+
+  This test works with [[https://www.boost.org/doc/libs/1_71_0/libs/test/doc/html/index.html][Boost.Test]].
+
+  WSL environment is not required on Windows.
+
+** Preparing Conan and CMake
+
+   1. Install Conan 1.25 or later (C++ package manager)
+
+      <https://conan.io/>
+
+   2. Install CMake 3.10 or later (3.17 or later on Windows)
+
+      <https://cmake.org/>
+
+   #+begin_note
+     GCC 8.4 or later is required if build tool is GCC.
+     =compiler.libcxx= property of =~/.conan/profiles/default= should be set as following.
+
+     : compiler.libcxx=libstdc++11
+
+     See <https://docs.conan.io/en/latest/howtos/manage_gcc_abi.html> for more information.
+   #+end_note
+
+** Build Test Code
+
+   Create a directory under ={MAPRAY}/wasm/tests/=. And build the test code in the directory.
+
+   #+begin_example
+     $ mkdir build
+     $ cd build
+   #+end_example
+
+   
+   - Release Build
+
+     - UNIX
+
+       #+begin_example
+         $ conan install --build=missing .. -s build_type=Release
+         $ cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
+         $ make
+       #+end_example
+
+     - Visual Studio 2017
+
+       #+begin_example
+         > conan install --build=missing .. -s build_type=Release
+         > cmake .. -G "Visual Studio 15 2017" -A x64
+         > cmake --build . --config Release
+       #+end_example
+
+   - Debug Build
+
+     - UNIX
+
+       #+begin_example
+         $ conan install --build=missing .. -s build_type=Debug
+         $ cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug
+         $ make
+       #+end_example
+
+     - Visual Studio 2017
+
+       #+begin_example
+         > conan install --build=missing .. -s build_type=Debug
+         > cmake .. -G "Visual Studio 15 2017" -A x64
+         > cmake --build . --config Debug
+       #+end_example
+
+** Run the Test
+
+   Run all the tests.
+
+   #+begin_example
+     $ bin/unit_test
+   #+end_example
+
+   Run only =b3dtile_suite= test.
+
+   #+begin_example
+     $ bin/unit_test --run_test=b3dtile_suite
+   #+end_example
+
+   The following command show options of the command.
+
+   #+begin_example
+     $ bin/unit_test --help
+   #+end_example

@@ -11,14 +11,16 @@
     "globe"
   ],
   "scripts": {
-    "build": "run-p mapray ui css jsdoc",
+    "build": "run-s mapray ui css doc",
     "mapray": "yarn workspace @mapray/mapray-js build",
     "mapray-watch": "yarn workspace @mapray/mapray-js build-watch",
     "ui": "yarn workspace @mapray/ui build",
     "ui-watch": "yarn workspace @mapray/ui build-watch",
     "css": "yarn workspace @mapray/ui css",
-    "jsdoc": "yarn workspace @mapray/mapray-js jsdoc",
-    "jsdoc-devel": "yarn workspace @mapray/mapray-js jsdoc-devel",
+    "doc": "typedoc --tsconfig tsconfig.json",
+    "doc-watch": "typedoc --tsconfig tsconfig.json --watch",
+    "doc-devel": "typedoc --tsconfig tsconfig-devel.json",
+    "doc-devel-watch": "typedoc --tsconfig tsconfig-devel.json --watch",
     "test": "yarn workspace @mapray/mapray-js test"
   },
   "contributors": [
@@ -31,9 +33,12 @@
     },
     {
       "name": "masa-sony"
+    },
+    {
+      "name": "sc-onishi"
     }
   ],
-  "license": "MIT",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/sony/mapray-js.git"
@@ -47,7 +52,8 @@
     "packages/*"
   ],
   "devDependencies": {
-    "npm-run-all": "^4.1.5"
+    "npm-run-all": "^4.1.5",
+    "typedoc": "^0.22.15"
   },
   "dependencies": {}
 }

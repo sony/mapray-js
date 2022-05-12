@@ -1,20 +1,31 @@
 [<p align="center"><img width="400" alt="Mapray" src="https://storage.googleapis.com/ino-sandbox.appspot.com/github/mainlogo.png"></p>](https://mapray.com/)
 [![Build Status](https://travis-ci.org/sony/mapray-js.svg?branch=master)](https://travis-ci.org/sony/mapray-js)
 
-maprayJS is a JavaScript library for a high quality interactive 3D globes and map on the web. It is based on WebGL.
+maprayJS is a JavaScript library for a high quality interactive 3D globes and digital twin on the web. It is based on WebGL.
 [WebSite](https://mapray.com)
 
-[<p align="center"><img src="https://storage.googleapis.com/ino-sandbox.appspot.com/github/fujisan.jpg" /></p>](https://mapray.com/nextRambler.html)
+[<p align="center"><img src="https://resource.mapray.com/assets/www/img/github_cover.jpg" /></p>](https://mapray.com)
 
 ## Installation
-### CDN
+### Script Tag
+#### core packages
 ```html
-  <script src="https://resource.mapray.com/mapray-js/v0.8.8/mapray.min.js"></script>
+  <script src="https://resource.mapray.com/mapray-js/v0.9.0/mapray.min.js"></script>
+```
+#### ui packages
+```html
+  <script src="https://resource.mapray.com/mapray-js/v0.9.0/maprayui.min.js"></script>
 ```
 
-### npm
+### NPM module
+#### core packages
 ```bash
 npm install --save @mapray/mapray-js
+```
+
+### ui packages
+```bash
+npm install --save @mapray/ui
 ```
 
 ## Usage
@@ -43,7 +54,7 @@ Mapray Cloud managed by [Sony Group Corporation.](https://www.sony.com/) If you 
     <div id="mapray-container"></div>
 </body>
 </html>
-<script src="https://resource.mapray.com/mapray-js/v0.8.8/mapray.min.js"></script>
+<script src="https://resource.mapray.com/mapray-js/v0.9.0/mapray.min.js"></script>
 <script>
      // Set Access Token for mapray cloud
        var accessToken = "<your access token here>";
@@ -85,7 +96,9 @@ Mapray Cloud managed by [Sony Group Corporation.](https://www.sony.com/) If you 
 
 ## Next Steps
 - [Examples](/examples)
-- [Sample App](/apps)
+- [Debug Apps](/debug)
+
+[<p align="center"><img src="https://resource.mapray.com/assets/www/img/github.jpg" /></p>](/examples)
 
 ## Documentation
 - [Getting started with maprayJS (Japanese)](/doc/developer-guide/GettingStarted/index.md)
@@ -95,9 +108,11 @@ Mapray Cloud managed by [Sony Group Corporation.](https://www.sony.com/) If you 
 Documentation on Mapray official [website](https://mapray.com/documents/overview/gettingstarted/index.html)
 
 **API documents**
+
+Execute the following command in the root directory.
 ```bash
-npm run jsdoc
+npm run doc
 ```
 
 ## License
-maprayJS is licensed under the [MIT license](/LICENSE).
+maprayJS is licensed under the [Apache License Version 2.0](/LICENSE).

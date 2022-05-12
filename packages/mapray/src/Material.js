@@ -16,6 +16,7 @@ class Material {
     constructor( glenv, vs_code, fs_code )
     {
         var shader     = new Shader( glenv, vs_code, fs_code );
+        /** @type WebGLRenderingContext */
         this._gl       = glenv.context;
         this._program  = this._link_shaders( shader.vs_object, shader.fs_object );
         this._vertex_attribs   = this._create_vertex_attribs();
@@ -88,7 +89,7 @@ class Material {
     /**
      * @summary uniform 変数のロケーション辞書を作成
      *
-     * @return {object}  ロケーション辞書
+     * @return { {[key: string]: WebGLUniformLocation | null} }  ロケーション辞書
      * @private
      */
     _create_uniform_location()
@@ -155,6 +156,19 @@ class Material {
         if ( location ) {
             var gl = this._gl;
             gl.uniform1i( location, value );
+        }
+    }
+
+    /**
+     * @summary 整数ベクトルパラメータを設定
+     * @param {string} name   変数名
+     * @param {Int32List} value  整数値
+     */
+    setIVector3( name, value )
+    {
+        const location = this._uniform_location[name];
+        if ( location ) {
+            this._gl.uniform3iv( location, value );
         }
     }
 

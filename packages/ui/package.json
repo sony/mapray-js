@@ -1,6 +1,6 @@
 {
   "name": "@mapray/ui",
-  "version": "0.8.8",
+  "version": "0.9.0",
   "description": "UI Engine for mapray-js",
   "keywords": [
     "3D",
@@ -16,18 +16,19 @@
   "main": "dist/umd/maprayui.js",
   "unpkg": "dist/umd/maprayui.min.js",
   "module": "dist/es/maprayui.js",
+  "types": "dist/es/@type/index.d.ts",
   "directories": {
     "doc": "doc"
   },
   "files": [
-    "dist",
-    "src"
+    "dist"
   ],
   "scripts": {
     "build": "rollup -c",
     "build-watch": "rollup -c -w",
     "css": "postcss -c ./postcss.config.js -o dist/mapray.css src/css/mapray.css",
-    "css-dev": "postcss --watch -c ./postcss.config.js -o dist/mapray.css src/css/mapray.css"
+    "css-dev": "postcss --watch -c ./postcss.config.js -o dist/mapray.css src/css/mapray.css",
+    "doc": "typedoc --tsconfig tsconfig.json"
   },
   "contributors": [
     {
@@ -39,9 +40,12 @@
     },
     {
       "name": "masa-sony"
+    },
+    {
+      "name": "sc-onishi"
     }
   ],
-  "license": "MIT",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/sony/mapray-js.git"
@@ -53,6 +57,8 @@
   "devDependencies": {
     "@babel/core": "^7.8.4",
     "@babel/preset-env": "^7.8.4",
+    "@rollup/plugin-typescript": "^8.2.1",
+    "rollup-plugin-typescript2": "0.30.0",
     "babel-loader": "^8.0.6",
     "core-js": "^3.6.4",
     "cross-env": "^7.0.0",
@@ -65,10 +71,11 @@
     "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-terser": "^5.2.0",
     "webpack": "^4.41.6",
-    "webpack-cli": "^3.3.11"
+    "webpack-cli": "^3.3.11",
+    "typescript": "4.3.2"
   },
-  "dependencies": {},
-  "peerDependencies": {
-    "@mapray/mapray-js": "^0.8.8"
+  "dependencies": {
+    "tslib": "^2.2.0",
+    "@mapray/mapray-js": "^0.9.0"
   }
 }

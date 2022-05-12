@@ -4,8 +4,9 @@ import TileTextureCache from "./TileTextureCache";
 import surface_vs_code from "./shader/surface.vert";
 import surface_fs_code from "./shader/surface.frag";
 import rid_fs_code from "./shader/rid.frag";
-import { RenderTarget } from "./RenderStage";
 import Layer from "./Layer";
+import AreaUtil from "./AreaUtil";
+import Color from "./util/Color";
 
 
 /**
@@ -33,8 +34,23 @@ class SurfaceMaterial extends FlakeMaterial {
 
         this._viewer             = viewer;
         this._tile_texture_cache = viewer.tile_texture_cache;
-        this._layers             = viewer.layers;
-        this._dummy_tile_texture = this._createDummyTileTexture( viewer.glenv );
+        this._dummy_tile_texture = this._createDummyTileTexture( viewer.glenv, [128, 128, 128, 255] );
+
+        if ( options.nightMaterial === true ) {
+            this._north_pole_tile_texture = this._createDummyTileTexture( viewer.glenv, [3, 5, 14, 255] );
+            this._south_pole_tile_texture = this._createDummyTileTexture( viewer.glenv, [43, 50, 85, 255] );
+        }
+        else {
+            this._north_pole_tile_texture = (
+                viewer.north_pole ? this._createDummyTileTexture( viewer.glenv, Color.floatColorToByteColor( viewer.north_pole.color, GeoMath.createVector4() ) ) :
+                this._dummy_tile_texture
+            );
+            this._south_pole_tile_texture = (
+                viewer.south_pole ? this._createDummyTileTexture( viewer.glenv, Color.floatColorToByteColor( viewer.south_pole.color, GeoMath.createVector4() ) ) :
+                this._dummy_tile_texture
+            );
+        }
+
         this._image_zbias = 0;
 
         this._identity_matrix = GeoMath.setIdentity( GeoMath.createMatrix() );
@@ -53,12 +69,22 @@ class SurfaceMaterial extends FlakeMaterial {
     _getPreamble( options )
     {
         const is_night = options.nightMaterial === true;
+        const is_from_space = options.atmosphereFromSpaceMaterial === true;
+        const is_from_atmosphere = options.atmosphereMaterial === true;
 
         const lines = [];
 
         // マクロの定義
         if ( is_night ) {
             lines.push( "#define NIGHTIMAGE" );
+        }
+
+        if ( is_from_space || is_from_atmosphere ) {
+            lines.push( "#define ATMOSPHERE" );
+        }
+
+        if ( is_from_space ) {
+            lines.push( "#define FROMSPACE" );
         }
 
         // lines を文字列にして返す
@@ -70,7 +96,7 @@ class SurfaceMaterial extends FlakeMaterial {
      */
     numDrawings()
     {
-        return 1 + this._layers.numDrawingLayers();
+        return 1 + this._viewer.layers.num_drawing_layers;
     }
 
 
@@ -84,7 +110,7 @@ class SurfaceMaterial extends FlakeMaterial {
         var param = this._getMaterialParamater( rflake, index );
 
         if ( param !== null ) {
-            const layer = this._layers.getDrawingLayer( index - 1 );
+            const layer = this._viewer.layers.getDrawingLayer( index - 1 );
 
             this.setVector4( "u_corner_lod", param.corner_lod );
 
@@ -98,9 +124,30 @@ class SurfaceMaterial extends FlakeMaterial {
             this.setFloat( "u_opacity", (index == 0) ? 1.0 : layer.opacity );
 
             if ( index > 0 && layer.type === Layer.LayerType.NIGHT ) {
-                this.setVector3( "u_sun_direction", this._viewer.sun_direction );
+                this.setVector3( "u_sun_direction", this._viewer.sun.sun_direction );
                 mesh.mul_flake_to_gocs( this._identity_matrix, this._flake_to_gocs );
                 this.setMatrix( "u_obj_to_gocs", this._flake_to_gocs );
+            }
+
+            if ( index === 0 && this._viewer.atmosphere ) {
+                this.setVector3( "u_sun_direction", this._viewer.sun.sun_direction );
+                mesh.mul_flake_to_gocs( this._identity_matrix, this._flake_to_gocs );
+                this.setMatrix( "u_obj_to_gocs", this._flake_to_gocs );
+                this.setVector3( "u_camera_position", [stage._view_to_gocs[12], stage._view_to_gocs[13], stage._view_to_gocs[14]] );
+                const cameraHeight = Math.sqrt(
+                    stage._view_to_gocs[12] * stage._view_to_gocs[12] +
+                    stage._view_to_gocs[13] * stage._view_to_gocs[13] +
+                    stage._view_to_gocs[14] * stage._view_to_gocs[14]
+                );
+                this.setFloat( "u_camera_height", cameraHeight );
+                this.setFloat( "u_camera_height2", cameraHeight * cameraHeight );
+
+                const parameters = this._viewer.atmosphere.parameters;
+                this.setFloat( "u_kr",              parameters.g_kr );
+                this.setFloat( "u_km",              parameters.g_km );
+                this.setFloat( "u_scale_depth",     parameters.g_scale_depth );
+                this.setFloat( "u_esun",            parameters.g_esun );
+                this.setFloat( "u_exposure",        parameters.g_exposure );
             }
 
             this.bindTexture2D( SurfaceMaterial.TEXUNIT_IMAGE_HI, param.image_hi.texture );
@@ -134,7 +181,7 @@ class SurfaceMaterial extends FlakeMaterial {
      */
     _getMaterialParamater( rflake, index )
     {
-        var tex_cache = (index == 0) ? this._tile_texture_cache : this._layers.getDrawingLayer( index - 1 ).tile_cache;
+        var tex_cache = (index == 0) ? this._tile_texture_cache : this._viewer.layers.getDrawingLayer( index - 1 ).tile_cache;
         this._image_zbias = tex_cache.getImageZBias();
 
         var flake = rflake.flake;
@@ -157,11 +204,20 @@ class SurfaceMaterial extends FlakeMaterial {
             return null;
         }
 
-        return {
-            corner_lod: [rflake.lod_00, rflake.lod_10, rflake.lod_01, rflake.lod_11],
-            image_hi: this._getImageParamater( tiles[0], zg, x, y, zi     ),
-            image_lo: this._getImageParamater( tiles[1], zg, x, y, zi - 1 )
-        };
+        if ( flake.type === AreaUtil.Type.NORMAL ) {
+            return {
+                corner_lod: [rflake.lod_00, rflake.lod_10, rflake.lod_01, rflake.lod_11],
+                image_hi: this._getImageParamater( tiles[0], zg, x, y, zi     ),
+                image_lo: this._getImageParamater( tiles[1], zg, x, y, zi - 1 )
+            };
+        }
+        else {
+            return {
+                corner_lod: [rflake.lod_00, rflake.lod_10, rflake.lod_01, rflake.lod_11],
+                image_hi: this._getPoleImageParamater( tiles[0], zg, x, y, zi    , flake.type ),
+                image_lo: this._getPoleImageParamater( tiles[1], zg, x, y, zi - 1, flake.type )
+            };
+        }
     }
 
 
@@ -201,15 +257,25 @@ class SurfaceMaterial extends FlakeMaterial {
     }
 
 
+    _getPoleImageParamater( tile, zg, x, y, zi, demType )
+    {
+        const pow = Math.pow( 2, -zg );
+        return {
+            lod:           -this._image_zbias,
+            texture: demType === AreaUtil.Type.NORTH_POLE ? this._north_pole_tile_texture : this._south_pole_tile_texture,
+            texcoord_rect: [x*pow - Math.floor( pow * (x + 0.5) ), 1 - (y + 1)*pow + Math.floor( pow * (y + 0.5) ), pow, pow]
+        };
+    }
+
+
     /**
      * @private
      */
-    _createDummyTileTexture( glenv )
+    _createDummyTileTexture( glenv, pixels )
     {
         var      gl = glenv.context;
         var  target = gl.TEXTURE_2D;
         var texture = gl.createTexture();
-        var  pixels = [128, 128, 128, 255];
 
         gl.bindTexture( target, texture );
         gl.texImage2D( target, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array( pixels ) );

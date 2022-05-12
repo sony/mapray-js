@@ -1,4 +1,4 @@
-import Triangulator from "../src/Triangulator";
+import Triangulator from "../dist/es/Triangulator";
 
 const make_serial_indices = ( start, count ) => {
     let array = new Uint32Array( count );

@@ -1,6 +1,7 @@
 build/
 dist/
-doc/jsdoc/
+doc/typedoc/
+doc/typedoc-devel/
 node_modules/
 
 */**/yarn.lock
@@ -11,3 +12,6 @@ package-lock.json
 .vscode
 .DS_Store
 .vscode
+
+## pyenv
+.python-version

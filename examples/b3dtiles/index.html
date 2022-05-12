@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Mapray B3DTiles Basic Sample</title>
+    <noscript>
+        <div style="
+            padding: 0.5em 1em;
+            margin: 2em 0;
+            color: black;
+            background: #fcefb7;
+            border: solid 2px #f8d450;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.22);
+        ">
+            <p style="
+                margin: 0;
+                padding: 0;">JavaScriptが無効になっています。MaprayのWebサイトを正しく表示するためにはJavaScriptを有効にして下さい。</p>
+        </div>
+    </noscript>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.10.1/dist/css/uikit.min.css">
+    <style>
+        html, body {
+            height:  100%;
+            margin:  0;
+            padding: 0;
+        }
+        div#contents2 {
+            height:         100%;
+        }
+        div#mapray-container2 {
+            height:    0;
+            flex-grow: 1;
+            position: relative;
+        }
+        div#mapray-container {
+            height: 100vh;
+        }
+
+        table {
+            border-collapse: collapse;
+        }
+        td, th {
+            padding: 0px 5px;
+        }
+
+
+        #offcanvas-help>div>dl>dt {
+            color: white;
+        }
+        div#help-controller {
+            background-color: rgba(0, 0, 0, 0.6);
+        }
+        div#control-ui2 {
+            position: absolute;
+            top: 0px;
+            right: 0px;
+            margin: 24px;
+            width: 350px;
+        }
+    </style>
+</head>
+<body onload="window.startApp('mapray-container');">
+<div id="offcanvas-help" uk-offcanvas="mode: reveal; overlay: true; flip: true">
+    <div class="uk-card uk-card-secondary uk-card-body uk-offcanvas-bar">
+        <dl class="uk-description-list uk-description-list-divider">
+            <dt class="uk-margin-small-bottom">Pan</dt>
+            <dd>
+                <img src="./resources/icon/mouse-white-36dp.svg" width="40" height="40" uk-svg>
+                Left click + drag
+            </dd>
+            <dt class="uk-margin-small-bottom">Zoom</dt>
+            <dd>
+                <img src="./resources/icon/mouse-white-36dp.svg" width="40" height="40" uk-svg>
+                Mouse wheel
+            </dd>
+            <dd class="uk-padding uk-padding-remove-horizontal uk-padding-remove-bottom">
+                <img src="./resources/icon/mouse-white-36dp.svg" width="40" height="40" uk-svg>
+                Right click + drag
+            </dd>
+            <dt class="uk-margin-small-bottom">Rotate</dt>
+            <dd>
+                <img src="./resources/icon/mouse-white-36dp.svg" width="40" height="40" uk-svg>
+                SHIFT + Left click + drag, or Middle Click
+            </dd>
+            <dt class="uk-margin-small-bottom">Altitude</dt>
+            <dd>
+                <img src="./resources/icon/mouse-white-36dp.svg" width="40" height="40" uk-svg>
+                SHIFT + Right click + drag
+            </dd>
+            <dt class="uk-margin-small-bottom">Rotate heading</dt>
+            <dd>
+                <img src="./resources/icon/mouse-white-36dp.svg" width="40" height="40" uk-svg>
+                CTRL + Left click + drag
+            </dd>
+            <dt class="uk-margin-small-bottom">Change camera fov</dt>
+            <dd>
+                <img src="./resources/icon/keyboard-white-36dp.svg" width="40" height="40" uk-svg>
+                Z: increase, C: decrease, X: reset
+            </dd>
+            <dt class="uk-margin-small-bottom">Flight view</dt>
+            <dd>
+                <img src="./resources/icon/keyboard-white-36dp.svg" width="40" height="40" uk-svg>
+                Arrow key
+            </dd>
+
+        </dl>
+    </div>
+</div>
+
+    <div id="contents" class="uk-cover-container">
+        <div id="mapray-container">
+            <div id="control-ui" class="uk-overlay uk-position-right uk-width-1-4">
+                <div class="uk-card uk-card-secondary uk-card-small uk-card-body">
+                    <h1 class="uk-card-title">Virtual Tokyo's 23 central wards</h1>
+                    <p>Data set from PLATEAU project by MLIT.</p>
+                    <p>The 3D city model is converted from Obj to b3dtiles.</p>
+                    <p>Data source: <a href="https://www.mlit.go.jp/plateau/">Project PLATEAU</a></p>
+                    <div class="uk-margin">
+                        <label class="uk-form-label">Location</label>
+                        <select class="uk-select uk-form-small" id="area" uk-tooltip="Select location" onchange="(function(){window.onChangeCamera();})();">
+                            <option value="TokyoTower" selected>Tokyo Tower</option>
+                            <option value="Shinjuku">Shinjuku</option>
+                            <option value="Haneda">Tokyo International Airport</option>
+                            <option value="All">All</option>
+                        </select>
+                    </div>
+
+                    <div class="uk-margin uk-grid-small uk-child-width-auto uk-grid">
+                        <label><input class="uk-checkbox" type="checkbox" uk-tooltip="Enable atmosphere effects" id="AtmoON" onclick="(function(){window.onClickCheckbox();})();" >  Atmosphere ON</label>
+                    </div>
+                </div>
+            </div>
+
+            <div id="help-controller" class="uk-overlay uk-position-bottom-right">
+                <div>
+                    <a href="#offcanvas-help" uk-icon="icon: question; ratio: 1.2" uk-tooltip="How to operate" uk-toggle="target: #offcanvas-help"></a>
+                </div>
+            </div>
+        </div>
+    </div>
+    </body>
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.10.1/dist/js/uikit.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.10.1/dist/js/uikit-icons.min.js"></script>
+    <script type="text/javascript" src="./dist/bundle.js"></script>
+</html>
