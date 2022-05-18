@@ -582,7 +582,7 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     private _updateURLHash(): void
     {
-      if ( this._self_hash_change_flag || !this._update_url_hash || this._operation_mode !== StandardUIViewer.OperationMode.NONE ) {
+      if ( !this._update_url_hash || this._operation_mode !== StandardUIViewer.OperationMode.NONE ) {
           return;
       }
       const changed = (
@@ -601,9 +601,11 @@ class StandardUIViewer extends mapray.RenderCallback
               this._last_camera_parameter.pitch = this._camera_parameter.pitch;
               this._last_camera_parameter.yaw = this._camera_parameter.yaw;
 
-              this._self_hash_change_flag = true;
-              const new_url = window.location.href.replace( window.location.hash, new_hash );
-              window.location.replace( new_url );
+              if ( window.location.hash !== new_hash ) {
+                this._self_hash_change_flag = true;
+                const new_url = window.location.href.replace( window.location.hash, new_hash );
+                window.location.replace( new_url );
+              }
           }
       }
     }
