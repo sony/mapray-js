@@ -335,6 +335,11 @@ abstract class RenderStage {
             this._draw_point_cloud();
         }
 
+        // ベクトルタイルのスタイルレイヤーを描画
+        if ( this._viewer.getVisibility( Viewer.Category.VECTILE ) ) {
+            this._viewer.vectile_manager.draw( this, this._globe );
+        }
+
         // モデルシーン描画
         if ( vis_entity ) {
             this._draw_entity();
@@ -342,7 +347,6 @@ abstract class RenderStage {
 
         // 上空レイヤを描画
         this._draw_sky_layer();
-
     }
 
     /**
