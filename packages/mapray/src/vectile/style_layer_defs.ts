@@ -13,6 +13,8 @@
 import { registerLayerCreator } from "./style";
 import type { LayerCreator } from "./style";
 
+import { SymbolLayer } from "./style_layers/symbol";
+
 
 /**
  * レイヤー型に対する [[StyleLayer]] サブクラスのインスタンスを生成す
@@ -22,6 +24,10 @@ const layer_creator_list: {
     layer_type: string,        // スタイルファイル上でのレイヤーの型名
     creator:    LayerCreator,  // StyleLayer インスタンスを生成する関数
 }[] = [
+    {
+        layer_type: 'symbol',
+        creator:    ( owner, json_layer ) => new SymbolLayer( owner, json_layer ),
+    },
 ];
 
 
