@@ -101,11 +101,9 @@ Mapray Cloud managed by [Sony Group Corporation.](https://www.sony.com/) If you 
 [<p align="center"><img src="https://resource.mapray.com/assets/www/img/github.jpg" /></p>](/examples)
 
 ## Documentation
-- [Getting started with maprayJS (Japanese)](/doc/developer-guide/GettingStarted/index.md)
-- [Developer Guide (Japanese)](/doc/developer-guide/MaprayDevelopingGuideMod/index.md)
+- [Mapray Document(Japanese)](https://mapray.com/documents/index.html)
+- [API Reference](https://resource.mapray.com/doc/api/v0.9.0/index.html)
 - [Contribution Guide (English)](/CONTRIBUTING.md)
-
-Documentation on Mapray official [website](https://mapray.com/documents/overview/gettingstarted/index.html)
 
 **API documents**
 
