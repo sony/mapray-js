@@ -1,20 +1,29 @@
 /**
- * @summary WebGL の環境
- * @desc
+ * WebGL の環境
  * WebGL レンダリングコンテキストを生成し、そのコンテキストに関連する情報を提供する。
- * @memberof mapray
- * @private
+ * @internal
  */
 class GLEnv {
 
-    /**
-     * @param canvas {HTMLCanvasElement}  レンダリングターゲットとするキャンバス
-     */
-    constructor( canvas )
-    {
-        var ctx_attribs = { depth: true, antialias: true };
+    private _canvas: HTMLCanvasElement;
 
-        var context = this._getContextWebGL( canvas, ctx_attribs );
+    private _context: WebGLRenderingContext;
+
+    OES_element_index_uint!: OES_element_index_uint | null;
+
+    EXT_texture_filter_anisotropic!: EXT_texture_filter_anisotropic | null;
+
+    WEBGL_depth_texture!: WEBGL_depth_texture | null;
+
+
+    /**
+     * @param canvas レンダリングターゲットとするキャンバス
+     */
+    constructor( canvas: HTMLCanvasElement )
+    {
+        const ctx_attribs = { depth: true, antialias: true };
+
+        const context = this._getContextWebGL( canvas, ctx_attribs );
 
         if ( !context ) {
             throw new Error( "It doesn't appear your computer can support WebGL." );
@@ -22,25 +31,25 @@ class GLEnv {
 
         this._canvas  = canvas;
         this._context = context;
+
         this._setupExtensions( context );
     }
 
 
     /** 
-     * @summary WebGL コンテキストを取得
-     * @param  {HTMLCanvasElement}      canvas       Canvas 要素
-     * @param  {WebGLContextAttributes} ctx_attribs  生成属性 (省略可能)
-     * @return {WebGLRenderingContext}               取得された WebGL コンテキスト (コンテキストを持たないときは null)
-     * @private
+     * WebGL コンテキストを取得
+     * @param  canvas       Canvas 要素
+     * @param  ctx_attribs  生成属性 (省略可能)
+     * @return 取得された WebGL コンテキスト (コンテキストを持たないときは null)
      *
      * @see https://www.khronos.org/registry/webgl/specs/latest/1.0/#5.2
      */
-    _getContextWebGL( canvas, ctx_attribs )
+    private _getContextWebGL( canvas: HTMLCanvasElement, ctx_attribs: WebGLContextAttributes ): WebGLRenderingContext | null
     {
-        var contextTypes = ["webgl", "experimental-webgl"];
-        for ( var i = 0; i < contextTypes.length; ++i ) {
-            var context = canvas.getContext( contextTypes[i], ctx_attribs );
-            if ( context ) {
+        const contextTypes = ["webgl", "experimental-webgl"];
+        for ( let i = 0; i < contextTypes.length; ++i ) {
+            const context = canvas.getContext( contextTypes[i], ctx_attribs );
+            if ( context instanceof WebGLRenderingContext ) {
                 return context;
             }
         }
@@ -49,44 +58,39 @@ class GLEnv {
 
 
     /** 
-     * @summary 既知の WebGL 拡張を設定
-     * @param  {WebGLRenderingContext} gl  WebGL コンテキスト
-     * @private
+     * 既知の WebGL 拡張を設定
+     * @param gl  WebGL コンテキスト
      * @see https://www.khronos.org/registry/webgl/specs/latest/1.0/#5.14.14
      */
-    _setupExtensions( gl )
+    private _setupExtensions( gl: WebGLRenderingContext )
     {
         // OES_element_index_uint
         this.OES_element_index_uint = gl.getExtension( "OES_element_index_uint" );
-
-        // EXT_texture_filter_anisotropic
-        this.EXT_texture_filter_anisotropic =
-            gl.getExtension( "EXT_texture_filter_anisotropic" ) ||
-            gl.getExtension( "WEBKIT_EXT_texture_filter_anisotropic" ) ||
-            gl.getExtension( "MOZ_EXT_texture_filter_anisotropic" );
 
         // WEBGL_depth_texture
         this.WEBGL_depth_texture =
             gl.getExtension( "WEBGL_depth_texture" ) ||
             gl.getExtension( "WEBKIT_WEBGL_depth_texture" ) ||
             gl.getExtension( "MOZ_WEBGL_depth_texture" );
+
+        // EXT_texture_filter_anisotropic
+        this.EXT_texture_filter_anisotropic =
+            gl.getExtension( "EXT_texture_filter_anisotropic" ) ||
+            gl.getExtension( "WEBKIT_EXT_texture_filter_anisotropic" ) ||
+            gl.getExtension( "MOZ_EXT_texture_filter_anisotropic" );
     }
 
 
     /**
-     * @summary レンダリングターゲットとするキャンバス
-     * @type {HTMLCanvasElement}
-     * @readonly
+     * レンダリングターゲットとするキャンバス
      */
-    get canvas() { return this._canvas; }
+    get canvas(): HTMLCanvasElement { return this._canvas; }
 
 
     /**
-     * @summary WebGL レンダリングコンテキスト
-     * @type {WebGLRenderingContext}
-     * @readonly
+     * WebGL レンダリングコンテキスト
      */
-    get context() { return this._context; }
+    get context(): WebGLRenderingContext { return this._context; }
 
 }
 
