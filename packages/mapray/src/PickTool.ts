@@ -55,34 +55,12 @@ class PickTool {
         this._camera = new Camera({ width: this._width, height: this._height });
 
         this._frame_buffer = new FrameBuffer( this._glenv, this._width, this._height, {
-                color_containers: [{
-                        type: FrameBuffer.ContainerType.RENDER_BUFFER,
-                        option: {
-                            internal_format: gl.RGBA4,
-                            format: gl.RGBA4,
-                            type: gl.UNSIGNED_BYTE,
-                        }
-                }],
-                depth_container: {
-                    type: FrameBuffer.ContainerType.TEXTURE,
-                    attach_type: gl.DEPTH_STENCIL_ATTACHMENT,
-                    option: {
-                        internal_format: gl.DEPTH_STENCIL,
-                        format: gl.DEPTH_STENCIL,
-                        type: glenv.WEBGL_depth_texture.UNSIGNED_INT_24_8_WEBGL,
-                    },
-                },
+                color_containers: [this._createColorContainer()],
+                depth_container: this._createDepthContainer(),
         } as FrameBuffer.Option );
 
         this._depth_to_color_frame_buffer = new FrameBuffer( this._glenv, this._width, this._height, {
-                color_containers: [{
-                        type: FrameBuffer.ContainerType.RENDER_BUFFER,
-                        option: {
-                            internal_format: gl.RGBA4,
-                            format: gl.RGBA4,
-                            type: gl.UNSIGNED_BYTE,
-                        },
-                }],
+                color_containers: [this._createColorContainer()],
         });
 
         this._depth_to_color_materials = [
@@ -142,6 +120,59 @@ class PickTool {
 
         this._rid_value   = new Uint8Array( 4 * this._width * this._height );
         this._depth_value = new Uint8Array( 4 * this._width * this._height );
+    }
+
+
+    /**
+     * カラーコンテナを作成します
+     */
+    private _createColorContainer() /* auto-type */
+    {
+        const gl = this._glenv.context;
+        return {
+            type: FrameBuffer.ContainerType.RENDER_BUFFER,
+            option: {
+                internal_format: gl.RGBA4,
+                format: gl.RGBA4,
+                type: gl.UNSIGNED_BYTE,
+            },
+        };
+    }
+
+
+    /**
+     * 深度コンテナを作成します
+     */
+    private _createDepthContainer() /* auto-type */
+    {
+        const glenv = this._glenv;
+        const gl  = glenv.context;
+        const gl2 = glenv.context2;
+        if ( gl2 ) {
+            return {
+                type: FrameBuffer.ContainerType.TEXTURE,
+                attach_type: gl2.DEPTH_ATTACHMENT,
+                option: {
+                    internal_format: gl2.DEPTH_COMPONENT24,
+                    format: gl2.DEPTH_COMPONENT,
+                    type: gl2.UNSIGNED_INT,
+                },
+            };
+        }
+        else {
+            if ( !glenv.WEBGL_depth_texture ) {
+                throw new Error("Depth Texture not supported");
+            }
+            return {
+                type: FrameBuffer.ContainerType.TEXTURE,
+                attach_type: gl.DEPTH_STENCIL_ATTACHMENT,
+                option: {
+                    internal_format: gl.DEPTH_STENCIL,
+                    format: gl.DEPTH_STENCIL,
+                    type: glenv.WEBGL_depth_texture.UNSIGNED_INT_24_8_WEBGL,
+                },
+            };
+        }
     }
 
 
