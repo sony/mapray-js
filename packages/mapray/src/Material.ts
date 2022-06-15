@@ -14,7 +14,7 @@ class Material {
      * @param vs_code - 頂点シェーダのソースコード
      * @param fs_code - フラグメントシェーダのソースコード
      */
-    constructor( glenv:   GLEnv ,
+    constructor( glenv:   GLEnv,
                  vs_code: string,
                  fs_code: string )
     {
@@ -159,9 +159,9 @@ class Material {
     setBoolean( name:  string,
                 value: boolean ): void
     {
-        var location = this._uniform_location[name];
-        if ( location ) {
-            var gl = this._gl;
+        const location = this._uniform_location[name];
+        if ( location !== undefined ) {
+            const gl = this._gl;
             gl.uniform1i( location, value ? 1 : 0 );
         }
     }
@@ -176,9 +176,9 @@ class Material {
     setInteger( name:  string,
                 value: number ): void
     {
-        var location = this._uniform_location[name];
-        if ( location ) {
-            var gl = this._gl;
+        const location = this._uniform_location[name];
+        if ( location !== undefined ) {
+            const gl = this._gl;
             gl.uniform1i( location, value );
         }
     }
@@ -193,8 +193,9 @@ class Material {
                  value: Int32List ): void
     {
         const location = this._uniform_location[name];
-        if ( location ) {
-            this._gl.uniform3iv( location, value );
+        if ( location !== undefined ) {
+            const gl = this._gl;
+            gl.uniform3iv( location, value );
         }
     }
 
@@ -290,8 +291,6 @@ class Material {
      *
      * @param name  - 変数名
      * @param value - 行列
-     *
-     * `value` の型は `Float64Array` を除く
      */
     setMatrix( name:  string,
                value: Matrix ): void

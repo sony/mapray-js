@@ -137,7 +137,7 @@ class Mesh {
     /**
      * リソースを破棄
      */
-    dispose()
+    dispose(): void
     {
         // @ts-ignore
         this._attrib_data = {};
@@ -286,7 +286,7 @@ interface AttribInitEntry {
     id:             string;
     buffer:         MeshBuffer;
     num_components: number;
-    component_type: Mesh.ComponentType,
+    component_type: Mesh.ComponentType;
     normalized:     boolean;
     byte_stride:    number;
     byte_offset:    number;
@@ -358,7 +358,7 @@ export class Initializer {
                   component_type: Mesh.ComponentType,
                   options?:       AttributeOption )
     {
-        const entry = {
+        const entry: AttribInitEntry = {
             id:             id,
             buffer:         buffer,
             num_components: num_components,
@@ -541,8 +541,8 @@ class JsonInit {
         const byteStride = num_vcompos * FLT_BYTES;
         let   byteOffset = 0;
 
-        for ( var i = 0; i < vinfo.length; ++i ) {
-            var num_compos = vinfo[i].size;
+        for ( let i = 0; i < vinfo.length; ++i ) {
+            const num_compos = vinfo[i].size;
             this._initializer.addAttribute( vinfo[i].name, buffer, num_compos, Mesh.ComponentType.FLOAT,
                                             { byte_stride: byteStride, byte_offset: byteOffset } );
             byteOffset += num_compos * FLT_BYTES;
@@ -553,7 +553,7 @@ class JsonInit {
     /**
      * Mesh.Initializer インスタンスを取得
      */
-    get initializer() { return this._initializer; }
+    get initializer(): Mesh.Initializer { return this._initializer; }
 
 
     /**

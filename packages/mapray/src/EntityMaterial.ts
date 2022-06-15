@@ -9,15 +9,13 @@ import { cfa_assert } from "./util/assertion";
 /**
  * エンティティ・マテリアル
  *
- * このクラスは、mapray.RenderStage.getRenderTarget()の値により異なる動作をする。
- * <ul>
- * <li>
- * mapray.RenderStage.RenderTarget.SCENEの場合は、通常通り描画を行う。
- * setParametersは、描画に必要な全てのパラメータを設定します。
- * <li>mapray.RenderStage.RenderTarget.RIDの場合は、
- * setParametersは、RID描画に必要なパラメータのみ設定します（一般にテクスチャや色情報は除外される）。
- * このクラスでの実装は、setParameters()により、u_ridが設定されるようになっています。
- * </ul>
+ * このクラスは、[[mapray.RenderStage.getRenderTarget()]] の値により異なる動作をする。
+ *
+ * - [[RenderStage.RenderTarget.SCENE]] の場合は、通常通り描画を行う。
+ *   [[setParameters]] は、描画に必要な全てのパラメータを設定します。
+ * - [[RenderStage.RenderTarget.RID]] の場合は、
+ *   [[setParameters]] は、RID描画に必要なパラメータのみ設定します（一般にテクスチャや色情報は除外される）。
+ *   このクラスでの実装は、[[setParameters]] により、`u_rid` が設定されるようになっています。
  */
 abstract class EntityMaterial extends Material {
 
@@ -46,7 +44,7 @@ abstract class EntityMaterial extends Material {
      *
      * @virtual
      */
-    isTranslucent( stage:   RenderStage,
+    isTranslucent( stage:     RenderStage,
                    primitive: Primitive ): boolean
     {
         return false;
@@ -63,7 +61,7 @@ abstract class EntityMaterial extends Material {
      *
      * @virtual
      */
-    setParameters( stage:   RenderStage,
+    setParameters( stage:     RenderStage,
                    primitive: Primitive ): void
     {
         if (stage.getRenderTarget() === RenderStage.RenderTarget.RID) {
@@ -79,11 +77,11 @@ abstract class EntityMaterial extends Material {
      * @param stage     - レンダリングステージ
      * @param primitive - プリミティブ
      */
-    protected setObjToClip( stage:   RenderStage,
+    protected setObjToClip( stage:     RenderStage,
                             primitive: Primitive ): void
     {
-        var obj_to_gocs = primitive.transform;
-        var obj_to_clip = EntityMaterial._obj_to_clip;
+        const obj_to_gocs = primitive.transform;
+        const obj_to_clip = EntityMaterial._obj_to_clip;
 
         // obj_to_clip = gocs_to_clip * obj_to_gocs
         GeoMath.mul_GA( stage.gocs_to_clip, obj_to_gocs, obj_to_clip );
@@ -98,11 +96,11 @@ abstract class EntityMaterial extends Material {
      * @param stage     - レンダリングステージ
      * @param primitive - プリミティブ
      */
-    protected setObjToView( stage:   RenderStage,
+    protected setObjToView( stage:     RenderStage,
                             primitive: Primitive ): void
     {
-        var obj_to_gocs = primitive.transform;
-        var obj_to_view = EntityMaterial._obj_to_view;
+        const obj_to_gocs = primitive.transform;
+        const obj_to_view = EntityMaterial._obj_to_view;
 
         // obj_to_view = gocs_to_view * obj_to_gocs
         GeoMath.mul_AA( stage.gocs_to_view, obj_to_gocs, obj_to_view );

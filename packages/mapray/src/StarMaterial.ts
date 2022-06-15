@@ -20,7 +20,7 @@ class StarMaterial extends Material {
      */
     constructor( viewer: Viewer )
     {
-        super( viewer.glenv,vs_code, fs_code );
+        super( viewer.glenv, vs_code, fs_code );
 
         this._matrix = GeoMath.setIdentity( GeoMath.createMatrix() );
     }
