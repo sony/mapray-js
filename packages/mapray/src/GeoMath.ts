@@ -153,7 +153,7 @@ class GeoMath {
      * @param  dst  代入先
      * @return      dst
      */
-    static copyVector3( src: Vector3, dst: Vector3 ): Vector3
+    static copyVector3<T extends (Vector3 | Vector4)>( src: Vector3 | Vector4, dst: T ): T
     {
         for ( var i = 0; i < 3; ++i ) {
             dst[i] = src[i];
@@ -170,7 +170,7 @@ class GeoMath {
      * @param  dst  代入先
      * @return      dst
      */
-    static copyVector2( src: Vector2, dst: Vector2 ): Vector2
+    static copyVector2<T extends (Vector2 | Vector3 | Vector4)>( src: Vector2 | Vector3 | Vector4, dst: T ): T
     {
         dst[0] = src[0];
         dst[1] = src[1];
