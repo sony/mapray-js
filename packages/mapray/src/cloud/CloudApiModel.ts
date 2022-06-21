@@ -515,4 +515,59 @@ export type BBox = BBox2d | BBox3d;
 
 
 
-export { AbstractDataset, Dataset, Dataset3D, PointCloudDataset };
+/**
+ * シーンを表現するクラス
+ */
+class Scene extends AbstractDataset {
+    // @ts-ignore
+    private _x: number;
+
+    // @ts-ignore
+    private _y: number;
+
+    // @ts-ignore
+    private _z: number;
+
+    /**
+     * @param api
+     */
+    private constructor( api: CloudApi ) {
+        super( api );
+    }
+
+    /**
+     * @param json サーバから返却されたJson
+     */
+    protected override _restoreFromJson( json: Scene.Json ) {
+        super._restoreFromJson( json );
+        this._x = json.x;
+        this._y = json.y;
+        this._z = json.z;
+    }
+
+    /**
+     * @internal
+     * @param {CloudApi} api
+     * @param {json} json サーバから返却されたjson
+     * @return {Scene}
+     */
+    static createFromJson( api: CloudApi, json: Scene.Json ) : Scene {
+        const dataset = new Scene( api );
+        dataset._restoreFromJson( json );
+        return dataset;
+    }
+}
+
+
+namespace Scene {
+
+export interface Json extends AbstractDataset.Json {
+    x: number;
+    y: number;
+    z: number;
+}
+
+} // namespace Scene
+
+
+export { AbstractDataset, Dataset, Dataset3D, PointCloudDataset, Scene };

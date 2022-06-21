@@ -1,4 +1,4 @@
-import { Dataset, Dataset3D, PointCloudDataset } from "./CloudApiModel";
+import { Dataset, Dataset3D, PointCloudDataset, Scene } from "./CloudApiModel";
 import SceneLoader from "../SceneLoader";
 import GeoJSON from "../GeoJSON";
 import CloudApi from "./CloudApi";
@@ -279,6 +279,40 @@ class CloudApiV1 extends CloudApi {
     async getPointCloudDataset( datasetId: string ): Promise<PointCloudDataset.Json>
     {
         return await this.get( "pcdatasets", [ this._user_id, datasetId ] ) as PointCloudDataset.Json;
+    }
+
+    /**
+     * @hidden CloudApiV1では非対応
+     * シーンリストを取得します。
+     * @param page 取得する要素のページ番号
+     * @param limit 1ページに含まれる要素数。最大100まで指定することができます。
+     * @return json
+     */
+    async getScenes( page: number = 1, limit: number = 5 ): Promise<Scene.Json[]>
+    {
+        throw new Error("getScenes is not supported in CloudApiV1");
+    }
+
+    /**
+     * @hidden CloudApiV1では非対応
+     * シーンを取得します。
+     * @param sceneId シーンId
+     * @return json
+     */
+    async getScene( sceneId: string ): Promise<Scene.Json>
+    {
+        throw new Error("getScene is not supported in CloudApiV1");
+    }
+
+    /**
+     * @hidden CloudApiV1では非対応
+     * シーンファイルを取得します。
+     * @param sceneId シーンId
+     * @return json
+     */
+    async getSceneContent( sceneId: string ): Promise<SceneLoader.SceneJson>
+    {
+        throw new Error("getSceneContent is not supported in CloudApiV1");
     }
 }
 

@@ -1,5 +1,5 @@
 import HTTP from "../HTTP";
-import { Dataset, Dataset3D, PointCloudDataset } from "./CloudApiModel";
+import { Dataset, Dataset3D, PointCloudDataset, Scene } from "./CloudApiModel";
 import Resource from "../Resource";
 import SceneLoader from "../SceneLoader";
 import { DatasetResource, Dataset3DSceneResource, PointCloudDatasetResource } from "./CloudApiResource";
@@ -147,6 +147,34 @@ abstract class CloudApi {
         return PointCloudDataset.createFromJson( this, dataset_json );
     }
 
+    /**
+     * シーンのリストを取得します。
+     * ページごとにシーンリストを取得します。
+     * 
+     * *CloudApiV2でのみ対応しています。
+     * @param page 取得する要素のページ番号
+     * @param limit 1ページに含まれる要素数。最大100まで指定することができます。
+     * @return シーンの配列
+     */
+    async loadScenes( page: number = 1, limit: number = 5 ): Promise<Scene[]>
+    {
+        const scenes_json = await this.getScenes( page, limit );
+        return scenes_json.map( (scene_json: Scene.Json) => Scene.createFromJson( this, scene_json ) );
+    }
+
+    /**
+     * 指定したIDのシーンを取得します。
+     * 
+     * *CloudApiV2でのみ対応しています。
+     * @param sceneId シーンのID
+     * @return シーン
+     */
+    async loadScene( sceneId: string ): Promise<Scene>
+    {
+        const scene_json = await this.getScene( sceneId );
+        return Scene.createFromJson( this, scene_json );
+    }
+
 
     // Resources
 
@@ -252,7 +280,7 @@ abstract class CloudApi {
      */
      abstract deleteFeature( featureId: string ): Promise<GeoJSON.FeatureJson>;
 
-     /**
+    /**
      * 3Dデータセットのリストを取得します。
      * @param page 取得する要素のページ番号
      * @param limit 1ページに含まれる要素数。最大100まで指定することができます。
@@ -338,6 +366,34 @@ abstract class CloudApi {
      * @return json
      */
     abstract getPointCloudDataset( datasetId: string ): Promise<PointCloudDataset.Json>;
+
+    /**
+     * シーンリストを取得します。
+     * 
+     * *CloudApiV2でのみ対応しています。
+     * @param page 取得する要素のページ番号
+     * @param limit 1ページに含まれる要素数。最大100まで指定することができます。
+     * @return json
+     */
+    abstract getScenes( page: number, limit: number ): Promise<Scene.Json[]>;
+
+    /**
+     * シーンを取得します。
+     * 
+     * *CloudApiV2でのみ対応しています。
+     * @param sceneId シーンId
+     * @return json
+     */
+    abstract getScene( sceneId: string ): Promise<Scene.Json>;
+
+    /**
+     * シーンファイルを取得します。
+     * 
+     * *CloudApiV2でのみ対応しています。
+     * @param sceneId シーンId
+     * @return json
+     */
+    abstract getSceneContent( sceneId: string ): Promise<SceneLoader.SceneJson>
 
     /**
      * 低レベルAPI。このクラスの別関数から呼び出される。

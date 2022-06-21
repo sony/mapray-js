@@ -1,4 +1,4 @@
-import { Dataset, Dataset3D, PointCloudDataset } from "./CloudApiModel";
+import { Dataset, Dataset3D, PointCloudDataset, Scene } from "./CloudApiModel";
 import SceneLoader from "../SceneLoader";
 import GeoJSON from "../GeoJSON";
 import CloudApi from "./CloudApi";
@@ -280,6 +280,46 @@ class CloudApiV2 extends CloudApi {
     async getPointCloudDataset( datasetId: string ): Promise<PointCloudDataset.Json>
     {
         return await this.get( "pcdatasets", [ datasetId ] ) as PointCloudDataset.Json;
+    }
+
+    /**
+     * シーンリストを取得します。
+     * @param page 取得する要素のページ番号
+     * @param limit 1ページに含まれる要素数。最大100まで指定することができます。
+     * @return json
+     */
+    async getScenes( page: number = 1, limit: number = 5 ): Promise<Scene.Json[]>
+    {
+        return await this.get( "scenes", [ ], { page, limit } ) as Scene.Json[];
+    }
+
+    /**
+     * シーンを取得します。
+     * @param sceneId シーンId
+     * @return json
+     */
+    async getScene( sceneId: string ): Promise<Scene.Json>
+    {
+        return await this.get( "scenes", [ sceneId ] ) as Scene.Json;
+    }
+
+    /**
+     * シーンファイルを取得します。
+     * @param sceneId シーンId
+     * @return json
+     */
+    async getSceneContent( sceneId: string ): Promise<SceneLoader.SceneJson>
+    {
+        const response = await this.get( "scenes", [ "file", sceneId ] ) as SceneLoader.SceneJson;
+        response.entity_list.forEach(( entity: any ) => {
+                const indexStr = entity.index;
+                const index = parseInt( indexStr );
+                if ( index.toString() !== indexStr ) {
+                    throw new Error("Internal Error: ID couldn't be convert to 'number'");
+                }
+                entity.index = index;
+        });
+        return response;
     }
 }
 
