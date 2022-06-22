@@ -2,7 +2,7 @@ import HTTP from "../HTTP";
 import { Dataset, Dataset3D, PointCloudDataset, Scene } from "./CloudApiModel";
 import Resource from "../Resource";
 import SceneLoader from "../SceneLoader";
-import { DatasetResource, Dataset3DSceneResource, PointCloudDatasetResource } from "./CloudApiResource";
+import { DatasetResource, Dataset3DSceneResource, PointCloudDatasetResource, SceneResource } from "./CloudApiResource";
 import GeoJSON from "../GeoJSON";
 import { cfa_assert } from "../util/assertion";
 
@@ -207,6 +207,18 @@ abstract class CloudApi {
     {
         return new PointCloudDatasetResource( this, datasetId );
     }
+
+    /**
+     * 指定したIDのシーンのシーンファイルをリソースとして取得します。
+     * 
+     * *CloudApiV2でのみ対応しています。
+     * @param sceneId シーンID
+     * @return シーンのリソース
+     */
+     getSceneAsResource( sceneId: string ): Resource
+     {
+         return new SceneResource( this, sceneId );
+     }
 
 
     // RestAPI

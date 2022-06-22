@@ -1,5 +1,6 @@
 import CloudApi from "./CloudApi";
 import GeoPoint from "../GeoPoint";
+import SceneLoader from "../SceneLoader";
 
 
 /**
@@ -565,6 +566,11 @@ export interface Json extends AbstractDataset.Json {
     x: number;
     y: number;
     z: number;
+}
+
+export interface FileJson {
+    id: number;
+    scene_file: SceneLoader.SceneJson;
 }
 
 } // namespace Scene

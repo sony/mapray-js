@@ -1,5 +1,6 @@
 import HTTP from "../HTTP";
 import Dom from "../util/Dom";
+import SceneLoader from "../SceneLoader";
 import Resource from "../Resource";
 import CloudApi from "./CloudApi";
 import { PointCloudDataset } from "./CloudApiModel";
@@ -173,6 +174,43 @@ export class PointCloudDatasetResource extends Resource {
     /**
      * @param {string} sub_url 点群が公開されているURLへアクセスするためのResource。
      * @return 点群ファイルリソース
+     */
+    override resolveResource( sub_url: string ): Resource {
+        return new ApiUrlResource( this._api, sub_url );
+    }
+}
+
+/**
+ * @internal
+ * Mapray Cloudに登録されたSceneを表現するリソース。
+ */
+ export class SceneResource extends Resource {
+
+    private _api: CloudApi;
+
+    private _sceneId: string;
+
+    /**
+     * @param {CloudApi} api
+     * @param {string} sceneId データセットのid。複数指定する場合は配列を指定する。
+     */
+    constructor( api: CloudApi, sceneId: string ) {
+        super();
+        this._api = api;
+        this._sceneId = sceneId;
+    }
+
+    override async load(): Promise<SceneLoader.SceneJson> {
+        return await this._api.getSceneContent( this._sceneId );
+    }
+
+    override resolveResourceSupported() {
+      return true;
+    }
+
+    /**
+     * シーンファイルに含まれるモデル及びモデルに関連づけられたリソースへアクセス際に利用されるResource。
+     * @param sub_url モデルURL
      */
     override resolveResource( sub_url: string ): Resource {
         return new ApiUrlResource( this._api, sub_url );

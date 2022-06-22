@@ -310,8 +310,8 @@ class CloudApiV2 extends CloudApi {
      */
     async getSceneContent( sceneId: string ): Promise<SceneLoader.SceneJson>
     {
-        const response = await this.get( "scenes", [ "file", sceneId ] ) as SceneLoader.SceneJson;
-        response.entity_list.forEach(( entity: any ) => {
+        const response = await this.get( "scenes", [ "file", sceneId ] ) as Scene.FileJson;
+        response.scene_file.entity_list.forEach(( entity: any ) => {
                 const indexStr = entity.index;
                 const index = parseInt( indexStr );
                 if ( index.toString() !== indexStr ) {
@@ -319,7 +319,7 @@ class CloudApiV2 extends CloudApi {
                 }
                 entity.index = index;
         });
-        return response;
+        return response.scene_file;
     }
 }
 
