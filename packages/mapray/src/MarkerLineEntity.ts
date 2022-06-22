@@ -13,8 +13,6 @@ import LineMaterial from "./LineMaterial";
  */
 class MarkerLineEntity extends AbstractLineEntity {
 
-    private _num_floats: number;
-
     /**
      * @param scene 所属可能シーン
      * @param opts  オプション集合
@@ -22,9 +20,6 @@ class MarkerLineEntity extends AbstractLineEntity {
     constructor( scene: Scene, opts: MarkerLineEntity.Option = {} )
     {
         super( scene, false, opts );
-
-        this._point_array = new Float64Array( 0 );
-        this._num_floats  = 0;
 
         this._width   = 1.0;
         this._color   = GeoMath.createVector3( [1.0, 1.0, 1.0] );
@@ -88,12 +83,12 @@ class MarkerLineEntity extends AbstractLineEntity {
         }
 
         // バッファを拡張
-        const target_size = this._num_floats + add_size;
+        const target_size = this._num_points * 3 + add_size;
         const buffer_size = this._point_array.length;
         if ( target_size > buffer_size ) {
             const new_buffer = new Float64Array( Math.max( target_size, 2 * buffer_size ) );
             const old_buffer = this._point_array;
-            const  copy_size = this._num_floats;
+            const  copy_size = this._num_points * 3;
             for ( let i = 0; i < copy_size; ++i ) {
                 new_buffer[i] = old_buffer[i];
             }
@@ -102,11 +97,11 @@ class MarkerLineEntity extends AbstractLineEntity {
 
         // 頂点追加処理
         const buffer = this._point_array;
-        const   base = this._num_floats;
+        const   base = this._num_points * 3;
         for ( let j = 0; j < add_size; ++j ) {
             buffer[base + j] = points[j];
         }
-        this._num_floats = target_size;
+        this._num_points = target_size / 3;
 
         // 形状が変化した可能性がある
         this._producer.onChangePoints();
@@ -118,7 +113,7 @@ class MarkerLineEntity extends AbstractLineEntity {
      * @experimental
      */
     removeAllPoints() {
-        this._num_floats = 0;
+        this._num_points = 0;
         // 形状が変化した可能性がある
         this._producer.onChangePoints();
     }
@@ -127,30 +122,30 @@ class MarkerLineEntity extends AbstractLineEntity {
     /**
      * 指定された頂点を削除する
      * @experimental
-     * @param pos 対象頂点のindex
+     * @param index 対象頂点のindex
      */
-    removePointAt( pos: number ) {
-        let idx = pos * 3;
-
-        if ( idx >= this._num_floats ) {
-            console.log( 'out of index', idx, this._num_floats );
-            return;
-        }
-
+    removePointAt( index: number ) {
         // 負の値は後ろから数える
-        if ( idx < 0 ) {
-            idx = this._num_floats + idx;
+        const idx = (index >= 0 ? index : this._num_points + index );
+
+        if ( idx < 0 || idx >= this._num_points ) {
+            throw new Error( `index out of bounds: ${index} (${this._num_points})` );
         }
 
-        this._num_floats -= 3;
+        this._num_points--;
 
         // 最後の要素でない場合
-        if ( idx !== this._num_floats - 3 ) {
+        if ( idx !== this._num_points ) {
             // それ以外の場合
-            for ( let i = idx; i < this._num_floats - 3; ++i ) {
-                this._point_array[i] = this._point_array[i + 3];
+            let j = idx * 3;
+            let k = j + 3;
+            for ( let i=idx; i < this._num_points; ++i ) {
+                this._point_array[j++] = this._point_array[k++];
+                this._point_array[j++] = this._point_array[k++];
+                this._point_array[j++] = this._point_array[k++];
             }
         }
+
         // 形状が変化した可能性がある
         // @ts-ignore
         this._producer.onChangePoints();
@@ -158,37 +153,23 @@ class MarkerLineEntity extends AbstractLineEntity {
 
 
     /**
-     * 頂点数を返す
-     * @experimental
-     * @returns 頂点数
-     */
-    getPointCount(): number {
-        return this._num_floats / 3;
-    }
-
-
-    /**
      * 指定された頂点座標を返す
      * @experimental
-     * @param {number} pos
+     * @param index
      */
-    getPointAt( pos: number ): Vector3 | undefined {
-        let idx = pos * 3;
+    getPointAt( index: number ): Vector3 | undefined {
+        // 負の値は後ろから数える
+        const idx = (index >= 0 ? index : this._num_points + index );
 
-        if ( idx >= this._num_floats ) {
-            console.log( 'out of index', idx, this._num_floats );
-            return;
+        if ( idx < 0 || idx >= this._num_points ) {
+            throw new Error( `index out of bounds: ${index} (${this._num_points})` );
         }
 
-        // 負の値は後ろから
-        if ( idx < 0 ) {
-            idx = this._num_floats + idx;
-        }
-
+        let p = idx * 3;
         return [
-            this._point_array[ idx++ ],
-            this._point_array[ idx++ ],
-            this._point_array[ idx++ ],
+            this._point_array[ p++ ],
+            this._point_array[ p++ ],
+            this._point_array[ p++ ],
         ];
     }
 
@@ -196,25 +177,22 @@ class MarkerLineEntity extends AbstractLineEntity {
     /**
      * 指定された頂点座標を変更する
      * @experimental
-     * @param pos 変更対象の頂点Index
+     * @param index 変更対象の頂点Index
      * @param point 変更後の座標
      */
-    replacePointAt( pos: number, point: Vector3 ) {
-        let idx = pos * 3;
+    replacePointAt( index: number, point: Vector3 ) {
+        // 負の値は後ろから数える
+        const idx = (index >= 0 ? index : this._num_points + index );
 
-        if ( idx >= this._num_floats ) {
-          console.log( 'out of index', idx, this._num_floats );
-          return;
+        if ( idx < 0 || idx >= this._num_points ) {
+            throw new Error( `index out of bounds: ${index} (${this._num_points})` );
         }
 
-        // 負の値は後ろから
-        if ( idx < 0 ) {
-          idx = this._num_floats + idx;
-        }
-
+        let p = idx * 3;
         for ( let i = 0; i < 3; ++i ) {
-          this._point_array[idx + i] = point[i];
+          this._point_array[p++] = point[i];
         }
+
         // 形状が変化した可能性がある
         this._producer.onChangePoints();
     }

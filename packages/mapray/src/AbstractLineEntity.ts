@@ -37,6 +37,8 @@ abstract class AbstractLineEntity extends Entity {
 
     readonly is_path: boolean;
 
+    protected _num_points: number;
+
 
     /**
      * @param scene        所属可能シーン
@@ -48,6 +50,8 @@ abstract class AbstractLineEntity extends Entity {
         super( scene, opts );
 
         this.is_path = is_path;
+        this._point_array = new Float64Array( 0 );
+        this._num_points  = 0;
 
         if ( this.altitude_mode === AltitudeMode.CLAMP ) {
             this._producer = new AbstractLineEntity.FlakePrimitiveProducer( this );
@@ -161,6 +165,16 @@ abstract class AbstractLineEntity extends Entity {
      */
     getPointArray() {
         return this._point_array;
+    }
+
+
+    /**
+     * 頂点数
+     * @experimental
+     */
+    get num_points(): number
+    {
+        return this._num_points;
     }
 
 
@@ -291,7 +305,7 @@ export class PrimitiveProducer extends Entity.PrimitiveProducer {
     {
         const region = new EntityRegion();
 
-        region.addPoints( this.getEntity().getPointArray(), 0, 3, this._numPoints() );
+        region.addPoints( this.getEntity().getPointArray(), 0, 3, this.getEntity().num_points );
 
         return [region];
     }
@@ -309,9 +323,7 @@ export class PrimitiveProducer extends Entity.PrimitiveProducer {
      */
     override getPrimitives( stage: RenderStage ): Primitive[]
     {
-        // @ts-ignore
-        const num_floats = this.getEntity()._num_floats;
-        if ( num_floats < 6 ) {
+        if ( this.getEntity().num_points < 2 ) {
             // 2頂点未満は表示しない
             return [];
         }
@@ -343,12 +355,12 @@ export class PrimitiveProducer extends Entity.PrimitiveProducer {
     /**
      * プリミティブの更新
      *
-     * 条件: this._num_floats >= 6
+     * 条件: this._num_points >= 2
      *
      * 入力:
      * - this._geom_dirty
      * - this.entity._point_array
-     * - this.entity._num_floats
+     * - this.entity._num_points
      * - this.entity._width
      * - this.entity._color
      * - this.entity._opacity
@@ -374,10 +386,9 @@ export class PrimitiveProducer extends Entity.PrimitiveProducer {
         const entity = this.getEntity();
 
         // GeoPoint 平坦化配列を GOCS 平坦化配列に変換
-        const  num_points = this._numPoints();
+        const  num_points = entity.num_points;
         const gocs_buffer = GeoPoint.toGocsArray( this._getFlatGeoPoints_with_Absolute(), num_points,
-                                                  // @ts-ignore
-                                                  new Float64Array( entity._num_floats ) );
+                                                  new Float64Array( num_points * 3 ) );
 
         // プリミティブの更新
         //   primitive.transform
@@ -469,22 +480,21 @@ export class PrimitiveProducer extends Entity.PrimitiveProducer {
     {
         const entity      = this.getEntity();
         const point_array = entity.getPointArray();
-        // @ts-ignore
-        const num_floats  = entity._num_floats;
+        const num_points  = entity.num_points;
 
         let abs_buffer = null;
 
         switch ( entity.altitude_mode ) {
         case AltitudeMode.RELATIVE:
-            const num_points = this._numPoints();
-            abs_buffer = new Float64Array( num_floats );
+            abs_buffer = new Float64Array( num_points * 3 );
             // abs_buffer[] の高度要素に現在の標高を設定
             entity.scene.viewer.getExistingElevations( num_points, point_array, 0, 3, abs_buffer, 2, 3 );
             // abs_buffer[] に経度要素と緯度要素を設定し、高度要素に絶対高度を設定
-            for ( let i = 0; i < num_floats; i += 3 ) {
-                abs_buffer[i    ]  = point_array[i    ];  // 経度
-                abs_buffer[i + 1]  = point_array[i + 1];  // 緯度
-                abs_buffer[i + 2] += point_array[i + 2];  // 絶対高度
+            let p = 0;
+            for ( let i = 0; i < num_points; i++ ) {
+                abs_buffer[p]  = point_array[p++];  // 経度
+                abs_buffer[p]  = point_array[p++];  // 緯度
+                abs_buffer[p] += point_array[p++];  // 絶対高度
             }
             break;
 
@@ -655,8 +665,8 @@ export class PrimitiveProducer extends Entity.PrimitiveProducer {
      *
      * @desc
      * <pre>
-     * 条件: this.entity._num_floats >= 6
-     * 入力: this.entity._num_floats
+     * 条件: this.entity._num_points >= 2
+     * 入力: this.entity._num_points
      * </pre>
      *
      * @return {Uint32Array}  インデックス配列
@@ -665,7 +675,7 @@ export class PrimitiveProducer extends Entity.PrimitiveProducer {
      */
     _createIndices()
     {
-        const num_points   = this._numPoints();
+        const num_points   = this.getEntity().num_points;
         const num_segments = num_points - 1;
         const num_indices = 6 * num_segments;
         const indices     = new Uint32Array( num_indices );
@@ -682,21 +692,6 @@ export class PrimitiveProducer extends Entity.PrimitiveProducer {
         }
 
         return indices;
-    }
-
-
-    /**
-     * @summary 頂点数を取得
-     *
-     * @return {number} 頂点数
-     *
-     * @private
-     */
-    _numPoints()
-    {
-        // @ts-ignore
-        const num_floats = this.getEntity()._num_floats;
-        return Math.floor( num_floats / 3 );
     }
 
 }
@@ -1174,7 +1169,7 @@ export class LineAreaManager extends QAreaManager {
         // 頂点データ
         const points    = this._entity.getPointArray();
         // @ts-ignore
-        const end_point = this._entity._num_floats;
+        const end_point = this._entity._num_points * 3;
 
         if ( end_point < 6 ) {
             // 線分なし

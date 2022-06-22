@@ -13,8 +13,6 @@ import LineMaterial from "./LineMaterial";
  */
 class PathEntity extends AbstractLineEntity {
 
-    private _num_floats: number;
-
     private _length_array: Float64Array;
 
     private _lower_length: number;
@@ -30,8 +28,6 @@ class PathEntity extends AbstractLineEntity {
     {
         super( scene, true, opts );
 
-        this._point_array = new Float64Array( 0 );
-        this._num_floats  = 0;
         this._length_array = new Float64Array( 0 );
 
         this._width   = 1.0;
@@ -141,15 +137,13 @@ class PathEntity extends AbstractLineEntity {
             return;
         }
 
-        const num_length_floats = this._num_floats / 3;
-
         // バッファを拡張
-        const target_size = this._num_floats + add_size;
+        const target_size = this._num_points * 3 + add_size;
         const buffer_size = this._point_array.length;
         if ( target_size > buffer_size ) {
             const new_buffer = new Float64Array( Math.max( target_size, 2 * buffer_size ) );
             const old_buffer = this._point_array;
-            const  copy_size = this._num_floats;
+            const  copy_size = this._num_points * 3;
             for ( let i = 0; i < copy_size; ++i ) {
                 new_buffer[i] = old_buffer[i];
             }
@@ -157,12 +151,12 @@ class PathEntity extends AbstractLineEntity {
         }
 
         // 距離配列バッファを拡張
-        const target_length_size = num_length_floats + add_length_size;
+        const target_length_size = this._num_points + add_length_size;
         const buffer_length_size = this._length_array.length;
         if ( target_length_size > buffer_length_size ) {
             const new_buffer = new Float64Array( Math.max( target_length_size, 2 * buffer_length_size ) );
             const old_buffer = this._length_array;
-            const  copy_size = num_length_floats;
+            const  copy_size = this._num_points;
             for ( let i = 0; i < copy_size; ++i ) {
                 new_buffer[i] = old_buffer[i];
             }
@@ -171,19 +165,19 @@ class PathEntity extends AbstractLineEntity {
 
         // 頂点追加処理
         const buffer = this._point_array;
-        const   base = this._num_floats;
+        const   base = this._num_points * 3;
         for ( let i = 0; i < points.length; ++i ) {
             buffer[base + i] = points[i];
         }
 
         // 距離の配列を追加
         const buffer_length = this._length_array;
-        const   base_length = num_length_floats;
+        const   base_length = this._num_points;
         for ( let i = 0; i < length_array.length; ++i ) {
             buffer_length[base_length + i] = length_array[i];
         }
 
-        this._num_floats = target_size;
+        this._num_points = target_size / 3;
 
         // 形状が変化した可能性がある
         this._producer.onChangePoints();
