@@ -171,6 +171,20 @@ abstract class RenderStage {
 
 
     /** @internal */
+    get width(): number
+    {
+        return this._width;
+    }
+
+
+    /** @internal */
+    get height(): number
+    {
+        return this._height;
+    }
+
+
+    /** @internal */
     get pixel_step(): number
     {
         return this._pixel_step;
