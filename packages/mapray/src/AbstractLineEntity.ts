@@ -1373,8 +1373,8 @@ export class LineAreaManager extends QAreaManager {
         }
 
         // 矩形領域と線分の y 座標が重なる範囲 (順不同)
-        let y_range_0 = (y_area_min >= y_line_max) ? y_area_min : y_line_max;
-        let y_range_1 = (y_area_max <= y_line_min) ? y_area_max : y_line_min;
+        let y_range_0 = (y_area_min >= y_line_min) ? y_area_min : y_line_min;
+        let y_range_1 = (y_area_max <= y_line_max) ? y_area_max : y_line_max;
 
         // y が {y_range_0, y_range_1} 範囲での線分の x 範囲 (順不同)
         let x_range_0 = xP + (xQ - xP) * (y_range_0 - yP) / (yQ - yP);
