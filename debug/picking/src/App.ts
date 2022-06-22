@@ -23,6 +23,10 @@ export default class App extends maprayui.StandardUIViewer {
     private _mouse_log?: HTMLElement;
     private _enable_ui?: HTMLInputElement;
     private _enable_dem_debug?: HTMLInputElement;
+    private _pins: mapray.PinEntity[] = [];
+    private _targetPin?: mapray.PinEntity;
+    private _log_locations_button?: HTMLButtonElement;
+
 
     private _gis: {
         flag: boolean;
@@ -89,6 +93,23 @@ export default class App extends maprayui.StandardUIViewer {
             this._mouse_log = tools.querySelector("pre") || undefined;
             this._enable_ui = tools.querySelector("div.options input[name=log-mouse-position]") as HTMLInputElement || undefined;
             this._enable_dem_debug = tools.querySelector("div.options input[name=log-dem-debug]") as HTMLInputElement || undefined;
+            this._log_locations_button = tools.querySelector("div.locations button[name=log]") as HTMLButtonElement || undefined;
+            if ( this._log_locations_button ) {
+                this._log_locations_button.onclick = event => {
+                    if ( this._pins.length === 0 ) {
+                        console.log("no pins");
+                    }
+                    else {
+                        console.log(this._pins.map( pin => {
+                                    const position = pin.getEntry("pos")?.position;
+                                    return ( position ?
+                                        `${position.longitude}, ${position.latitude}, ${position.altitude},`:
+                                        "?"
+                                    );
+                        } ).join("\n"));
+                    }
+                };
+            }
         }
 
         this._render_mode = mapray.Viewer.RenderMode.SURFACE;
@@ -168,16 +189,27 @@ export default class App extends maprayui.StandardUIViewer {
         else if ( event.ctrlKey ) {
             this._override_mouse_event = true;
             this._pick(pickResult => {
-                    if (pickResult.point) {
-                        const pin = new mapray.PinEntity( this.viewer.scene );
-                        const p = new mapray.GeoPoint();
-                        p.setFromGocs( pickResult.point );
-                        if (!pickResult.entity) {
-                            // pin.altitude_mode = mapray.AltitudeMode.RELATIVE;
-                            // p.altitude = 0;
+                    let eventConsumed = false;
+                    if (pickResult.entity instanceof mapray.PinEntity) {
+                        const index = this._pins.indexOf( pickResult.entity );
+                        if ( index !== -1 ) {
+                            this._targetPin = this._pins[index];
+                            return
                         }
-                        pin.addMakiIconPin( "car-15", p);
-                        this.addEntity( pin );
+                    }
+                    if ( !eventConsumed ) {
+                        if (pickResult.point) {
+                            const pin = new mapray.PinEntity( this.viewer.scene );
+                            const p = new mapray.GeoPoint();
+                            p.setFromGocs( pickResult.point );
+                            if (!pickResult.entity) {
+                                // pin.altitude_mode = mapray.AltitudeMode.RELATIVE;
+                                // p.altitude = 0;
+                            }
+                            pin.addMakiIconPin( "car-15", p, { id: "pos" } );
+                            this.addEntity( pin );
+                            this._pins.push( pin );
+                        }
                     }
             }, true);
         }
@@ -261,8 +293,20 @@ export default class App extends maprayui.StandardUIViewer {
         }
         */
 
-        if ( !this._override_mouse_event ) {
-            super.onMouseMove( point, event );
+        if ( this._targetPin ) {
+            const targetPin = this._targetPin;
+            this._pick( pickResult => {
+                    if ( pickResult.point ) {
+                        const p = new mapray.GeoPoint();
+                        p.setFromGocs( pickResult.point );
+                        targetPin.getEntry( "pos" )?.setPosition( p );
+                    }
+            }, true);
+        }
+        else {
+            if ( !this._override_mouse_event ) {
+                super.onMouseMove( point, event );
+            }
         }
         mapray.GeoMath.copyVector2(point, this._pre_mouse_position_app);
 
@@ -294,6 +338,7 @@ export default class App extends maprayui.StandardUIViewer {
     override onMouseUp( point: [x: number, y: number], event: MouseEvent )
     {
         this._override_mouse_event = false;
+        this._targetPin = undefined;
         super.onMouseUp( point, event );
     }
 

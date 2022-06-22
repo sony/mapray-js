@@ -31,7 +31,20 @@ window.addEventListener("load", () => {
             <input id="log-dem-debug" name="log-dem-debug" type="checkbox"></input>
             <label for="log-dem-debug" class="checkbox">Debug dem picking</label>
         </div>
+        <div class="locations">
+            <button name="log" title="Print positions of pins to console">Print pin positions</button>
+        </div>
     </div>
+    <details class="control">
+      <summary>Control</summary>
+      <pre>
+G key: Load GIS data
+Shift + Click: change style of clicked entity
+               picked info will be printed to console
+Ctrl + Click: add pin
+Ctrl + Drag:  move pin
+M key: Switch wireframe ground</pre>
+    </details>
 </div>
 </body>
 </html>
