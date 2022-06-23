@@ -10,10 +10,10 @@
  * `layer_creator_list` 変数に情報を追加すること。
  */
 
-import { registerLayerCreator } from "./style";
-import type { LayerCreator } from "./style";
+import { registerLayerCreator } from "../style_manager";
+import type { LayerCreator } from "../style_manager";
 
-import { SymbolLayer } from "./style_layers/symbol";
+import { SymbolLayer } from "./symbol";
 
 
 /**
@@ -32,7 +32,7 @@ const layer_creator_list: {
 
 
 /**
- * `style_layers/` 定義される、すべてのレイヤー型を登録する。
+ * `vectile/style_layers/` で定義される、すべてのレイヤー型を登録する。
  */
 export function registerLayerTypes(): void
 {

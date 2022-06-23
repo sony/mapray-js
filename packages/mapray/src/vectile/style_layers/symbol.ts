@@ -5,8 +5,10 @@
  * [[LayerFeature]] の具象クラスを定義する。
  */
 
-import { StyleLayer, LayerFlake, LayerFeature } from "../style";
-import type { StyleManager, EvaluationListener, FlakeContext, LayerJson } from "../style";
+import { StyleLayer, LayerFlake, LayerFeature } from "../style_layer";
+import type { EvaluationListener, LayerJson } from "../style_layer";
+import type { StyleManager } from "../style_manager";
+import type { FlakeContext } from "../style_flake";
 import { Property, Specification as PropSpec } from "../property";
 import { GeomType } from "../expression";
 import { Feature, PointFeature, TileLayer } from "../tile_layer";

@@ -12,7 +12,8 @@ import Entity from "./Entity";
 import AvgHeightMaps from "./AvgHeightMaps";
 import { Area } from "./AreaUtil";
 import type { PoleInfo } from "./Viewer";
-import { StyleFlake } from "./vectile/style";
+import { StyleFlake } from "./vectile/style_flake";
+import type { StyleManager } from "./vectile/style_manager";
 import { cfa_assert } from "./util/assertion";
 
 
@@ -503,6 +504,9 @@ class Belt {
                     child.dispose();
                 }
             }
+
+            // root 自身の StyleFlake リクエストをキャンセル
+            this._root_flake.cancelStyleFlake();
         }
         else if ( this._status === Globe.Status.NOT_READY ) {
             // リクエスト中の root をキャンセル
@@ -510,7 +514,7 @@ class Belt {
             this._root_cancel_id = undefined;
         }
 
-        // assert: this._num_dem_requesteds == 0
+        cfa_assert( this._num_dem_requesteds == 0 );
     }
 
     /**
@@ -1366,34 +1370,78 @@ export class Flake implements Area {
      *
      * 対応する DEM データが存在しないときは `null` を返し、必要なら
      * DEM データをリクエストする。
-     *
-     * 非 `null` を返したときは `this.getDemBinary()` により DEM データを取得
-     * することができる。
      */
-    ensureStyleFlake(): StyleFlake | null
+    ensureStyleFlake( style_manager: StyleManager ): StyleFlake | null
     {
-        if ( this._style_flake === null ) {
-            /* まだ StyleFlake インスタンスが存在しない */
+        if ( this._style_flake !== null ) {
+            // すでに持っている StyleFlake インスタンスを返す
+            return this._style_flake;
+        }
 
-            if ( this._dem_state === DemState.LOADED ) {
-                // DEM が存在するので StyleFlake インスタンスを生成
-                this._style_flake = new StyleFlake();
+        // 直近の非 DemState.NONE の Flake インスタンスを検索
+        let near_flake: Flake = this;
+
+        while ( near_flake._dem_state === DemState.NONE ) {
+            // root_flake は常に DemState.LOADED なので、ここで
+            // near_flake は root_flake ではない -> 親が存在する
+            cfa_assert( near_flake._parent !== null );
+            near_flake = near_flake._parent;
+        }
+
+        if ( near_flake._dem_state === DemState.FAILED ||
+             near_flake._dem_state === DemState.REQUESTED ) {
+            // - DemState.FAILED のときは諦めて null を返す
+            // - DemState.REQUESTED のときは一旦 null を返し、そのタイ
+            //   ルを取得してから改めて判断する
+            return null;
+        }
+
+        cfa_assert( near_flake._dem_state === DemState.LOADED );
+        const near_dem = near_flake.getDemBinary();
+
+        if ( near_dem.z === this.z ) {
+            // near_dem は自身に完全に一致するので
+            cfa_assert( near_flake === this );
+            this._style_flake = new StyleFlake( style_manager, near_dem );
+        }
+        else {
+            cfa_assert( near_flake !== this );
+            cfa_assert( near_dem.z < this.z );
+
+            const qlevel = near_dem.getQuadLevel( this.z, this.x, this.y );
+            if ( qlevel > 0 ) {
+                // near_dem より相応しい DEM データがプロバイダに存在
+                // するのでリクエスト
+                this._requestAncestorDemTile( Math.min( near_dem.z + qlevel, this.z ) );
+
+                // 一旦 null を返し、リクエストしたタイルを取得してか
+                // ら改めて判断する
+                return null;
             }
-            else if ( this._dem_state === DemState.NONE ) {
-                // DEM が存在しないので、一番近い祖先または自己の DEM をリクエスト
-                const nDem = this._findNearestDemTile( this.z );
-                cfa_assert( nDem.z < this.z );
-
-                const qlevel = nDem.getQuadLevel( this.z, this.x, this.y );
-                if ( qlevel > 0 ) {
-                    this._requestAncestorDemTile( Math.min( nDem.z + qlevel, this.z ) );
-                }
+            else {
+                // near_dem は自身に一致しないが、葉タイルなので使用する
+                this._style_flake = new StyleFlake( style_manager, near_dem );
             }
         }
 
-        cfa_assert( this._style_flake === null || this._dem_state === DemState.LOADED );
-
         return this._style_flake;
+    }
+
+    /**
+     * [[StyleFlake]] のリクエストを取り消してから、`StyleFlake` イン
+     * スタンスを消去する。
+     *
+     * [[StyleManager.__cancel]] または [[Globe.cancel]] から呼び出される。
+     */
+    cancelStyleFlake(): void
+    {
+        if ( this._style_flake === null ) {
+            // StyleFlake インスタンスが存在しないので何もしない
+            return;
+        }
+
+        this._style_flake.cancelRequest();
+        this._style_flake = null;
     }
 
     /**
@@ -1442,10 +1490,8 @@ export class Flake implements Area {
             belt.decrement_dem_requesteds();
         }
 
-        if ( this._style_flake !== null ) {
-            this._style_flake.cancelRequest();
-            this._style_flake = null;
-        }
+        // StyleFlake インスタンスの消去
+        this.cancelStyleFlake();
 
         // Flake 数を減らす
         belt.decrement_cache_flakes();

@@ -21,12 +21,13 @@ import GeoPoint from "./GeoPoint";
 import Scene from "./Scene";
 import B3dCollection from "./B3dCollection";
 import B3dScene from "./B3dScene";
-import { StyleManager } from "./vectile/style";
-import { registerLayerTypes } from "./vectile/style_layer_defs";
+import { StyleManager } from "./vectile/style_manager";
+import { registerLayerTypes } from "./vectile/style_layers/_register";
 import EasyBindingBlock from "./animation/EasyBindingBlock";
 import BindingBlock from "./animation/BindingBlock";
 import Util from "./util/Util";
 import Dom from "./util/Dom";
+import { cfa_assert } from "./util/assertion";
 import Sun from "./Sun";
 import Atmosphere from "./Atmosphere";
 import SunVisualizer from "./SunVisualizer";
@@ -278,6 +279,9 @@ class Viewer {
         // キャンバスをコンテナから外す
         this._container_element.removeChild( this._canvas_element );
 
+        // ベクトルタイルの後処理
+        this._vectile_manager.__cancel( this._globe );
+
         // DemProvider のリクエストを取り消す
         this._globe.cancel();
 
@@ -289,9 +293,6 @@ class Viewer {
 
         // すべての B3dScene インスタンスを削除
         this._b3d_collection.clearScenes();
-
-        // ベクトルタイルの後処理
-        this._vectile_manager.__cancel();
 
         // 各 SceneLoader の読み込みを取り消す
         this._scene.cancelLoaders();
@@ -663,22 +664,51 @@ class Viewer {
      *
      * ベクトルタイルを管理するオブジェクトを `manager` に切り替える。
      *
-     * `manager` を省略したときは、レイヤーが存在しない新規のデフォル
-     * トオブジェクトを設定する。
+     * `manager` 引数を省略したときは、新規のデフォルトオブジェクト
+     * (レイヤーが 1 つも存在しないスタイル) が設定される。
      *
      * 設定されたオブジェクトは [[vectile_manager]] により参照すること
      * ができる。
      *
+     * @remarks
+     *
+     * 1 つの [[StyleManager]] インスタンスは、同時に複数の [[Viewer]]
+     * インスタンスに設定することはできない。
+     *
+     * このメソッドを呼び出す以前に `this` に設定されていた [[StyleManager]]
+     * インスタンスは、再度 `this` または他の [[Viewer]] インスタンスに設定す
+     * ることができる。
+     *
      * @see [[vectile_manager]],
-     *      [[Category.VECTILE]]
+     *      [[Category.VECTILE]],
+     *      [[StyleManager.viewer]]
      */
     setVectileManager( manager?: StyleManager ): void
     {
-        // TODO:
-        // - Globe 内の StyleFlake のリクエスト取り消し、クリア処理
-        // - manager の modified_states のクリア処理
+        if ( manager === this._vectile_manager ) {
+            // オブジェクトが変更されないときは何もしない
+            cfa_assert( manager.viewer === this );
+            return;
+        }
 
-        this._vectile_manager = manager ?? StyleManager.__createDefualtInstance();
+        // this に新しく設定する StyleManager インスタンス
+        const new_manager = manager ?? StyleManager.__createDefualtInstance();
+        cfa_assert( new_manager.viewer !== this );
+
+        if ( new_manager.viewer ) {
+            // new_manager は this 以外の Viewer インスタンスに設定さ
+            // れている
+            throw new Error( "StyleManager instance is already set to another Viewer instance" );
+        }
+
+        // 以前のオブジェクトは、処理を停止してから、どの Viewer イン
+        // スタンスにも所属しないようにする
+        this._vectile_manager.__cancel( this._globe );
+        this._vectile_manager.__install_viewer( null );
+
+        // 新しいオブジェクトに切り替える
+        this._vectile_manager = new_manager;
+        this._vectile_manager.__install_viewer( this );
     }
 
 

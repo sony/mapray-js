@@ -7,7 +7,7 @@
  * @module
  */
 
-import type { StyleManager } from "./style";
+import type { StyleManager } from "./style_manager";
 import type RenderStage from "../RenderStage";
 import GeoMath from "../GeoMath";
 import type { Vector3, Vector4 } from "../GeoMath";

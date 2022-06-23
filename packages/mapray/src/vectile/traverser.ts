@@ -1,5 +1,7 @@
 import { cfa_assert } from "../util/assertion";
-import type { StyleManager, StyleLayer, Source, FlakeContext } from "./style";
+import type { StyleManager, Source } from "./style_manager";
+import type { FlakeContext } from "./style_flake";
+import type { StyleLayer } from "./style_layer";
 import type { Provider } from "./provider";
 import { IdealLevelCalculator, IdealLevelInfo  } from "./ideal_level";
 import GeoMath from "../GeoMath";
@@ -54,6 +56,10 @@ export class TraverserManager {
 
     /**
      * リクエストの取り消し処理
+     *
+     * @remarks
+     *
+     * 再び `this` を使用するときは、初期状態からからやり直す。
      */
     cancel(): void
     {
@@ -67,7 +73,10 @@ export class TraverserManager {
             canceller();
         }
 
+        // 再び使用するときは、最初からやり直すように初期化状態に戻す
+        this._is_metadata_requested = false;
         this._metadata_cancellers.clear();
+        this._traversers.length = 0;
     }
 
 
@@ -461,7 +470,7 @@ class Traverser {
                       ctx:   TraverseContext ): void
     {
         // `flake` に対する `StyleFlake` インスタンス
-        const style_flake = flake.ensureStyleFlake();
+        const style_flake = flake.ensureStyleFlake( ctx.style_manager );
 
         if ( style_flake === null ) {
             // DEM データが入手できないので、このタイルの表示は破棄する。
@@ -476,7 +485,7 @@ class Traverser {
             zoom: info.center,
 
             stage: ctx.stage,
-            dem_sampler: flake.getDemBinary().newLinearSampler(),
+            dem_sampler: style_flake.dem_sampler,
         };
 
         for ( const style_layer of this._layers ) {
