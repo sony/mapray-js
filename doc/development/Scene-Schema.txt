@@ -19,7 +19,7 @@ start => <SCENE>
   id?: <ID>
   altitude_mode?: <ALTITUDE-MODE> = "absolute"
   visibility?: Boolean = true
-  <MODEL-CONTENT> | <MARKERLINE-CONTENT> | <PATH-CONTENT> | <TEXT-CONTENT> | <POLYGON-CONTENT> | <PIN-CONTENT>
+  <MODEL-CONTENT> | <MARKERLINE-CONTENT> | <PATH-CONTENT> | <TEXT-CONTENT> | <POLYGON-CONTENT> | <PIN-CONTENT> | <IMAGEICON-CONTENT>
 }
 
 <MODEL-CONTENT> =>
@@ -73,6 +73,12 @@ start => <SCENE>
   bg_color?: <PARAM-VEC3> = [0.35, 0.61, 0.81]
   font_family?: String = "sans-serif"
 
+<IMAGEICON-CONTENT> =>
+  type: "imageicon"
+  entries: [<IMAGEICON-ENTRY>*]
+  size?: <PARAM-VEC2> = [30, 30]
+  origin?: <PARAM-VEC2> = [0.5, 0.5]
+
 <TRANSFORM> => {
   position: <GEO-POINT>
   heading?: <PARAM-FLOAT> = 0
@@ -113,6 +119,13 @@ start => <SCENE>
   font_family?: String
   text?: String
   maki_id?: String
+  id?: <ID>
+}
+
+<IMAGEICON-ENTRY> => {
+  image_src: <URL>
+  position: <PARAM-VEC2>
+  size?: <PARAM-VEC2>
   id?: <ID>
 }
 
