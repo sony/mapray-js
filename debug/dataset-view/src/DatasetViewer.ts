@@ -23,8 +23,8 @@ class DatasetViewer extends DebugViewer {
                 sun_visualizer: new mapray.SunVisualizer( 32 ),
                 moon_visualizer: new mapray.MoonVisualizer( './data/moon.jpg' ),
                 star_visualizer: new mapray.StarVisualizer( './data/star75.json', './data/starmap_512n2.jpg' ),
-                north_pole: { color: [0, 0.07, 0.12], },
-                south_pole: { color: [0.88, 0.89, 0.94], },
+                // north_pole: { color: [0, 0.07, 0.12], },
+                // south_pole: { color: [0.88, 0.89, 0.94], },
         } );
 
         this.setCloudApi( new mapray.cloud.CloudApiV1({

@@ -374,8 +374,8 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
                 moon_visualizer: new mapray.MoonVisualizer( './data/moon.jpg' ),
                 cloud_visualizer: new mapray.CloudVisualizer(),
                 star_visualizer: new mapray.StarVisualizer( './data/star75.json', './data/starmap_512n2.jpg' ),
-                north_pole: { color: [0, 0.07, 0.12], },
-                south_pole: { color: [0.88, 0.89, 0.94], },
+                // north_pole: { color: [0, 0.07, 0.12], },
+                // south_pole: { color: [0.88, 0.89, 0.94], },
         });
 
         this._renderOption = renderOption;

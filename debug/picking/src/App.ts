@@ -62,8 +62,8 @@ export default class App extends maprayui.StandardUIViewer {
                 ),
                 // dem_provider: new mapray.CloudDemProvider( process.env.MAPRAY_ACCESS_TOKEN as string ),
                 // dem_provider: new mapray.FlatDemProvider(),
-                north_pole: { color: [0, 0.07, 0.12], },
-                south_pole: { color: [0.88, 0.89, 0.94], },
+                // north_pole: { color: [0, 0.07, 0.12], },
+                // south_pole: { color: [0.88, 0.89, 0.94], },
         } );
 
         this.enableURLUpdate( true );
