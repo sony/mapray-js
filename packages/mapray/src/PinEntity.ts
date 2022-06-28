@@ -341,7 +341,27 @@ class PinEntity extends AbstractPointEntity<PinEntity.TextPinEntry | PinEntity.M
 
         for ( let entry of json.entries ) {
             position.setFromArray( entry.position );
-            this.addPin( position, entry );
+            switch ( entry.type ) {
+                case "text":
+                    if ( entry.text ) {
+                        this.addTextPin( entry.text, position, entry );
+                    }
+                    else {
+                        this.addPin( position, entry );
+                    }
+                    break;
+                case "icon":
+                    if ( entry.maki_id ) {
+                        this.addMakiIconPin( entry.maki_id, position, entry );
+                    }
+                    else {
+                        this.addPin( position, entry );
+                    }
+                    break;
+                default:
+                    console.error( "mapray: unknown pin entry type: " + entry.type );
+                    break;
+            }
         }
         
         if ( json.size )     this.setSize( json.size );
@@ -385,13 +405,14 @@ export interface Option extends Entity.Option {
 }
 
 
-export interface PinPositionJson {
+export interface PinEntryJson {
+    type: string
     position: [ x: number, y: number, z: number ]
 }
 
 
 export interface Json extends Entity.Json {
-    entries: (PinPositionJson & ParentPinEntryOption)[];
+    entries: (PinEntryJson & ParentPinEntryOption)[];
     size?: Vector2;
     fg_color?: Vector3;
     bg_color?: Vector3;
@@ -415,10 +436,15 @@ export interface AbstractPinEntryOption {
 
 
 export interface MakiIconPinEntryOption extends AbstractPinEntryOption {
+    /** Maki Icon ID */
+    maki_id?: string;
 }
 
 
 export interface TextPinEntryOption extends AbstractPinEntryOption {
+    /** 表示文字列 */
+    text?: string;
+
     /** フォントファミリー */
     font_family?: string;
 }

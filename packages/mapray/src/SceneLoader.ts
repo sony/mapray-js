@@ -11,6 +11,7 @@ import PathEntity from "./PathEntity";
 import TextEntity from "./TextEntity";
 import ModelEntity from "./ModelEntity";
 import PolygonEntity from "./PolygonEntity";
+import PinEntity from "./PinEntity";
 import GLEnv from "./GLEnv";
 import GltfTool from "./gltf/Tool";
 import Resource, { URLResource } from "./Resource";
@@ -223,6 +224,9 @@ class SceneLoader extends Loader {
                     break;
                 case "polygon":
                     entity = new PolygonEntity( scene, { json: item, refs: this._references } as PolygonEntity.Option);
+                    break;
+                case "pin":
+                    entity = new PinEntity( scene, { json: item, refs: this._references } as PinEntity.Option);
                     break;
                 default:
                     console.error( "mapray: unknown entity type: " + type );
