@@ -1,0 +1,23 @@
+{
+  "entity_list": [
+    {
+      "type": "pin",
+      "entries": [
+        { "type": "text",
+          "position": [139.7528, 35.685175, 13],
+          "size": 40,
+          "bg_color": [1, 0, 0] },
+        { "type": "icon",
+          "position": [139.767141, 35.681247, 3],
+          "size": 40,
+          "bg_color": [0, 1, 0],
+          "maki_id": "rail-15" },
+        { "type": "text",
+          "position": [139.745440, 35.658594, 3],
+          "size": 40,
+          "bg_color": [0, 0, 1],
+          "text": "T" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "entity_list": [
+    {
+      "type": "imageicon",
+      "entries": [
+        { "image_src": "./image/TokyoTower.jpg",
+          "position": [139.745340, 35.658694, 100],
+          "size": [300, 200] }
+      ]
+    }
+  ]
+}
