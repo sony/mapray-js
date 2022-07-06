@@ -39,6 +39,8 @@ export class SymbolLayer extends StyleLayer {
     readonly prop_text_color:   Property;
     readonly prop_text_opacity: Property;
     readonly prop_text_font:    Property;
+    readonly prop_text_anchor:  Property;
+    readonly prop_text_offset:  Property;
 
 
     constructor( owner:   StyleManager,
@@ -51,6 +53,8 @@ export class SymbolLayer extends StyleLayer {
         this.prop_text_color   = this.__getProperty( 'text-color' );
         this.prop_text_opacity = this.__getProperty( 'text-opacity' );
         this.prop_text_font    = this.__getProperty( 'text-font' );
+        this.prop_text_anchor  = this.__getProperty( 'text-anchor' );
+        this.prop_text_offset  = this.__getProperty( 'text-offset' );
     }
 
 
@@ -117,6 +121,19 @@ export class SymbolLayer extends StyleLayer {
             element_type: 'string',
             default_value: ["Open Sans Regular",
                             "Arial Unicode MS Regular"],
+        },
+        {
+            name: 'text-anchor',
+            category: 'layout',
+            value_type: 'string',
+            default_value: 'center',
+        },
+        {
+            name: 'text-offset',
+            category: 'layout',
+            value_type: 'array',
+            element_type: 'number',
+            default_value: [0, 0],
         },
     ];
 
@@ -221,10 +238,12 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
     {
         super( feature, layer_flake, flake_ctx );
 
-        const values     = this._getEvaluatedLayoutValues();
-        this._text_field = values.text_field;
-        this._text_size  = values.text_size;
-        this._text_font  = values.text_font;
+        const values      = this._getEvaluatedLayoutValues();
+        this._text_field  = values.text_field;
+        this._text_size   = values.text_size;
+        this._text_font   = values.text_font;
+        this._text_anchor = values.text_anchor;
+        this._text_offset = values.text_offset;
 
         const gres    = this._buildGraphicsResources( flake_ctx );
         this._mesh    = gres.mesh;
@@ -242,12 +261,16 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
         const is_changed =
             (values.text_field !== this._text_field) ||
             (values.text_size  !== this._text_size)  ||
-            !equalsArray( values.text_font, this._text_font );
+            !equalsArray( values.text_font, this._text_font ) ||
+            (values.text_anchor !== this._text_anchor) ||
+            !equalsArray( values.text_offset, this._text_offset );
 
         if ( is_changed ) {
-            this._text_field = values.text_field;
-            this._text_size  = values.text_size;
-            this._text_font  = values.text_font;
+            this._text_field  = values.text_field;
+            this._text_size   = values.text_size;
+            this._text_font   = values.text_font;
+            this._text_anchor = values.text_anchor;
+            this._text_offset = values.text_offset;
 
             const gres    = this._buildGraphicsResources( flake_ctx );
             this._mesh    = gres.mesh;
@@ -307,14 +330,18 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
     {
         const sym_layer = this.layer_flake.style_layer;
 
-        const text_field = this.getEvaluatedValue( sym_layer.prop_text_field ) as string;
-        const text_size  = this.getEvaluatedValue( sym_layer.prop_text_size )  as number;
-        const text_font  = this.getEvaluatedValue( sym_layer.prop_text_font )  as string[];
+        const text_field  = this.getEvaluatedValue( sym_layer.prop_text_field )  as string;
+        const text_size   = this.getEvaluatedValue( sym_layer.prop_text_size )   as number;
+        const text_font   = this.getEvaluatedValue( sym_layer.prop_text_font )   as string[];
+        const text_anchor = this.getEvaluatedValue( sym_layer.prop_text_anchor ) as string;
+        const text_offset = this.getEvaluatedValue( sym_layer.prop_text_offset ) as [number, number];
 
         return {
             text_field,
             text_size,
             text_font,
+            text_anchor,
+            text_offset,
         };
     }
 
@@ -333,7 +360,7 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
         const mesh_data: MeshData = {
             vtype: [
                 { name: "a_position", size: 3 },
-                { name: "a_offset",   size: 2 },
+                { name: "a_offset",   size: 3 },
                 { name: "a_texcoord", size: 2 },
             ],
             vertices: this._createVertices( src_image_data, flake_ctx ),
@@ -342,7 +369,7 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
 
         return {
             mesh:    new Mesh( glenv, mesh_data ),
-            texture: new Texture( glenv, src_image_data.canvas, { usage: Texture.Usage.TEXT } ),
+            texture: new Texture( glenv, src_image_data.canvas, { usage: Texture.Usage.SIMPLETEXT } ),
         };
     }
 
@@ -392,8 +419,8 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
         const vertices: number[] = [];
 
         // 画像サイズの逆数
-        const xn = 1 / src_image_data.canvas_width;
-        const yn = 1 / src_image_data.canvas_height;
+        const xn = 1 / src_image_data.canvas.width;
+        const yn = 1 / src_image_data.canvas.height;
 
         // 文字列の横幅 (キャンバス座標系)
         const xsize = src_image_data.right_x - src_image_data.left_x;
@@ -406,27 +433,64 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
         const lower = src_image_data.lower_y - src_image_data.baseline_y;
         const upper = src_image_data.baseline_y - src_image_data.upper_y;
 
+        // 文字を手前に移動する係数
+        const dfactor = this._calculateDepthFactor( src_image_data );
+
+        // スクリーン座標オフセット
+        let offset_lx = -xsize / 2;
+        let offset_rx = xsize / 2;
+        let offset_by = -this._text_size / 2 - lower;
+        let offset_ty = upper - this._text_size / 2;
+
+        // アンカーによるオフセットの変換
+        const at_dir = anchor_translate_direction[this._text_anchor];
+        if ( at_dir !== undefined ) {
+            const translate_x = xsize           / 2 * at_dir[0];
+            const translate_y = this._text_size / 2 * at_dir[1];
+            offset_lx += translate_x;
+            offset_rx += translate_x;
+            offset_by += translate_y;
+            offset_ty += translate_y;
+        }
+
+        // 'text-offset' プロパティによるオフセットの変換
+        // この値はキャンバス座標系の em 単位
+        offset_lx += this._text_offset[0] * this._text_size;
+        offset_rx += this._text_offset[0] * this._text_size;
+        offset_by -= this._text_offset[1] * this._text_size;
+        offset_ty -= this._text_offset[1] * this._text_size;
+
         // 左下
         vertices.push( xm, ym, zm );                                // a_position
-        vertices.push( -xsize / 2, -lower );                        // a_offset
+        vertices.push( offset_lx, offset_by, dfactor );             // a_offset
         vertices.push( xc * xn, 1 - (yc + lower) * yn );            // a_texcoord
 
         // 右下
         vertices.push( xm, ym, zm );                                // a_position
-        vertices.push( xsize / 2, -lower );                         // a_offset
+        vertices.push( offset_rx, offset_by, dfactor );             // a_offset
         vertices.push( (xc + xsize) * xn, 1 - (yc + lower) * yn );  // a_texcoord
 
         // 左上
         vertices.push( xm, ym, zm );                                // a_position
-        vertices.push( -xsize / 2, upper );                         // a_offset
+        vertices.push( offset_lx, offset_ty, dfactor );             // a_offset
         vertices.push( xc * xn, 1 - (yc - upper) * yn );            // a_texcoord
 
         // 右上
         vertices.push( xm, ym, zm );                                // a_position
-        vertices.push( xsize / 2, upper );                          // a_offset
+        vertices.push( offset_rx, offset_ty, dfactor );             // a_offset
         vertices.push( (xc + xsize) * xn, 1 - (yc - upper) * yn );  // a_texcoord
 
         return vertices;
+    }
+
+
+    /**
+     * 文字列を手前に移動する量 (画素数相当)
+     */
+    private _calculateDepthFactor( src_image_data: TextSourceImageData ): number
+    {
+        // TODO: 計算方法を検討
+        return 1.75 * this._text_size;
     }
 
 
@@ -452,8 +516,7 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
 
         return {
             canvas: context.canvas,
-            canvas_width,
-            canvas_height,
+            canvas_context: context,
             baseline_y,
             left_x,
             right_x: width,
@@ -496,9 +559,11 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
 
 
     // グラフィックス資源を構築したときのパラメータ
-    private _text_field: string;
-    private _text_size:  number;
-    private _text_font:  string[];
+    private _text_field:  string;
+    private _text_size:   number;
+    private _text_font:   string[];
+    private _text_anchor: string;
+    private _text_offset: [number, number];
 
     // 構築済みのグラフィックス資源
     private    _mesh: Mesh;
@@ -512,24 +577,24 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
 
 
 /**
- * [[SymbolFeature]] 内で使用する型
+ * [[SymbolFeature._createTextSourceImageData]] が生成するデータの型
+ *
+ * 各パラメータの意味は vector-tile-style.org の「テキスト画像の座標系」
+ * の図を参照のこと。
  */
 interface TextSourceImageData {
 
     /**
      * キャンバスの HTML 要素
+     *
+     * `canvas.width >= 1 && canvas.height >= 1`
      */
     canvas: HTMLCanvasElement;
 
     /**
-     * キャンバスの水平画素数 (>= 1)
+     * `canvas` 用の 2D コンテキスト
      */
-    canvas_width: number;
-
-    /**
-     * キャンバスの垂直画素数 (>= 1)
-     */
-    canvas_height: number;
+    canvas_context: CanvasRenderingContext2D;
 
     /**
      * 文字列のベースラインの Y 座標 (キャンバス座標系)
@@ -590,15 +655,21 @@ class SymbolTextMaterial extends EntityMaterial {
 
         const props = primitive.properties as SymbolTextMaterialProperty;
 
-        // mat4 u_obj_to_clip
-        this.setObjToClip( stage, primitive );
+        // mat4 u_obj_to_view
+        this.setObjToView( stage, primitive );
 
-        // 画面パラメータ: {2/w, 2/h}
-        // vec2 u_sparam
+        // mat4 u_view_to_clip
+        const view_to_clip = SymbolTextMaterial._view_to_clip;
+        GeoMath.copyMatrix( stage._view_to_clip, view_to_clip );
+        this.setMatrix( "u_view_to_clip", view_to_clip );
+
+        // 画面パラメータ: {2/w, 2/h, pixel_step}
+        // vec3 u_sparam
         const sparam = SymbolTextMaterial._sparam;
         sparam[0] = 2 / stage._width;
         sparam[1] = 2 / stage._height;
-        this.setVector2( "u_sparam", sparam );
+        sparam[2] = stage.pixel_step;
+        this.setVector3( "u_sparam", sparam );
 
         if ( stage.getRenderTarget() === RenderStage.RenderTarget.SCENE ) {
             // テクスチャのバインド
@@ -615,9 +686,28 @@ class SymbolTextMaterial extends EntityMaterial {
     private static readonly TEXUNIT_IMAGE = 0;  // 画像のテクスチャユニット
 
     // 計算用一時領域
-    private static readonly _sparam = GeoMath.createVector2f();
+    private static readonly _sparam = GeoMath.createVector3f();
+    private static readonly _view_to_clip = GeoMath.createMatrixf();
 
 }
+
+
+/**
+ * アンカーによる平行移動の方向 (スクリーン座標系)
+ */
+const anchor_translate_direction: {
+    [key: string]: [number, number] | undefined
+} = {
+    // 'center':    [ 0 ,  0],  デフォルト値、または認識できないアンカー
+    'left':         [+1 ,  0],
+    'right':        [-1 ,  0],
+    'top':          [ 0 , -1],
+    'bottom':       [ 0 , +1],
+    'top-left':     [+1 , -1],
+    'top-right':    [-1 , -1],
+    'bottom-left':  [+1 , +1],
+    'bottom-right': [-1 , +1],
+};
 
 
 /**

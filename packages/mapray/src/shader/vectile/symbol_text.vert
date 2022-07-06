@@ -3,18 +3,26 @@
  */
 
 attribute vec4 a_position;    // 頂点位置 (モデル座標系)
-attribute vec2 a_offset;      // 頂点変位 (スクリーン座標系)
+attribute vec3 a_offset;      // 頂点変位 (X,Y: スクリーン座標系, Z: 深度係数)
 attribute vec2 a_texcoord;    // テクスチャ座標
 
-uniform mat4 u_obj_to_clip;   // モデル座標系からクリップ座標系への変換
-uniform vec2 u_sparam;        // 画面パラメータ: {2/w, 2/h}
+uniform mat4 u_obj_to_view;   // モデル座標系からビュー座標系への変換
+uniform mat4 u_view_to_clip;  // ビュー座標系からクリップ座標系への変換
+uniform vec3 u_sparam;        // 画面パラメータ: {2/w, 2/h, pixel_step}
 
 varying vec2 v_texcoord;      // テキストのテクスチャ座標
 
 void
 main()
 {
-    gl_Position     = u_obj_to_clip * a_position;
-    gl_Position.xy += a_offset * u_sparam * gl_Position.w;
+    // ビュー座標変換と深度変位
+    vec4 view_pos = u_obj_to_view * a_position;
+    view_pos.xyz *= 1.0 - a_offset.z * u_sparam.z;
+
+    // クリップ座標変換と XY 変位
+    vec4 clip_pos = u_view_to_clip * view_pos;
+    clip_pos.xy += a_offset.xy * u_sparam.xy * clip_pos.w;
+
+    gl_Position = clip_pos;
     v_texcoord = a_texcoord;
 }
