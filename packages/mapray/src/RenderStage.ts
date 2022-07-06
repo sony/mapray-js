@@ -74,7 +74,7 @@ abstract class RenderStage {
     // 地形
     protected _flake_list: RenderFlake[];
 
-    protected _view_to_clip: Matrix;
+    public readonly _view_to_clip: Matrix;  // 互換性のため名前は変更しない
 
     protected _gocs_to_view: Matrix;
 
