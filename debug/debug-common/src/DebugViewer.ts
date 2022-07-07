@@ -12,6 +12,7 @@ import Dataset2dModule from "./module/Dataset2dModule";
 import Dataset3dModule from "./module/Dataset3dModule";
 
 
+
 // Attirbute
 const GSI_ATTRIBUTE = "国土地理院";
 
@@ -417,15 +418,18 @@ class DebugViewer extends maprayui.StandardUIViewer {
      */
      async addGeoJson( dataset_id: string )
      {
+         const entities: mapray.Entity[] = [];
          const cloudApi = this.cloudApi as mapray.cloud.CloudApi;
          const resource = cloudApi.getDatasetAsResource( dataset_id );
          const loader = new mapray.GeoJSONLoader( this.viewer.scene, resource, {
              onEntity: ( loader, entity, prop ) => {
+                 entities.push( entity );
                  this._geojson_list.push( entity );
                  loader.scene.addEntity( entity );
              }
          } );
          await loader.load();
+         return entities;
      }
 
     /**
@@ -443,17 +447,28 @@ class DebugViewer extends maprayui.StandardUIViewer {
      * ModelEntityの追加
      * @param dataset_id 
      */
-    async addModelEntity( dataset_id: string )
+    async addModelEntity( dataset_id: string ): Promise<mapray.ModelEntity>
     {
         const cloudApi = this.cloudApi as mapray.cloud.CloudApi;
         const resource = cloudApi.get3DDatasetAsResource( [dataset_id] );
+        let loadedEntity: mapray.ModelEntity | undefined;
         const loader = new mapray.SceneLoader( this.viewer.scene, resource, {
             onEntity: ( loader, entity, prop ) => {
-                this._model_3d_list.push( entity as mapray.ModelEntity );
-                loader.scene.addEntity( entity );
+                if ( entity instanceof mapray.ModelEntity) {
+                    this._model_3d_list.push( entity );
+                    loader.scene.addEntity( entity );
+                    loadedEntity = entity;
+                }
+                else {
+                    throw new Error( "created entity is not ModelEntity" );
+                }
             }
         } );
         await loader.load();
+        if ( !loadedEntity ) {
+            throw new Error( "failed to load ModelEntity" );
+        }
+        return loadedEntity;
     }
 
     /**
@@ -505,13 +520,13 @@ class DebugViewer extends maprayui.StandardUIViewer {
      * @param urls 
      * @returns 
      */
-    addB3d( urls: string[] )
+    addB3d( urls: string[] ): mapray.B3dScene[]
     {
         const scenes = urls.map(url => {
                 const provider = new mapray.StandardB3dProvider(url, ".bin");
                 return this.viewer.b3d_collection.createScene( provider );
         });
-        this._b3d_scene = scenes;
+        this._b3d_scene.push( ...scenes );
         return scenes;
     }
 
@@ -547,8 +562,7 @@ class DebugViewer extends maprayui.StandardUIViewer {
             ui = target;
         }
         else {
-            ui = this.createUITop( target.name );
-            ui.appendChild( target.getDebugUI() );
+            ui = target.createUI();
         }
         this._debug_ui = ui;
         tools.appendChild( ui );
@@ -567,20 +581,6 @@ class DebugViewer extends maprayui.StandardUIViewer {
              delete this._debug_ui;
          }
      }
-
-
-    /**
-     * DebugUIのtopを作成
-     * @param name 
-     * @returns 
-     */
-    createUITop( name: string ): HTMLElement
-    {
-        const ui = document.createElement("div");
-        ui.setAttribute("class", "tool-item");
-        ui.appendChild( document.createTextNode( name ) );
-        return ui;
-    }
 
 
     /**
@@ -759,8 +759,7 @@ namespace DebugViewer {
 
 export interface Option extends mapray.Viewer.Option {
     mapray_access_token: string,
-    bingmap_token: string
-
+    bingmap_token?: string,
 }
 
 

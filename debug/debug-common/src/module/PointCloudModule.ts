@@ -93,6 +93,8 @@ export default class PointCloudModule extends Module {
 
     private _point_cloud_mode?: string;
 
+    private _point_cloud_list: mapray.PointCloud[];
+
     private _ui?: HTMLElement;
     private _top?: HTMLElement;
     private _top2?: HTMLElement;
@@ -102,6 +104,7 @@ export default class PointCloudModule extends Module {
         super( "PointCloud" );
         this._option = new Option( OPTION_PROPERTIES );
         this._init_option = option;
+        this._point_cloud_list = [];
     }
 
 
@@ -109,9 +112,20 @@ export default class PointCloudModule extends Module {
     {
         if ( this._init_option.datasets ) {
             for ( const dataset of this._init_option.datasets ) {
-                await this.debugViewer.addPointCloud( dataset );
+                const point_cloud = await this.debugViewer.addPointCloud( dataset );
+                this._point_cloud_list.push( point_cloud );
             }
         }
+    }
+
+
+    protected override async doUnloadData(): Promise<void>
+    {
+        const point_cloud_collection = this.debugViewer.viewer.point_cloud_collection;
+        this._point_cloud_list.forEach( point_cloud => {
+                point_cloud_collection.remove( point_cloud );
+        });
+        this._point_cloud_list.length = 0;
     }
 
 

@@ -29,18 +29,36 @@ export default class B3dTileModule extends Module {
 
     private _ui?: HTMLElement;
 
+    private readonly _option: Option;
+
+    private readonly _b3dscenes: mapray.B3dScene[];
+
 
     constructor() {
         super( "B3dTile" );
+
+        this._option = new Option( OPTION_PROPERTIES );
+        this._b3dscenes = [];
     }
 
 
     protected override async doLoadData(): Promise<void>
     {
-        this.debugViewer.addB3d( [
+        this.debugViewer.viewer.setVisibility( mapray.Viewer.Category.B3D_SCENE, this._option.get( "visibility" ) );
+        const b3dscenes = this.debugViewer.addB3d([
             "https://opentiles.mapray.com/3dcity/tokyo_n/",
             "https://opentiles.mapray.com/3dcity/tokyo_s/",
-        ] );
+        ]);
+        this._b3dscenes.push( ...b3dscenes );
+    }
+
+
+    protected override async doUnloadData(): Promise<void>
+    {
+        this._b3dscenes.forEach( b3dscene => {
+                this.debugViewer.viewer.b3d_collection.removeScene( b3dscene );
+        });
+        this._b3dscenes.length = 0;
     }
 
 
@@ -55,7 +73,7 @@ export default class B3dTileModule extends Module {
 
         const ui = this._ui = super.getDebugUI();
         const scenes = this.debugViewer.b3dScene;
-        const option = new Option( OPTION_PROPERTIES );
+        const option = this._option;
 
         const top2 = document.createElement("div");
         top2.setAttribute("class", "top");

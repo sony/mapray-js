@@ -13,7 +13,7 @@ const OPTION_PROPERTIES = [
         key: "sun",
         type: "boolean",
         description: "太陽表示",
-        value: true,
+        value: false,
     },
     {
         key: "move sun",
@@ -51,7 +51,7 @@ const OPTION_PROPERTIES = [
         key: "moon",
         type: "boolean",
         description: "月表示",
-        value: true,
+        value: false,
     },
     {
         key: "move moon",
@@ -81,7 +81,7 @@ const OPTION_PROPERTIES = [
         key: "star",
         type: "boolean",
         description: "恒星表示",
-        value: true,
+        value: false,
     },
     {
         key: "move star",
@@ -117,7 +117,7 @@ const OPTION_PROPERTIES = [
         key: "constellation",
         type: "boolean",
         description: "星座線表示",
-        value: true,
+        value: false,
     },
     {
         key: "constellation intensity",
@@ -133,7 +133,7 @@ const OPTION_PROPERTIES = [
         key: "milkyway",
         type: "boolean",
         description: "天の川表示",
-        value: true,
+        value: false,
     },
     {
         key: "milkyway intensity",
@@ -149,13 +149,13 @@ const OPTION_PROPERTIES = [
         key: "sky",
         type: "boolean",
         description: "大気圏表示",
-        value: true,
+        value: false,
     },
     {
         key: "ground",
         type: "boolean",
         description: "地表大気表示",
-        value: true,
+        value: false,
     },
     {
         key: "kr",
@@ -243,7 +243,7 @@ const OPTION_PROPERTIES = [
         key: "night layer",
         type: "boolean",
         description: "夜間レイヤー",
-        value: true,
+        value: false,
     },
 ];
 
@@ -271,7 +271,7 @@ export default class AtmosphereModule extends Module {
 
 
     constructor() {
-        super( "Atmosphere and Stars" );
+        super( "Atmosphere and Stars", false );
 
         this._sun_elapsed_time = 0;
 
@@ -346,27 +346,40 @@ export default class AtmosphereModule extends Module {
         }
 
         const ui = this._ui = super.getDebugUI();
+
+        const items = [
+            "sun",
+            "moon",
+            "sky",
+            "ground",
+            "star",
+            "constellation",
+            "milkyway",
+            "night layer",
+        ];
+
         const viewer = this.debugViewer.viewer;
         const option = this._option;
 
         const top = document.createElement("div");
         top.setAttribute("class", "top");
+        top.appendChild(document.createTextNode( "Visibility" ));
         ui.appendChild(top);
-
-        top.appendChild(document.createTextNode( "Visiblity" ));
-        ui.appendChild(top);
+        ui.appendChild( DomTool.createButton("Enable All", {
+                    onclick: event => {
+                        items.forEach( item => option.set( item, true ) );
+                    },
+        }));
+        ui.appendChild( DomTool.createButton("Disable All", {
+                    onclick: event => {
+                        items.forEach( item => option.set( item, false ) );
+                    },
+        }));
 
         const top_visible = document.createElement("div");
         top_visible.setAttribute("class", "top");
         ui.appendChild(top_visible);
-        top_visible.appendChild(DomTool.createCheckboxOption(option, "sun"));
-        top_visible.appendChild(DomTool.createCheckboxOption(option, "moon"));
-        top_visible.appendChild(DomTool.createCheckboxOption(option, "sky"));
-        top_visible.appendChild(DomTool.createCheckboxOption(option, "ground"));
-        top_visible.appendChild(DomTool.createCheckboxOption(option, "star"));
-        top_visible.appendChild(DomTool.createCheckboxOption(option, "constellation"));
-        top_visible.appendChild(DomTool.createCheckboxOption(option, "milkyway"));
-        top_visible.appendChild(DomTool.createCheckboxOption(option, "night layer"));
+        items.forEach( item => top_visible.appendChild(DomTool.createCheckboxOption(option, item )));
 
         const top_stars = document.createElement("div");
         top_stars.setAttribute("class", "top");

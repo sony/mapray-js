@@ -1,3 +1,4 @@
+import mapray from "@mapray/mapray-js";
 import Module from "./Module";
 
 import Option, { DomTool } from "../Option";
@@ -10,10 +11,13 @@ export default class Dataset3dModule extends Module {
 
     private _ui?: HTMLElement;
 
+    private _entities: mapray.ModelEntity[];
+
 
     constructor( option: Dataset3dModule.Option = {} ) {
         super( "3D Dataset" );
         this._init_option = option;
+        this._entities = [];
     }
 
 
@@ -21,9 +25,19 @@ export default class Dataset3dModule extends Module {
     {
         if ( this._init_option.datasets ) {
             for ( const dataset of this._init_option.datasets ) {
-                await this.debugViewer.addModelEntity( dataset );
+                const entity = await this.debugViewer.addModelEntity( dataset );
+                this._entities.push( entity );
             }
         }
+    }
+
+
+    protected override async doUnloadData(): Promise<void>
+    {
+        this._entities.forEach( entity => {
+                this.debugViewer.removeEntity( entity );
+        } );
+        this._entities.length = 0;
     }
 
 
