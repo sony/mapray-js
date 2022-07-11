@@ -48,6 +48,10 @@ export { default as PolygonEntity } from "./PolygonEntity";
 export { default as PinEntity } from "./PinEntity";
 export { default as ImageIconEntity } from "./ImageIconEntity"
 
+// Material
+export { default as Material } from "./Material";
+export { default as EntityMaterial } from "./EntityMaterial";
+
 // Loader
 export { default as SceneLoader } from "./SceneLoader";
 export { default as GeoJSONLoader } from "./GeoJSONLoader";
