@@ -115,8 +115,6 @@ class StandardUIViewer extends mapray.RenderCallback
 
     private _altitude_range: { min: number, max: number };
 
-    private _self_hash_change_flag: boolean;
-
     private _buf_matrix1: mapray.Matrix;
     private _buf_matrix2: mapray.Matrix;
 
@@ -202,8 +200,6 @@ class StandardUIViewer extends mapray.RenderCallback
         this._initCameraParameter( options );
 
         this._controllable = true;
-
-        this._self_hash_change_flag = false;
 
         // イベントリスナーの追加
         this._addEventListener();
@@ -356,11 +352,6 @@ class StandardUIViewer extends mapray.RenderCallback
      */
      private _onHashChange(): void
      {
-         if ( this._self_hash_change_flag ) {
-             this._self_hash_change_flag = false;
-             return;
-         }
-
          this._restoreCameraParameterFromHash();
      }
 
@@ -600,9 +591,7 @@ class StandardUIViewer extends mapray.RenderCallback
               this._last_camera_parameter.yaw = this._camera_parameter.yaw;
 
               if ( window.location.hash !== new_hash ) {
-                this._self_hash_change_flag = true;
-                const new_url = window.location.href.replace( window.location.hash, new_hash );
-                window.location.replace( new_url );
+                history.replaceState(null, window.location.hash, new_hash);
               }
           }
       }
