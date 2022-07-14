@@ -587,14 +587,13 @@ class DebugViewer extends maprayui.StandardUIViewer {
     private _updateRenderMode()
     {
         if ( this._commander.isRenderModeChanged() ) {
-            const render_mode = mapray.Viewer.RenderMode;
             const     viewer = this.viewer;
             const      rmode = viewer.render_mode;
-            if ( rmode === render_mode.SURFACE ) {
-                viewer.render_mode = render_mode.WIREFRAME;
+            if ( rmode === mapray.Viewer.RenderMode.SURFACE ) {
+                viewer.render_mode = mapray.Viewer.RenderMode.WIREFRAME;
             }
             else {
-                viewer.render_mode = render_mode.SURFACE;
+                viewer.render_mode = mapray.Viewer.RenderMode.SURFACE;
             }
         }
     }
