@@ -1711,11 +1711,15 @@ class StandardUIViewer extends mapray.RenderCallback
     async startFlyCamera( options: StandardUIViewer.FlyParam ): Promise<void>
     {
         if ( this._viewer_camera_mode !== StandardUIViewer.CameraMode.CAMERA_FREE ) {
-            return;
+            throw new Error( "viewer camera is not in CAMERA_FREE mode" );
         }
 
-        if ( !options.time || !options.iscs_end ) {
-            return;
+        if ( options.time === null || options.time === undefined ) {
+            throw new Error( "time is not defined" );
+        }
+
+        if ( !options.iscs_end ) {
+            throw new Error( "iscs_end is not defined" );
         }
 
         // animation
