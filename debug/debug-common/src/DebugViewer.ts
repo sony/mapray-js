@@ -76,6 +76,8 @@ class DebugViewer extends maprayui.StandardUIViewer {
 
         super( container, options.mapray_access_token, super_options );
 
+        this._addEventListenerForTouchEvent();
+
         this._modules = [];
 
         this._commander = new Commander( this.viewer );
@@ -667,6 +669,84 @@ class DebugViewer extends maprayui.StandardUIViewer {
                 this.setDebugUI( module );
             }
         }
+    }
+
+
+    // タッチイベント暫定対応（テスト用）
+    // @ts-ignore
+    private _addEventListenerForTouchEvent() {
+        const canvas = this.viewer.canvas_element;
+        const getTouchInfo = ( touches: TouchList ) => {
+            const o = {
+                position: [0, 0],
+                distance: 0,
+                count: touches.length,
+            };
+            for (let i=0; i<touches.length; i++) {
+                o.position[0] += touches[i].clientX;
+                o.position[1] += touches[i].clientY;
+            }
+            o.position[0] /= touches.length;
+            o.position[1] /= touches.length;
+            for (let i=0; i<touches.length; i++) {
+                const dx = touches[i].clientX - o.position[0];
+                const dy = touches[i].clientY - o.position[1];
+                o.distance += Math.sqrt( dx*dx + dy*dy );
+            }
+            o.distance /= touches.length;
+            return o;
+        };
+
+        const context = {
+            position: [0, 0],
+            distance: 0,
+            count: 0,
+        };
+
+        canvas.addEventListener( "touchstart", event => {
+                event.preventDefault();
+                event.stopPropagation();
+                // @ts-ignore
+                const o = getTouchInfo( event.touches );
+                context.position = o.position;
+                context.distance = o.distance;
+                // @ts-ignore
+                event.button = event.touches.length === 1 ? 0 : 1;
+                // @ts-ignore
+                this.onMouseDown(o.position, event);
+        }, { passive: false } );
+        canvas.addEventListener( "touchmove", event => {
+                event.preventDefault();
+                event.stopPropagation();
+                // @ts-ignore
+                const o = getTouchInfo( event.touches );
+                context.position = o.position;
+                // @ts-ignore
+                if (o.count < context.count) {
+                }
+                else {
+                    if (　Math.abs(　o.distance - context.distance　) > 1　) {
+                        // @ts-ignore
+                        this._zoom_wheel += (o.distance - context.distance) / 10;
+                    }
+                    {
+                        // @ts-ignore
+                        event.button = event.touches.length === 1 ? 0 : 1;
+                        // @ts-ignore
+                        this.onMouseMove(o.position, event);
+                    }
+                }
+                context.distance = o.distance;
+                context.count = o.count;
+        }, { passive: false } );
+        canvas.addEventListener( "touchend", event => {
+                event.preventDefault();
+                event.stopPropagation();
+                // @ts-ignore
+                event.button = event.touches.length === 1 ? 0 : 1;
+                // @ts-ignore
+                this.onMouseUp(　context.position, event　);
+        }, { passive: false } );
     }
 
 }
