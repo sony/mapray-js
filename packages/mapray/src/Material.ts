@@ -183,6 +183,24 @@ class Material {
         }
     }
 
+
+    /**
+     * 整数パラメータを設定
+     *
+     * @param name  - 変数名
+     * @param value - 整数値
+     */
+    setIntegerArray( name:  string,
+                     value: Int32Array | number[] ): void
+    {
+        const location = this._uniform_location[name];
+        if ( location !== undefined ) {
+            const gl = this.glenv.context;
+            gl.uniform1iv( location, value );
+        }
+    }
+
+
     /**
      * 整数ベクトルパラメータを設定
      *
@@ -195,6 +213,23 @@ class Material {
         const location = this._uniform_location[name];
         if ( location !== undefined ) {
             const gl = this._gl;
+            gl.uniform3iv( location, value );
+        }
+    }
+
+
+    /**
+     * 整数ベクトルパラメータを設定
+     *
+     * @param name  - 変数名
+     * @param value - 整数配列
+     */
+    setIVector3Array( name:  string,
+                      value: Int32Array | number[] ): void
+    {
+        const location = this._uniform_location[name];
+        if ( location !== undefined ) {
+            const gl = this.glenv.context;
             gl.uniform3iv( location, value );
         }
     }
@@ -236,6 +271,23 @@ class Material {
             else {
                 gl.uniform2fv( location, value );
             }
+        }
+    }
+
+
+    /**
+     * 2次ベクトルパラメータを設定
+     *
+     * @param name  - 変数名
+     * @param value - 2次ベクトル
+     */
+    setVector2Array( name:  string,
+                     value: Float32Array | number[] ): void
+    {
+        const location = this._uniform_location[name];
+        if ( location !== undefined ) {
+            const gl = this.glenv.context;
+            gl.uniform2fv( location, value );
         }
     }
 
