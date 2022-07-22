@@ -23,6 +23,35 @@ abstract class Resource {
     }
 
     /**
+     * Jsonリソースを読み込みます。
+     */
+    async loadAsJson( options: Resource.Option = {} ): Promise<object> {
+        return await this.load({ ...options, type: Resource.Type.JSON }) as object;
+    }
+
+    /**
+     * バイナリリソースを読み込みます。
+     */
+    async loadAsBinary( options: Resource.Option = {} ): Promise<ArrayBuffer> {
+        return await this.load({ ...options, type: Resource.Type.BINARY }) as ArrayBuffer;
+    }
+
+    /**
+     * イメージリソースを読み込みます。
+     */
+    async loadAsImage( options: Resource.Option = {} ): Promise<HTMLImageElement> {
+        return await this.load({ ...options, type: Resource.Type.IMAGE }) as HTMLImageElement;
+    }
+
+    /**
+     * テキストリソースを読み込みます。
+     */
+    async loadAsText( options: Resource.Option = {} ): Promise<string> {
+        return await this.load({ ...options, type: Resource.Type.TEXT }) as string;
+    }
+
+
+    /**
      * リソースの読み込みをキャンセルできる場合はキャンセルします。
      */
     cancel() {

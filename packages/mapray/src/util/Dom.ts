@@ -18,13 +18,26 @@ namespace Dom {
      */
     export function createCanvasContext( width: number, height: number ): CanvasRenderingContext2D
     {
-        var canvas = document.createElement( "canvas" );
+        const canvas = document.createElement( "canvas" );
         canvas.width  = width;
         canvas.height = height;
         const context = canvas.getContext( "2d" );
         if ( !context ) {
             throw new Error("Cannot get context of canvas");
         }
+        return context;
+    }
+
+
+
+    /**
+     * キャンバスコンテキストを生成します。
+     * @param image 画像
+     */
+    export function createCanvasContextFromImage( image: HTMLImageElement ): CanvasRenderingContext2D
+    {
+        const context = Dom.createCanvasContext( image.width, image.height );
+        context.drawImage( image, 0, 0 );
         return context;
     }
 
