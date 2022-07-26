@@ -5,6 +5,7 @@
  * [[LayerFeature]] の具象クラスを定義する。
  */
 
+import { DIST_FACTOR, DIST_LOWER } from "./symbol_base";
 import { StyleLayer, LayerFlake, LayerFeature } from "../style_layer";
 import type { EvaluationListener, LayerJson } from "../style_layer";
 import type { StyleManager } from "../style_manager";
@@ -12,15 +13,15 @@ import type { FlakeContext } from "../style_flake";
 import { Property, Specification as PropSpec } from "../property";
 import { GeomType } from "../expression";
 import { Feature, PointFeature, TileLayer } from "../tile_layer";
+import { ImageCache, ImageHandle, ImageInfo } from "./symbol_cache";
 import GLEnv from "../../GLEnv";
 import Primitive from "../../Primitive";
 import Mesh, { MeshData } from "../../Mesh";
-import Texture from "../../Texture";
-import GeoMath, { Vector3, Vector4, Matrix } from "../../GeoMath";
+import GeoMath, { Vector2, Vector3, Vector4, Matrix } from "../../GeoMath";
 import AreaUtil from "../../AreaUtil";
 import RenderStage from "../../RenderStage";
 import EntityMaterial from "../../EntityMaterial";
-import Dom from "../../util/Dom";
+import type Viewer from "../../Viewer";
 import { cfa_assert } from "../../util/assertion";
 
 import symbol_text_vs_code from "../../shader/vectile/symbol_text.vert";
@@ -41,6 +42,18 @@ export class SymbolLayer extends StyleLayer {
     readonly prop_text_font:    Property;
     readonly prop_text_anchor:  Property;
     readonly prop_text_offset:  Property;
+    readonly prop_text_halo_color: Property;
+    readonly prop_text_halo_width: Property;
+
+
+    /**
+     * 現在のレンダリングに使う画像キャッシュ
+     *
+     * レンダリング中は、非 `null` が保証されている。
+     *
+     * @internal
+     */
+    __image_cache: ImageCache | null;
 
 
     constructor( owner:   StyleManager,
@@ -55,6 +68,33 @@ export class SymbolLayer extends StyleLayer {
         this.prop_text_font    = this.__getProperty( 'text-font' );
         this.prop_text_anchor  = this.__getProperty( 'text-anchor' );
         this.prop_text_offset  = this.__getProperty( 'text-offset' );
+        this.prop_text_halo_color = this.__getProperty( 'text-halo-color' );
+        this.prop_text_halo_width = this.__getProperty( 'text-halo-width' );
+
+        this.__image_cache = null;
+    }
+
+
+    // from StyleLayer
+    override __install_viewer( viewer: Viewer | null ): void
+    {
+        if ( viewer !== null ) {
+            const shared_cache = SymbolLayer._shared_image_caches.get( viewer.glenv );
+
+            if ( shared_cache ) {
+                // すでに共有されているキャッシュ
+                this.__image_cache = shared_cache;
+            }
+            else {
+                // 新規に作成するキャッシュ
+                this.__image_cache = new ImageCache( viewer.glenv );
+                SymbolLayer._shared_image_caches.set( viewer.glenv, this.__image_cache );
+            }
+        }
+        else {
+            // StyleManager が Viewer から外された
+            this.__image_cache = null;
+        }
     }
 
 
@@ -75,14 +115,23 @@ export class SymbolLayer extends StyleLayer {
 
 
     /**
+     * マテリアルを取得
      */
     getTextMaterial( glenv: GLEnv ): SymbolTextMaterial
     {
-        if ( !SymbolLayer._text_material ) {
-            SymbolLayer._text_material = new SymbolTextMaterial( glenv );
+        const is_sharp = this.style_manager.bitmap_sharpening;
+
+        const name = is_sharp ? '_text_material_sharp' : '_text_material_normal';
+
+        let material = SymbolLayer[name].get( glenv );
+
+        if ( material === undefined ) {
+            // 存在しないので新たにマテリアルを生成
+            material = new SymbolTextMaterial( glenv, { is_sharp } );
+            SymbolLayer[name].set( glenv, material );
         }
 
-        return SymbolLayer._text_material;
+        return material;
     }
 
 
@@ -135,13 +184,32 @@ export class SymbolLayer extends StyleLayer {
             element_type: 'number',
             default_value: [0, 0],
         },
+        {
+            name: 'text-halo-color',
+            category: 'paint',
+            value_type: 'color',
+            default_value: "rgba(0, 0, 0, 0)",
+        },
+        {
+            name: 'text-halo-width',
+            category: 'paint',
+            value_type: 'number',
+            default_value: 0,
+        },
     ];
 
 
     /**
      * マテリアル・キャッシュ
      */
-    private static _text_material?: SymbolTextMaterial = undefined;
+    private static readonly _text_material_normal = new WeakMap<GLEnv, SymbolTextMaterial>();
+    private static readonly _text_material_sharp  = new WeakMap<GLEnv, SymbolTextMaterial>();
+
+
+    /**
+     * `SymbolLayer` インスタンス間で共有する `ImageCache` インスタンス
+     */
+    private static readonly _shared_image_caches = new WeakMap<GLEnv, ImageCache>();
 
 }
 
@@ -238,16 +306,26 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
     {
         super( feature, layer_flake, flake_ctx );
 
-        const values      = this._getEvaluatedLayoutValues();
+        const values = this._getEvaluatedLayoutValues();
         this._text_field  = values.text_field;
         this._text_size   = values.text_size;
         this._text_font   = values.text_font;
         this._text_anchor = values.text_anchor;
         this._text_offset = values.text_offset;
 
-        const gres    = this._buildGraphicsResources( flake_ctx );
-        this._mesh    = gres.mesh;
-        this._texture = gres.texture;
+        const gres = this._buildGraphicsResources( flake_ctx );
+        this._mesh = gres.mesh;
+        this._image_handle = gres.image_handle;
+        this._img_isize = gres.img_isize;
+
+        this._position = GeoMath.createVector3f( this._get_local_position( flake_ctx ) );
+    }
+
+
+    // from LayerFeature
+    override dispose(): void
+    {
+        this._image_handle.dispose();
     }
 
 
@@ -272,9 +350,10 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
             this._text_anchor = values.text_anchor;
             this._text_offset = values.text_offset;
 
-            const gres    = this._buildGraphicsResources( flake_ctx );
-            this._mesh    = gres.mesh;
-            this._texture = gres.texture;
+            const gres = this._buildGraphicsResources( flake_ctx );
+            this._mesh = gres.mesh;
+            this._image_handle = gres.image_handle;
+            this._img_isize = gres.img_isize;
         }
     }
 
@@ -287,14 +366,41 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
         const     glenv = flake_ctx.stage.glenv;
         const sym_layer = this.layer_flake.style_layer;
 
-        const text_color = this.getEvaluatedColor( sym_layer.prop_text_color,
+        const color = this.getEvaluatedColor( sym_layer.prop_text_color,
+                                              GeoMath.createVector4f() );
+
+        const opacity = this.getEvaluatedValue( sym_layer.prop_text_opacity ) as number;
+
+        const halo_color = this.getEvaluatedColor( sym_layer.prop_text_halo_color,
                                                    GeoMath.createVector4f() );
 
-        text_color[3] *= this.getEvaluatedValue( sym_layer.prop_text_opacity ) as number;
+        const halo_width = this.getEvaluatedValue( sym_layer.prop_text_halo_width ) as number;
+
+        if ( halo_width < 1.0 ) {
+            // 縁取りが細いとき、距離補間の誤差が目立つので、
+            // 縁取りの不透明度を下げて、目立ちにくいようにする
+            const factor = Math.max( 0, halo_width );
+            for ( let i = 0; i < 4; ++i ) {
+                halo_color[i] *= factor;
+            }
+        }
+
+        // 必要ならメッシュとテクスチャを作り直す
+        if ( this._image_handle.checkRebuild( halo_width ) ) {
+            const image_info = this._image_handle.getImageInfo();
+            this._mesh = this._createSymbolMesh( glenv, image_info );
+            this._img_isize[0] = 1 / image_info.texture_width;
+            this._img_isize[1] = 1 / image_info.texture_height;
+        }
 
         const props: SymbolTextMaterialProperty = {
-            text_image: this._texture,
-            text_color: text_color,
+            u_position:   this._position,
+            u_image:      this._image_handle.getTexture(),
+            u_img_isize:  this._img_isize,
+            u_color:      color,
+            u_opacity:    opacity,
+            u_halo_color: halo_color,
+            u_halo_width: (halo_width - DIST_LOWER) * DIST_FACTOR,
         };
 
         const primitive = new Primitive( glenv,
@@ -353,32 +459,33 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
      */
     private _buildGraphicsResources( flake_ctx: FlakeContext ) /* auto-type */
     {
-        const glenv = flake_ctx.stage.glenv;
+        const sym_layer = this.layer_flake.style_layer;
+        cfa_assert( sym_layer.__image_cache );
 
-        const src_image_data = this._createTextSourceImageData();
+        const image_cache = sym_layer.__image_cache;
 
-        const mesh_data: MeshData = {
-            vtype: [
-                { name: "a_position", size: 3 },
-                { name: "a_offset",   size: 3 },
-                { name: "a_texcoord", size: 2 },
-            ],
-            vertices: this._createVertices( src_image_data, flake_ctx ),
-            indices:  [0, 1, 2, 2, 1, 3],
-        };
+        const halo_width = this.getEvaluatedValue( sym_layer.prop_text_halo_width ) as number;
+
+        const image_handle = image_cache.getHandle( this._text_field,
+                                                    this._getTextFontString(),
+                                                    this._text_size,
+                                                    halo_width );
+
+        const image_info = image_handle.getImageInfo();
 
         return {
-            mesh:    new Mesh( glenv, mesh_data ),
-            texture: new Texture( glenv, src_image_data.canvas, { usage: Texture.Usage.SIMPLETEXT } ),
+            mesh: this._createSymbolMesh( flake_ctx.stage.glenv, image_info ),
+            image_handle,
+            img_isize: GeoMath.createVector2f( [1 / image_info.texture_width,
+                                                1 / image_info.texture_height] ),
         };
     }
 
 
     /**
-     * 頂点配列を生成
+     * フィーチャーの位置を取得 (モデル座標)
      */
-    private _createVertices( src_image_data: TextSourceImageData,
-                             flake_ctx:      FlakeContext ): number[]
+    private _get_local_position( flake_ctx: FlakeContext ): Vector3
     {
         const  pi = Math.PI;
         const pot = Math.pow( 2, 1 - flake_ctx.z );  // 2^(1 - Z)
@@ -415,42 +522,56 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
         const ym = yg - origin[1];
         const zm = zg - origin[2];
 
+        return [xm, ym, zm];
+    }
+
+
+    /**
+     * シンボル用のメッシュを生成
+     */
+    private _createSymbolMesh( glenv: GLEnv,
+                               image_info: ImageInfo ): Mesh
+    {
+        const mesh_data: MeshData = {
+            vtype: [
+                { name: "a_offset",   size: 3 },
+                { name: "a_texcoord", size: 2 },
+            ],
+            vertices: this._createSymbolVertices( image_info ),
+            indices:  [0, 1, 2, 2, 1, 3],
+        };
+
+        return new Mesh( glenv, mesh_data );
+    }
+
+
+    /**
+     * シンボル用の頂点配列を生成
+     */
+    private _createSymbolVertices( image_info: ImageInfo ): number[]
+    {
         // 頂点配列を設定
         const vertices: number[] = [];
 
-        // 画像サイズの逆数
-        const xn = 1 / src_image_data.canvas.width;
-        const yn = 1 / src_image_data.canvas.height;
+        // 中央アンカーの座標
+        const center_anchor_x = (image_info.anchor_lower_x + image_info.anchor_upper_x) / 2;
+        const center_anchor_y = (image_info.anchor_lower_y + image_info.anchor_upper_y) / 2;
 
-        // 文字列の横幅 (キャンバス座標系)
-        const xsize = src_image_data.right_x - src_image_data.left_x;
-
-        // ベースライン左端の位置 (キャンバス座標系)
-        const xc = src_image_data.left_x;
-        const yc = src_image_data.baseline_y;
-
-        // ベースラインより上と下の高さ (キャンバス座標系)
-        const lower = src_image_data.lower_y - src_image_data.baseline_y;
-        const upper = src_image_data.baseline_y - src_image_data.upper_y;
-
-        // 文字を手前に移動する係数
-        const dfactor = this._calculateDepthFactor( src_image_data );
-
-        // スクリーン座標オフセット
-        let offset_lx = -xsize / 2;
-        let offset_rx = xsize / 2;
-        let offset_by = -this._text_size / 2 - lower;
-        let offset_ty = upper - this._text_size / 2;
+        // スクリーン座標オフセット (初期値は中央アンカー用)
+        let offset_lx = image_info.display_lower_x - center_anchor_x;
+        let offset_rx = image_info.display_upper_x - center_anchor_x;
+        let offset_by = image_info.display_lower_y - center_anchor_y;
+        let offset_ty = image_info.display_upper_y - center_anchor_y;
 
         // アンカーによるオフセットの変換
         const at_dir = anchor_translate_direction[this._text_anchor];
         if ( at_dir !== undefined ) {
-            const translate_x = xsize           / 2 * at_dir[0];
-            const translate_y = this._text_size / 2 * at_dir[1];
-            offset_lx += translate_x;
-            offset_rx += translate_x;
-            offset_by += translate_y;
-            offset_ty += translate_y;
+            const delta_x = at_dir[0] * (image_info.anchor_upper_x - image_info.anchor_lower_x) / 2;
+            const delta_y = at_dir[1] * (image_info.anchor_upper_y - image_info.anchor_lower_y) / 2;
+            offset_lx += delta_x;
+            offset_rx += delta_x;
+            offset_by += delta_y;
+            offset_ty += delta_y;
         }
 
         // 'text-offset' プロパティによるオフセットの変換
@@ -460,25 +581,30 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
         offset_by -= this._text_offset[1] * this._text_size;
         offset_ty -= this._text_offset[1] * this._text_size;
 
+        // 文字を手前に移動する係数
+        const dfactor = this._calculateDepthFactor();
+
+        // テクスチャ座標
+        const tc_lx = image_info.display_lower_x;
+        const tc_rx = image_info.display_upper_x;
+        const tc_by = image_info.display_lower_y;
+        const tc_ty = image_info.display_upper_y;
+
         // 左下
-        vertices.push( xm, ym, zm );                                // a_position
-        vertices.push( offset_lx, offset_by, dfactor );             // a_offset
-        vertices.push( xc * xn, 1 - (yc + lower) * yn );            // a_texcoord
+        vertices.push( offset_lx, offset_by, dfactor );  // a_offset
+        vertices.push( tc_lx, tc_by );                   // a_texcoord
 
         // 右下
-        vertices.push( xm, ym, zm );                                // a_position
-        vertices.push( offset_rx, offset_by, dfactor );             // a_offset
-        vertices.push( (xc + xsize) * xn, 1 - (yc + lower) * yn );  // a_texcoord
+        vertices.push( offset_rx, offset_by, dfactor );  // a_offset
+        vertices.push( tc_rx, tc_by );                   // a_texcoord
 
         // 左上
-        vertices.push( xm, ym, zm );                                // a_position
-        vertices.push( offset_lx, offset_ty, dfactor );             // a_offset
-        vertices.push( xc * xn, 1 - (yc - upper) * yn );            // a_texcoord
+        vertices.push( offset_lx, offset_ty, dfactor );  // a_offset
+        vertices.push( tc_lx, tc_ty );                   // a_texcoord
 
         // 右上
-        vertices.push( xm, ym, zm );                                // a_position
-        vertices.push( offset_rx, offset_ty, dfactor );             // a_offset
-        vertices.push( (xc + xsize) * xn, 1 - (yc - upper) * yn );  // a_texcoord
+        vertices.push( offset_rx, offset_ty, dfactor );  // a_offset
+        vertices.push( tc_rx, tc_ty );                   // a_texcoord
 
         return vertices;
     }
@@ -487,58 +613,10 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
     /**
      * 文字列を手前に移動する量 (画素数相当)
      */
-    private _calculateDepthFactor( src_image_data: TextSourceImageData ): number
+    private _calculateDepthFactor(): number
     {
         // TODO: 計算方法を検討
         return 1.75 * this._text_size;
-    }
-
-
-    /**
-     * テキストの元画像の情報を生成
-     */
-    private _createTextSourceImageData(): TextSourceImageData
-    {
-        // 描画サイズを見積もる
-        const width = this._createCanvasContext( 1, 1 ).measureText( this._text_field ).width;
-        const upper = this._text_size * SymbolFeature.TEXT_UPPER;
-        const lower = this._text_size * SymbolFeature.TEXT_LOWER;
-
-        // 描画用キャンバスを作成
-        const canvas_width  = Math.max( Math.ceil( width ), 1 );
-        const canvas_height = Math.max( Math.ceil( upper ) + Math.ceil( lower ), 1 );
-        const context = this._createCanvasContext( canvas_width, canvas_height );
-
-        // テキストをキャンバスへ描画
-        const left_x     = 0;
-        const baseline_y = Math.ceil( upper );
-        context.fillText( this._text_field, left_x, baseline_y );
-
-        return {
-            canvas: context.canvas,
-            canvas_context: context,
-            baseline_y,
-            left_x,
-            right_x: width,
-            upper_y: baseline_y - upper,
-            lower_y: baseline_y + lower,
-        };
-    }
-
-
-    /**
-     * テキストの測定用と描画用の Canvas コンテキストを生成
-     */
-    private _createCanvasContext( width:  number,
-                                  height: number ): CanvasRenderingContext2D
-    {
-        const context = Dom.createCanvasContext( width, height );
-        context.textAlign    = "left";
-        context.textBaseline = "alphabetic";
-        context.fillStyle    = "rgba( 255, 255, 255, 1.0 )";
-        context.font         = this._getTextFontString();
-
-        return context;
     }
 
 
@@ -566,60 +644,12 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
     private _text_offset: [number, number];
 
     // 構築済みのグラフィックス資源
-    private    _mesh: Mesh;
-    private _texture: Texture;
+    private _mesh: Mesh;
+    private _image_handle: ImageHandle;
+    private _img_isize: Vector2;  // _texture の画素数の逆数
 
-    // クラス定数
-    private static readonly TEXT_UPPER = 1.1;
-    private static readonly TEXT_LOWER = 0.38;
-
-}
-
-
-/**
- * [[SymbolFeature._createTextSourceImageData]] が生成するデータの型
- *
- * 各パラメータの意味は vector-tile-style.org の「テキスト画像の座標系」
- * の図を参照のこと。
- */
-interface TextSourceImageData {
-
-    /**
-     * キャンバスの HTML 要素
-     *
-     * `canvas.width >= 1 && canvas.height >= 1`
-     */
-    canvas: HTMLCanvasElement;
-
-    /**
-     * `canvas` 用の 2D コンテキスト
-     */
-    canvas_context: CanvasRenderingContext2D;
-
-    /**
-     * 文字列のベースラインの Y 座標 (キャンバス座標系)
-     */
-    baseline_y: number;
-
-    /**
-     * 文字列の左端 X 座標 (キャンバス座標系)
-     */
-    left_x: number;
-
-    /**
-     * 文字列の右端 X 座標 (キャンバス座標系)
-     */
-    right_x: number;
-
-    /**
-     * 文字列の上端 Y 座標 (キャンバス座標系)
-     */
-    upper_y: number;
-
-    /**
-     * 文字列の下端 Y 座標 (キャンバス座標系)
-     */
-    lower_y: number;
+    // 位置 (モデル座標系)
+    private readonly _position: Vector3;
 
 }
 
@@ -629,9 +659,14 @@ interface TextSourceImageData {
  */
 class SymbolTextMaterial extends EntityMaterial {
 
-    constructor( glenv: GLEnv )
+    constructor( glenv:   GLEnv,
+                 options: MaterailOption = {} )
     {
-        super( glenv, symbol_text_vs_code, symbol_text_fs_code );
+        const preamble = SymbolTextMaterial._getPreamble( options );
+
+        super( glenv,
+               preamble + symbol_text_vs_code,
+               preamble + symbol_text_fs_code );
 
         // 不変パラメータを事前設定
         this.bindProgram();
@@ -674,16 +709,52 @@ class SymbolTextMaterial extends EntityMaterial {
         if ( stage.getRenderTarget() === RenderStage.RenderTarget.SCENE ) {
             // テクスチャのバインド
             // sampler2D u_image
-            const image_tex = props["text_image"];
-            this.bindTexture2D( SymbolTextMaterial.TEXUNIT_IMAGE, image_tex.handle );
+            const image_tex = props["u_image"];
+            this.bindTexture2D( SymbolTextMaterial.TEXUNIT_IMAGE, image_tex );
 
-            // テキストの色と不透明度
-            this.setVector4( "u_color", props.text_color );
+            // フィーチャー位置 (モデル座標系)
+            this.setVector3( "u_position", props["u_position"] );
+
+            // u_image の画素数の逆数
+            this.setVector2( "u_img_isize", props["u_img_isize"] );
+
+            // シンボル本体の RGBA 色
+            this.setVector4( "u_color", props["u_color"] );
+
+            // シンボル全体の不透明度
+            this.setFloat( "u_opacity", props["u_opacity"] );
+
+            // シンボル縁取りの RGBA 色
+            this.setVector4( "u_halo_color", props["u_halo_color"] );
+
+            // シンボル縁取り太さ - DIST_LOWER
+            this.setFloat( "u_halo_width", GeoMath.clamp( props["u_halo_width"],
+                                                          0.0, SymbolTextMaterial.MAX_HALO_WIDTH ) );
         }
     }
 
 
-    private static readonly TEXUNIT_IMAGE = 0;  // 画像のテクスチャユニット
+    /**
+     * シェーダの前文を取得
+     *
+     * @private
+     */
+    private static _getPreamble( options: MaterailOption ): string
+    {
+        const lines = [];
+
+        lines.push( `#define BITMAP_SHARPENING (${options.is_sharp ?? false})` );
+        lines.push( `#define _DIST_FACTOR_ (float(${DIST_FACTOR}))` );
+        lines.push( `#define _DIST_LOWER_ (float(${DIST_LOWER}))` );
+
+        // lines を文字列にして返す
+        return lines.join( "\n" ) + "\n\n";
+    }
+
+
+    private static readonly TEXUNIT_IMAGE  = 0;      // 画像のテクスチャユニット
+    private static readonly MAX_HALO_WIDTH = 0.999;  // u_halo_width の最大値
+
 
     // 計算用一時領域
     private static readonly _sparam = GeoMath.createVector3f();
@@ -737,7 +808,29 @@ function equalsArray<T>( a: ArrayLike<T>,
  */
 interface SymbolTextMaterialProperty {
 
-    text_image: Texture;
-    text_color: Vector4;
+    u_position: Vector3;
+
+    u_image:     WebGLTexture;
+    u_img_isize: Vector2;
+    u_color:     Vector4;
+    u_opacity:   number;
+
+    u_halo_color: Vector4;
+    u_halo_width: number;
+
+}
+
+
+/**
+ * マテリアル構築子のオプション
+ */
+interface MaterailOption {
+
+    /**
+     * シンボルの表示を鮮明化するか？
+     *
+     * @default false
+     */
+    is_sharp?: boolean;
 
 }
