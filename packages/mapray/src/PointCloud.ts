@@ -140,7 +140,6 @@ class PointCloud {
 
     /**
      * プロバイダ
-     * @internal
      */
     get provider() { return this._provider; }
 

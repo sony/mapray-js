@@ -12,9 +12,13 @@ abstract class PointCloudProvider {
 
     private _status: PointCloudProvider.Status;
 
+    protected _time_info_handler?: PointCloudProvider.TimeInfoHandler;
 
-    constructor( option={} ) {
+
+    constructor( option: PointCloudProvider.Option = {} ) {
         this._status = PointCloudProvider.Status.NOT_INITIALIZED;
+
+        this._time_info_handler = option?.time_info_handler;
     }
 
 
@@ -59,7 +63,24 @@ abstract class PointCloudProvider {
         const id = PointCloudProvider._id_max++;
         return {
             id,
-            done: this.doLoad( id, level, x, y, z ),
+            done: (async () => {
+                    const start = Date.now();
+                    const ret = await this.doLoad( id, level, x, y, z );
+                    if ( this._time_info_handler ) {
+                        const path = level + "/" + x + "/" + y + "/" + z;
+                        const end = Date.now();
+                        if ( ret.times ) {
+                            ret.times.path = path;
+                            ret.times.start = start;
+                            ret.times.end = end;
+                        }
+                        else {
+                            ret.times = { path, start, end };
+                        }
+                        this._time_info_handler( ret.times );
+                    }
+                    return ret;
+            })(),
         }
     }
 
@@ -70,6 +91,50 @@ abstract class PointCloudProvider {
 
     toString() {
         return "PointCloudProvider";
+    }
+
+
+    /**
+     * 読み込み情報のハンドラを指定する
+     * @param time_info_handler 読み込み情報取得時のハンドラ
+     */
+    setTimeInfoHandler( time_info_handler: PointCloudProvider.TimeInfoHandler ): void
+    {
+        if ( this._time_info_handler === time_info_handler ) {
+            return;
+        }
+        this._time_info_handler = time_info_handler;
+        this.onChangeTimeInfoHandler( true );
+    }
+
+
+    /**
+     * 読み込み情報のハンドラを破棄する
+     */
+    clearTimeInfoHandler(): void
+    {
+        if ( !this._time_info_handler ) {
+            return;
+        }
+        this._time_info_handler = undefined;
+        this.onChangeTimeInfoHandler( false );
+    }
+
+
+    /**
+     * 読み込み情報のハンドラが変更されたことを通知します。
+     */
+    protected onChangeTimeInfoHandler( time_info_handler_available: boolean ): void
+    {
+    }
+
+
+    /**
+     * 読み込み情報のハンドラが指定されているかを取得します。
+     */
+    protected isTimeInfoHandlerAvailable(): boolean
+    {
+        return this._time_info_handler !== undefined;
     }
 
 
@@ -149,6 +214,7 @@ export interface Data {
         eigenVectorLength: [ number, number, number ];
     };
     body: Float32Array;
+    times?: TimeInfo;
 }
 
 
@@ -195,6 +261,25 @@ export enum Status {
     DESTROYED,
 }
 
+
+export interface Option {
+    time_info_handler?: TimeInfoHandler;
+}
+
+/**
+ * 時間計測
+ */
+export interface TimeInfo {
+    path: string;
+    start: number;
+    end: number;
+}
+
+
+/**
+ * 時間計測終了時のコールバック関数定義
+ */
+export type TimeInfoHandler = ( time_info: TimeInfo ) => void;
 
 
 } // namespace PointCloudProvider

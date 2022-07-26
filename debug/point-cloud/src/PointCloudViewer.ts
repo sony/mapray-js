@@ -13,6 +13,9 @@ const GSI_ATTRIBUTE = "国土地理院";
 
 
 
+const isLocal = document.location.hostname === "localhost";
+
+
 function getPointShapeText( pointShapeType: mapray.PointCloud.PointShapeType ): string
 {
     switch (pointShapeType) {
@@ -96,6 +99,11 @@ const RENDER_OPTION_PROPERTIES = [
         value: 0.7,
     },
     {
+        key: "show status",
+        type: "boolean",
+        value: false,
+    },
+    {
         key: "debug shader",
         type: "boolean",
         value: false,
@@ -130,6 +138,10 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
         pointCloudList?: mapray.PointCloud[];
         ui?: HTMLElement;
     };
+
+    private _time_info_enabled: boolean;
+
+    private _time_info_list: mapray.PointCloudProvider.TimeInfo[];
 
 
     /**
@@ -168,6 +180,10 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
         this._point_cloud_cache = {
             bbox_geoms: [],
         };
+
+        this._time_info_enabled = false;
+
+        this._time_info_list = [];
     }
 
     /**
@@ -194,7 +210,7 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
                 return tools;
         })();
 
-        this._point_cloud_mode = "raw";
+        this._point_cloud_mode = "none";
         this._updatePointCloud();
     }
 
@@ -289,6 +305,7 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
             const mode = this._point_cloud_mode;
             const tools = document.getElementById("tools");
             if ( !tools ) throw new Error("?");
+            while ( tools.firstElementChild ) tools.removeChild( tools.firstElementChild );
             const ui = document.createElement("div");
             ui.setAttribute("class", "tool-item");
             tools.appendChild(ui);
@@ -298,7 +315,12 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
 
             top.appendChild(document.createTextNode("PointCloud "));
 
-            const items = ["raw"];
+            const items = [
+                "none",
+                "raw-cloud",
+                "raw-bucket",
+                ...(isLocal ? ["raw-local"] : []),
+            ];
 
             top.appendChild(DomTool.createSelect(items, {
                         initialValue: mode,
@@ -311,51 +333,6 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
 
             const top2 = document.createElement("div");
             top2.setAttribute("class", "top");
-            top2.appendChild(DomTool.createButton("Print Traverse", {
-                        class: "box-statistics",
-                        onclick: async (event) => {
-                            // @ts-ignore
-                            const traverse_summary = await mapray.PointCloud.requestTraverseSummary();
-                            // @ts-ignore
-                            for (let i=0; i<traverse_summary.length; i++) {
-                                // @ts-ignore
-                                const traverse = traverse_summary[i];
-                                const statistics = traverse.pcb_collection.reduce((statistics: any, renderObject: any) => {
-                                        const box = renderObject.box;
-                                        statistics.numberOfBoxes++;
-                                        let level = statistics.levelData[box.level];
-                                        if (!level) {
-                                            level = statistics.levelData[box.level] = {
-                                                count: 0,
-                                                distance: 0,
-                                                points: 0,
-                                            };
-                                            statistics.levels.push(box.level);
-                                        }
-                                        level.count++;
-                                        level.distance += renderObject.distance;
-                                        if (box.vertex_length) {
-                                            level.points += box.vertex_length/6;
-                                        }
-                                        return statistics;
-                                    },
-                                    {
-                                        levelData: [],
-                                        levels: [],
-                                        numberOfBoxes: 0,
-                                    }
-                                );
-
-                                let csv = "level\tdistance\tboxes\tpoints\n";
-                                for (let i of statistics.levels) {
-                                    const level = statistics.levelData[i];
-                                    level.distance /= level.count;
-                                    csv += `${i}\t${level.distance}\t${level.count}\t${level.points}\n`;
-                                }
-                                console.log(traverse.point_cloud.provider.toString() + ":\n" + csv);
-                            }
-                        }
-            }));
             ui.appendChild(top2);
 
             const renderOption = new Option( RENDER_OPTION_PROPERTIES );
@@ -444,13 +421,14 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
                     }
             });
 
-            const log_area = document.createElement("pre");
-            log_area.setAttribute("class", "log-area");
-            ui.appendChild(log_area);
+            const pushTimeInfo = ( time_info: mapray.PointCloudProvider.TimeInfo ) => {
+                this._time_info_list.push( time_info );
+            };
 
             const pointCloudList = [];
             const bbox_geoms: mapray.MarkerLineEntity[] = [];
-            if ( mode === "raw" ) {
+            const time_info_handler = this._time_info_enabled ? pushTimeInfo : undefined;
+            if ( mode === "raw-cloud" ) {
                 const resource = maprayApi.getPointCloudDatasetAsResource( process.env.DATASET_POINT_CLOUD_ID as string );
                 const point_cloud = point_cloud_collection.add( new mapray.RawPointCloudProvider( resource ) );
                 pointCloudList.push( point_cloud );
@@ -485,16 +463,102 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
                 }
             }
 
-            // @ts-ignore
-            mapray.PointCloud.setStatisticsHandler((statistics: any) => {
-                    const render_point_count = (statistics.render_point_count/1000000).toFixed(2);
-                    const total_point_count  = (statistics.total_point_count /1000000).toFixed(2);
-                    log_area.innerHTML = (`\
+            else if ( mode === "raw-bucket" ) {
+                const urls = [
+                    "https://storage.googleapis.com/inou-dev-mapray-additional-resources/pc/hamamatsu-castle/raw/info.json",
+                ];
+                urls.forEach(url => {
+                        pointCloudList.push(point_cloud_collection.add(new mapray.RawPointCloudProvider( { url }, { time_info_handler } )));
+                });
+            }
+
+            else if ( mode === "raw-local" ) {
+                const urls = [
+                    "http://localhost:8888/point-cloud/hamamatsu-castle/output/raw/info.json",
+                ];
+                urls.forEach(url => {
+                        pointCloudList.push(point_cloud_collection.add(new mapray.RawPointCloudProvider( { url }, { time_info_handler } )));
+                });
+            }
+
+            const statisticsHandler = (statistics: any) => {
+                const render_point_count = (statistics.render_point_count/1000000).toFixed(2);
+                const total_point_count  = (statistics.total_point_count /1000000).toFixed(2);
+                log_area.innerHTML = (`\
   boxes: ${statistics.render_boxes} / ${statistics.total_boxes} (created: ${statistics.created_boxes}, disposed: ${statistics.disposed_boxes})
 loading: ${statistics.loading_boxes}
  points: ${render_point_count}M / ${total_point_count}M
    time: ${statistics.total_time.toFixed(2)}ms (traverse: ${statistics.traverse_time.toFixed(2)}ms, render: ${statistics.render_time.toFixed(2)}ms)`);
+            }
+
+            const log_area = document.createElement("pre");
+            log_area.setAttribute("class", "log-area");
+            ui.appendChild( DomTool.createCheckboxOption(renderOption, "show status"));
+            renderOption.onChange( "show status", event => {
+                    log_area.innerHTML = "";
+                    // @ts-ignore
+                    mapray.PointCloud.setStatisticsHandler( event.value ? statisticsHandler : undefined );
             });
+            if ( renderOption.get( "show status" ) ) {
+                // @ts-ignore
+                mapray.PointCloud.setStatisticsHandler( event.value ? statisticsHandler : undefined );
+            }
+            ui.appendChild( log_area );
+
+            const ui_measurement = document.createElement("div");
+            ui_measurement.setAttribute("class", "top");
+            ui_measurement.appendChild(document.createTextNode("Profile "));
+
+            ui_measurement.appendChild(DomTool.createButton("Dump Boxes", {
+                        class: "box-statistics",
+                        onclick: async (event) => {
+                            // @ts-ignore
+                            const traverse_summary = await mapray.PointCloud.requestTraverseSummary();
+                            let log = "";
+                            // @ts-ignore
+                            for (let i=0; i<traverse_summary.length; i++) {
+                                // @ts-ignore
+                                const traverse = traverse_summary[i];
+                                log += traverse.point_cloud.provider.toString() + ":\n\n";
+                                log += traverse.pcb_collection.reduce((boxes_log: string, renderObject: any) => {
+                                        const box = renderObject.box;
+                                        boxes_log += "\n" + [
+                                            box.level, box.x, box.y, box.z,
+                                            renderObject.distance,
+                                            box.vertex_length,
+                                        ].join("\t");
+                                        return boxes_log;
+                                }, ["level", "x", "y", "z", "distance", "points"].join("\t"));
+                                log += "\n\n";
+                            }
+                            downloadAsTextFile( log, "log_boxes.log" );
+                        }
+            }));
+
+            const startTimeMeasurement = async () => {
+                if ( this._time_info_enabled ) return;
+                this._time_info_enabled = true;
+                for ( let i=0; i<point_cloud_collection.length; i++ ) {
+                    point_cloud_collection.get( i ).provider.setTimeInfoHandler( pushTimeInfo );
+                }
+                window.setTimeout( stopTimeMeasurement, 10000 );
+            }
+            const stopTimeMeasurement = async () => {
+                if ( !this._time_info_enabled ) return;
+                this._time_info_enabled = false;
+                for ( let i=0; i<point_cloud_collection.length; i++ ) {
+                    point_cloud_collection.get( i ).provider.clearTimeInfoHandler();
+                }
+                downloadAsJsonFile( this._time_info_list, "log_point_cloud_loader.json" );
+                this._time_info_list = [];
+            };
+            ui_measurement.appendChild( DomTool.createCheckbox( "loading process", {
+                        initialValue: this._time_info_enabled,
+                        onchange: (value: boolean, event: Event) => {
+                            this._time_info_enabled ? stopTimeMeasurement() : startTimeMeasurement();
+                        },
+            }));
+            ui.appendChild(ui_measurement);
 
             this._point_cloud_cache = {
                 mode: this._point_cloud_mode,
@@ -571,5 +635,37 @@ loading: ${statistics.loading_boxes}
         }
     }
 }
+
+
+
+async function downloadAsTextFile( text: string, file_name: string = "data.txt" ) {
+    const blob = new Blob([text], { type: "text/plain" });
+    await downloadBlob( blob, file_name );
+}
+
+async function downloadAsJsonFile( json: object, file_name: string = "data.json" ) {
+    const text = JSON.stringify( json, undefined, 4 );
+    const blob = new Blob([text], { type: "application/json" });
+    await downloadBlob( blob, file_name );
+}
+
+async function downloadBlob( blob: Blob, file_name: string ) {
+     const data_url = await new Promise<string>( ( onSuccess, onError ) => {
+            const reader = new FileReader();
+            reader.readAsDataURL( blob );
+            reader.onload = () => {
+                (typeof(reader.result) === "string" ?
+                    onSuccess( reader.result ) :
+                    onError()
+                );
+            };
+    });
+    const a = document.createElement( "a" );
+    a.href = data_url;
+    a.download = file_name;
+    a.click();
+}
+
+
 
 export default PointCloudViewer;
