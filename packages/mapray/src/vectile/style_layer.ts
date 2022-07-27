@@ -839,6 +839,8 @@ export abstract class LayerFeature<LayerFlakeT extends LayerFlake = LayerFlake,
      *
      * 色プロパティ `property` の評価値を `Color` に変換して返す。
      *
+     * 返される R, G, B 値にはそれぞれ A が乗算 (α前乗算) されている。
+     *
      * `property` は存在しなければならない。
      *
      * @typeParam Color - 取得先の色の型
@@ -855,28 +857,14 @@ export abstract class LayerFeature<LayerFlakeT extends LayerFlake = LayerFlake,
 
         // color の r, g, b は a が乗算された値になっている。
         //
-        // 現状では前乗算 RGB は想定ていてないので、a を乗算していない
-        // RGB に戻す。
-        //
-        // ただし a が 0 のときは戻せないのでそのままにする。
-        //
         // 参照: mapbox-gl/src/style-spec/util/color.js
 
         const color = value as { r: number, g: number, b: number, a: number }
-        const alpha = color.a;
 
-        if ( alpha === 0.0 || alpha === 1.0 ) {
-            dst[0] = color.r;
-            dst[1] = color.g;
-            dst[2] = color.b;
-            dst[3] = alpha;
-        }
-        else {
-            dst[0] = color.r / alpha;
-            dst[1] = color.g / alpha;
-            dst[2] = color.b / alpha;
-            dst[3] = alpha;
-        }
+        dst[0] = color.r;
+        dst[1] = color.g;
+        dst[2] = color.b;
+        dst[3] = color.a;
 
         return dst;
     }

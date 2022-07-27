@@ -82,6 +82,10 @@ export class Renderer {
         primitives.sort( function( a, b ) { return a.sort_z - b.sort_z; } );
 
         const gl = this._glenv.context;
+
+        // C = Cs + (1 - As) Cd
+        gl.blendFuncSeparate( gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE );
+
         if ( stage.getRenderTarget() === RenderStage.RenderTarget.SCENE ) {
             gl.enable( gl.BLEND );
         }
@@ -95,6 +99,8 @@ export class Renderer {
             primitive.draw( stage );
         }
 
+        // 既定状態に戻す
+        gl.blendFuncSeparate( gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE );
         gl.disable( gl.BLEND );
         gl.depthMask( true );
     }
