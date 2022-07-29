@@ -209,6 +209,25 @@ const registered_layer_creators = new Map<string, LayerCreator>();
 export class StyleManager {
 
     /**
+     * ビットマップを鮮明に表示するかどうか。
+     *
+     * このプロパティが `true` のとき、通常より一部のビットマップ画像が鮮明
+     * に表示されるようになる。
+     *
+     * このとき、水平方向と垂直方向に最大 1/2 画素だけ表示位置が移動する可能
+     * 性ががあり、視点が動いているときは、そのオブジェクトが振動しているよう
+     * に見えることがある。
+     *
+     * このプロパティに対応しているかどうかはレイヤー型により異なる。
+     *
+     * @default false
+     *
+     * @deprecated これはテスト用のプロパティで、将来的に削除する可能性がある。
+     */
+    bitmap_sharpening: boolean;
+
+
+    /**
      * インスタンスの初期化する。
      *
      *  @param json_root         JSON 形式のスタイルデータ
@@ -239,6 +258,7 @@ export class StyleManager {
         this._traverser_manager = new TraverserManager( this );
         this._max_tiles_requested = StyleManager._DEFAULT_MAX_TILES_REQUESTED;
         this._num_tiles_requested = 0;
+        this.bitmap_sharpening = false;
 
         const style_info = collectStyleInfo( json_root, provider_factory );
 
