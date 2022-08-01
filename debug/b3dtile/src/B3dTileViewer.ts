@@ -82,7 +82,7 @@ class B3DTileViewer extends maprayui.StandardUIViewer {
      */
     constructor( container: string | HTMLElement )
     {
-        super( container, process.env.MAPRAY_ACCESS_TOKEN as string, { 
+        super( container, process.env.MAPRAY_ACCESS_TOKEN as string, {
             debug_stats: new mapray.DebugStats(),
             image_provider: (
                 process.env.BINGMAP_ACCESS_TOKEN ?
@@ -140,7 +140,7 @@ class B3DTileViewer extends maprayui.StandardUIViewer {
     /**
      * Viewerを閉じる
      */
-    _closeViewer() 
+    _closeViewer()
     {
         this.destroy();
         this._isGIS = false;
@@ -150,7 +150,7 @@ class B3DTileViewer extends maprayui.StandardUIViewer {
     /**
      * GIS情報の表示
      */
-    async _loadGISInfo() 
+    async _loadGISInfo()
     {
         var pin = new mapray.PinEntity( this.viewer.scene );
         pin.addMakiIconPin( "landmark-15", targetPos);
@@ -288,7 +288,7 @@ class B3DTileViewer extends maprayui.StandardUIViewer {
             log_area.setAttribute("class", "log-area");
             ui.appendChild(log_area);
 
-            // 
+            //
             const urls = [
                 "https://opentiles.mapray.com/3dcity/tokyo_n/",
                 "https://opentiles.mapray.com/3dcity/tokyo_s/",
@@ -313,14 +313,13 @@ class B3DTileViewer extends maprayui.StandardUIViewer {
     _updateRenderMode()
     {
         if ( this._commander.isRenderModeChanged() ) {
-            var RenderMode = mapray.Viewer.RenderMode;
             var     viewer = this.viewer;
             var      rmode = viewer.render_mode;
-            if ( rmode === RenderMode.SURFACE ) {
-                viewer.render_mode = RenderMode.WIREFRAME;
+            if ( rmode === mapray.Viewer.RenderMode.SURFACE ) {
+                viewer.render_mode = mapray.Viewer.RenderMode.WIREFRAME;
             }
             else {
-                viewer.render_mode = RenderMode.SURFACE;
+                viewer.render_mode = mapray.Viewer.RenderMode.SURFACE;
             }
         }
     }

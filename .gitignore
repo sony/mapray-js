@@ -3,15 +3,12 @@ dist/
 doc/typedoc/
 doc/typedoc-devel/
 node_modules/
-
-*/**/yarn.lock
 yarn-error.log
 package-lock.json
 
 .idea
 .vscode
 .DS_Store
-.vscode
 
 ## pyenv
 .python-version

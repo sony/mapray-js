@@ -701,14 +701,13 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
     private _updateRenderMode()
     {
         if ( this._commander.isRenderModeChanged() ) {
-            var RenderMode = mapray.Viewer.RenderMode;
             var     viewer = this.viewer;
             var      rmode = viewer.render_mode;
-            if ( rmode === RenderMode.SURFACE ) {
-                viewer.render_mode = RenderMode.WIREFRAME;
+            if ( rmode === mapray.Viewer.RenderMode.SURFACE ) {
+                viewer.render_mode = mapray.Viewer.RenderMode.WIREFRAME;
             }
             else {
-                viewer.render_mode = RenderMode.SURFACE;
+                viewer.render_mode = mapray.Viewer.RenderMode.SURFACE;
             }
         }
     }

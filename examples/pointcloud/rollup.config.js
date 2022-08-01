@@ -1,5 +1,4 @@
 import { terser } from 'rollup-plugin-terser';
-import replace from 'rollup-plugin-replace';
 import postcss from 'rollup-plugin-postcss';
 import preprocess from 'rollup-plugin-preprocess';
 import injectProcessEnv from 'rollup-plugin-inject-process-env';

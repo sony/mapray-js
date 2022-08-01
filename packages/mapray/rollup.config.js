@@ -5,18 +5,19 @@ import resolve from 'rollup-plugin-node-resolve'
 import commonjs from 'rollup-plugin-commonjs'
 import strip from '@rollup/plugin-strip';
 import { base64 } from 'rollup-plugin-base64';
-// import typescript from '@rollup/plugin-typescript'
 import typescript from 'rollup-plugin-typescript2';
 
 
-
+const {BUILD, MINIFY} = process.env;
+const production = BUILD === 'production';
+const minified = MINIFY === 'true';
 const extensions = ['**/*.vert', '**/*.frag', '**/*.glsl', '**/*.svg'];
-var outdir = "dist/";
-
-
+const outdir = "dist/";
+const outputFileEsBrowser= mjsBuildType(production, minified);
+const outputFileUMD= umdBuildType(production, minified);
 
 const strip_option = (
-    process.env.BUILD === "production" ?
+    production ?
     {
         include: '**/*.(ts|js)',
         debugger: false,
@@ -33,18 +34,42 @@ const strip_option = (
     }
 );
 
+function mjsBuildType(isProd, minified) {
+  if (isProd) {
+    if (minified) {
+      return outdir + 'es/mapray.min.mjs';
+    }
+    return outdir + 'es/mapray.mjs';
+  }
 
+  return outdir + 'es/mapray-dev.mjs'
+}
+
+function umdBuildType(isProd, minified) {
+  if (isProd) {
+    if (minified) {
+      return outdir + 'umd/mapray.min.js';
+    }
+    return outdir + 'umd/mapray.js';
+  }
+
+  return outdir + 'umd/mapray-dev.js'
+}
+
+console.log("production:" + production);
+console.log("minify:" + minified);
 
 export default [
   // ES
   {
     input: 'src/mapray.ts',
-    preserveModules: true,
     output: {
       dir: outdir + 'es/',
       format: 'es',
       indent: false,
-      sourcemap: false,
+      sourcemap: production ? true : 'inline',
+      preserveModules: true,
+      preserveModulesRoot: 'src'
     },
     external: [
       'tslib',
@@ -63,7 +88,7 @@ export default [
         tsconfigOverride: {
           compilerOptions: {
             outDir: outdir + 'es/',
-            sourceMap: false,
+            sourceMap: true,
             declaration: true,
             declarationDir: outdir + 'es/@type',
             declarationMap: true,
@@ -71,6 +96,7 @@ export default [
         }
       }),
       strip(strip_option),
+      minified ? terser() : false
     ]
   },
 
@@ -78,9 +104,10 @@ export default [
   {
     input: 'src/mapray.ts',
     output: {
-      file: outdir + 'es/mapray.mjs',
+      file: outputFileEsBrowser,
       format: 'es',
       indent: false,
+      sourcemap: production ? true : 'inline'
     },
     plugins: [
       resolve(),
@@ -100,20 +127,20 @@ export default [
         }
       }),
       strip(strip_option),
-      terser()
+      minified ? terser() : false
     ]
   },
 
-  // UMD Development
+  // UMD
   {
     input: 'src/index.ts',
     output: {
-      file: outdir + 'umd/mapray.js',
+      file: outputFileUMD,
       format: 'umd',
       name: 'mapray',
       exports: 'named',
       indent: false,
-      sourcemap: true
+      sourcemap: production ? true : 'inline'
     },
     plugins: [
       resolve(),
@@ -130,10 +157,9 @@ export default [
         tsconfigOverride: {
           compilerOptions: {
             outDir: outdir + 'umd/',
-            sourceMap: true,
             declaration: true,
             declarationDir: outdir + 'umd/@type',
-            declarationMap: false,
+            declarationMap: true,
             target: 'es5',
             module: 'es2015',
           }
@@ -143,43 +169,7 @@ export default [
       babel({ // this is for js file in src dir
         exclude: 'node_modules/**'
       }),
+      minified ? terser() : false
     ]
-  },
-
-  // UMD Production
-  {
-    input: 'src/index.ts',
-    output: {
-      file: outdir + 'umd/mapray.min.js',
-      format: 'umd',
-      name: 'mapray',
-      exports: 'named',
-      indent: false,
-    },
-    plugins: [
-      resolve(),
-      commonjs(),
-      base64({
-        include: '**/*.wasm'
-      }),
-      string({
-        include: extensions
-      }),
-      typescript({
-        tsconfig: './tsconfig.json',
-        useTsconfigDeclarationDir: true,
-        tsconfigOverride: {
-          compilerOptions: {
-            outDir: outdir + 'umd/',
-            target: 'es5',
-            module: 'es2015',
-          }
-        }
-      }),
-      strip(strip_option),
-      babel({ // this is for js file in src dir
-        exclude: 'node_modules/**'
-      }),
-    ]
-  },
+  }
 ]
