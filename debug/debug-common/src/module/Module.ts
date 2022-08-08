@@ -174,6 +174,28 @@ class Module {
     }
 
 
+    onMouseDown( point: [x: number, y: number], event: MouseEvent ): boolean
+    {
+        return false;
+    }
+
+    onMouseUp( point: [x: number, y: number], event: MouseEvent ): boolean
+    {
+        return false;
+    }
+
+    onMouseMove( point: [x: number, y: number], event: MouseEvent ): boolean
+    {
+        return false;
+    }
+
+
+    onKeyDown( event: KeyboardEvent ): boolean
+    {
+        return false;
+    }
+
+
     updateFrame( delta_time: number ): void
     {
     }

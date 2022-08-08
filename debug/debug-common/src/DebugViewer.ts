@@ -53,6 +53,8 @@ class DebugViewer extends maprayui.StandardUIViewer {
 
     private _modules: Module[];
 
+    private _active_module?: Module;
+
     private _tools_container: HTMLElement;
 
     private _cloudApi?: mapray.cloud.CloudApi;
@@ -245,6 +247,42 @@ class DebugViewer extends maprayui.StandardUIViewer {
     }
 
 
+    override onMouseDown( point: [x: number, y: number], event: MouseEvent ): void
+    {
+        let consumed = false;
+        if ( this._active_module?.isLoaded() ) {
+            consumed = this._active_module.onMouseDown( point, event );
+        }
+        if ( !consumed ) {
+            super.onMouseDown( point, event );
+        }
+    }
+
+
+    override onMouseUp( point: [x: number, y: number], event: MouseEvent ): void
+    {
+        let consumed = false;
+        if ( this._active_module?.isLoaded() ) {
+            consumed = this._active_module.onMouseUp( point, event );
+        }
+        if ( !consumed ) {
+            super.onMouseUp( point, event );
+        }
+    }
+
+
+    override onMouseMove( point: [x: number, y: number], event: MouseEvent ): void
+    {
+        let consumed = false;
+        if ( this._active_module?.isLoaded() ) {
+            consumed = this._active_module.onMouseMove( point, event );
+        }
+        if ( !consumed ) {
+            super.onMouseMove( point, event );
+        }
+    }
+
+
     /**
      * onUpdateFrame
      * @param delta_time 
@@ -307,8 +345,14 @@ class DebugViewer extends maprayui.StandardUIViewer {
      */
     override onKeyDown( event: KeyboardEvent )
     {
-        super.onKeyDown( event );
-        this._commander.OnKeyDown( event );
+        let consumed = false;
+        if ( this._active_module?.isLoaded() ) {
+            consumed = this._active_module.onKeyDown( event );
+        }
+        if ( !consumed ) {
+            super.onKeyDown( event );
+            this._commander.OnKeyDown( event );
+        }
     }
 
     /**
@@ -666,9 +710,21 @@ class DebugViewer extends maprayui.StandardUIViewer {
         if ( numKey !== -1 ) {
             const module = this._modules[ numKey - 1 ];
             if ( module ) {
+                this._active_module = module;
                 this.setDebugUI( module );
             }
+            else {
+                this._active_module = undefined;
+                this.clearDebugUI();
+            }
         }
+    }
+
+
+    public setActiveModule( module: Module ): void
+    {
+        this._active_module = module;
+        this.setDebugUI( module );
     }
 
 
