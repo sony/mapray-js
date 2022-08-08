@@ -209,6 +209,17 @@ class GeoMath {
 
 
     /**
+     * 2 次ベクトルの長さの2乗を計算
+     * @param  vec  ベクトル
+     * @return ベクトルの長さの2乗
+     */
+    static lengthSquared2( vec: Vector2 ): number
+    {
+        return vec[0] * vec[0] + vec[1] * vec[1];
+    }
+
+
+    /**
      * 3 次ベクトルの長さの2乗を計算
      * @param  vec  ベクトル
      * @return ベクトルの長さの2乗
@@ -216,6 +227,17 @@ class GeoMath {
     static lengthSquared3( vec: Vector3 ): number
     {
         return vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2];
+    }
+
+
+    /**
+     * 2 次ベクトルの長さを計算
+     * @param  vec  ベクトル
+     * @return ベクトルの長さ
+     */
+    static length2( vec: Vector2 ): number
+    {
+        return Math.sqrt( GeoMath.lengthSquared2( vec ) );
     }
 
 
@@ -231,6 +253,21 @@ class GeoMath {
 
 
     /**
+     * 2 次ベクトルの和を計算
+     * @param  a  左のベクトル
+     * @param  b  右のベクトル
+     * @param  dst 計算結果を格納するバッファ
+     * @return    a と b の和
+     */
+    static add2( a: Vector2, b: Vector2, dst: Vector2 ): Vector2
+    {
+        dst[0] = a[0] + b[0];
+        dst[1] = a[1] + b[1];
+        return dst;
+    }
+
+
+    /**
      * 3 次ベクトルの和を計算
      * @param  a  左のベクトル
      * @param  b  右のベクトル
@@ -242,6 +279,21 @@ class GeoMath {
         dst[0] = a[0] + b[0];
         dst[1] = a[1] + b[1];
         dst[2] = a[2] + b[2];
+        return dst;
+    }
+
+
+    /**
+     * 2 次ベクトルの差を計算
+     * @param  a  左のベクトル
+     * @param  b  右のベクトル
+     * @param  dst 計算結果を格納するバッファ
+     * @return a と b の差
+     */
+    static sub2( a: Vector2, b: Vector2, dst: Vector2 ): Vector2
+    {
+        dst[0] = a[0] - b[0];
+        dst[1] = a[1] - b[1];
         return dst;
     }
 
@@ -283,13 +335,25 @@ class GeoMath {
      */
     static cross3( a: Vector3, b: Vector3, dst: Vector3 ): Vector3
     {
-        var x = a[1]*b[2] - a[2]*b[1];
-        var y = a[2]*b[0] - a[0]*b[2];
-        var z = a[0]*b[1] - a[1]*b[0];
+        const x = a[1]*b[2] - a[2]*b[1];
+        const y = a[2]*b[0] - a[0]*b[2];
+        const z = a[0]*b[1] - a[1]*b[0];
         dst[0] = x;
         dst[1] = y;
         dst[2] = z;
         return dst;
+    }
+
+
+    /**
+     * 2次ベクトルの正規化を計算
+     * @param   vec  ベクトル
+     * @param   dst  正規化された値を代入するベクトル
+     * @return       dst
+     */
+    static normalize2( vec: Vector2, dst: Vector2 ): Vector2
+    {
+        return GeoMath.scale2( 1.0 / GeoMath.length2( vec ), vec, dst );
     }
 
 
@@ -306,6 +370,21 @@ class GeoMath {
 
 
     /**
+     * 2次ベクトルのスカラ倍を計算
+     * @param   a    スカラ
+     * @param   vec  ベクトル
+     * @param   dst  計算結果を代入するベクトル
+     * @return       dst
+     */
+    static scale2( a: number, vec: Vector2, dst: Vector2 ): Vector2
+    {
+        dst[0] = a * vec[0];
+        dst[1] = a * vec[1];
+        return dst;
+    }
+
+
+    /**
      * 3次ベクトルのスカラ倍を計算
      * @param   a    スカラ
      * @param   vec  ベクトル
@@ -317,6 +396,60 @@ class GeoMath {
         dst[0] = a * vec[0];
         dst[1] = a * vec[1];
         dst[2] = a * vec[2];
+        return dst;
+    }
+
+
+    /**
+     * 2次ベクトルの線形補間を計算
+     * @param   a    ベクトル
+     * @param   b    ベクトル
+     * @param   t    補間パラメータ
+     * @param   dst  計算結果を代入するベクトル
+     * @return       dst
+     */
+    static linearInterpolate2( a: Vector2, b: Vector2, t: number, dst: Vector2 ): Vector2
+    {
+        const s = 1.0 - t;
+        dst[0] = s * a[0] + t * b[0];
+        dst[1] = s * a[1] + t * b[1];
+        return dst;
+    }
+
+
+    /**
+     * 3次ベクトルの線形補間を計算
+     * @param   a    ベクトル
+     * @param   b    ベクトル
+     * @param   t    補間パラメータ
+     * @param   dst  計算結果を代入するベクトル
+     * @return       dst
+     */
+    static linearInterpolate3( a: Vector3, b: Vector3, t: number, dst: Vector3 ): Vector3
+    {
+        const s = 1.0 - t;
+        dst[0] = s * a[0] + t * b[0];
+        dst[1] = s * a[1] + t * b[1];
+        dst[2] = s * a[2] + t * b[2];
+        return dst;
+    }
+
+
+    /**
+     * 4次ベクトルの線形補間を計算
+     * @param   a    ベクトル
+     * @param   b    ベクトル
+     * @param   t    補間パラメータ
+     * @param   dst  計算結果を代入するベクトル
+     * @return       dst
+     */
+    static linearInterpolate4( a: Vector4, b: Vector4, t: number, dst: Vector4 ): Vector4
+    {
+        const s = 1.0 - t;
+        dst[0] = s * a[0] + t * b[0];
+        dst[1] = s * a[1] + t * b[1];
+        dst[2] = s * a[2] + t * b[2];
+        dst[3] = s * a[3] + t * b[3];
         return dst;
     }
 
@@ -516,16 +649,18 @@ class GeoMath {
      *
      * @return dst
      */
-    static transformPosition_A( mat: Matrix, pos: Vector3, dst: Vector3 ): Vector3
+    static transformPosition_A<T extends (Vector2 | Vector3)>( mat: Matrix, pos: ( Vector2 | Vector3 ), dst: T ): T
     {
         const m = mat;
         const x = pos[0];
         const y = pos[1];
-        const z = pos[2];
+        const z = pos[2] ?? 0.0;
 
         dst[0] = x*m[ 0] + y*m[ 4] + z*m[ 8] + m[12];
         dst[1] = x*m[ 1] + y*m[ 5] + z*m[ 9] + m[13];
-        dst[2] = x*m[ 2] + y*m[ 6] + z*m[10] + m[14];
+        if ( this.isVector3( dst ) ) {
+            dst[2] = x*m[ 2] + y*m[ 6] + z*m[10] + m[14];
+        }
 
         return dst;
     }
