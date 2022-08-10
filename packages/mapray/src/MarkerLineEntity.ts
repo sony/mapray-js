@@ -1,8 +1,11 @@
 import GeoMath, { Vector3 } from "./GeoMath";
+import RenderStage from "./RenderStage";
 import Scene from "./Scene";
 import Entity from "./Entity";
 import Type from "./animation/Type";
 import AbstractLineEntity from "./AbstractLineEntity";
+import LineMaterial from "./LineMaterial";
+
 
 
 /**
@@ -78,29 +81,29 @@ class MarkerLineEntity extends AbstractLineEntity {
      */
     addPoints( points: number[] | Vector3 )
     {
-        var add_size = points.length;
+        const add_size = points.length;
         if ( add_size == 0 ) {
             // 追加頂点が無いので変化なし
             return;
         }
 
         // バッファを拡張
-        var target_size = this._num_floats + add_size;
-        var buffer_size = this._point_array.length;
+        const target_size = this._num_floats + add_size;
+        const buffer_size = this._point_array.length;
         if ( target_size > buffer_size ) {
-            var new_buffer = new Float64Array( Math.max( target_size, 2 * buffer_size ) );
-            var old_buffer = this._point_array;
-            var  copy_size = this._num_floats;
-            for ( var i = 0; i < copy_size; ++i ) {
+            const new_buffer = new Float64Array( Math.max( target_size, 2 * buffer_size ) );
+            const old_buffer = this._point_array;
+            const  copy_size = this._num_floats;
+            for ( let i = 0; i < copy_size; ++i ) {
                 new_buffer[i] = old_buffer[i];
             }
             this._point_array = new_buffer;
         }
 
         // 頂点追加処理
-        var buffer = this._point_array;
-        var   base = this._num_floats;
-        for ( var j = 0; j < add_size; ++j ) {
+        const buffer = this._point_array;
+        const   base = this._num_floats;
+        for ( let j = 0; j < add_size; ++j ) {
             buffer[base + j] = points[j];
         }
         this._num_floats = target_size;
@@ -232,6 +235,30 @@ class MarkerLineEntity extends AbstractLineEntity {
         if ( json.opacity    !== undefined ) this.setOpacity( json.opacity );
     }
 
+
+    /**
+     * 専用マテリアルを取得
+     */
+    protected override getLineMaterial( render_target: RenderStage.RenderTarget ): LineMaterial
+    {
+        const scene    = this.scene;
+        const cache_id = (
+            "_AbstractLineEntity_material_markerline" +
+            (render_target === RenderStage.RenderTarget.RID ? "_pick" : "")
+        );
+
+        // @ts-ignore
+        let material = scene[cache_id];
+        if ( !material ) {
+            // scene にマテリアルをキャッシュ
+            const opt = { ridMaterial: render_target === RenderStage.RenderTarget.RID };
+            material = new LineMaterial( scene.glenv, false, opt );
+            // @ts-ignore
+            scene[cache_id] = material;
+        }
+
+        return material;
+    }
 }
 
 

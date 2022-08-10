@@ -1,8 +1,11 @@
 import GeoMath, { Vector3 } from "./GeoMath";
+import RenderStage from "./RenderStage";
 import Scene from "./Scene";
 import Entity from "./Entity";
 import Type from "./animation/Type";
 import AbstractLineEntity from "./AbstractLineEntity";
+import LineMaterial from "./LineMaterial";
+
 
 
 /**
@@ -129,24 +132,24 @@ class PathEntity extends AbstractLineEntity {
      * @param points  頂点の配列
      * @param length_array  始点からの距離の配列
      */
-    addPoints( points: number[], length_array: number[] )
+    addPoints( points: number[], length_array: number[] ): void
     {
-        let add_size = points.length;
-        let add_length_size = length_array.length;
+        const add_size = points.length;
+        const add_length_size = length_array.length;
         if ( add_size == 0 || add_length_size == 0) {
             // 追加頂点が無いので変化なし
             return;
         }
 
-        let num_length_floats = this._num_floats / 3;
+        const num_length_floats = this._num_floats / 3;
 
         // バッファを拡張
-        let target_size = this._num_floats + add_size;
-        let buffer_size = this._point_array.length;
+        const target_size = this._num_floats + add_size;
+        const buffer_size = this._point_array.length;
         if ( target_size > buffer_size ) {
-            let new_buffer = new Float64Array( Math.max( target_size, 2 * buffer_size ) );
-            let old_buffer = this._point_array;
-            let  copy_size = this._num_floats;
+            const new_buffer = new Float64Array( Math.max( target_size, 2 * buffer_size ) );
+            const old_buffer = this._point_array;
+            const  copy_size = this._num_floats;
             for ( let i = 0; i < copy_size; ++i ) {
                 new_buffer[i] = old_buffer[i];
             }
@@ -154,12 +157,12 @@ class PathEntity extends AbstractLineEntity {
         }
 
         // 距離配列バッファを拡張
-        let target_length_size = num_length_floats + add_length_size;
-        let buffer_length_size = this._length_array.length;
+        const target_length_size = num_length_floats + add_length_size;
+        const buffer_length_size = this._length_array.length;
         if ( target_length_size > buffer_length_size ) {
-            let new_buffer = new Float64Array( Math.max( target_length_size, 2 * buffer_length_size ) );
-            let old_buffer = this._length_array;
-            let  copy_size = num_length_floats;
+            const new_buffer = new Float64Array( Math.max( target_length_size, 2 * buffer_length_size ) );
+            const old_buffer = this._length_array;
+            const  copy_size = num_length_floats;
             for ( let i = 0; i < copy_size; ++i ) {
                 new_buffer[i] = old_buffer[i];
             }
@@ -167,15 +170,15 @@ class PathEntity extends AbstractLineEntity {
         }
 
         // 頂点追加処理
-        let buffer = this._point_array;
-        let   base = this._num_floats;
+        const buffer = this._point_array;
+        const   base = this._num_floats;
         for ( let i = 0; i < points.length; ++i ) {
             buffer[base + i] = points[i];
         }
 
         // 距離の配列を追加
-        let buffer_length = this._length_array;
-        let   base_length = num_length_floats;
+        const buffer_length = this._length_array;
+        const   base_length = num_length_floats;
         for ( let i = 0; i < length_array.length; ++i ) {
             buffer_length[base_length + i] = length_array[i];
         }
@@ -205,6 +208,30 @@ class PathEntity extends AbstractLineEntity {
         if ( json.upper_length  !== undefined ) this.setUpperLength( json.upper_length );
     }
 
+
+    /**
+     * 専用マテリアルを取得
+     */
+    protected override getLineMaterial( render_target: RenderStage.RenderTarget ): LineMaterial
+    {
+        const scene    = this.scene;
+        const cache_id = (
+            "_AbstractLineEntity_material_path" +
+            (render_target === RenderStage.RenderTarget.RID ? "_pick" : "")
+        );
+
+        // @ts-ignore
+        let material = scene[cache_id];
+        if ( !material ) {
+            // scene にマテリアルをキャッシュ
+            const opt = { ridMaterial: render_target === RenderStage.RenderTarget.RID };
+            material = new LineMaterial( scene.glenv, true, opt );
+            // @ts-ignore
+            scene[cache_id] = material;
+        }
+
+        return material;
+    }
 }
 
 
