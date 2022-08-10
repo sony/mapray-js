@@ -33,21 +33,21 @@ abstract class AbstractLineEntity extends Entity {
 
     protected _opacity!: number;
 
-    protected _line_type: AbstractLineEntity.LineType;
-
     protected _point_array!: Float64Array;
+
+    readonly is_path: boolean;
 
 
     /**
      * @param scene        所属可能シーン
-     * @param line_type  クラス種別
+     * @param is_path      Pathかどうか
      * @param opts       オプション集合
      */
-    constructor( scene: Scene, line_type: AbstractLineEntity.LineType, opts: AbstractLineEntity.Option = {} )
+    constructor( scene: Scene, is_path: boolean, opts: AbstractLineEntity.Option = {} )
     {
         super( scene, opts );
 
-        this._line_type = line_type;
+        this.is_path = is_path;
 
         if ( this.altitude_mode === AltitudeMode.CLAMP ) {
             this._producer = new AbstractLineEntity.FlakePrimitiveProducer( this );
@@ -88,14 +88,6 @@ abstract class AbstractLineEntity extends Entity {
             this._producer = new AbstractLineEntity.PrimitiveProducer( this );
             this._is_flake_mode = false;
         }
-    }
-
-
-    /**
-     * @internal
-     */
-    getLineType() {
-        return this._line_type;
     }
 
 
@@ -188,12 +180,12 @@ abstract class AbstractLineEntity extends Entity {
     /**
      * 専用マテリアルを取得
      */
-    private _getLineMaterial( render_target: RenderStage.RenderTarget )
+    private _getLineMaterial( render_target: RenderStage.RenderTarget ): LineMaterial
     {
         const scene    = this.scene;
         const cache_id = (
             "_AbstractLineEntity_material" +
-            (this._line_type === AbstractLineEntity.LineType.PATH ? "_path" : "_markerline") +
+            (this.is_path ? "_path" : "_markerline") +
             (render_target === RenderStage.RenderTarget.RID ? "_pick" : "")
         );
 
@@ -203,7 +195,7 @@ abstract class AbstractLineEntity extends Entity {
             // scene にマテリアルをキャッシュ
             const opt = { ridMaterial: render_target === RenderStage.RenderTarget.RID };
             // @ts-ignore
-            material = scene[cache_id] = new LineMaterial( scene.glenv, this._line_type, opt );
+            material = scene[cache_id] = new LineMaterial( scene.glenv, this.is_path, opt );
         }
 
         return material;
@@ -280,14 +272,10 @@ export class PrimitiveProducer extends Entity.PrimitiveProducer {
             opacity: 1.0,
         };
 
-        if ( this.getEntity().getLineType() == LineType.PATH ) {
-            this._properties.lower_length = 0.0;
-            this._properties.upper_length = 0.0;
-        }
-
         // プリミティブ
         // @ts-ignore
         const      material = entity._getLineMaterial( RenderStage.RenderTarget.SCENE );
+        // @ts-ignore
         const primitive = new Primitive( entity.scene.glenv, null, material, this._transform );
         primitive.pivot      = this._pivot;
         primitive.bbox       = this._bbox;
@@ -296,6 +284,7 @@ export class PrimitiveProducer extends Entity.PrimitiveProducer {
 
         // @ts-ignore
         const pick_material = entity._getLineMaterial( RenderStage.RenderTarget.RID );
+        // @ts-ignore
         const pickPrimitive = new Primitive( entity.scene.glenv, null, pick_material, this._transform );
         pickPrimitive.pivot      = this._pivot;
         pickPrimitive.bbox       = this._bbox;
@@ -416,7 +405,7 @@ export class PrimitiveProducer extends Entity.PrimitiveProducer {
         //   primitive.bbox
         this._updateTransformPivotBBox( gocs_buffer, num_points );
 
-        let add_length = (entity.getLineType() === AbstractLineEntity.LineType.PATH);
+        let add_length = entity.is_path;
         // @ts-ignore
         let length_array = add_length ? entity._length_array : undefined;
 
@@ -482,7 +471,7 @@ export class PrimitiveProducer extends Entity.PrimitiveProducer {
         GeoMath.copyVector3( entity.getColor(), props.color );
         // @ts-ignore
         props.opacity = entity._opacity;
-        if (entity.getLineType() === AbstractLineEntity.LineType.PATH) {
+        if ( entity.is_path ) {
             // @ts-ignore
             props.lower_length = entity._lower_length;
             // @ts-ignore
@@ -787,7 +776,7 @@ export class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
             return null;
         }
 
-        let add_length = (this.getEntity().getLineType() === LineType.PATH);
+        let add_length = (this.getEntity().is_path);
 
         // メッシュ生成
         let mesh_data = {
@@ -823,7 +812,7 @@ export class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
                 opacity: entity._opacity
             };
 
-            if ( entity.getLineType() === LineType.PATH ) {
+            if ( entity.is_path ) {
                 // @ts-ignore
                 this._properties.lower_length = entity._lower_length;
                 // @ts-ignore
@@ -1213,8 +1202,7 @@ export class LineAreaManager extends QAreaManager {
             return segments;
         }
 
-        // @ts-ignore
-        let is_path = (this._entity._line_type === LineType.PATH);
+        const is_path = this._entity.is_path;
         // @ts-ignore
         let length_array = is_path ? this._entity._length_array : null;
 
@@ -1388,24 +1376,6 @@ export class LineAreaManager extends QAreaManager {
     }
 
 }
-
-
- /**
- * エンティティの種類の列挙型
- */
-export enum LineType {
-
-    /**
-     * MarkerLineEntity
-     */
-    MARKERLINE,
-
-
-    /**
-     * PathEntity
-     */
-    PATH,
-};
 
 
 

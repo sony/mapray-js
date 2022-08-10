@@ -13,15 +13,16 @@ import RenderStage from "./RenderStage";
  * @private
  */
 class LineMaterial extends EntityMaterial {
+
     /**
      * @param {mapray.GLEnv} glenv
      */
-    constructor( glenv, line_type, options = {} )
+    constructor( glenv, is_path, options = {} )
     {
-        const preamble = LineMaterial._getPreamble( line_type, options );
+        const preamble = LineMaterial._getPreamble( is_path, options );
         super( glenv, preamble + line_vs_code, preamble + line_fs_code );
 
-        this._line_type = line_type;
+        this.is_path = is_path;
     }
 
 
@@ -78,7 +79,7 @@ class LineMaterial extends EntityMaterial {
         }
 
         // RID rendering also requires u_lower_length and u_upper_length.
-        if ( this._line_type == AbstractLineEntity.LineType.PATH ) {
+        if ( this.is_path ) {
             var lower_length = props["lower_length"];
             this.setFloat( "u_lower_length", lower_length );
 
@@ -97,11 +98,11 @@ class LineMaterial extends EntityMaterial {
      * @private
      */
     static
-    _getPreamble( line_type, options )
+    _getPreamble( is_path, options )
     {
         const lines = [];
 
-        if ( line_type == AbstractLineEntity.LineType.PATH ) {
+        if ( is_path ) {
             lines.push( "#define PATH" );
         }
 

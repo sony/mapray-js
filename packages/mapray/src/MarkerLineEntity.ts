@@ -18,7 +18,7 @@ class MarkerLineEntity extends AbstractLineEntity {
      */
     constructor( scene: Scene, opts: MarkerLineEntity.Option = {} )
     {
-        super( scene, AbstractLineEntity.LineType.MARKERLINE, opts );
+        super( scene, false, opts );
 
         this._point_array = new Float64Array( 0 );
         this._num_floats  = 0;

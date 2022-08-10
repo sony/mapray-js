@@ -25,7 +25,7 @@ class PathEntity extends AbstractLineEntity {
      */
     constructor( scene: Scene, opts: PathEntity.Option = {} )
     {
-        super( scene, AbstractLineEntity.LineType.PATH, opts );
+        super( scene, true, opts );
 
         this._point_array = new Float64Array( 0 );
         this._num_floats  = 0;
