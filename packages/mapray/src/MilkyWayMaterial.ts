@@ -17,7 +17,6 @@ import RenderStage from "./RenderStage";
  */
 class MilkyWayMaterial extends Material {
 
-    private _glenv: GLEnv;
     private _width!: number;
     private _height!: number;
     private _context!: CanvasRenderingContext2D;
@@ -35,8 +34,6 @@ class MilkyWayMaterial extends Material {
     constructor( viewer: Viewer, image_src: (string | URLResource) )
     {
         super( viewer.glenv, vs_code, fs_code );
-
-        this._glenv = viewer.glenv;
 
         this._width = 512;
         this._height = 512;
@@ -101,7 +98,7 @@ class MilkyWayMaterial extends Material {
         this._icon = iconLoader.load( resource );
         this._icon.onEnd((item: { _icon: CanvasImageSource; }) => {
                 this._context.drawImage( item._icon, 0, 0, this._width, this._height );
-                this._image = new Texture( this._glenv, this._context.canvas, { } );
+                this._image = new Texture( this.glenv, this._context.canvas, { } );
         });
     }
 }

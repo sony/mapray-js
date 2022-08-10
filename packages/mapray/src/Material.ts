@@ -19,7 +19,7 @@ class Material {
                  fs_code: string )
     {
         const shader  = new Shader( glenv, vs_code, fs_code );
-        this._gl      = glenv.context;
+        this.glenv = glenv;
         this._program = this._link_shaders( shader.vs_object, shader.fs_object );
         this._vertex_attribs   = this._create_vertex_attribs();
         this._uniform_location = this._create_uniform_location();
@@ -41,7 +41,7 @@ class Material {
     private _link_shaders( vs: WebGLShader,
                            fs: WebGLShader ): WebGLProgram
     {
-        const gl = this._gl;
+        const gl = this.glenv.context;
         const program = gl.createProgram();
         if ( !program ) {
             throw new Error( "Failed to create a program object" );
@@ -75,7 +75,7 @@ class Material {
      */
     private _create_vertex_attribs(): VertexAttributeEntry[]
     {
-        const      gl = this._gl;
+        const      gl = this.glenv.context;
         const program = this._program;
         const attribs = [];
 
@@ -105,7 +105,7 @@ class Material {
      */
     private _create_uniform_location(): UniformLocationDict
     {
-        const gl      = this._gl;
+        const gl      = this.glenv.context;
         const program = this._program;
         const dict: UniformLocationDict = {};
 
@@ -132,7 +132,7 @@ class Material {
      */
     dispose(): void
     {
-        const gl = this._gl;
+        const gl = this.glenv.context;
         gl.deleteProgram( this._program );
         // これ以降 this にはアクセスされないので null でも構わない
         // @ts-ignore
@@ -145,7 +145,7 @@ class Material {
      */
     bindProgram(): void
     {
-        const gl = this._gl;
+        const gl = this.glenv.context;
         gl.useProgram( this._program );
     }
 
@@ -161,7 +161,7 @@ class Material {
     {
         const location = this._uniform_location[name];
         if ( location !== undefined ) {
-            const gl = this._gl;
+            const gl = this.glenv.context;
             gl.uniform1i( location, value ? 1 : 0 );
         }
     }
@@ -178,7 +178,7 @@ class Material {
     {
         const location = this._uniform_location[name];
         if ( location !== undefined ) {
-            const gl = this._gl;
+            const gl = this.glenv.context;
             gl.uniform1i( location, value );
         }
     }
@@ -212,7 +212,7 @@ class Material {
     {
         const location = this._uniform_location[name];
         if ( location !== undefined ) {
-            const gl = this._gl;
+            const gl = this.glenv.context;
             gl.uniform3iv( location, value );
         }
     }
@@ -246,7 +246,7 @@ class Material {
     {
         const location = this._uniform_location[name];
         if ( location !== undefined ) {
-            const gl = this._gl;
+            const gl = this.glenv.context;
             gl.uniform1f( location, value );
         }
     }
@@ -263,7 +263,7 @@ class Material {
     {
         const location = this._uniform_location[name];
         if ( location !== undefined ) {
-            const gl = this._gl;
+            const gl = this.glenv.context;
             if ( value instanceof Float64Array ) {
                 GeoMath.copyVector2( value, temp_vector2 );
                 gl.uniform2fv( location, temp_vector2 );
@@ -303,7 +303,7 @@ class Material {
     {
         const location = this._uniform_location[name];
         if ( location !== undefined ) {
-            const gl = this._gl;
+            const gl = this.glenv.context;
             if ( value instanceof Float64Array ) {
                 GeoMath.copyVector3( value, temp_vector3 );
                 gl.uniform3fv( location, temp_vector3 );
@@ -326,7 +326,7 @@ class Material {
     {
         const location = this._uniform_location[name];
         if ( location !== undefined ) {
-            const gl = this._gl;
+            const gl = this.glenv.context;
             if ( value instanceof Float64Array ) {
                 GeoMath.copyVector4( value, temp_vector4 );
                 gl.uniform4fv( location, temp_vector4 );
@@ -349,7 +349,7 @@ class Material {
     {
         const location = this._uniform_location[name];
         if ( location !== undefined ) {
-            const gl = this._gl;
+            const gl = this.glenv.context;
             if ( value instanceof Float64Array ) {
                 GeoMath.copyMatrix( value, temp_matrix );
                 gl.uniformMatrix4fv( location, false, temp_matrix );
@@ -368,7 +368,7 @@ class Material {
      */
     bindVertexAttribs( mesh_attribs: AttributeBindInfoDict ): void
     {
-        const gl = this._gl;
+        const gl = this.glenv.context;
         const mtl_attribs = this._vertex_attribs;  // マテリアル側の頂点属性データ配列
         const num_attribs = mtl_attribs.length;
 
@@ -407,13 +407,13 @@ class Material {
     bindTexture2D( unit:    number,
                    texture: WebGLTexture )
     {
-        const gl = this._gl;
+        const gl = this.glenv.context;
         gl.activeTexture( gl.TEXTURE0 + unit );
         gl.bindTexture( gl.TEXTURE_2D, texture );
     }
 
 
-    private readonly _gl:               WebGLRenderingContext;
+    protected readonly glenv:           GLEnv;
     private readonly _program:          WebGLProgram;
     private readonly _vertex_attribs:   VertexAttributeEntry[];
     private readonly _uniform_location: UniformLocationDict;
