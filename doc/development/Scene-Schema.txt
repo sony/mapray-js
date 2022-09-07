@@ -19,7 +19,7 @@ start => <SCENE>
   id?: <ID>
   altitude_mode?: <ALTITUDE-MODE> = "absolute"
   visibility?: Boolean = true
-  <MODEL-CONTENT> | <MARKERLINE-CONTENT> | <PATH-CONTENT> | <TEXT-CONTENT> | <POLYGON-CONTENT>
+  <MODEL-CONTENT> | <MARKERLINE-CONTENT> | <PATH-CONTENT> | <TEXT-CONTENT> | <POLYGON-CONTENT> | <PIN-CONTENT> | <IMAGEICON-CONTENT>
 }
 
 <MODEL-CONTENT> =>
@@ -65,6 +65,20 @@ start => <SCENE>
   color?: <PARAM-VEC3> = [1, 1, 1]
   opacity?: <PARAM-FLOAT> = 1
 
+<PIN-CONTENT> =>
+  type: "pin"
+  entries: [<PIN-ENTRY>*]
+  size?: <PARAM-VEC2> = [30, 30]
+  fg_color?: <PARAM-VEC3> = [1, 1, 1]
+  bg_color?: <PARAM-VEC3> = [0.35, 0.61, 0.81]
+  font_family?: String = "sans-serif"
+
+<IMAGEICON-CONTENT> =>
+  type: "imageicon"
+  entries: [<IMAGEICON-ENTRY>*]
+  size?: <PARAM-VEC2> = [30, 30]
+  origin?: <PARAM-VEC2> = [0.5, 0.5]
+
 <TRANSFORM> => {
   position: <GEO-POINT>
   heading?: <PARAM-FLOAT> = 0
@@ -96,11 +110,29 @@ start => <SCENE>
   id?: <ID>
 }
 
+<PIN-ENTRY> => {
+  type: <PIN-TYPE>
+  position: <GEO-POINT>
+  size?: <PARAM-SIZE2>
+  fg_color?: <PARAM-VEC3>
+  bg_color?: <PARAM-VEC3>
+  font_family?: String
+  text?: String
+  maki_id?: String
+  id?: <ID>
+}
+
+<IMAGEICON-ENTRY> => {
+  image_src: <URL>
+  position: <PARAM-VEC2>
+  size?: <PARAM-VEC2>
+  id?: <ID>
+}
+
 <BOUNDARY> => {
   type?: <BOUNDARY-TYPE> = "outer"
   points: <GEO-POINTS>
 }
-
 
 <PATH-POINTS> => {
   positions: <GEO-POINTS>
@@ -120,9 +152,15 @@ start => <SCENE>
 
 <PARAM-FLOAT> => Number
 
+<PARAM-VEC2> => [Number, Number]
+
 <PARAM-VEC3> => [Number, Number, Number]
 
 <PARAM-SCALE3> => <PARAM-VEC3> | Number
+
+<PARAM-SIZE2> => <PARAM-VEC2> | Number
+
+<PIN-TYPE> => "icon" | "text"
 
 <ALTITUDE-MODE> => "absolute" | "relative" | "clamp"
 
