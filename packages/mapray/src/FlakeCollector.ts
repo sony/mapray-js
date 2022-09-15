@@ -15,7 +15,7 @@ class FlakeCollector {
 
     /**
      */
-    private readonly _root_flake: Globe.Flake;
+    private readonly _globe: Globe;
 
 
     /**
@@ -71,13 +71,13 @@ class FlakeCollector {
      */
     constructor( stage: RenderStage )
     {
-        this._root_flake = stage.viewer.globe.root_flake;
+        this._globe = stage.viewer.globe;
 
         const { view_pos_Q,
                 view_dir_wU } = FlakeCollector._createViewVectors( stage );
         this._view_pos_Q  = view_pos_Q;
         this._view_dir_wU = view_dir_wU;
-        this._clip_planes = FlakeCollector._createClipPlanes( stage, this._root_flake );
+        this._clip_planes = FlakeCollector._createClipPlanes( stage, this._globe );
 
         var             viewer = stage.viewer;
         var       dem_provider = viewer.dem_provider;
@@ -131,8 +131,8 @@ class FlakeCollector {
     /**
      * see [[_clip_planes]]
      */
-    private static _createClipPlanes( stage:      RenderStage,
-                                      root_flake: Globe.Flake )
+    private static _createClipPlanes( stage: RenderStage,
+                                      globe: Globe )
     {
         var  view_to_gocs = stage.view_to_gocs;
         var  gocs_to_view = stage.gocs_to_view;
@@ -140,8 +140,9 @@ class FlakeCollector {
         var   clip_planes = [];
 
         // 地表遮蔽カリング平面
-        const rmin = GeoMath.EARTH_RADIUS + root_flake.height_min;  // 最小半径
-        const rmax = GeoMath.EARTH_RADIUS + root_flake.height_max;  // 最大半径
+        const elev_range = globe.getElevationRange();
+        const rmin = GeoMath.EARTH_RADIUS + elev_range.min;  // 最小半径
+        const rmax = GeoMath.EARTH_RADIUS + elev_range.max;  // 最大半径
 
         // P (視点位置)
         var px = view_to_gocs[12];
@@ -194,7 +195,13 @@ class FlakeCollector {
      */
     traverse(): RenderFlake[]
     {
-        this._collectFlakes( this._root_flake );
+        const range = this._globe.getRootYRange();
+
+        for ( let y = range.lower; y <= range.upper; ++y ) {
+            // 領域 0/0/y を最上位とする地表断片を収集
+            const root_flake = this._globe.getRootFlake( y );
+            this._collectFlakes( root_flake );
+        }
 
         // デバッグ統計
         if ( this._debug_stats ) {

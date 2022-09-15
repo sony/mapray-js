@@ -2,6 +2,7 @@ import GeoMath, { Vector3, Vector4 } from "./GeoMath";
 import GLEnv from "./GLEnv";
 import Ray from "./Ray";
 import DemProvider from "./DemProvider";
+import FlatDemProvider from "./FlatDemProvider";
 import DemBinary from "./DemBinary";
 import FlakeMesh from "./FlakeMesh";
 import FlakeRenderObject from "./FlakeRenderObject";
@@ -10,6 +11,7 @@ import Mesh from "./Mesh";
 import Entity from "./Entity";
 import AvgHeightMaps from "./AvgHeightMaps";
 import { Area } from "./AreaUtil";
+import type { PoleInfo } from "./Viewer";
 import { cfa_assert } from "./util/assertion";
 
 
@@ -20,7 +22,370 @@ class Globe {
 
     public readonly glenv: GLEnv;
 
-    public readonly dem_provider: DemProvider<any>;
+    /**
+     * 主要領域の DEM プロバイダ
+     */
+    public readonly dem_provider: DemProvider;
+
+    /**
+     * 北側極地の DEM プロバイダ
+     *
+     * @internal
+     */
+    public readonly npole_provider: DemProvider;
+
+    /**
+     * 南側極地の DEM プロバイダ
+     *
+     * @internal
+     */
+    public readonly spole_provider: DemProvider;
+
+    /**
+     * Globe の状態
+     */
+    private _status: Globe.Status;
+
+    /**
+     * 準備が整った Belt インスタンス数
+     */
+    private _num_ready_belts: number;
+
+    /**
+     * Belt の Y 座標の下限
+     */
+    private readonly _belt_lower_y: number;
+
+    /**
+     * Belt の Y 座標の上限
+     */
+    private readonly _belt_upper_y: number;
+
+    /**
+     * すべての Belt インスタンス
+     */
+    private readonly _belts: Belt[];
+
+
+    /**
+     * @param glenv        - WebGL 環境
+     * @param dem_provider - DEM プロバイダ
+     * @param options      - 生成オプション
+     */
+    constructor( glenv: GLEnv,
+                 dem_provider: DemProvider,
+                 options?: Option )
+    {
+        // すべての DEM の ρ を合わせる
+        const rho = dem_provider.getResolutionPower();
+
+        // 極地オプション
+        const pole_opts = options?.pole_info;
+
+        this.glenv        = glenv;
+        this.dem_provider = dem_provider;
+        this.npole_provider = new FlatDemProvider( { rho, height: pole_opts?.north_height ?? 0.0 } );
+        this.spole_provider = new FlatDemProvider( { rho, height: pole_opts?.south_height ?? 0.0 } );
+        this._status      = Globe.Status.NOT_READY;
+        this._num_ready_belts = 0;
+
+        const pole_enabled = pole_opts?.enabled ?? false;
+        this._belt_lower_y = pole_enabled ? GLOBE_BELT_LOWER_Y : 0;
+        this._belt_upper_y = pole_enabled ? GLOBE_BELT_UPPER_Y : 0;
+
+        this._belts = [];
+        for ( let y = this._belt_lower_y; y <= this._belt_upper_y; ++y ) {
+            this._belts.push( new Belt( this, y ) );
+        }
+    }
+
+
+    /**
+     * 領域 0/0/y に対応する `Belt` インスタンスを取得
+     *
+     * @param y - y 座標 (整数 [_belt_lower_y, _belt_upper_y])
+     */
+    private _belt( y: number ): Belt
+    {
+        cfa_assert( this._belt_lower_y <= y && y <= this._belt_upper_y );
+
+        return this._belts[y - this._belt_lower_y];
+    }
+
+
+    /**
+     * すべてのリクエストを取り消す
+     */
+    cancel()
+    {
+        for ( let belt of this._belts ) {
+            belt.cancel();
+        }
+    }
+
+    /**
+     * Globe 状態を取得
+     */
+    get status(): Globe.Status
+    {
+        return this._status;
+    }
+
+    /**
+     * DEM が更新された領域を取得
+     */
+    get dem_area_updated(): UpdatedTileArea
+    {
+        // エンティティが対象の機能は、まだ中心 Belt のみ対応
+        return this._belt( 0 ).dem_area_updated;
+    }
+
+    /**
+     * 領域 0/0/0 に対応する基底 Flake を取得
+     */
+    get root_flake(): Globe.Flake
+    {
+        return this.getRootFlake( 0 );
+    }
+
+    /**
+     * 領域 0/0/y に対応する基底 Flake を取得
+     *
+     * @param y - 領域 0/0/y の y にあたる値 (整数)
+     *
+     * @remarks
+     *
+     * `y` に指定できる範囲は [[getRootYRange]] により取得することがで
+     * きる。
+     */
+    getRootFlake( y: number ): Globe.Flake
+    {
+        return this._belt( y ).root_flake;
+    }
+
+    /**
+     * [[getRootFlake]] に指定できる `y` の範囲を取得
+     *
+     * `this` の有効期間は一定の範囲を返す。
+     */
+    getRootYRange(): { lower: number, upper: number }
+    {
+        return { lower: this._belt_lower_y, upper: this._belt_upper_y };
+    }
+
+    /**
+     * 地球全体の標高の範囲を取得
+     */
+    getElevationRange(): { min: number, max: number }
+    {
+        cfa_assert( this.status === Globe.Status.READY );
+
+        let min =  Number.MAX_VALUE;
+        let max = -Number.MAX_VALUE;
+
+        for ( const belt of this._belts ) {
+            min = Math.min( belt.root_flake.height_min, min );
+            max = Math.max( belt.root_flake.height_max, max );
+        }
+
+        return { min, max };
+    }
+
+    /**
+     * エンティティ情報を更新
+     *
+     * getRenderObject() の前にエンティティの情報を更新する。
+     *
+     * @param producers
+     */
+    putNextEntityProducers( producers: Iterable<Entity.FlakePrimitiveProducer> ): void
+    {
+        // エンティティが対象の機能は、まだ中心 Belt のみ対応
+        return this._belt( 0 ).putNextEntityProducers( producers );
+    }
+
+    /**
+     * リクエスト待ちの DEM タイルの個数を取得
+     *
+     * @return  リクエスト待ちの DEM タイルの個数
+     */
+    getNumDemWaitingRequests(): number
+    {
+        let count = 0;
+
+        for ( const belt of this._belts ) {
+            count += belt.getNumDemWaitingRequests();
+        }
+
+        return count;
+    }
+
+
+    /**
+     * 正確度が最も高い DEM タイルデータを検索
+     *
+     * 基底タイル座標 (左上(0, 0)、右下(1, 1)) [xt, yt] の標高データを
+     * 取得することができる、正確度が最も高い DEM タイルデータを検索す
+     * る。
+     *
+     * サーバーにさらに正確度が高い DEM タイルデータが存在すれば、それ
+     * をリクエストする。
+     *
+     * @param  xt  X 座標 (基底タイル座標系)
+     * @param  yt  Y 座標 (基底タイル座標系)
+     * @return DEM タイルデータ (存在しなければ null)
+     */
+    findHighestAccuracy( xt: number, yt: number ): DemBinary | null
+    {
+        const yp = Math.floor( yt );  // 対象の Belt を選択
+
+        if ( yp < this._belt_lower_y || yp > this._belt_upper_y ) {
+            // yt は範囲外
+            return null;
+        }
+
+        return this._belt( yp ).findHighestAccuracy( xt, yt );
+    }
+
+    /**
+     * 現行の標高 (複数) を取得
+     *
+     * 現在メモリーにある最高精度の標高値を一括で取得する。
+     *
+     * まだ DEM データが存在しない、または経度, 緯度が範囲外の場所は標高を 0 とする。
+     *
+     * このメソッドは DEM のリクエストは発生しない。また DEM のキャッシュには影響を与えない。
+     *
+     * 一般的に画面に表示されていない場所は標高の精度が低い。
+     *
+     * @param  num_points  入出力データ数
+     * @param  src_array   入力配列 (経度, 緯度, ...)
+     * @param  src_offset  入力データの先頭インデックス
+     * @param  src_stride  入力データのストライド
+     * @param  dst_array   出力配列 (標高, ...)
+     * @param  dst_offset  出力データの先頭インデックス
+     * @param  dst_stride  出力データのストライド
+     * @return dst_array
+     *
+     * @see [[Viewer.getExistingElevations]]
+     */
+    getExistingElevations( num_points: number, src_array: number[], src_offset: number, src_stride: number, dst_array: number[], dst_offset: number, dst_stride: number ): number[]
+    {
+        // todo: 各 Belt の処理
+        return this._belt( 0 ).getExistingElevations( num_points, src_array, src_offset, src_stride, dst_array, dst_offset, dst_stride );
+    }
+
+    /**
+     * 地表断片とレイの交点までの距離を検索
+     *
+     * 地球全体 `this` と線分 (`ray.position` を始点とし、そこから
+     * `ray.direction` 方向に `limit` 距離未満にある点) との交点の中で、
+     * 始点から最も近い交点までの距離を返す。
+     *
+     * ただし地球全体と線分が交差しないときは `limit` を返す。
+     *
+     * 事前条件: `this.status` === `Status.READY`
+     *
+     * @param ray   - `ray.position` を始点として `ray.direction` 方向に伸びる半直線
+     * @param limit - この距離までの交点を検索
+     *
+     * @returns `ray.position` から交点までの距離、ただし交差しなかったときは `limit`
+     */
+    findRayDistance( ray: Ray,
+                     limit: number ): number
+    {
+        let dmin = limit;
+
+        for ( const belt of this._belts ) {
+            dmin = belt.root_flake.findRayDistance( ray, dmin );
+        }
+
+        return dmin;
+    }
+
+    /**
+     * フレームの最後の処理
+     */
+    endFrame(): void
+    {
+        for ( const belt of this._belts ) {
+            return belt.endFrame();
+        }
+    }
+
+    /**
+     * Globe の状態を更新
+     *
+     * @internal
+     */
+    public updateStatus( status: Globe.Status ): void
+    {
+        if ( this._status !== Globe.Status.NOT_READY ) {
+            // 状態は決定済みなので無視
+            // _num_ready_belts も数えない
+            return;
+        }
+
+        if ( status === Globe.Status.READY ) {
+            ++this._num_ready_belts;
+            if ( this._num_ready_belts === this._belts.length ) {
+                // 状態は READY に決定
+                this._status = status;
+            }
+        }
+        else if ( status === Globe.Status.FAILED ) {
+            // 状態は FAILED に決定
+            this._status = status;
+        }
+    }
+
+    /** @internal */
+    public setupDebugPickInfo(): void {
+        for ( const belt of this._belts ) {
+            return belt.setupDebugPickInfo();
+        }
+    }
+
+    /** @internal */
+    public popDebugPickInfo(): Globe.DebugPickInfo | undefined {
+        // todo: 各 Belt の処理
+        return this._belt( 0 ).popDebugPickInfo();
+    }
+
+}
+
+
+/**
+ * [[Globe]] の生成オプションの型
+ *
+ * @see [[Globe.constructor]]
+ */
+export interface Option {
+
+    /**
+     * 極地情報
+     *
+     * @defaultValue [[Viewer.PoleOption]] の既定値
+     */
+    pole_info?: PoleInfo;
+
+}
+
+
+/**
+ * 地球のベルト単位の管理
+ *
+ * このインスタンスは地球の領域 0/0/`y_coord` を管理する。
+ */
+class Belt {
+
+    public readonly globe: Globe;
+
+    public readonly glenv: GLEnv;
+
+    public readonly dem_provider: DemProvider;
+
+    public readonly belt_y: number;
 
     private _status: Globe.Status;
 
@@ -69,18 +434,28 @@ class Globe {
 
 
     /**
-     * @param glenv         WebGL 環境
-     * @param dem_provider  DEM プロバイダ
+     * @param globe  - 親 Globe インスタンス
+     * @param belt_y - Belt の y 座標 (整数)
      */
-    constructor( glenv: GLEnv, dem_provider: DemProvider<any> )
+    constructor( globe: Globe,
+                 belt_y: number )
     {
-        this.glenv        = glenv;
-        this.dem_provider = dem_provider;
+        this.globe  = globe;
+        this.glenv  = globe.glenv;
+        this.belt_y = belt_y;
+
+        if ( belt_y > 0 )
+            this.dem_provider = globe.spole_provider;
+        else if ( belt_y < 0 )
+            this.dem_provider = globe.npole_provider;
+        else
+            this.dem_provider = globe.dem_provider;
+
         this._status = Globe.Status.NOT_READY;
         this._dem_area_updated = new UpdatedTileArea();
         this._prev_producers = new Set();
 
-        this.rho = dem_provider.getResolutionPower();
+        this.rho = this.dem_provider.getResolutionPower();
         this.dem_zbias = GeoMath.LOG2PI - this.rho + 1;  // b = log2(π) - ρ + 1
 
         this._hist_stats = new HistStats();
@@ -135,14 +510,6 @@ class Globe {
         }
 
         // assert: this._num_dem_requesteds == 0
-    }
-
-    /**
-     * Globe 状態を取得
-     */
-    get status(): Globe.Status
-    {
-        return this._status;
     }
 
     /**
@@ -300,14 +667,7 @@ class Globe {
 
 
     /**
-     * 正確度が最も高い DEM タイルデータを検索
-     *
-     * 基底タイル座標 (左上(0, 0)、右下(1, 1)) [xt, yt] の標高データを取得することができる、正確度が最も高い DEM タイルデータを検索する。
-     *
-     * サーバーにさらに正確度が高い DEM タイルデータが存在すれば、それをリクエストする。
-     * @param  xt  X 座標 (基底タイル座標系)
-     * @param  yt  Y 座標 (基底タイル座標系)
-     * @return DEM タイルデータ (存在しなければ null)
+     * 詳細は [[Globe.findHighestAccuracy]] を参照
      */
     findHighestAccuracy( xt: number, yt: number ): DemBinary | null
     {
@@ -350,26 +710,7 @@ class Globe {
     }
 
     /**
-     * 現行の標高 (複数) を取得
-     *
-     * 現在メモリーにある最高精度の標高値を一括で取得する。
-     *
-     * まだ DEM データが存在しない、または経度, 緯度が範囲外の場所は標高を 0 とする。
-     *
-     * このメソッドは DEM のリクエストは発生しない。また DEM のキャッシュには影響を与えない。
-     *
-     * 一般的に画面に表示されていない場所は標高の精度が低い。
-     *
-     * @param  num_points  入出力データ数
-     * @param  src_array   入力配列 (経度, 緯度, ...)
-     * @param  src_offset  入力データの先頭インデックス
-     * @param  src_stride  入力データのストライド
-     * @param  dst_array   出力配列 (標高, ...)
-     * @param  dst_offset  出力データの先頭インデックス
-     * @param  dst_stride  出力データのストライド
-     * @return dst_array
-     *
-     * @see [[Viewer.getExistingElevations]]
+     * 詳細は [[Globe.getExistingElevations]] を参照
      */
     getExistingElevations( num_points: number, src_array: number[], src_offset: number, src_stride: number, dst_array: number[], dst_offset: number, dst_stride: number ): number[]
     {
@@ -511,7 +852,7 @@ class Globe {
     {
         const z = 0;
         const x = 0;
-        const y = 0;
+        const y = this.belt_y;
 
         this._root_cancel_id = this.dem_provider.requestTile( z, x, y, data => {
             if ( data ) {
@@ -525,6 +866,7 @@ class Globe {
             else { // データ取得に失敗
                 this._status = Globe.Status.FAILED;
             }
+            this.globe.updateStatus( this._status );
             this._root_cancel_id = undefined;
             --this._num_dem_requesteds;
         } );
@@ -621,7 +963,8 @@ export class Flake implements Area {
 
     readonly children: [Flake | null, Flake | null, Flake | null, Flake | null];
 
-    private _globe!: Globe;
+    /** @internal */
+    public belt!: Belt;
 
     /**
      * DEM バイナリ、または取り消しオブジェクト
@@ -689,10 +1032,10 @@ export class Flake implements Area {
 
         // 起源 Globe
         if ( parent ) {
-            this._globe = parent._globe;
+            this.belt = parent.belt;
         }
         else {
-            // this._globe は setupRoot() で設定
+            // this.belt は setupRoot() で設定
         }
 
         // DEM データ
@@ -724,14 +1067,14 @@ export class Flake implements Area {
 
         // キャッシュ管理
         this._aframe = -1;
-        if ( this._globe ) {
-            this._globe.increment_cache_flakes();
+        if ( this.belt ) {
+            this.belt.increment_cache_flakes();
         }
     }
 
 
     get globe(): Globe {
-        return this._globe;
+        return this.belt.globe;
     }
 
 
@@ -784,14 +1127,14 @@ export class Flake implements Area {
      * 基底 Flake 専用の設定
      * @internal
      */
-    setupRoot( globe: Globe, dem: DemBinary ): void
+    setupRoot( belt: Belt, dem: DemBinary ): void
     {
-        this._globe     = globe;
+        this.belt       = belt;
         this._dem_data  = dem;
         this._dem_state = DemState.LOADED;
         this._entity_map = new Map();
         this._estimate();
-        globe.increment_cache_flakes();
+        belt.increment_cache_flakes();
     }
 
     /**
@@ -814,19 +1157,6 @@ export class Flake implements Area {
         child._estimate();
         child.touch();
         return child;
-    }
-
-    /**
-     * カリングするか？
-     * @param  clip_planes  クリップ平面配列
-     * @return 見えないとき true, 見えるまたは不明のとき false
-     */
-    isInvisible( clip_planes: Vector4[] ): boolean
-    {
-        switch ( this.z ) {
-        case 0:  return this._isInvisible_0( clip_planes );
-        default: return this._isInvisible_N( clip_planes );
-        }
     }
 
     /**
@@ -985,7 +1315,7 @@ export class Flake implements Area {
      *
      * ただし地表断片と線分が交差しないときは limit を返す。
      *
-     * 事前条件: this._globe.status === Status.READY
+     * 事前条件: this.belt.status === Status.READY
      *
      * @param  ray    ray.position を始点として ray.direction 方向に伸びる半直線
      * @param  limit  この距離までの交点を検索
@@ -994,8 +1324,8 @@ export class Flake implements Area {
     findRayDistance( ray: Ray, limit: number ): number
     {
         DEBUG: {
-            if ( this._globe.debug_pick_info ) {
-                this._globe.debug_pick_info.trace.push( this );
+            if ( this.belt.debug_pick_info ) {
+                this.belt.debug_pick_info.trace.push( this );
             }
         }
 
@@ -1008,7 +1338,7 @@ export class Flake implements Area {
             dem_flake = dem_flake._parent;
         }
 
-        if ( this.z - dem_flake.z === this._globe.rho ) {
+        if ( this.z - dem_flake.z === this.belt.rho ) {
             return this._findQuadRayDistance( ray, limit, dem_flake );
         }
         else if ( this._cullForRayDistance( ray, limit ) ) {
@@ -1038,7 +1368,7 @@ export class Flake implements Area {
             return;
         }
 
-        var globe = this._globe;
+        const belt = this.belt;
 
         // メッシュを破棄
         var meshes = this._meshes;
@@ -1067,12 +1397,12 @@ export class Flake implements Area {
 
         // DEM リクエストの取り消し
         if ( this._dem_state === DemState.REQUESTED ) {
-            globe.dem_provider.cancelRequest( this._dem_data );
-            globe.decrement_dem_requesteds();
+            belt.dem_provider.cancelRequest( this._dem_data );
+            belt.decrement_dem_requesteds();
         }
 
         // Flake 数を減らす
-        globe.decrement_cache_flakes();
+        belt.decrement_cache_flakes();
     }
 
     /**
@@ -1159,10 +1489,10 @@ export class Flake implements Area {
      */
     touch(): void
     {
-        var globe = this._globe;
-        if ( this._aframe !== globe.frame_counter ) {
-            this._aframe = globe.frame_counter;
-            globe.increment_touch_flakes();
+        const belt = this.belt;
+        if ( this._aframe !== belt.frame_counter ) {
+            this._aframe = belt.frame_counter;
+            belt.increment_touch_flakes();
         }
     }
 
@@ -1203,7 +1533,7 @@ export class Flake implements Area {
      */
     private _getMeshDemBinary( lod: number ): DemBinary
     {
-        var zDesired = GeoMath.clamp( Math.round( lod + this._globe.dem_zbias ),
+        var zDesired = GeoMath.clamp( Math.round( lod + this.belt.dem_zbias ),
                                       0, this._dem_zlimit );
 
         var dem = this._findNearestDemTile( zDesired );
@@ -1276,9 +1606,9 @@ export class Flake implements Area {
      */
     private _requestAncestorDemTile( ze: number ): void
     {
-        var globe = this._globe;
+        const belt = this.belt;
 
-        if ( globe.is_reached_limit_dem_request() ) {
+        if ( belt.is_reached_limit_dem_request() ) {
             // 要求が最大数に達しているので受け入れない
             return;
         }
@@ -1314,7 +1644,7 @@ export class Flake implements Area {
             else {
                 // DEM タイルデータを要求
                 // assert: state === DemState.NONE
-                var provider = globe.dem_provider;
+                var provider = belt.dem_provider;
 
                 flake._dem_data = provider.requestTile( flake.z, flake.x, flake.y, data => {
                     if ( !flake._parent ) {
@@ -1322,42 +1652,33 @@ export class Flake implements Area {
                         return;
                     }
                     if ( data ) {
-                        flake._dem_data  = new DemBinary( flake.z, flake.x, flake.y, globe.rho, data );
+                        flake._dem_data  = new DemBinary( flake.z, flake.x, flake.y, belt.rho, data );
                         flake._dem_state = DemState.LOADED;
-                        globe.dem_area_updated.addTileArea( flake );
+                        belt.dem_area_updated.addTileArea( flake );
                     }
                     else { // データ取得に失敗
                         flake._dem_data  = null;
                         flake._dem_state = DemState.FAILED;
                     }
-                    globe.decrement_dem_requesteds();
+                    belt.decrement_dem_requesteds();
                 } );
 
                 flake._dem_state = DemState.REQUESTED;
-                globe.increment_dem_requesteds();
+                belt.increment_dem_requesteds();
                 break;
             }
         }
     }
 
 
-    private _isInvisible_0( clip_planes: Vector4[] ): boolean
-    {
-        var r = GeoMath.EARTH_RADIUS + this._height_max;
-
-        for ( var i = 0; i < clip_planes.length; ++i ) {
-            var dist = clip_planes[i][3];  // 平面から GOCS 原点 (地球中心) までの距離
-            if ( dist < -r ) {
-                // 地球全体がこの平面の裏側にあるので見えない
-                return true;
-            }
-        }
-
-        return false;  // 見えている可能性がある
-    }
-
-
-    private _isInvisible_N( clip_planes: Vector4[] ): boolean
+    /**
+     * カリングするか？
+     *
+     * @param clip_planes - クリップ平面配列
+     *
+     * @returns 見えないとき `true`, 見えるまたは不明のとき `false`
+     */
+    public isInvisible( clip_planes: Vector4[] ): boolean
     {
         var xmin = this._gocs_x_min;
         var xmax = this._gocs_x_max;
@@ -1401,22 +1722,23 @@ export class Flake implements Area {
     }
 
     /**
-     * 中間緯度の余弦
+     * 領域内で絶対値が最小の緯度に対する余弦
      */
     private _getCosφ(): number
     {
-        var z = this.z;
-        if ( z > 0 ) {
-            var  y = this.y;
-            var  p = Math.pow( 2, 1 - z );
-            var y0 = Math.abs( 1 - p *  y      );
-            var y1 = Math.abs( 1 - p * (y + 1) );
-            var ey = Math.exp( Math.PI * Math.min( y0, y1 ) );
-            return 2 * ey / (ey*ey + 1);  // Cos[φ] == Cos[gd[y]] == Sech[y]
+        const z = this.z;
+        const y = this.y;
+        if ( z === 0 && y === 0 ) {
+            // 0/x/0 は唯一赤道を跨ぐ領域なので
+            // 絶対値が最小の緯度を 0 とする
+            return 1;  // Cos[0]
         }
         else {
-            // z == 0 のときは φ == 0 とする
-            return 1;  // Cos[0]
+            const  p = Math.pow( 2, 1 - z );
+            const y0 = Math.abs( 1 - p *  y      );
+            const y1 = Math.abs( 1 - p * (y + 1) );
+            const ey = Math.exp( Math.PI * Math.min( y0, y1 ) );
+            return 2 * ey / (ey*ey + 1);  // Cos[φ] == Cos[gd[y]] == Sech[y]
         }
     }
 
@@ -1431,7 +1753,7 @@ export class Flake implements Area {
         }
 
         var zg = this.z;
-        var rho = this._globe.rho;
+        var rho = this.belt.rho;
         var zr_dem: DemBinary;
 
         if ( zg < rho ) {
@@ -1478,12 +1800,19 @@ export class Flake implements Area {
      */
     private _estimate_low( zr_dem: DemBinary ): void
     {
-        var zg = this.z;
-        var xg = this.x;
-        var yg = this.y;
-        var α = this._calcAlpha();
+        cfa_assert( this.z < this.belt.rho );
 
-        this._base_height = this._globe.avg_height.sample( zg, xg, yg );
+        const zg = this.z;
+        const xg = this.x;
+        const yg = this.y;
+        const α = this._calcAlpha();
+
+        // avg_height 用の領域 y 座標に変換
+        // ya = yg - 2^zg Floor[yg / 2^zg]
+        // zg は ρ 未満なのでシフト演算で十分
+        const ya = yg - (1 << zg) * Math.floor( yg / (1 << zg) );
+
+        this._base_height = this.belt.avg_height.sample( zg, xg, ya );
         this._height_min  = Math.max( this._base_height + α * Flake.Fm, zr_dem.height_min );
         this._height_max  = Math.min( this._base_height + α * Flake.Fp, zr_dem.height_max );
 
@@ -1501,7 +1830,7 @@ export class Flake implements Area {
      */
     private _estimate_high( za_dem: DemBinary, zr_dem: DemBinary ): void
     {
-        var globe = this._globe;
+        const belt = this.belt;
         var zg = this.z;
         var xg = this.x;
         var yg = this.y;
@@ -1510,7 +1839,7 @@ export class Flake implements Area {
         var xe = za_dem.x;
         var ye = za_dem.y;
 
-        var  rho = globe.rho;
+        var  rho = belt.rho;
         var  pow = Math.pow( 2, ze - zg );
         var size = 1 << rho;
 
@@ -1568,7 +1897,7 @@ export class Flake implements Area {
         var ye = za_dem.y;
 
         var  pow = Math.pow( 2, ze - zg );
-        var size = 1 << this._globe.rho;
+        var size = 1 << this.belt.rho;
 
         var    u = Math.floor( size * ((xg + 0.5) * pow - xe) );
         var    v = Math.floor( size * ((yg + 0.5) * pow - ye) );
@@ -1616,16 +1945,118 @@ export class Flake implements Area {
      */
     private _updateBoundingBox_0(): void
     {
-        var r = GeoMath.EARTH_RADIUS + this._height_max;
+        // 条件: r_max >= r_min > 0
+        //       -π/2 < φ_min < φ_max < π/2
+        //
+        // 範囲: r: [r_min, r_max]
+        //      λ: [-π, π]
+        //      φ: [φ_min, φ_max]
+        //
+        // 緯度 φ, 経度 λ, 地心距離 r に対する GOCS 座標の計算
+        //
+        //   gx = r Cos[φ] Cos[λ]
+        //   gy = r Cos[φ] Sin[λ]
+        //   gz = r Sin[φ]
+        //
+        // φ_min >= 0 のとき
+        //
+        //   gz_min = r_min Sin[φ_min]
+        //   gz_max = r_max Sin[φ_max]
+        //
+        // φ_max <= 0 のとき
+        //
+        //   gz_min = r_max Sin[φ_min]
+        //   gz_max = r_min Sin[φ_max]
+        //
+        // φ_min < 0 < φ_max のとき
+        //
+        //   gz_min = r_max Sin[φ_min]
+        //   gz_max = r_max Sin[φ_max]
+        //
+        // Cos[λ] と Sin[λ] の範囲は [-1, 1] で、Cos[φ] > 0、さらに
+        // r_max >= r_min > 0 より
+        //
+        //   gx_min = gy_min = -r_max Cos[φ]
+        //   gx_max = gy_max =  r_max Cos[φ]
+        //
+        // φ の絶対値が小さいほど Cos[φ] は大きくなるので
+        //
+        // φ_min < 0 < φ_max のとき
+        //
+        //   gx_min = gy_min = -r_max
+        //   gx_max = gy_max =  r_max
+        //
+        // φ_min >= 0 のとき
+        //
+        //   gx_min = gy_min = -r_max Cos[φ_min]
+        //   gx_max = gy_max =  r_max Cos[φ_min]
+        //
+        // φ_max <= 0 のとき
+        //
+        //   gx_min = gy_min = -r_max Cos[φ_max]
+        //   gx_max = gy_max =  r_max Cos[φ_max]
 
-        this._gocs_x_min = -r;
-        this._gocs_x_max =  r;
+        cfa_assert( this.z === 0 && this.x === 0 );
 
-        this._gocs_y_min = -r;
-        this._gocs_y_max =  r;
+        const pi = Math.PI;
 
-        this._gocs_z_min = -r;
-        this._gocs_z_max =  r;
+        // 座標範囲 (単位球メルカトル座標系)
+        const  msize = 2 * pi;
+        const my_min = pi - (this.y + 1) * msize;
+        const my_max = pi - this.y * msize;
+
+        // 事前計算変数
+        const  emin = Math.exp( my_min );   // Exp[my_min]
+        const  emax = Math.exp( my_max );   // Exp[my_max]
+        const e2min = emin * emin;          // Exp[my_min]^2
+        const e2max = emax * emax;          // Exp[my_max]^2
+
+        const cosφmin = 2 * emin / (e2min + 1);
+        const cosφmax = 2 * emax / (e2max + 1);
+        const sinφmin = (e2min - 1) / (e2min + 1);
+        const sinφmax = (e2max - 1) / (e2max + 1);
+
+        // 地心からの距離範囲
+        const r_min = GeoMath.EARTH_RADIUS + this._height_min;
+        const r_max = GeoMath.EARTH_RADIUS + this._height_max;
+
+        if ( this.y < 0 ) {
+            // φ_min >= 0
+
+            this._gocs_x_min = -r_max * cosφmin;
+            this._gocs_x_max =  r_max * cosφmin;
+
+            this._gocs_y_min = -r_max * cosφmin;
+            this._gocs_y_max =  r_max * cosφmin;
+
+            this._gocs_z_min = r_min * sinφmin;
+            this._gocs_z_max = r_max * sinφmax;
+        }
+        else if ( this.y > 0 ) {
+            // φ_max <= 0
+
+            this._gocs_x_min = -r_max * cosφmax;
+            this._gocs_x_max =  r_max * cosφmax;
+
+            this._gocs_y_min = -r_max * cosφmax;
+            this._gocs_y_max =  r_max * cosφmax;
+
+            this._gocs_z_min = r_max * sinφmin;
+            this._gocs_z_max = r_min * sinφmax;
+        }
+        else {
+            // φ_min < 0 < φ_max
+            cfa_assert( this.y === 0 );
+
+            this._gocs_x_min = -r_max;
+            this._gocs_x_max =  r_max;
+
+            this._gocs_y_min = -r_max;
+            this._gocs_y_max =  r_max;
+
+            this._gocs_z_min = r_max * sinφmin;
+            this._gocs_z_max = r_max * sinφmax;
+        }
     }
 
     /**
@@ -1633,18 +2064,156 @@ export class Flake implements Area {
      */
     private _updateBoundingBox_1(): void
     {
-        var r = GeoMath.EARTH_RADIUS + this._height_max;
-        var x = this.x;
-        var y = this.y;
+        // 条件: r_max >= r_min > 0
+        //       -π/2 < φ_min < φ_max < π/2
+        //       φ_min >= 0 || φ_max <= 0
+        //
+        // 範囲: r: [r_min, r_max]
+        //      λ: [-π, 0] または [0, π]
+        //      φ: [φ_min, φ_max]
+        //
+        // 緯度 φ, 経度 λ, 地心距離 r に対する GOCS 座標の計算
+        //
+        //   gx = r Cos[φ] Cos[λ]
+        //   gy = r Cos[φ] Sin[λ]
+        //   gz = r Sin[φ]
+        //
+        // --------------------------------------------------
+        //
+        // φ_max > 0 のとき
+        //
+        //   gz_min = r_min Sin[φ_min]
+        //   gz_max = r_max Sin[φ_max]
+        //
+        // φ_min < 0 のとき
+        //
+        //   gz_min = r_max Sin[φ_min]
+        //   gz_max = r_min Sin[φ_max]
+        //
+        // --------------------------------------------------
+        //
+        // this.x == 0 のとき λ の範囲は [-π, 0] なので、Cos[λ] の
+        // 範囲は [-1, 1]で、Sin[λ] の範囲は [-1, 0] となる。
+        //
+        // Cos[φ] > 0、さらに r_max >= r_min > 0 より
+        //
+        //   gx_min = -r_max Cos[φ]
+        //   gx_max =  r_max Cos[φ]
+        //   gy_min = -r_max Cos[φ]
+        //   gy_max =  0
+        //
+        // φ の絶対値が小さいほど Cos[φ] は大きくなるので
+        //
+        // φ_max > 0 のとき
+        //
+        //   gx_min = -r_max Cos[φ_min]
+        //   gx_max =  r_max Cos[φ_min]
+        //   gy_min = -r_max Cos[φ_min]
+        //   gy_max =  0
+        //
+        // φ_min < 0 のとき
+        //
+        //   gx_min = -r_max Cos[φ_max]
+        //   gx_max =  r_max Cos[φ_max]
+        //   gy_min = -r_max Cos[φ_max]
+        //   gy_max =  0
+        //
+        // --------------------------------------------------
+        //
+        // this.x == 1 のとき λ の範囲は [0, π] なので、Cos[λ] の
+        // 範囲は [-1, 1]で、Sin[λ] の範囲は [0, 1] となる。
+        //
+        // Cos[φ] > 0、さらに r_max >= r_min > 0 より
+        //
+        //   gx_min = -r Cos[φ]
+        //   gx_max =  r Cos[φ]
+        //   gy_min =  0
+        //   gy_max =  r Cos[φ]
+        //
+        // φ の絶対値が小さいほど Cos[φ] は大きくなるので
+        //
+        // φ_max > 0 のとき
+        //
+        //   gx_min = -r_max Cos[φ_min]
+        //   gx_max =  r_max Cos[φ_min]
+        //   gy_min =  0
+        //   gy_max =  r_max Cos[φ_min]
+        //
+        // φ_min < 0 のとき
+        //
+        //   gx_min = -r_max Cos[φ_max]
+        //   gx_max =  r_max Cos[φ_max]
+        //   gy_min =  0
+        //   gy_max =  r_max Cos[φ_max]
 
-        this._gocs_x_min = -r;
-        this._gocs_x_max =  r;
+        cfa_assert( this.z === 1 );
 
-        this._gocs_y_min =  r * (x - 1);
-        this._gocs_y_max =  r * x;
+        const pi = Math.PI;
 
-        this._gocs_z_min = -r * y;
-        this._gocs_z_max =  r * (1 - y);
+        // 座標範囲 (単位球メルカトル座標系)
+        const  msize = pi;
+        const my_min = pi - (this.y + 1) * msize;
+        const my_max = pi - this.y * msize;
+
+        // 事前計算変数
+        const  emin = Math.exp( my_min );   // Exp[my_min]
+        const  emax = Math.exp( my_max );   // Exp[my_max]
+        const e2min = emin * emin;          // Exp[my_min]^2
+        const e2max = emax * emax;          // Exp[my_max]^2
+
+        const cosφmin = 2 * emin / (e2min + 1);
+        const cosφmax = 2 * emax / (e2max + 1);
+        const sinφmin = (e2min - 1) / (e2min + 1);
+        const sinφmax = (e2max - 1) / (e2max + 1);
+
+        // 地心からの距離範囲
+        const r_min = GeoMath.EARTH_RADIUS + this._height_min;
+        const r_max = GeoMath.EARTH_RADIUS + this._height_max;
+
+        if ( my_min + my_max < 0 ) {
+            // φ_min < 0  (南半球側)
+
+            if ( this.x === 0 ) {
+                // 西半球
+                this._gocs_x_min = -r_max * cosφmax;
+                this._gocs_x_max =  r_max * cosφmax;
+                this._gocs_y_min = -r_max * cosφmax;
+                this._gocs_y_max =  0
+            }
+            else {
+                // 東半球
+                cfa_assert( this.x === 1 );
+                this._gocs_x_min = -r_max * cosφmax;
+                this._gocs_x_max =  r_max * cosφmax;
+                this._gocs_y_min =  0;
+                this._gocs_y_max =  r_max * cosφmax;
+            }
+
+            this._gocs_z_min = r_max * sinφmin;
+            this._gocs_z_max = r_min * sinφmax;
+        }
+        else {
+            // φ_max > 0  (北半球側)
+
+            if ( this.x === 0 ) {
+                // 西半球
+                this._gocs_x_min = -r_max * cosφmin;
+                this._gocs_x_max =  r_max * cosφmin;
+                this._gocs_y_min = -r_max * cosφmin;
+                this._gocs_y_max =  0;
+            }
+            else {
+                // 東半球
+                cfa_assert( this.x === 1 );
+                this._gocs_x_min = -r_max * cosφmin;
+                this._gocs_x_max =  r_max * cosφmin;
+                this._gocs_y_min =  0;
+                this._gocs_y_max =  r_max * cosφmin;
+            }
+
+            this._gocs_z_min = r_min * sinφmin;
+            this._gocs_z_max = r_max * sinφmax;
+        }
     }
 
     /**
@@ -1825,8 +2394,8 @@ export class Flake implements Area {
     {
         var  pts = this._getQuadPositions( dem_flake, Flake._temp_positions );
         DEBUG: {
-            if ( this._globe.debug_pick_info ) {
-                this._globe.debug_pick_info.quads.push([
+            if ( this.belt.debug_pick_info ) {
+                this.belt.debug_pick_info.quads.push([
                         GeoMath.copyVector3( pts[0], GeoMath.createVector3() ),
                         GeoMath.copyVector3( pts[1], GeoMath.createVector3() ),
                         GeoMath.copyVector3( pts[2], GeoMath.createVector3() ),
@@ -1938,7 +2507,7 @@ export class Flake implements Area {
         var xe = dem_flake.x;
         var ye = dem_flake.y;
 
-        var    size = 1 << this._globe.rho;
+        var    size = 1 << this.belt.rho;
         var heights = dem_flake._dem_data.getHeights( xg - size * xe, yg - size * ye );
 
         var msize = Math.pow( 2, 1 - this.z ) * Math.PI;
@@ -2296,7 +2865,7 @@ class MeshNode {
         this._entity_meshes = new Map();
 
         // メッシュ数をカウントアップ
-        flake.globe.increment_cache_meshes();
+        flake.belt.increment_cache_meshes();
     }
 
     /**
@@ -2351,10 +2920,10 @@ class MeshNode {
      */
     touch(): void
     {
-        const globe = this._flake.globe;
-        if ( this._aframe !== globe.frame_counter ) {
-            this._aframe = globe.frame_counter;
-            globe.increment_touch_meshes();
+        const belt = this._flake.belt;
+        if ( this._aframe !== belt.frame_counter ) {
+            this._aframe = belt.frame_counter;
+            belt.increment_touch_meshes();
         }
     }
 
@@ -2385,7 +2954,7 @@ class MeshNode {
         }
 
         // メッシュ数をカウントダウン
-        flake.globe.decrement_cache_meshes();
+        flake.belt.decrement_cache_meshes();
     }
 
     /**
@@ -2485,6 +3054,22 @@ export interface DebugPickInfo {
 
 
 } // namespace Globe
+
+
+/**
+ * 可能な Belt の Y 座標の下限
+ *
+ * 0 または 0 以下の整数
+ */
+export const GLOBE_BELT_LOWER_Y = -3;
+
+
+/**
+ * 可能な Belt の Y 座標の上限
+ *
+ * 0 または 0 以上の整数
+ */
+export const GLOBE_BELT_UPPER_Y = +3;
 
 
 const Flake = Globe.Flake;

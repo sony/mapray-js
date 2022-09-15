@@ -61,6 +61,11 @@ class Viewer {
 
     private _image_provider: ImageProvider;
 
+    /**
+     * 北側と南側の極地に関する情報
+     */
+    readonly pole_info: Viewer.PoleInfo;
+
     private _layers: LayerCollection;
 
     private _globe: Globe;
@@ -144,6 +149,8 @@ class Viewer {
 
         var canvas = this._createCanvas( container_element );
 
+        const pole_info = new Viewer.PoleInfo( options.pole );
+
         // インスタンス変数
         this._container_element  = container_element;
         this._canvas_element     = canvas;
@@ -152,9 +159,10 @@ class Viewer {
         this._animation          = this._createAnimationBindingBlock();
         this._dem_provider       = this._createDemProvider( options );
         this._image_provider     = this._createImageProvider( options );
-        this._tile_texture_cache = new TileTextureCache( this._glenv, this._image_provider );
+        this.pole_info           = pole_info;
+        this._tile_texture_cache = new TileTextureCache( this._glenv, this._image_provider, { pole_info } );
         this._layers             = this._createLayerCollection( options );
-        this._globe              = new Globe( this._glenv, this._dem_provider );
+        this._globe              = new Globe( this._glenv, this._dem_provider, { pole_info } );
         this._b3d_collection     = new B3dCollection( this );
         this._scene              = new Scene( this, this._glenv );
         this._ground_visibility  = options.ground_visibility ?? true;
@@ -636,11 +644,6 @@ class Viewer {
         var  xt = xm / dPI + 0.5;
         var  yt = 0.5 - ym / dPI;
 
-        if ( yt < 0 || yt > 1 ) {
-            // 緯度が Web メルカトルの範囲外 (極に近い)
-            return 0;
-        }
-
         // 正確度が最も高い DEM タイルの取得
         var globe = this._globe;
         var dem   = globe.findHighestAccuracy( xt, yt );
@@ -774,7 +777,7 @@ class Viewer {
         // ignore this._ground_visibility at this version.
         // if ( this._ground_visibility && (this._globe.status === Globe.Status.READY) ) {
         if ( this._globe.status === Globe.Status.READY ) {
-            const globe_dist = this._globe.root_flake.findRayDistance( ray, distance );
+            const globe_dist = this._globe.findRayDistance( ray, distance );
 
             if ( globe_dist !== distance ) {
                 // 地表と交差した
@@ -1115,6 +1118,13 @@ export interface Option {
     /** B3D シーンの可視性 */
     b3d_scene_visibility?: boolean;
 
+    /**
+     * 極地に関連するオプション
+     *
+     * @defaultValue [[PoleOption]] の既定値
+     */
+    pole?: PoleOption;
+
     /** レンダリングコールバック */
     render_callback?: RenderCallback;
 
@@ -1141,6 +1151,91 @@ export interface Option {
     star_visualizer?: StarVisualizer;
 }
 
+
+/**
+ * 北側と南側の極地に関するオプションの型
+ *
+ * @see [[Option.pole]], [[Viewer.constructor]], [[PoleInfo]]
+ */
+export interface PoleOption {
+
+    /**
+     * 北側と南側の極地に関する、地表の表示と交差判定の有効性
+     *
+     * 有効 (`true`) を指定すると、通常領域以外に北側と南側の極地を表
+     * 示することができる。
+     *
+     * ただし現在は、[[LayerCollection]] のレイヤー画像、高度モード
+     * ([[Entity.altitude_mode]]) が [[AltitudeMode.ABSOLUTE]] 以外の
+     * エンティティは、通常領域にしか表示することができない。
+     *
+     * @defaultValue `false`
+     */
+    enabled?: boolean;
+
+    /**
+     * 北側極地の標高
+     *
+     * @defaultValue 0.0
+     */
+    north_height?: number;
+
+    /**
+     * 南側極地の標高
+     *
+     * @defaultValue 0.0
+     */
+    south_height?: number;
+
+    /**
+     * 北側極地の表示色
+     *
+     * @defaultValue `[0.8, 0.8, 0.8]`
+     */
+    north_color?: Vector3;
+
+    /**
+     * 南側極地の表示色
+     *
+     * @defaultValue `[0.8, 0.8, 0.8]`
+     */
+    south_color?: Vector3;
+
+}
+
+
+/**
+ * 北側と南側の極地に関する情報
+ *
+ * 各プロパティの意味は [[PoleOption]] の同名のプロパティの説明を参照
+ * のこと。
+ *
+ * @see [[Viewer.pole_info]], [[PoleOption]]
+ */
+export class PoleInfo {
+
+    readonly enabled: boolean;
+    readonly north_height: number;
+    readonly south_height: number;
+    readonly north_color: Vector3;
+    readonly south_color: Vector3;
+
+    /**
+     * @internal
+     */
+    constructor( options: PoleOption = {} )
+    {
+        const default_height = 0.0;
+        const default_color: Vector3 = [0.8, 0.8, 0.8];
+
+        this.enabled      = options.enabled ?? false;
+        this.north_height = options.north_height ?? default_height;
+        this.south_height = options.south_height ?? default_height;
+        this.north_color  = GeoMath.createVector3( options.north_color ?? default_color );
+        this.south_color  = GeoMath.createVector3( options.south_color ?? default_color );
+    }
+
+}
 
 
 export interface RayIntersectionOption {
@@ -1302,5 +1397,7 @@ export const _positions = ["control-top-left", "control-top-right", "control-bot
 } // namespace Viewer
 
 
+type PoleInfo = Viewer.PoleInfo;
 
+export type { PoleInfo };  // 低レベル層から型だけ取り込む目的
 export default Viewer;
