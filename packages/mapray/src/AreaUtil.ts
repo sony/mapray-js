@@ -21,7 +21,7 @@ class AreaUtil
     static getCenter( area: Area, dst: Vector3 ): Vector3
     {
         switch ( area.z ) {
-        case 0:  return getCenter_0( dst );
+        case 0:  return getCenter_0( area.y, dst );
         case 1:  return getCenter_1( area.x, area.y, dst );
         default: return getCenter_N( area.z, area.x, area.y, dst );
         }
@@ -33,11 +33,36 @@ class AreaUtil
 
 // AreaUtil.getCenter() の一部
 function
-getCenter_0( dst: Vector3 ): Vector3
+getCenter_0( y: number, dst: Vector3 ): Vector3
 {
+    const pi = Math.PI;
+
+    // 座標範囲 (単位球メルカトル座標系)
+    const  msize = 2 * pi;
+    const my_min = pi - (y + 1) * msize;
+    const my_max = pi - y * msize;
+
+    // 事前計算変数
+    const  emin = Math.exp( my_min );   // Exp[my_min]
+    const  emax = Math.exp( my_max );   // Exp[my_max]
+    const e2min = emin * emin;          // Exp[my_min]^2
+    const e2max = emax * emax;          // Exp[my_max]^2
+
+    // 座標範囲 (地心直交座標系)
+    //
+    // z == 0 のとき、φの範囲は以下の区間に入る
+    //   φ: (-π/2, π/2)
+    //
+    // 区間ごとの関数の変化 (各区間で単調増加または単調減少)
+    //   Sin[φ]: (-1 → 1)
+
+    const rh = GeoMath.EARTH_RADIUS / 2;
+
+    // 領域 0/0/y は GOCS の z 軸中心の回転体なので (0, 0)
     dst[0] = 0;
     dst[1] = 0;
-    dst[2] = 0;
+    // gz = rh * (Sin[φmin] + Sin[φmax])
+    dst[2] = rh * 2 * (e2max / (e2max + 1) - 1 / (e2min + 1));
 
     return dst;
 }
@@ -47,11 +72,79 @@ getCenter_0( dst: Vector3 ): Vector3
 function
 getCenter_1( x: number, y: number, dst: Vector3 ): Vector3
 {
-    var r = GeoMath.EARTH_RADIUS;
+    const pi = Math.PI;
 
+    // 座標範囲 (単位球メルカトル座標系)
+    const  msize = pi;
+    const mx_min = -pi + x * msize;
+    const mx_max = -pi + (x + 1) * msize;
+    const my_min =  pi - (y + 1) * msize;
+    const my_max =  pi - y * msize;
+
+    // 事前計算変数
+    const λmin = mx_min;
+    const λmax = mx_max;
+    const  emin = Math.exp( my_min );   // Exp[my_min]
+    const  emax = Math.exp( my_max );   // Exp[my_max]
+    const e2min = emin * emin;          // Exp[my_min]^2
+    const e2max = emax * emax;          // Exp[my_max]^2
+
+    // 座標範囲 (地心直交座標系)
+    //
+    // z == 1 のとき、λとφの範囲は以下の区間のどれかに入る
+    //   φ:     (-π/2, 0] [0, π/2)
+    //   λ:       [-π, 0] [0, π]
+    //
+    // 区間ごとの関数の変化 (各区間で単調増加または単調減少)
+    //   Sin[φ]: (-1 → 0] [0 → 1)
+    //   Cos[φ]: ( 0 → 1] [1 → 0)
+    //
+    // 区間ごとの (領域に対する) 関数の像
+    //   Sin[λ]:   [-1, 0] [0,  1]
+    //   Cos[λ]:   [-1, 1] [-1, 1]
+
+    const       rh = GeoMath.EARTH_RADIUS / 2;
+    const cosφmin = 2 * emin / (e2min + 1);
+    const cosφmax = 2 * emax / (e2max + 1);
+
+    // gx = r Cos[φ] Cos[λ]
+    // gy = r Cos[φ] Sin[λ]
     dst[0] = 0;
-    dst[1] = r * (x - 0.5);
-    dst[2] = r * (0.5 - y);
+
+    // Cos[λ]: [-1, 1]
+    if ( my_min + my_max < 0 ) {
+        //     φ : (-π/2, 0]
+        // Cos[φ]: ( 0  → 1]
+        // Sin[φ]: (-1  → 0]
+        if ( λmin + λmax < 0 ) {
+            //     λ : [-π, 0]
+            // Sin[λ]: [-1,  0]
+            dst[1] = rh * -cosφmax;
+        }
+        else {
+            //     λ : [0, π]
+            // Sin[λ]: [0,  1]
+            dst[1] = rh * cosφmax;
+        }
+    }
+    else {
+        //     φ : [0,π/2)
+        // Sin[φ]: [0 → 1)
+        // Cos[φ]: [1 → 0)
+        if ( λmin + λmax < 0 ) {
+            //     λ : [-π, 0]
+            // Sin[λ]: [-1,  0]
+            dst[1] = rh * -cosφmin;
+        }
+        else {
+            //     λ : [0, π]
+            // Sin[λ]: [0,  1]
+            dst[1] = rh * cosφmin;
+        }
+    }
+
+    // gz = rh * (Sin[φmin] + Sin[φmax])
+    dst[2] = rh * 2 * (e2max / (e2max + 1) - 1 / (e2min + 1));
 
     return dst;
 }
