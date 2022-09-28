@@ -1,45 +1,42 @@
-import GeoMath from "./GeoMath";
-import AreaUtil from "./AreaUtil";
+import GeoMath, { Vector3, Matrix } from "./GeoMath";
+import AreaUtil, { Area } from "./AreaUtil";
+import type GLEnv from "./GLEnv";
+import type DemBinary from "./DemBinary";
+import type FlakeMaterial from "./FlakeMaterial";
+import type { AttributeBindInfoDict } from "./Material";
+import { cfa_assert } from "./util/assertion";
 
 
 /**
- * @summary 地表断片メッシュ
- * @memberof mapray
- * @private
+ * 地表断片メッシュ
  */
 class FlakeMesh {
 
     /**
-     * @param {mapray.GLEnv}     glenv  WebGL 環境
-     * @param {mapray.Area}      area   地表断片の領域
-     * @param {number[]}         dpows  地表断片の分割指数
-     * @param {mapray.DemBinary} dem    DEM バイナリ
+     * @param glenv - WebGL 環境
+     * @param area  - 地表断片の領域
+     * @param dpows - 地表断片の分割指数
+     * @param dem   - DEM バイナリ
      */
-    constructor( glenv, area, dpows, dem )
+    constructor( glenv: GLEnv,
+                 area:  Area,
+                 dpows: [number, number],
+                 dem:   DemBinary )
     {
-        var gl = glenv.context;
+        const gl = glenv.context;
 
         // オブジェクト座標系の中心位置 (GOCS)
         this._center = this._createCenter( area );
 
-        // 頂点バッファ
-        this._vertices = null;
-
-        // 頂点数
-        this._num_vertices = 0;
+        // 頂点データを生成
+        const vdata = this._createVertices( gl, area, dpows, dem );
+        this._vertices     = vdata.vertices;
+        this._num_vertices = vdata.num_vertices;
+        this._num_quads_x  = vdata.num_quads_x;
+        this._num_quads_y  = vdata.num_quads_y;
 
         // 頂点属性辞書
-        this._vertex_attribs = {};
-
-        // XY グリッドサイズ
-        this._num_quads_x = 0;
-        this._num_quads_y = 0;
-
-        // 頂点データを生成
-        this._createVertices( gl, area, dpows, dem );
-
-        // 頂点属性辞書を設定
-        this._setupVertexAttribs( gl );
+        this._vertex_attribs = this._getVertexAttribs( gl );
 
         // インデックス型
         this._index_type = (this._num_vertices < 65536) ? gl.UNSIGNED_SHORT : gl.UNSIGNED_INT;
@@ -57,38 +54,53 @@ class FlakeMesh {
 
 
     /**
-     * @summary 中心位置を生成
+     * 中心位置を生成
      *
-     * @param {mapray.Area} area  地表断片の領域
+     * @param area - 地表断片の領域
      *
-     * @return {mapray.Vector3}  中心位置 (GOCS)
-     *
-     * @private
+     * @return 中心位置 (GOCS)
      */
-    _createCenter( area )
+    private _createCenter( area: Area ): Vector3
     {
         return AreaUtil.getCenter( area, GeoMath.createVector3() );
     }
 
 
-    _createVertices( gl, area, dpows, dem )
+    /**
+     *  頂点データとその情報を作成
+     */
+    private _createVertices( gl: WebGLRenderingContext,
+                             area: Area,
+                             dpows: [number, number],
+                             dem: DemBinary ) /* auto-type */
     {
-        var target = gl.ARRAY_BUFFER;
-        var    vbo = gl.createBuffer();
-        var   data = this._createVerticesData( area, dpows, dem );
+        const target = gl.ARRAY_BUFFER;
+        const    vbo = gl.createBuffer();
+        const   data = this._createVerticesData( area, dpows, dem );
+
+        if ( vbo === null ) {
+            throw new Error( "failed to gl.createBuffer" );
+        }
 
         gl.bindBuffer( target, vbo );
         gl.bufferData( target, data.array, gl.STATIC_DRAW );
         gl.bindBuffer( target, null );
 
-        this._vertices     = vbo;
-        this._num_vertices = data.num_vertices;
-        this._num_quads_x  = data.num_quads_x;
-        this._num_quads_y  = data.num_quads_y;
+        return {
+            vertices:     vbo,
+            num_vertices: data.num_vertices,
+            num_quads_x:  data.num_quads_x,
+            num_quads_y:  data.num_quads_y,
+        };
     }
 
 
-    _createVerticesData( area, dpows, dem )
+    /**
+     * 頂点データを作成
+     */
+    private _createVerticesData( area: Area,
+                                 dpows: [number, number],
+                                 dem: DemBinary ) /* auto-type */
     {
         // 開始位置 (単位球メルカトル座標系)
         var  msize = Math.pow( 2, 1 - area.z ) * Math.PI;
@@ -152,20 +164,15 @@ class FlakeMesh {
 
 
     /**
-     * @summary 頂点属性の辞書を設定
-     * @desc
-     * <p>this._vertex_attribs に Mesh.AttribData の辞書を設定する。</p>
-     *
-     * @param {WebGLRenderingContext} gl
-     * @private
+     * 頂点属性の辞書を取得
      */
-    _setupVertexAttribs( gl )
+    private _getVertexAttribs( gl: WebGLRenderingContext ): AttributeBindInfoDict
     {
-        var   type = gl.FLOAT;
-        var stride = FlakeMesh.VERTEX_BYTES;
+        const   type = gl.FLOAT;
+        const stride = FlakeMesh.VERTEX_BYTES;
 
         // Mesh.AttribData の辞書
-        this._vertex_attribs = {
+        return {
 
             "a_position": {
                 buffer:         this._vertices,
@@ -183,13 +190,18 @@ class FlakeMesh {
                 normalized:     false,
                 byte_stride:    stride,
                 byte_offset:    FlakeMesh.OFFSET_UV
-            }
+            },
 
         };
     }
 
 
-    _createIndices()
+    /**
+     * `GL_TRIANGLES` 用のインデックス配列を生成
+     *
+     * `_indices` と `_num_indices` を設定する。
+     */
+    private _createIndices(): void
     {
         var gl = this._gl;
 
@@ -232,7 +244,12 @@ class FlakeMesh {
     }
 
 
-    _createWireIndices()
+    /**
+     * `GL_LINES` 用のインデックス配列を生成
+     *
+     * `_wire_indices` と `_num_wire_indices` を設定する。
+     */
+    private _createWireIndices(): void
     {
         var gl = this._gl;
 
@@ -276,35 +293,30 @@ class FlakeMesh {
     }
 
     /**
-     *  @summary 頂点数
-     *  @type {number}
-     *  @readonly
+     * 頂点数
      */
-    get num_vertices()
+    get num_vertices(): number
     {
         return this._num_vertices;
     }
 
     /**
-     *  @summary インデックス (GL_TRIANGLES)
-     *  @type {WebGLBuffer}
-     *  @readonly
+     * インデックス (GL_TRIANGLES)
      */
-    get indices()
+    get indices(): WebGLBuffer
     {
         if ( this._indices === null ) {
             this._createIndices();
+            cfa_assert( this._indices !== null );
         }
         return this._indices;
     }
 
 
     /**
-     *  @summary インデックス数 (GL_TRIANGLES)
-     *  @type {number}
-     *  @readonly
+     * インデックス数 (`GL_TRIANGLES`)
      */
-    get num_indices()
+    get num_indices(): number
     {
         if ( this._indices === null ) {
             this._createIndices();
@@ -314,25 +326,22 @@ class FlakeMesh {
 
 
     /**
-     *  @summary インデックス (GL_LINES)
-     *  @type {WebGLBuffer}
-     *  @readonly
+     * インデックス (`GL_LINES`)
      */
-    get wire_indices()
+    get wire_indices(): WebGLBuffer
     {
         if ( this._wire_indices === null ) {
             this._createWireIndices();
+            cfa_assert( this._wire_indices !== null );
         }
         return this._wire_indices;
     }
 
 
     /**
-     *  @summary インデックス数 (GL_LINES)
-     *  @type {number}
-     *  @readonly
+     * インデックス数 (`GL_LINES`)
      */
-    get num_wire_indices()
+    get num_wire_indices(): number
     {
         if ( this._wire_indices === null ) {
             this._createWireIndices();
@@ -342,15 +351,17 @@ class FlakeMesh {
 
 
     /**
-     * @summary リソースを破棄
+     * リソースを破棄
      */
-    dispose()
+    dispose(): void
     {
         var gl = this._gl;
 
+        // @ts-ignore  - 以降、this のメソッドは呼び出されない約束なので OK
         this._vertex_attribs = {};
 
         gl.deleteBuffer( this._vertices );
+        // @ts-ignore  - 同上
         this._vertices = null;
 
         if ( this._indices ) {
@@ -365,24 +376,27 @@ class FlakeMesh {
     }
 
 
-    /** 
-     * @summary 変換行列を計算
-     * @desc
-     * mat に地表断片座標系から GOCS への変換行列を掛ける。
-     * @param  {mapray.Matrix} mat  行列
-     * @param  {mapray.Matrix} dst  結果
-     * @return {mapray.Matrix}      dst
+    /**
+     * 変換行列を計算
+     *
+     * `mat` に地表断片座標系から GOCS への変換行列を掛ける。
+     *
+     * @param mat - 行列
+     * @param dst - 結果
+     *
+     * @return `dst`
      */
-    mul_flake_to_gocs( mat, dst )
+    mul_flake_to_gocs<DT extends Matrix>( mat: Matrix,
+                                          dst: DT ): DT
     {
-        var m00 = mat[ 0], m01 = mat[ 4], m02 = mat[ 8], m03 = mat[12],
-            m10 = mat[ 1], m11 = mat[ 5], m12 = mat[ 9], m13 = mat[13],
-            m20 = mat[ 2], m21 = mat[ 6], m22 = mat[10], m23 = mat[14],
-            m30 = mat[ 3], m31 = mat[ 7], m32 = mat[11], m33 = mat[15];
+        const m00 = mat[ 0], m01 = mat[ 4], m02 = mat[ 8], m03 = mat[12],
+              m10 = mat[ 1], m11 = mat[ 5], m12 = mat[ 9], m13 = mat[13],
+              m20 = mat[ 2], m21 = mat[ 6], m22 = mat[10], m23 = mat[14],
+              m30 = mat[ 3], m31 = mat[ 7], m32 = mat[11], m33 = mat[15];
 
-        var t03 = this._center[0],
-            t13 = this._center[1],
-            t23 = this._center[2];
+        const t03 = this._center[0],
+              t13 = this._center[1],
+              t23 = this._center[2];
 
         dst[ 0] = m00;
         dst[ 1] = m10;
@@ -409,12 +423,14 @@ class FlakeMesh {
 
 
     /**
-     * @summary メッシュを描画
-     * @desc
-     * <p>事前に material.bindProgram() すること。</p>
-     * @param  {mapray.RenderStage.FlakeMaterial} material  マテリアル
+     * メッシュを描画
+     *
+     * @param material - マテリアル
+     *
+     * @remarks
+     * 事前に `material.bindProgram()` すること。
      */
-    draw( material )
+    draw( material: FlakeMaterial ): void
     {
         var     gl = this._gl;
         var isWire = material.isWireframe();
@@ -432,42 +448,60 @@ class FlakeMesh {
         gl.drawElements( mode, num_indices, this._index_type, 0 );
     }
 
-}
 
+    /** 中心位置 (GOCS) */
+    private readonly _center: Vector3;
 
-// クラス定数の定義
-{
-    FlakeMesh.VERTEX_SIZE  = 5;  // 1頂点の float 数
+    /** 頂点バッファ */
+    private readonly _vertices: WebGLBuffer;
+
+    /** 頂点数 */
+    private readonly _num_vertices: number;
+
+    /** X グリッド数 */
+    private readonly _num_quads_x: number;
+
+    /** Y グリッド数 */
+    private readonly _num_quads_y: number;
+
+    /** 頂点属性情報 */
+    private readonly _vertex_attribs: AttributeBindInfoDict;
+
+    /** インデックス型 */
+    private readonly _index_type: number;
+
+    // GL_TRIANGLES 用のインデックス配列
+    private _indices: WebGLBuffer | null;
+    private _num_indices: number;
+
+    // GL_LINES 用のインデックス配列
+    private _wire_indices: WebGLBuffer | null;
+    private _num_wire_indices: number;
+
+    /** WebGL コンテキスト */
+    private readonly _gl: WebGLRenderingContext;
 
 
     /**
-     * @summary 1頂点のバイト数
-     * @member mapray.FlakeMesh.VERTEX_BYTES
-     * @type {number}
-     * @static
-     * @constant
+     * 1 頂点の float 数
      */
-    FlakeMesh.VERTEX_BYTES = 4 * FlakeMesh.VERTEX_SIZE;
-
+    private static readonly VERTEX_SIZE = 5;
 
     /**
-     * @summary 位置座標のオフセット
-     * @member mapray.FlakeMesh.OFFSET_P
-     * @type {number}
-     * @static
-     * @constant
+     * 1 頂点のバイト数
      */
-    FlakeMesh.OFFSET_P = 0;
-
+    private static readonly VERTEX_BYTES = 4 * FlakeMesh.VERTEX_SIZE;
 
     /**
-     * @summary UV 座標のオフセット
-     * @member mapray.FlakeMesh.OFFSET_UV
-     * @type {number}
-     * @static
-     * @constant
+     * 位置座標のオフセット
      */
-    FlakeMesh.OFFSET_UV = 12;
+    private static readonly OFFSET_P = 0;
+
+    /**
+     * UV 座標のオフセット
+     */
+    private static readonly OFFSET_UV = 12;
+
 }
 
 

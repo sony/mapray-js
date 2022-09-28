@@ -1,6 +1,13 @@
 import FlakeMaterial from "./FlakeMaterial";
 import GeoMath from "./GeoMath";
+import type { Matrix } from "./GeoMath";
 import TileTextureCache from "./TileTextureCache";
+import type GLEnv from "./GLEnv";
+import type Viewer from "./Viewer";
+import type RenderStage from "./RenderStage";
+import type RenderFlake from "./RenderFlake";
+import type FlakeMesh from "./FlakeMesh";
+import type TileTexture from "./TileTexture";
 import surface_vs_code from "./shader/surface.vert";
 import surface_fs_code from "./shader/surface.frag";
 import rid_fs_code from "./shader/rid.frag";
@@ -8,17 +15,16 @@ import Layer from "./Layer";
 
 
 /**
- * @summary 地表面マテリアル
- * @memberof mapray.RenderStage
- * @extends mapray.RenderStage.FlakeMaterial
- * @private
+ * 地表面マテリアル
  */
 class SurfaceMaterial extends FlakeMaterial {
 
     /**
-     * @param {mapray.Viewer} viewer  所有者である Viewer
+     * @param viewer  - 所有者である Viewer
+     * @param options - 生成オプション
      */
-    constructor( viewer, options = {} )
+    constructor( viewer: Viewer,
+                 options: SurfaceMaterial.Option = {} )
     {
         const preamble = SurfaceMaterial._getPreamble( options );
 
@@ -36,20 +42,15 @@ class SurfaceMaterial extends FlakeMaterial {
 
         this._image_zbias = 0;
 
-        this._identity_matrix = GeoMath.setIdentity( GeoMath.createMatrix() );
         this._flake_to_gocs = GeoMath.createMatrixf();
     }
 
     /**
-     * @summary シェーダの前文を取得
+     * シェーダの前文を取得
      *
-     * @param {object}  options  オプション指定
-     * @param {boolean} [options.nightMaterial=false]  夜用マテリアルの場合 true
-     *
-     * @private
+     * @param options - オプション指定
      */
-    static
-    _getPreamble( options )
+    private static _getPreamble( options: SurfaceMaterial.Option ): string
     {
         const is_night = options.nightMaterial === true;
         const is_from_space = options.atmosphereFromSpaceMaterial === true;
@@ -74,23 +75,23 @@ class SurfaceMaterial extends FlakeMaterial {
         return lines.join( "\n" ) + "\n\n";
     }
 
-    /**
-     * @override
-     */
-    numDrawings()
+
+    // from FlakeMaterial
+    override numDrawings(): number
     {
         return 1 + this._viewer.layers.num_drawing_layers;
     }
 
 
-    /**
-     * @override
-     */
-    setFlakeParameter( stage, rflake, mesh, index )
+    // from FlakeMaterial
+    override setFlakeParameter( stage:  RenderStage,
+                                rflake: RenderFlake,
+                                mesh:   FlakeMesh,
+                                index:  number ): boolean
     {
         this.setCommonParameter( stage, mesh );
 
-        var param = this._getMaterialParamater( rflake, index );
+        const param = this._getMaterialParameter( rflake, index );
 
         if ( param !== null ) {
             const layer = this._viewer.layers.getDrawingLayer( index - 1 );
@@ -108,19 +109,20 @@ class SurfaceMaterial extends FlakeMaterial {
 
             if ( index > 0 && layer.type === Layer.LayerType.NIGHT ) {
                 this.setVector3( "u_sun_direction", this._viewer.sun.sun_direction );
-                mesh.mul_flake_to_gocs( this._identity_matrix, this._flake_to_gocs );
+                mesh.mul_flake_to_gocs( identity_matrix, this._flake_to_gocs );
                 this.setMatrix( "u_obj_to_gocs", this._flake_to_gocs );
             }
 
             if ( index === 0 && this._viewer.atmosphere ) {
                 this.setVector3( "u_sun_direction", this._viewer.sun.sun_direction );
-                mesh.mul_flake_to_gocs( this._identity_matrix, this._flake_to_gocs );
+                mesh.mul_flake_to_gocs( identity_matrix, this._flake_to_gocs );
                 this.setMatrix( "u_obj_to_gocs", this._flake_to_gocs );
-                this.setVector3( "u_camera_position", [stage._view_to_gocs[12], stage._view_to_gocs[13], stage._view_to_gocs[14]] );
+                const view_to_gocs = stage.view_to_gocs;
+                this.setVector3( "u_camera_position", [view_to_gocs[12], view_to_gocs[13], view_to_gocs[14]] );
                 const cameraHeight = Math.sqrt(
-                    stage._view_to_gocs[12] * stage._view_to_gocs[12] +
-                    stage._view_to_gocs[13] * stage._view_to_gocs[13] +
-                    stage._view_to_gocs[14] * stage._view_to_gocs[14]
+                    view_to_gocs[12] * view_to_gocs[12] +
+                    view_to_gocs[13] * view_to_gocs[13] +
+                    view_to_gocs[14] * view_to_gocs[14]
                 );
                 this.setFloat( "u_camera_height", cameraHeight );
                 this.setFloat( "u_camera_height2", cameraHeight * cameraHeight );
@@ -145,75 +147,56 @@ class SurfaceMaterial extends FlakeMaterial {
 
 
     /**
-     * @summary SurfaceMaterial のパラメータを取得
-     * @desc
-     * <pre>
-     * オブジェクト構造
-     * {
-     *    // 四隅の地表詳細レベル
-     *    corner_lod: [lod_00, lod_10, lod_01, lod_11],
+     * [[SurfaceMaterial]] のパラメータを取得
      *
-     *    // 高レベル画像の情報
-     *    image_hi: { lod: (number), texture: (WebGLTexture), texcoord_rect: [s, t, w, h] },
-     *
-     *    // 低レベル画像の情報
-     *    image_lo: { lod: (number), texture: (WebGLTexture), texcoord_rect: [s, t, w, h] }
-     * }
-     * </pre>
-     * @private
+     * @remarks
+     * `_image_zbias` を更新する。
      */
-    _getMaterialParamater( rflake, index )
+    private _getMaterialParameter( rflake: RenderFlake,
+                                   index:  number ): MaterialParameter | null
     {
-        var tex_cache = (index == 0) ? this._tile_texture_cache : this._viewer.layers.getDrawingLayer( index - 1 ).tile_cache;
+        const tex_cache = (index == 0) ? this._tile_texture_cache : this._viewer.layers.getDrawingLayer( index - 1 ).tile_cache;
         this._image_zbias = tex_cache.getImageZBias();
 
-        var flake = rflake.flake;
-        var zg = flake.z;
+        const flake = rflake.flake;
+        const zg = flake.z;
 
         if ( zg < tex_cache.getImageZMin() ) {
             return null;
         }
 
-        var  x = flake.x;
-        var  y = flake.y;
-        var zi = Math.ceil( rflake.lod + this._image_zbias );
+        const  x = flake.x;
+        const  y = flake.y;
+        const zi = Math.ceil( rflake.lod + this._image_zbias );
 
         if ( zg < zi ) {
             return null;
         }
 
-        var tiles = tex_cache.findNearestAncestors( zg, x, y, zi );
+        const tiles = tex_cache.findNearestAncestors( zg, x, y, zi );
         if ( index >= 1 && tiles[0] === null ) {
             return null;
         }
 
         return {
             corner_lod: [rflake.lod_00, rflake.lod_10, rflake.lod_01, rflake.lod_11],
-            image_hi: this._getImageParamater( tiles[0], zg, x, y, zi     ),
-            image_lo: this._getImageParamater( tiles[1], zg, x, y, zi - 1 )
+            image_hi: this._getImageParameter( tiles[0], zg, x, y, zi     ),
+            image_lo: this._getImageParameter( tiles[1], zg, x, y, zi - 1 )
         };
     }
 
 
     /**
-     * @summary 画像パラメータを取得
-     * @desc
-     * <pre>
-     * オブジェクト構造
-     * {
-     *    lod:           (number),
-     *    texture:       (WebGLTexture),
-     *    texcoord_rect: [s, t, w, h]
-     * }
-     * </pre>
-     * @private
+     * 画像パラメータを取得
      */
-    _getImageParamater( tile, zg, x, y, zi )
+    private _getImageParameter( tile: TileTexture | null,
+                                zg: number,
+                                x:  number,
+                                y:  number,
+                                zi: number ): ImageParameter
     {
-        var pow;
-
         if ( tile !== null ) {
-            pow = Math.pow( 2, tile.z - zg );
+            const pow = Math.pow( 2, tile.z - zg );
             return {
                 lod:           tile.z - this._image_zbias,
                 texture:       tile.texture,
@@ -221,7 +204,7 @@ class SurfaceMaterial extends FlakeMaterial {
             };
         }
         else {
-            pow = Math.pow( 2, -zg );
+            const pow = Math.pow( 2, -zg );
             return {
                 lod:           -this._image_zbias,
                 texture:       this._dummy_tile_texture,
@@ -232,13 +215,18 @@ class SurfaceMaterial extends FlakeMaterial {
 
 
     /**
-     * @private
+     * ダミーテクスチャを作成
      */
-    _createDummyTileTexture( glenv, pixels )
+    private _createDummyTileTexture( glenv:  GLEnv,
+                                     pixels: ArrayLike<number> ): WebGLTexture
     {
-        var      gl = glenv.context;
-        var  target = gl.TEXTURE_2D;
-        var texture = gl.createTexture();
+        const      gl = glenv.context;
+        const  target = gl.TEXTURE_2D;
+        const texture = gl.createTexture();
+
+        if ( texture === null ) {
+            throw new Error( "failed to createTexture()" );
+        }
 
         gl.bindTexture( target, texture );
         gl.texImage2D( target, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array( pixels ) );
@@ -247,11 +235,101 @@ class SurfaceMaterial extends FlakeMaterial {
         return texture;
     }
 
+
+    private readonly _viewer: Viewer;
+    private readonly _tile_texture_cache: TileTextureCache;
+    private readonly _dummy_tile_texture: WebGLTexture;
+    private          _image_zbias: number;
+    private readonly _flake_to_gocs: Matrix;
+
+    private static readonly TEXUNIT_IMAGE_HI = 0;  // 高レベル画像のテクスチャユニット
+    private static readonly TEXUNIT_IMAGE_LO = 1;  // 低レベル画像のテクスチャユニット
+
 }
 
 
-SurfaceMaterial.TEXUNIT_IMAGE_HI = 0;  // 高レベル画像のテクスチャユニット
-SurfaceMaterial.TEXUNIT_IMAGE_LO = 1;  // 低レベル画像のテクスチャユニット
+namespace SurfaceMaterial {
+
+/**
+ * 構築オプション
+ */
+export interface Option {
+
+    /**
+     * @defaultValue `false`
+     */
+    ridMaterial?: boolean;
+
+    /**
+     * @defaultValue `false`
+     */
+    nightMaterial?: boolean;
+
+    /**
+     * @defaultValue `false`
+     */
+    atmosphereFromSpaceMaterial?: boolean;
+
+    /**
+     * @defaultValue `false`
+     */
+    atmosphereMaterial?: boolean;
+
+}
+
+} // namespace SurfaceMaterial
+
+
+/**
+ * 恒等行列
+ */
+const identity_matrix = GeoMath.setIdentity( GeoMath.createMatrix() );
+
+
+/**
+ * マテリアルのパラメータ
+ */
+interface MaterialParameter {
+
+    /**
+     * 四隅の地表詳細レベル
+     */
+    corner_lod: [lod_00: number, lod_10: number, lod_01: number, lod_11: number];
+
+    /**
+     * 高レベル画像の情報
+     */
+    image_hi: ImageParameter;
+
+    /**
+     * 低レベル画像の情報
+     */
+    image_lo: ImageParameter;
+
+}
+
+
+/**
+ * 画像の情報
+ */
+interface ImageParameter {
+
+    /**
+     * 詳細レベル
+     */
+    lod: number;
+
+    /**
+     * テクスチャ
+     */
+    texture: WebGLTexture;
+
+    /**
+     * 切り取り矩形
+     */
+    texcoord_rect: [s: number, t: number, w: number, h: number];
+
+}
 
 
 export default SurfaceMaterial;
