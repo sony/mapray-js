@@ -120,6 +120,11 @@ class RawPointCloudProvider extends PointCloudProvider {
             item.abortController.abort();
         }
     }
+
+
+    toString() {
+        return "RawPointCloudProvider(" + this._resource.toString() + ")";
+    }
 }
 
 

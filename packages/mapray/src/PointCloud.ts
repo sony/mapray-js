@@ -383,27 +383,25 @@ class PointCloud {
     /**
      * @internal
      */
-    static setStatisticsHandler( statistics_handler: PointCloud.StatisticsHandler ) {
-        if (statistics_handler) {
-            PointCloud._statistics = {
+    static setStatisticsHandler( statistics_handler?: PointCloud.StatisticsHandler )
+    {
+        PointCloud._statistics = (statistics_handler ?
+            {
                 statistics_obj: new PointCloud.Statistics(),
                 statistics_handler: statistics_handler,
-            };
-        }
-
+            }:
+            undefined
+        );
     }
 
     /** @internal */
-    private static getStatistics() { return PointCloud._statistics; }
+    static getStatistics(): StatisticsComponent | undefined
+    {
+        return PointCloud._statistics;
+    }
 
     /** @internal */
-    private static getStatisticsHandler() { return PointCloud._statistics.statistics_handler; }
-
-    /** @internal */
-    private static _statistics: {
-        statistics_obj: PointCloud.Statistics,
-        statistics_handler: PointCloud.StatisticsHandler,
-    };
+    private static _statistics?: StatisticsComponent;
 
     /** @internal */
     private static _instances: PointCloud[] = [];
@@ -419,6 +417,11 @@ type RenderCacheType = {
     point_cloud_pick_materials: Map<PointCloud.PointShapeType, PointCloudPickMaterial>;
 }
 
+
+interface StatisticsComponent {
+    statistics_obj: PointCloud.Statistics,
+    statistics_handler: PointCloud.StatisticsHandler,
+}
 
 
 namespace PointCloud {

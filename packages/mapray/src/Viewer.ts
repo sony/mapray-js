@@ -980,8 +980,8 @@ class Viewer {
         }
 
         // @ts-ignore
-        const s = PointCloud.getStatistics() || {};
-        load_status.pc_loading = s.statistics_obj?.loading_boxes || 0;
+        const s = PointCloud.getStatistics();
+        load_status.pc_loading = s?.statistics_obj?.loading_boxes ?? 0;
 
         load_status.total_loading = (
             load_status.dem_loading +

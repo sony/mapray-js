@@ -608,19 +608,18 @@ export class SceneRenderStage extends RenderStage {
         const traverseDataRequestQueue = PointCloud.getTraverseDataRequestQueue();
         const traverseData = traverseDataRequestQueue.length === 0 ? null : [];
         // @ts-ignore
-        const s = PointCloud.getStatistics() || {};
-        // const statistics = ;
-        if ( s.statistics_obj ) s.statistics_obj.clear();
+        const s = PointCloud.getStatistics();
+        s?.statistics_obj.clear();
 
         for ( let i=0; i<this._point_cloud_collection.length; ++i ) {
-            if ( s.statistics_obj ) s.statistics_obj.start();
+            s?.statistics_obj.start();
 
             const point_cloud = this._point_cloud_collection.get( i );
             const load_limit = Math.max(0, 30 - point_cloud.provider.getNumberOfRequests());
 
             const pcb_collector = new PointCloudBoxCollector( this, load_limit );
-            const traverse_result = pcb_collector.traverse( point_cloud, s.statistics_obj );
-            if ( s.statistics_obj ) s.statistics_obj.doneTraverse();
+            const traverse_result = pcb_collector.traverse( point_cloud, s?.statistics_obj );
+            s?.statistics_obj.doneTraverse();
 
             if (point_cloud.provider.isReady()) {
                 // @ts-ignore
@@ -631,7 +630,7 @@ export class SceneRenderStage extends RenderStage {
 
             // @ts-ignore
             for ( const ro of traverse_result.visible_boxes ) {
-                ro.draw( this, s.statistics_obj );
+                ro.draw( this, s?.statistics_obj );
             }
 
             point_cloud.provider.flushQueue();
@@ -641,7 +640,7 @@ export class SceneRenderStage extends RenderStage {
                 traverseData.push({point_cloud, pcb_collection: traverse_result.visible_boxes});
             }
 
-            if ( s.statistics_obj ) s.statistics_obj.done();
+            s?.statistics_obj.done();
         }
 
         if ( traverseData ) {
@@ -650,9 +649,7 @@ export class SceneRenderStage extends RenderStage {
             }
         }
 
-        if ( s.statistics_handler ) {
-            s.statistics_handler( s.statistics_obj );
-        }
+        s?.statistics_handler( s.statistics_obj );
     }
 }
 

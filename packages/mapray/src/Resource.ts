@@ -58,6 +58,13 @@ abstract class Resource {
     resolveResource( url: string ): Resource {
         throw new Error( "Not Supported" );
     }
+
+    /**
+     * リソースのテキスト表現
+     */
+    toString() {
+        return "Resource";
+    }
 }
 
 
@@ -331,6 +338,11 @@ class URLResource extends Resource {
         }
 
         return init;
+    }
+
+
+    override toString() {
+        return "URLResource(" + this.url + ")";
     }
 }
 
