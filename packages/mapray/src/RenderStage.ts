@@ -371,8 +371,7 @@ abstract class RenderStage {
             mesh.draw( flakeMaterial );
         }
 
-        // @ts-ignore
-        let material: Material = flakeMaterial;
+        let material = flakeMaterial;
 
         let layerRendered = false;
         // レイヤーの地表 (半透明の可能性あり)
