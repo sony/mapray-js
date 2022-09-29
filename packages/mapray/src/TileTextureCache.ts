@@ -2,30 +2,31 @@ import ImageProvider from "./ImageProvider";
 import EmptyImageProvider from "./EmptyImageProvider";
 import TileTexture from "./TileTexture";
 import GeoMath from "./GeoMath";
-
+import GLEnv from "./GLEnv";
+import { cfa_assert } from "./util/assertion";
 
 
 /**
- * @summary タイルテクスチャの管理
- * @memberof mapray
- * @private
- * @see mapray.TileTexture
+ * タイルテクスチャの管理
+ *
+ * @see [[TileTexture]]
  */
 class TileTextureCache {
 
     /**
-     * @param {mapray.GLEnv}         glenv     WebGL 環境
-     * @param {mapray.ImageProvider} provider  地図画像プロバイダ
+     * @param glenv    - WebGL 環境
+     * @param provider - 地図画像プロバイダ
      */
-    constructor( glenv, provider )
+    constructor( glenv: GLEnv,
+                 provider: ImageProvider )
     {
         this._glenv       = glenv;
-        this._provider    = null;
+        this._provider    = new EmptyImageProvider();
         this._min_image_z = 0;
         this._max_image_z = 0;
         this._image_zbias = 0;
 
-        var status_callback = ( status ) => {
+        const status_callback: ImageProvider.StatusCallback = ( status ) => {
             if ( status === ImageProvider.Status.READY ) {
                 // EmptyImageProvider から本来の provider に切り替える
                 this._flush();
@@ -53,12 +54,16 @@ class TileTextureCache {
         this._new_requesteds = [];  // 新規リクエストのリスト
 
         // WebGL 関連
-        var gl = glenv.context;
+        const gl = glenv.context;
 
-        var aniso_ext = glenv.EXT_texture_filter_anisotropic;
+        const aniso_ext = glenv.EXT_texture_filter_anisotropic;
         if ( aniso_ext ) {
             this._aniso_ext = aniso_ext;
             this._max_aniso = gl.getParameter( aniso_ext.MAX_TEXTURE_MAX_ANISOTROPY_EXT );
+        }
+        else {
+            this._aniso_ext = null;
+            this._max_aniso = 0;
         }
         this._use_mipmap = false;
 
@@ -69,28 +74,26 @@ class TileTextureCache {
     /**
      * 画像プロバイダを再設定
      *
-     *   _provider
-     *   _min_image_z
-     *   _max_image_z
-     *   _image_zbias
-     *
-     * @private
+     * - `_provider`
+     * - `_min_image_z`
+     * - `_max_image_z`
+     * - `_image_zbias`
      */
-    _resetImageProvider( provider )
+    private _resetImageProvider( provider: ImageProvider ): void
     {
         this._provider = provider;
 
-        var renge = provider.getZoomLevelRange();
-        this._min_image_z = renge.min;
-        this._max_image_z = renge.max;
+        const range = provider.getZoomLevelRange();
+        this._min_image_z = range.min;
+        this._max_image_z = range.max;
 
         this._image_zbias = GeoMath.maprayLog2( 2 * Math.PI / provider.getImageSize() );
 
         if ( !( this._provider instanceof EmptyImageProvider ) ) {
-            if ( this._provider._min_level === 0 ) {
+            if ( range.min === 0 ) {
                 this.findNearestAncestors( 0, 0, 0, 1, 100 );
             }
-            else if ( this._provider._min_level === 1 ) {
+            else if ( range.min === 1 ) {
                 this.findNearestAncestors( 1, 0, 0, 1, 100 );
                 this.findNearestAncestors( 1, 0, 1, 1, 100 );
                 this.findNearestAncestors( 1, 1, 0, 1, 100 );
@@ -103,7 +106,7 @@ class TileTextureCache {
     /**
      * すべてのリクエストを取り消す
      */
-    cancel()
+    cancel(): void
     {
         this._flush();
     }
@@ -111,84 +114,92 @@ class TileTextureCache {
 
     /**
      * キャッシュをフラッシュ
-     * @private
      */
-    _flush()
+    private _flush(): void
     {
         new NodeCanceller( this, this._croot );  // リクエストを取り消す
         this._croot = new CacheNode();           // 取り消したノードは使えないので、単純にすべて捨てる
         this._max_accesses = 0;
-        // assert: this._num_requesteds == 0
+        cfa_assert( this._num_requesteds === 0 );
     }
 
 
     /**
      * LOD からテクスチャの Z レベルを計算するバイアス値を取得
      *
-     * @return {number}  Log2[2Pi / size]
+     * @return Log2[2Pi / size]
      */
-    getImageZBias()
+    getImageZBias(): number
     {
         return this._image_zbias;
     }
 
 
     /**
-     * @return {number}  タイルの Z レベルの最小値
+     * @return タイルの Z レベルの最小値
      */
-    getImageZMin()
+    getImageZMin(): number
     {
         return this._min_image_z;
     }
 
 
     /**
-     * @summary リクエスト待ちのタイルの個数を取得
+     * リクエスト待ちのタイルの個数を取得
      *
-     * @return {number}  リクエスト待ちのタイルの個数
+     * @return リクエスト待ちのタイルの個数
      */
-    getNumWaitingRequests()
+    getNumWaitingRequests(): number
     {
         return this._num_requesteds;
     }
 
 
     /**
-     * @summary 先祖タイルテクスチャを検索
-     * @desc
-     * <p>[x, y, z] タイルの祖先の中で、現在キャッシュに存在する最大レベルのタイルテクスチャを検索し、hi に設定する。</p>
+     * 先祖タイルテクスチャを検索
      *
-     * <p>ただし検索されるタイルのズームレベルが Z とすると、Z <= max( zlimit, this._min_image_z )
-     *    という条件から検索し、存在しなければ null となる。</p>
+     * `[x, y, z]` タイルの祖先の中で、現在キャッシュに存在する最大レ
+     * ベルのタイルテクスチャを検索し、`hi` に設定する。
      *
-     *  <p>hi より低いレベルにタイルが存在すれば、それを lo に設定し、存在しなければ lo に hi と同じタイルを設定する</p>
+     * ただし検索されるタイルのズームレベルが `Z` とすると、
+     * `Z <= max( zlimit, this._min_image_z )`
+     * という条件から検索し、存在しなければ `null` となる。
      *
-     * <p>プロバイダにもっと相応しいテクスチャが存在する可能性があれば、そのテクスチャを要求する。</p>
+     * `hi` より低いレベルにタイルが存在すれば、それを `lo` に設定し、
+     * 存在しなければ `lo` に `hi` と同じタイルを設定する。
      *
-     * <p>前提: z >= this._min_image_z && z >= zlimit</p>
+     * プロバイダにもっと相応しいテクスチャが存在する可能性があれば、
+     * そのテクスチャを要求する。
      *
-     * @param  {number}          z   地図ズームレベル
-     * @param  {number}          x   X タイル座標
-     * @param  {number}          y   Y タイル座標
-     * @param  {number}     zlimit   先祖レベルの上限
-     * @param  {number}   req_power   node.req_power
-     * @return {mapray.TileTexture[]}  先祖タイルテクスチャ配列 [hi, lo]
+     * 前提: `z >= this._min_image_z && z >= zlimit`
+     *
+     * @param z         - 地図ズームレベル
+     * @param x         - X タイル座標
+     * @param y         - Y タイル座標
+     * @param zlimit    - 先祖レベルの上限
+     * @param req_power - `node.req_power`
+     *
+     * @returns 先祖タイルテクスチャ配列 `[hi, lo]`
      */
-    findNearestAncestors( z, x, y, zlimit, req_power = -1 )
+    findNearestAncestors( z:         number,
+                          x:         number,
+                          y:         number,
+                          zlimit:    number,
+                          req_power: number = -1 ): [hi: FTile, lo: FTile]
     {
-        var depth = 0;
-        var d_min = this._min_image_z;
+        let   depth = 0;
+        const d_min = this._min_image_z;
 
-        var   pow = Math.pow( 2, 1 - z );
-        var    xf = (x + 0.5) * pow;
-        var    yf = (y + 0.5) * pow;
-        var  node = this._croot;
+        const pow = Math.pow( 2, 1 - z );
+        let    xf = (x + 0.5) * pow;
+        let    yf = (y + 0.5) * pow;
+        let  node = this._croot;
 
-        var u;
-        var v;
-        var index;
-        var children;
-        var child;
+        let u: number;
+        let v: number;
+        let index: number;
+        let children: CacheNode['children'];
+        let child: CacheNode | null;
 
         // 最小レベルのノード  --->  node, depth
         for ( ; depth < d_min; ++depth ) {
@@ -208,14 +219,14 @@ class TileTextureCache {
             node = child;
         }
 
-        var  d_max = this._max_image_z;
-        var   d_lo = GeoMath.clamp( zlimit - 1, d_min, d_max );
-        var   d_hi = GeoMath.clamp( zlimit,     d_min, d_max );
-        var tex_lo = null;
-        var tex_hi = null;
+        const d_max = this._max_image_z;
+        const  d_lo = GeoMath.clamp( zlimit - 1, d_min, d_max );
+        const  d_hi = GeoMath.clamp( zlimit,     d_min, d_max );
+        let  tex_lo: CacheNode | null = null;
+        let  tex_hi: CacheNode | null = null;
 
         if ( d_lo < d_hi ) {
-            /* assert: (d_min < d_max) && (d_min < zlimit <= d_max) */
+            cfa_assert( (d_min < d_max) && (d_min < zlimit && zlimit <= d_max) );
 
             for ( ; depth <= d_lo; ++depth ) {
                 if ( node.state === NodeState.LOADED ) {
@@ -266,8 +277,9 @@ class TileTextureCache {
                 node.updateRequestPower( zlimit - depth );
             }
         }
-        else { // if d_lo == d_hi
-            /* assert: (d_min == d_max) || (zlimit <= d_min) || (zlimit > d_max) */
+        else {
+            cfa_assert( d_lo === d_hi );
+            cfa_assert( (d_min === d_max) || (zlimit <= d_min) || (zlimit > d_max) );
 
             for ( ;; ++depth ) {
                 if ( node.state === NodeState.LOADED ) {
@@ -306,26 +318,33 @@ class TileTextureCache {
                 node = child;
             }
 
-            // assert: tex_hi === tex_lo
+            cfa_assert( tex_hi === tex_lo );
         }
 
         node.touch();
 
-        var result = TileTextureCache._findNearestAncestors_result;
+        const result = TileTextureCache._findNearestAncestors_result;
+
+        cfa_assert( tex_hi === null || (tex_hi.data instanceof TileTexture) );
+        cfa_assert( tex_lo === null || (tex_lo.data instanceof TileTexture) );
+
+        // @ts-ignore - CFA で判断できない?
         result[0] = (tex_hi !== null) ? tex_hi.data : null;
+        // @ts-ignore
         result[1] = (tex_lo !== null) ? tex_lo.data : null;
+
         return result;
     }
 
 
     /**
-     * @summary フレームの最後の処理
+     * フレームの最後の処理
      */
-    endFrame()
+    endFrame(): void
     {
         this._performNewRequests();
 
-        var counter = new NodeCounter( this._croot, this._frame_counter );
+        const counter = new NodeCounter( this._croot, this._frame_counter );
         this._max_accesses = Math.max( counter.num_accesses, this._max_accesses );
 
         if ( counter.num_loadeds > this._upper_bound * this._max_accesses ) {
@@ -338,36 +357,32 @@ class TileTextureCache {
 
 
     /**
-     * @summary 新規リクエストを実行
-     * @private
+     * 新規リクエストを実行
      */
-    _performNewRequests()
+    private _performNewRequests(): void
     {
         // リクエスト数
-        var num_requests = Math.min( this._max_requesteds - this._num_requesteds, this._new_requesteds.length );
+        const num_requests = Math.min( this._max_requesteds - this._num_requesteds, this._new_requesteds.length );
 
         // 基準に基づき、新規リクエストを前半 (num_requests 個) と後半に分割
         this._new_requesteds.sort( function( a, b ) {
-            var anode = a[0];
-            var bnode = b[0];
+            const anode = a[0];
+            const bnode = b[0];
             return bnode.req_power - anode.req_power;
         } );
 
         // リクエストを実行
         var self = this;
         this._new_requesteds.slice( 0, num_requests ).forEach( function( req ) {
-            var node = req[0];
-            var    z = req[1];
-            var    x = req[2];
-            var    y = req[3];
+            const [node, z, x, y] = req;
             self._requestTileTexture( z, x, y, node );
         } );
 
         // リクエストしなかったノードを空に戻す
         this._new_requesteds.slice( num_requests ).forEach( function( req ) {
-            var node = req[0];
+            const node = req[0];
             node.state = NodeState.NONE;
-            // assert: node.data === null
+            cfa_assert( node.data === null );
         } );
 
         // 新規リクエストのリストをクリア
@@ -376,14 +391,17 @@ class TileTextureCache {
 
 
     /**
-     * @summary タイルテクスチャを要求
-     * @param {number} z  地図ズームレベル
-     * @param {number} x  X タイル座標
-     * @param {number} y  Y タイル座標
-     * @param {mapray.TileTextureCache.CacheNode} node  対象ノード
-     * @private
+     * タイルテクスチャを要求
+     *
+     * @param z - 地図ズームレベル
+     * @param x - X タイル座標
+     * @param y - Y タイル座標
+     * @param node - 対象ノード
      */
-    _requestTileTexture( z, x, y, node )
+    private _requestTileTexture( z: number,
+                                 x: number,
+                                 y: number,
+                                 node: CacheNode ): void
     {
         node.data = this._provider.requestTile( z, x, y, image => {
 
@@ -409,24 +427,40 @@ class TileTextureCache {
 
 
     /**
-     * @summary テクスチャを生成
-     * @desc
-     * <p>GL ステートの変更</p>
-     * <ul>
-     *   <li>TEXTURE_2D_BINDING:   null</li>
-     *   <li>UNPACK_FLIP_Y_WEBGL:  false</li>
-     * </ul>
-     * @param  {Image}  image  元画像
-     * @return {WebGLTexture}  生成されたテクスチャ
-     * @private
+     * タイルテクスチャの要求を取り消す
+     *
+     * @internal
      */
-    _createTexture( image )
+    cancelTileTexture( id: unknown ): void
     {
-        var        gl = this._glenv.context;
-        var aniso_ext = this._aniso_ext;
+        this._provider.cancelRequest( id );
+        --this._num_requesteds;
+    }
 
-        var  target = gl.TEXTURE_2D;
-        var texture = gl.createTexture();
+
+    /**
+     * テクスチャを生成
+     *
+     * WebGL ステートの変更
+     *
+     * - `TEXTURE_2D_BINDING`  -> `null`
+     * - `UNPACK_FLIP_Y_WEBGL` -> `false`
+     *
+     * @param image - 元画像
+     *
+     * @return 生成されたテクスチャ
+     */
+    private _createTexture( image: TexImageSource ): WebGLTexture
+    {
+        const        gl = this._glenv.context;
+        const aniso_ext = this._aniso_ext;
+
+        const  target = gl.TEXTURE_2D;
+        const texture = gl.createTexture();
+
+        if ( texture === null ) {
+            throw new Error( "failed to gl.createTexture()" );
+        }
 
         gl.bindTexture( target, texture );
 
@@ -454,19 +488,21 @@ class TileTextureCache {
 
 
     /**
-     * @summary キャッシュを削減
-     * @param  {number} num_cnodes  目標ノード数
-     * @private
+     * キャッシュを削減
+     *
+     * @param num_cnodes - 目標ノード数
      */
-    _reduceCache( num_nodes )
+    private _reduceCache( num_nodes: number ): void
     {
-        var collector = new NodeCollector( this._croot );
+        const collector = new NodeCollector( this._croot );
 
         // 基準に基づき、ノードを前半 (num_cnodes 個) と後半に分割
-        collector.nodes.sort( function( a, b ) {
-            var aframe = b.aframe - a.aframe;
+        collector.nodes.sort( ( a, b ) => {
+            cfa_assert( typeof a.aframe === 'number' && typeof b.aframe === 'number' );
+            const aframe = b.aframe - a.aframe;
             if ( aframe == 0 ) {
                 if ( (a.state === NodeState.LOADED) && (b.state === NodeState.LOADED) ) {
+                    cfa_assert( a.data instanceof TileTexture && b.data instanceof TileTexture );
                     return a.data.z - b.data.z;
                 }
             }
@@ -475,13 +511,19 @@ class TileTextureCache {
 
 
         // 後半のノードを削除
-        var gl = this._glenv.context;
-        const force_keep_level = this._provider._min_level <= 1 ? this._provider._min_level : -1;
-        collector.nodes.slice( num_nodes ).forEach( function( node ) {
-            if ( node.data && node.data.z === force_keep_level ) {
-                return;
-            }
+        const gl = this._glenv.context;
+
+        const min_level = this._provider.getZoomLevelRange().min;
+        const force_keep_level = (min_level <= 1) ? min_level : -1;
+
+        collector.nodes.slice( num_nodes ).forEach( node => {
             if ( node.state === NodeState.LOADED ) {
+                cfa_assert( node.data instanceof TileTexture );
+
+                if ( node.data.z === force_keep_level ) {
+                    return;
+                }
+
                 node.data.dispose( gl );
             }
             node.state = NodeState.NONE;
@@ -492,20 +534,82 @@ class TileTextureCache {
         collector.clean();
     }
 
+
+    private readonly _glenv: GLEnv;
+
+    private _provider: ImageProvider;
+    private _min_image_z: number;
+    private _max_image_z: number;
+    private _image_zbias: number;
+
+    private _croot: CacheNode;
+    private _max_accesses: number;
+
+    private _frame_counter: number;
+    private readonly _lower_bound: number;
+    private readonly _upper_bound: number;
+    private          _num_requesteds: number;
+    private readonly _max_requesteds: number;
+    private readonly _new_requesteds: NewRequest[];
+
+    private readonly _aniso_ext: EXT_texture_filter_anisotropic | null;
+    private readonly _max_aniso: number;
+    private readonly _use_mipmap: boolean;
+
+
+    private static readonly _findNearestAncestors_result: [hi: FTile, lo: FTile] = [null, null];
+
 }
 
 
-// クラス定数を定義
-TileTextureCache._findNearestAncestors_result = new Array( 2 );
+/**
+ * タイルの検索結果の要素
+ */
+type FTile = TileTexture | null;
 
 
 /**
- * @summary キャッシュノード
- *
- * @memberof mapray.TileTextureCache
- * @private
+ * [[TileTextureCache._new_requesteds]] の要素の型
+ */
+type NewRequest = [node: CacheNode, z: number, x: number, y: number];
+
+
+/**
+ * キャッシュノード
  */
 class CacheNode {
+
+    /** 子ノード */
+    readonly children: [
+        CacheNode | null,
+        CacheNode | null,
+        CacheNode | null,
+        CacheNode | null,
+    ];
+
+
+    /** ノード状態 */
+    state: NodeState;
+
+
+    /**
+     * TileTexture オブジェクト、または取り消しオブジェクト
+     */
+    data: TileTexture | null | unknown;
+
+
+    /** 要求度 */
+    req_power: number;
+
+
+    /**
+     * 最終アクセスフレーム
+     *
+     * アクセスしたときに `true` マークを付ける。
+     * その後に実際の時刻に更新する。
+     */
+    aframe: number | true;
+
 
     constructor()
     {
@@ -519,7 +623,7 @@ class CacheNode {
     /**
      * 要求度を更新
      */
-    updateRequestPower( req_power )
+    updateRequestPower( req_power: number )
     {
         if ( req_power > this.req_power ) {
             this.req_power = req_power;
@@ -538,23 +642,29 @@ class CacheNode {
 
 
 /**
- * @summary ノード数の計上
+ * ノード数の計上
  *
- * this.num_loadeds:  ロードされているタイル数
- * this.num_accesses: ロードされているタイルのうち、アクセスされたタイル数
- *
- * アクセスがあったノードに対して aframe を更新する。
- *
- * @memberof mapray.TileTextureCache
- * @private
+ * アクセスがあったノードに対して `aframe` を更新する。
  */
 class NodeCounter {
 
     /**
-     * @param {mapray.TileTextureCache.CacheNode} root   最上位ノード
-     * @param {number}                            frame  現在のフレーム
+     * ロードされているタイル数
      */
-    constructor( root, frame )
+    num_loadeds:  number;
+
+    /**
+     * ロードされているタイルのうち、アクセスされたタイル数
+     */
+    num_accesses: number;
+
+
+    /**
+     * @param root  - 最上位ノード
+     * @param frame - 現在のフレーム
+     */
+    constructor( root: CacheNode,
+                 frame: number )
     {
         this.num_loadeds  = 0;
         this.num_accesses = 0;
@@ -562,16 +672,17 @@ class NodeCounter {
         this._traverse( root );
     }
 
-    /**
-     * @private
-     */
-    _traverse( node )
-    {
-        var   children = node.children;
-        var isAccessed = (node.aframe === true);
 
-        for ( var i = 0; i < 4; ++i ) {
-            var child = children[i];
+    /**
+     * トラバース処理
+     */
+    private _traverse( node: CacheNode ): boolean
+    {
+        const children = node.children;
+        let isAccessed = (node.aframe === true);
+
+        for ( let i = 0; i < 4; ++i ) {
+            const child = children[i];
             if ( child !== null ) {
                 isAccessed = this._traverse( child ) || isAccessed;
             }
@@ -592,43 +703,43 @@ class NodeCounter {
         return isAccessed;
     }
 
+
+    private readonly _frame: number;
+
 }
 
 
 /**
- * @summary ノード収集
- * @desc
- * <p>NodeState.LOADED または NodeState.FAILED のノードを this.nodes に収集する。</p>
+ * ノード収集
  *
- * @memberof mapray.TileTextureCache
- * @private
+ * `NodeState.LOADED` または `NodeState.FAILED` のノードを
+ * `this.nodes` に収集する。
  */
 class NodeCollector {
 
+    readonly nodes: CacheNode[];
+
     /**
-     * @param {mapray.TileTextureCache.CacheNode} root  最上位ノード
+     * @param root - 最上位ノード
      */
-    constructor( root )
+    constructor( root: CacheNode )
     {
         this._root = root;
         this.nodes = [];
         this._traverse( root );
     }
 
-    /**
-     * @private
-     */
-    _traverse( node )
+    private _traverse( node: CacheNode ): void
     {
-        var state = node.state;
+        const state = node.state;
         if ( state === NodeState.LOADED || state === NodeState.FAILED ) {
             // LOADED または FAILED なら追加
             this.nodes.push( node );
         }
 
-        var children = node.children;
-        for ( var i = 0; i < 4; ++i ) {
-            var child = children[i];
+        const children = node.children;
+        for ( let i = 0; i < 4; ++i ) {
+            const child = children[i];
             if ( child !== null ) {
                 this._traverse( child );
             }
@@ -636,26 +747,26 @@ class NodeCollector {
     }
 
     /**
-     * @summary NodeState.NONE の葉ノードを消去
+     * `NodeState.NONE` の葉ノードを消去
      */
-    clean()
+    clean(): void
     {
         this._clean_recur( this._root );
     }
 
     /**
-     * @return 自己と子孫がすべて NodeState.NONE のとき true, それいがいのとき false
-     * @private
+     * @return 自己と子孫がすべて `NodeState.NONE` のとき `true`,
+     *         それ以外のとき `false`
      */
-    _clean_recur( node )
+    private _clean_recur( node: CacheNode ): boolean
     {
-        var isNodeNone = (node.state === NodeState.NONE);
+        let isNodeNone = (node.state === NodeState.NONE);
 
-        var children = node.children;
-        for ( var i = 0; i < 4; ++i ) {
-            var child = children[i];
+        const children = node.children;
+        for ( let i = 0; i < 4; ++i ) {
+            const child = children[i];
             if ( child !== null ) {
-                var isChildNone = this._clean_recur( child );
+                const isChildNone = this._clean_recur( child );
                 if ( isChildNone === true ) {
                     children[i] = null;
                 }
@@ -666,75 +777,72 @@ class NodeCollector {
         return isNodeNone;
     }
 
+    private _root: CacheNode;
+
 }
 
 
 /**
- * @summary すべてのリクエストを取り消す
- * @memberof mapray.TileTextureCache
- * @private
+ * すべてのリクエストを取り消す
  */
 class NodeCanceller {
 
     /**
-     * @param {mapray.TileTextureCache}          owner  最上位ノード
-     * @param {mapray.TileTextureCache.CacheNode} root  最上位ノード
+     * @param owner - 管理者
+     * @param root  - 最上位ノード
      */
-    constructor( owner, root )
+    constructor( owner: TileTextureCache,
+                 root: CacheNode )
     {
         this._owner = owner;
         this._traverse( root );
     }
 
-    /**
-     * @private
-     */
-    _traverse( node )
+    private _traverse( node: CacheNode ): void
     {
-        var children = node.children;
-        for ( var i = 0; i < 4; ++i ) {
-            var child = children[i];
+        const children = node.children;
+        for ( let i = 0; i < 4; ++i ) {
+            const child = children[i];
             if ( child !== null ) {
                 this._traverse( child );
             }
         }
         if ( node.state === NodeState.REQUESTED ) {
-            var owner = this._owner;
             node.state = NodeState.NONE;
-            owner._provider.cancelRequest( node.data );
-            --owner._num_requesteds;
+            this._owner.cancelTileTexture( node.data );
         }
     }
+
+    private readonly _owner: TileTextureCache;
 
 }
 
 
 /**
- * @summary ノード状態の列挙型
- * @enum {object}
- * @memberof mapray.TileTextureCache
- * @constant
+ * ノード状態の列挙型
  */
-var NodeState = {
+const enum NodeState {
+
     /**
      * タイルが存在しない
      */
-    NONE: { id: "NONE" },
+    NONE = "@@_NONE",
 
     /**
      * タイルが存在する
      */
-    LOADED: { id: "LOADED" },
+    LOADED = "@@_LOADED",
 
     /**
      * タイルをリクエスト中
      */
-    REQUESTED: { id: "REQUESTED" },
+    REQUESTED = "@@_REQUESTED",
 
     /**
      * タイルのリクエストに失敗
      */
-    FAILED: { id: "FAILED" }
+    FAILED = "@@_FAILED",
+
 };
 
 
