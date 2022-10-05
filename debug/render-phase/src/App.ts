@@ -2,6 +2,7 @@ import mapray from "@mapray/mapray-js";
 import maprayui from "@mapray/ui";
 
 
+const ICON_URL =     "https://resource.mapray.com/assets/www/logo/mapray.png";
 const SCENE_3D_URL = "https://resource.mapray.com/assets/www/model/mapray-box-with-texture/scene.json";
 
 
@@ -26,7 +27,7 @@ class App extends maprayui.StandardUIViewer {
 
     private _pick_handler?: App.PickHandler;
 
-    private _path_list?: mapray.PathEntity[];
+    private _path_list: mapray.PathEntity[];
 
     private _gis: {
         flag: boolean,
@@ -70,6 +71,7 @@ class App extends maprayui.StandardUIViewer {
         this._pre_mouse_position2 = mapray.GeoMath.createVector2f();                // 直前のマウス位置
         this._time = 0;
         this._override_mouse_event = false;
+        this._path_list = [];
         this._cache_scale = 1;
     }
 
@@ -142,6 +144,13 @@ class App extends maprayui.StandardUIViewer {
                         pin.addMakiIconPin( "car-15", p);
                         this.addEntity( pin );
                     }
+            }, true);
+        }
+        else if (event.altKey) {
+            this._override_mouse_event = true;
+            this._pick(pickResult => {
+                // @ts-ignore
+                pickResult.entity.setAnchorMode(!pickResult.entity.anchor_mode);
             }, true);
         }
 
@@ -250,6 +259,14 @@ class App extends maprayui.StandardUIViewer {
             this.addEntity( entity );
         }
 
+        {// Icon
+            const entity = new mapray.ImageIconEntity( this.viewer.scene );
+            const url = ICON_URL;
+            entity.addImageIcon( url, new mapray.GeoPoint(142.619, 43.017), { origin: [ 0.5, 1.0 ] });
+            entity.altitude_mode = mapray.AltitudeMode.CLAMP;
+            this.addEntity( entity );
+        }
+
         const sceneResource = new mapray.URLResource( SCENE_3D_URL, {
                 transform: ( url, type ) => {
                     if (type.id === "IMAGE" ) {
@@ -280,6 +297,164 @@ class App extends maprayui.StandardUIViewer {
                     loader.scene.addEntity(entity);
                 }
         } ).load();
+
+
+        // line
+        const line_points = [
+            137.71, 34.703, 10.0,
+            137.71, 34.722, 10.0,
+            137.74, 34.722, 10.0,
+            137.74, 34.703, 10.0,
+            137.71, 34.703, 10.0
+        ];
+
+        const labels = new mapray.TextEntity( this.viewer.scene );
+        labels.setColor( [1, 1, 1] );
+        labels.setFontSize( 15 );
+        labels.setBackgroundColor( [0, 0, 0] );
+        labels.setEnableBackground(true);
+        // @ts-ignore
+        labels.setAnchorMode(true);
+        this.addEntity( labels );
+
+        {
+            const line = new mapray.MarkerLineEntity( this.viewer.scene );
+            line.setColor([ 0.2, 1.0, 0.2 ]);
+            line.setLineWidth( 10.0 );
+            line.altitude_mode = mapray.AltitudeMode.CLAMP;
+            line.addPoints(line_points);
+            this.addEntity(line);
+            const ps = line.getPointAt(0);
+            if ( ps ) {
+              labels.addText( " Clamped (altitude:0m) ", new mapray.GeoPoint( ps[0], ps[1], 0.0 ), {} );
+            }
+        }
+
+        {
+            const line = new mapray.MarkerLineEntity( this.viewer.scene );
+            line.setColor([ 1.0, 0.2, 0.2 ]);
+            line.setLineWidth( 10.0 );
+            line.addPoints(line_points.map((v, index) => (
+                  index % 3 === 0 ? v +0.005 :
+                  index % 3 === 1 ? v +0.005 :
+                  index % 3 === 2 ? v -100 :
+                  v
+            )));
+            this.addEntity(line);
+            const ps = line.getPointAt(0);
+            if ( ps ) {
+              labels.addText( " Absolute (altitude:-100m) ", new mapray.GeoPoint( ...ps ), {} );
+            }
+        }
+
+        {
+            const line = new mapray.MarkerLineEntity( this.viewer.scene );
+            line.setColor([ 0.2, 0.2, 1.0 ]);
+            line.setLineWidth( 10.0 );
+            // @ts-ignore
+            line.setAnchorMode(true);
+            line.addPoints(line_points.map((v, index) => (
+                  index % 3 === 0 ? v -0.005 :
+                  index % 3 === 1 ? v -0.005 :
+                  index % 3 === 2 ? v -200 :
+                  v
+            )));
+            this.addEntity(line);
+            const ps = line.getPointAt(0);
+            if ( ps ) {
+              labels.addText( " Absolute & Anchor (altitude:-200m) ", new mapray.GeoPoint( ...ps ), {} );
+            }
+        }
+
+
+        // polygon
+        const polygon_points = [
+            137.63671875, 34.597041518, 0.0,
+            137.63671875, 34.7416125007, 0.0,
+            137.8125,     34.7416125007, 0.0,
+            137.8125,     34.597041518, 0.0
+        ].map((v,index) => (index%3===1 ? v + 0.4 : v));
+
+        {
+            const polygon = new mapray.PolygonEntity( this.viewer.scene );
+            polygon.setColor([ 1.0, 0.2, 0.2 ]);
+            polygon.setOpacity( 0.6 );
+            polygon.addOuterBoundary(polygon_points);
+            polygon.altitude_mode = mapray.AltitudeMode.CLAMP;
+            this.addEntity(polygon);
+            const ps = polygon.getBoundaryAt(0).points;
+            labels.addText( " Clamp (altitude:0m) ", new mapray.GeoPoint( ...ps ), {} );
+        }
+
+        {
+            const polygon = new mapray.PolygonEntity( this.viewer.scene );
+            polygon.setColor([ 0.2, 1.0, 0.2 ]);
+            polygon.setOpacity( 0.6 );
+            polygon.addOuterBoundary(polygon_points.map((v, index) =>(
+                  index % 3 === 0 ? v + 0.05:
+                  index % 3 === 1 ? v + 0.05:
+                  index % 3 === 2 ? v + 100:
+                  v
+            )));
+            this.addEntity(polygon);
+            const ps = polygon.getBoundaryAt(0).points;
+            labels.addText( " Absolute (altitude:100m) ", new mapray.GeoPoint( ...ps ), {} );
+        }
+
+        {
+            const polygon = new mapray.PolygonEntity( this.viewer.scene );
+            polygon.setColor([ 0.2, 0.2, 1.0 ]);
+            polygon.setOpacity( 0.6 );
+            // @ts-ignore
+            polygon.setAnchorMode(true);
+            polygon.addOuterBoundary(polygon_points.map((v, index) => (
+                  index % 3 === 0 ? v -0.05:
+                  index % 3 === 1 ? v -0.05:
+                  index % 3 === 2 ? v -100:
+                  v
+            )));
+            this.addEntity(polygon);
+            const ps = polygon.getBoundaryAt(0).points;
+            labels.addText( " Absolute & Anchor  (altitude:-100m) ", new mapray.GeoPoint( ...ps ), {} );
+        }
+
+        // path
+        const path_option_list = [
+            {
+                altitude_mode: mapray.AltitudeMode.CLAMP,
+                points: [
+                    138.6, 35.36, 3000,
+                    138.8, 35.36, 3000
+                ]
+            },
+            {
+                altitude_mode: mapray.AltitudeMode.ABSOLUTE,
+                points: [
+                    138.6, 35.37, 3000,
+                    138.8, 35.37, 3000
+                ]
+            }
+        ];
+
+        path_option_list.forEach( path_option => {
+            const path = new mapray.PathEntity( this.viewer.scene );
+            path.setColor([ 1.0, 0.0, 0.0 ]);
+            path.altitude_mode = path_option.altitude_mode;
+            path.setLineWidth( 10.0 );
+            const ps = path_option.points;
+            const ls = [ 0.0, 1.0 ];
+            path.addPoints( ps, ls );
+            path.setLowerLength( 0.0 );
+            path.setUpperLength( 1.0 );
+            this.addEntity( path );
+            this._path_list.push( path );
+
+            const pin = new mapray.PinEntity( this.viewer.scene );
+            pin.addMakiIconPin( "car-15", new mapray.GeoPoint(ps[0], ps[1], ps[2]));
+            pin.addMakiIconPin( "car-15", new mapray.GeoPoint(ps[3], ps[4], ps[5]));
+            pin.altitude_mode = path_option.altitude_mode;
+            this.addEntity( pin );
+        });
 
         this._gis.loaded = true;
         this._gis.loading = false;

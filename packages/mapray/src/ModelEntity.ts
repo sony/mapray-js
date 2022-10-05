@@ -29,9 +29,6 @@ class ModelEntity extends Entity {
 
     private _primitive_producer: ModelEntity.PrimitiveProducer = new ModelEntity.PrimitiveProducer( this );
 
-    /** アンカーモード */
-    private _anchor_mode: boolean = false;
-
     /** 座標変換モード */
     private _transform_mode: ModelEntity.TransformMode = ModelEntity.TransformMode.POSITION_MLOCS_SCALE_ORIENTATION;
 
@@ -55,24 +52,6 @@ class ModelEntity extends Entity {
             this._setupTransform( json );
             this._setupModelObject( json, refs );
         }
-    }
-
-
-    /**
-     * アンカーモード
-     * @internal
-     */
-    get anchor_mode(): boolean { return this._anchor_mode; }
-
-    /**
-     * アンカーモードを設定。
-     * @see {@link mapray.Entity.anchor_mode}
-     * @param anchor_mode
-     * @internal
-     */
-    setAnchorMode( anchor_mode: boolean )
-    {
-      this._anchor_mode = anchor_mode;
     }
 
 

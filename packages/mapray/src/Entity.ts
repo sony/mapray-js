@@ -52,7 +52,10 @@ abstract class Entity {
      */
     protected _pickable: boolean = true;
 
+    /** アンカーモード */
+    protected _anchor_mode: boolean = false;
 
+    
     /**
      * インスタンス生成後に、それを scene に追加することができる。
      *
@@ -99,8 +102,19 @@ abstract class Entity {
      * - アンカーモードのエンティティどうしの前後判定はzソートにより実装されており、ピクセル単位の前後判定は行われません。
      * @internal
      */
-    get anchor_mode(): boolean { return false; }
+    get anchor_mode(): boolean { return this._anchor_mode; }
 
+    /**
+     * アンカーモードを設定。
+     * @see {@link mapray.Entity.anchor_mode}
+     * @param anchor_mode
+     * @internal
+     */
+    setAnchorMode( anchor_mode: boolean )
+    {
+        this._anchor_mode = anchor_mode;
+    }
+ 
 
     /**
      * アニメーションパラメータ設定
