@@ -41,7 +41,7 @@ class CloudDemProvider extends DemProvider<AbortController> {
             } )
             .catch( () => {
                 // データ取得に失敗または取り消し
-                callback( undefined );
+                callback( null );
             } );
 
         return actrl;
