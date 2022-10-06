@@ -1,52 +1,103 @@
 import DemProvider from "./DemProvider";
+import { cfa_assert } from "./util/assertion";
 
 /**
  * 標高0の地形を生成する DEM プロバイダ
  *
- * 標高 0 のフラットな地形を生成する DEM プロバイダの実装である。
+ * 標高が一定 (フラット) な地形を生成する [[DemProvider]] の実装である。
+ *
  * 同一レベルのタイルは同じインスタンスを返却します。
+ *
+ * 標高は [[constructor]] の `options` で [[Option.height]] を指定する。
  */
-class FlatDemProvider extends DemProvider<null> {
+class FlatDemProvider extends DemProvider<void> {
 
-    private _buffers: ArrayBuffer[];
+    private readonly _buffers: ArrayBuffer[];
 
     /**
      * 配信を行う最大ズームレベル
      */
-    private _max_level: number;
+    private readonly _max_level: number;
+
 
     /**
-     * 地形との交点計算において誤差 1cm 未満を保証するには、レベル9以上を指定する必要がある。
-     * @param max_level 最大レベル
+     * 解像度の指数
      */
-    constructor( max_level: number = 9 ) {
+    private readonly _rho: number;
+
+
+    /**
+     * これは互換用の初期化で、[[Option.max_level]] プロパティ
+     * を指定することと同じである。
+     *
+     * @param max_level - 最大レベル
+     */
+    constructor( max_level: number );
+
+
+    /**
+     * パラメータ `options` の内容に従って初期化する。
+     *
+     * @param options - 生成オプション
+     */
+    constructor( options?: FlatDemProvider.Option );
+
+
+    constructor( max_level_or_options?: number | FlatDemProvider.Option )
+    {
         super();
-        this._max_level = max_level;
+
+        let options: FlatDemProvider.Option;
+
+        if ( max_level_or_options === undefined ) {
+            options = {};
+        }
+        else if ( typeof max_level_or_options === 'number' ) {
+            options = { max_level: max_level_or_options };
+        }
+        else {
+            options = max_level_or_options;
+        }
+
+        this._max_level = options.max_level ?? 9;
         this._buffers = [];
+        this._rho = options.rho ?? 8;
+
+        // タイルデータのバイト数
+        const tile_bytes = FlatDemProvider.HEADER_BYTES + FLT_BYTES * this._num_samples();
+
+        const height = options.height ?? 0.0;
+
         for ( let i=0; i<=this._max_level; ++i ) {
-            const buffer = new ArrayBuffer( FlatDemProvider.BUFFERSIZE );
-            this._setZeroData( buffer, i );
+            const buffer = new ArrayBuffer( tile_bytes );
+            this._setTileData( buffer, i, height );
             this._buffers.push( buffer );
         }
     }
 
 
-    override requestTile( z: number, x: number, y: number, callback: DemProvider.RequestCallback ): null
+    override requestTile( z: number, _x: number, _y: number, callback: DemProvider.RequestCallback ): void
     {
         Promise.resolve()
         .then(() => {
                 callback( this._buffers[z] );
         });
-        return null;
     }
 
 
-    override cancelRequest()
+    override cancelRequest(): void
     {
     }
 
 
-    private _setZeroData( buffer: ArrayBuffer, z: number )
+    // from DemProvider
+    override getResolutionPower(): number
+    {
+        return this._rho;
+    }
+
+
+    private _setTileData( buffer: ArrayBuffer, z: number, height: number ): void
     {
         const view = new DataView( buffer );
 
@@ -54,15 +105,16 @@ class FlatDemProvider extends DemProvider<null> {
         view.setUint8( FlatDemProvider.OFFSET_QLEVEL_10, this._max_level - z );
         view.setUint8( FlatDemProvider.OFFSET_QLEVEL_01, this._max_level - z );
         view.setUint8( FlatDemProvider.OFFSET_QLEVEL_11, this._max_level - z );
-        view.setFloat32( FlatDemProvider.OFFSET_HMIN, 0.0, true );
-        view.setFloat32( FlatDemProvider.OFFSET_HMAX, 0.0, true );
+        view.setFloat32( FlatDemProvider.OFFSET_HMIN, height, true );
+        view.setFloat32( FlatDemProvider.OFFSET_HMAX, height, true );
 
-        let offset = this._setOmegaArray( view );
-        this._setHeight( view, offset );
+        const offset = this._setOmegaArray( view );
+
+        this._setHeight( view, offset, height );
     }
 
 
-    private _setOmegaArray( view: DataView )
+    private _setOmegaArray( view: DataView ): number
     {
         const FLT_BYTES = 4;
 
@@ -78,41 +130,92 @@ class FlatDemProvider extends DemProvider<null> {
     }
 
 
-    private _setHeight( view: DataView, current: number )
+    private _setHeight( view: DataView, current: number, height: number ): void
     {
-        /* IEEE浮動小数点数(float) 0.0 は [0, 0, 0, 0] であり、ArrayBufferは初期化時点で既に全て 0 である。
-        const FLT_BYTES = 4;
+        cfa_assert( current === FlatDemProvider.HEADER_BYTES );
 
         let offset = current
-        for (let p = 0; p < FlatDemProvider.PIXEL_SIZE; ++p ) {
-            view.setFloat32(offset, 0.0, true);
+
+        const num_samples = this._num_samples();
+
+        for ( let p = 0; p < num_samples; ++p ) {
+            view.setFloat32( offset, height, true );
             offset += FLT_BYTES;
         }
-        */
     }
+
+
+    /**
+     * 標高配列のすべての標高数
+     */
+    private _num_samples(): number
+    {
+        // 標高配列の 1 行の標高数
+        const size = (1 << this._rho) + 1;
+
+        // 標高配列のすべての標高数
+        return size * size;
+    }
+
+
+    private static readonly OFFSET_QLEVEL_00 = 0;
+    private static readonly OFFSET_QLEVEL_10 = 1;
+    private static readonly OFFSET_QLEVEL_01 = 2;
+    private static readonly OFFSET_QLEVEL_11 = 3;
+    private static readonly OFFSET_HMIN      = 4;
+    private static readonly OFFSET_HMAX      = 8;
+    private static readonly OFFSET_ω        = 12;
+    private static readonly HEADER_BYTES     = 96;
+    private static readonly OMEGA_VALUE = -99.0;
+
 }
 
+
+const FLT_BYTES = 4;
 
 
 namespace FlatDemProvider {
 
+/**
+ * 生成オプション
+ *
+ * @see [[FlatDemProvider.constructor]]
+ */
+export interface Option {
+
+    /**
+     * 最大レベル
+     *
+     * 地形との交点計算において誤差 1cm 未満を保証するには、レベル 9 以
+     * 上を指定する必要がある。
+     *
+     * @defaultValue 9
+     */
+    max_level?: number;
 
 
-export const OFFSET_QLEVEL_00 = 0;
-export const OFFSET_QLEVEL_10 = 1;
-export const OFFSET_QLEVEL_01 = 2;
-export const OFFSET_QLEVEL_11 = 3;
-export const OFFSET_HMIN      = 4;
-export const OFFSET_HMAX      = 8;
-export const OFFSET_ω        = 12;
-export const BUFFERSIZE = 264292;
-export const OMEGA_VALUE = -99.0;
-export const PIXEL_SIZE = Math.round(Math.pow((1 << 8) + 1, 2));
+    /**
+     * 解像度の指数
+     *
+     * 一般的にこのプロパティの値は 8 または 9 である。
+     *
+     * @defaultValue 8
+     *
+     * @see [[DemProvider.getResolutionPower]]
+     */
+    rho?: number;
 
 
+    /**
+     * 標高 (メートル)
+     *
+     * @defaultValue 0.0
+     */
+    height?: number;
 
-} // namespace FlatDemProvider
+}
 
+}
 
 
 export default FlatDemProvider;
