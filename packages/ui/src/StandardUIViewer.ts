@@ -1089,10 +1089,9 @@ class StandardUIViewer extends mapray.RenderCallback
             end_spherical_position.setFromGocs( end_position );
 
             // 球とレイの交点計算
-            // const variable_A = 1.0; // = Math.pow( GeoMath.length3( ray.direction ), 2 );
             const variable_B = 2.0 * GeoMath.dot3( ray.position, ray.direction );
             const variable_C = GeoMath.lengthSquared3( ray.position ) - Math.pow( start_spherical_position.altitude + GeoMath.EARTH_RADIUS, 2.0 );
-            const variable_D = variable_B * variable_B - 4.0 * variable_C; // variable_B * variable_B - 4.0 * variable_A * variable_C;
+            const variable_D = variable_B * variable_B - 4.0 * variable_C;
 
             // カメラより選択した場所の高度が高い、交点が取れない場合は補正しない
             const flag = (
@@ -1102,12 +1101,6 @@ class StandardUIViewer extends mapray.RenderCallback
             );
             if ( flag ) {
                 const variable_t = 0.5 * ( -variable_B - Math.sqrt( variable_D ) );
-                /* equivalent to:
-                const sqrt_variable_D = Math.sqrt( variable_D );
-                const variable_t1 = ( -variable_B + sqrt_variable_D ) * 0.5; // (2.0 * variable_A)
-                const variable_t2 = ( -variable_B - sqrt_variable_D ) * 0.5; // (2.0 * variable_A)
-                const variable_t = Math.min( variable_t1, variable_t2 );
-                */
 
                 GeoMath.add3( GeoMath.scale3( variable_t, ray.direction, end_position ), ray.position, end_position );
                 end_spherical_position.setFromGocs( end_position );
@@ -1116,7 +1109,8 @@ class StandardUIViewer extends mapray.RenderCallback
             const delta_latitude = end_spherical_position.latitude - start_spherical_position.latitude;
             const delta_longitude = end_spherical_position.longitude - start_spherical_position.longitude;
 
-            this._camera_parameter.latitude -= delta_latitude;
+            this._camera_parameter.latitude += ( ( this._translate_drag[1] > 0 && delta_latitude < 0 )
+                                                || ( this._translate_drag[1] < 0 && delta_latitude > 0 ) )? -delta_latitude : delta_latitude;
             this._camera_parameter.longitude -= delta_longitude;
 
             this._translate_drag[0] = 0;
