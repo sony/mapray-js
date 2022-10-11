@@ -40,9 +40,9 @@ abstract class EntityMaterial extends Material {
      * @param stage     - レンダリングステージ
      * @param primitive - プリミティブ
      *
-     * @return 背景との混合が必要なとき true, それ以外のとき false
+     * @return 背景との混合が必要なとき `true`, それ以外のとき `false`
      *
-     * @default false
+     * @defaultValue `false`
      *
      * @virtual
      */

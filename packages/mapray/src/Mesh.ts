@@ -233,7 +233,7 @@ export interface IndexOption {
     /**
      * バッファ先頭からのバイトオフセット
      *
-     * @default 0
+     * @defaultValue 0
      */
     byte_offset?: number;
 
@@ -248,7 +248,7 @@ export interface AttributeOption {
     /**
      * 正規化整数座標か？
      *
-     * @default false
+     * @defaultValue `false`
      */
     normalized?: boolean;
 
@@ -256,7 +256,7 @@ export interface AttributeOption {
     /**
      * 頂点間のバイトストライド
      *
-     * @default 0
+     * @defaultValue 0
      */
     byte_stride?: number;
 
@@ -264,7 +264,7 @@ export interface AttributeOption {
     /**
      * バッファ先頭からのバイトオフセット
      *
-     * @default 0
+     * @defaultValue 0
      */
     byte_offset?: number;
 
@@ -495,7 +495,7 @@ export interface MeshData {
     /**
      * プリミティブ型
      *
-     * @default "triangles"
+     * @defaultValue "triangles"
      */
     ptype?: "triangles" | "lines" | "points";
 
