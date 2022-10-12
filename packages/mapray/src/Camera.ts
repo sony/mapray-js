@@ -20,26 +20,26 @@ class Camera {
 
     /**
      *  カメラの画角 (Degrees)
-     *  @default 46
+     *  @defaultValue 46
      */
     fov: number;
 
 
     /**
      *  近接平面距離 (Meters)
-     *  @default 1
+     *  @defaultValue 1
      */
     near: number;
 
     /**
      *  遠方平面距離 (Meters)
-     *  @default 1000
+     *  @defaultValue 1000
      */
     far: number;
 
     /**
      *  視点空間から GOCS への変換行列
-     *  @default 恒等行列
+     *  @defaultValue 恒等行列
      */
     view_to_gocs: Matrix;
 

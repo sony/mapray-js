@@ -215,7 +215,7 @@ export interface Option {
     /**
      * テクスチャ用途
      *
-     * @default Texture.GENERAL
+     * @defaultValue [[Usage.GENERAL]]
      */
     usage?: Texture.Usage;
 
@@ -252,14 +252,14 @@ export interface Option {
     /**
      * 画像読み込み時に上下を反転するか？
      *
-     * @default true
+     * @defaultValue `true`
      */
     flip_y?: boolean;
 
     /**
-     * usage=COLOR のときの色指定
+     * `usage=COLOR` のときの色指定
      *
-     * @default [1,1,1,1]
+     * @defaultValue `[1,1,1,1]`
      */
     color?: Vector4;
 

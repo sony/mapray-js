@@ -42,7 +42,7 @@ class Primitive {
      *
      * `null` のときは零ベクトルと見なす。
      *
-     * @default null
+     * @defaultValue `null`
      */
     pivot: Vector3 | null;
 
@@ -54,7 +54,7 @@ class Primitive {
      *
      * `null` のときは無限大の境界箱と見なす。
      *
-     * @default null
+     * @defaultValue `null`
      */
     bbox: Vector3[] | null;
 
@@ -64,7 +64,7 @@ class Primitive {
      *
      * `null` のときは空集合と見なす。
      *
-     * @default null
+     * @defaultValue `null`
      */
     properties: object | null;
 

@@ -3,15 +3,14 @@ import CredentialMode from "./CredentialMode";
 
 
 /**
- * @summary 標準 DEM プロバイダ
- * @classdesc
- * <p>汎用的な DEM プロバイダの実装である。</p>
- * <p>構築子の引数に prefix を与えた場合、各メソッドの動作は以下のようになる。
- * <pre>
+ * 標準 DEM プロバイダ
+ *
+ * 汎用的な DEM プロバイダの実装である。
+ * 構築子の引数に prefix を与えた場合、各メソッドの動作は以下のようになる。
+ *
+ * ~~~
  *   requestTile( z, x, y ) -> URL が prefix + z + '/' + x + '/' + y + suffix のデータを要求
- * </pre>
- * @memberof mapray
- * @extends mapray.DemProvider
+ * ~~~
  */
 class StandardDemProvider extends DemProvider<AbortController> {
 
@@ -57,7 +56,7 @@ class StandardDemProvider extends DemProvider<AbortController> {
             } )
             .catch( () => {
                 // データ取得に失敗または取り消し
-                callback( undefined );
+                callback( null );
             } );
 
         return actrl;

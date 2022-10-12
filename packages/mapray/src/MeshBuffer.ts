@@ -80,7 +80,7 @@ export interface Option {
     /**
      * バッファの使用目的
      *
-     * @default Target.ATTRIBUTE
+     * @defaultValue [[Target.ATTRIBUTE]]
      */
     target?: MeshBuffer.Target;
 

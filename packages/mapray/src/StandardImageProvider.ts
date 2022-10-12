@@ -15,7 +15,7 @@ import CredentialMode from "./CredentialMode";
  *   getZoomLevelRange()    -> new ImageProvider.Range( zmin, zmax ) を返す
  * ```
  */
-class StandardImageProvider extends ImageProvider {
+class StandardImageProvider extends ImageProvider<HTMLImageElement> {
 
     private _prefix: string;
 
@@ -97,7 +97,7 @@ class StandardImageProvider extends ImageProvider {
 
     /**
      */
-    override requestTile( z: number, x: number, y: number, callback: ImageProvider.RequestCallback ): object
+    override requestTile( z: number, x: number, y: number, callback: ImageProvider.RequestCallback ): HTMLImageElement
     {
         var image = new Image();
 
@@ -116,7 +116,7 @@ class StandardImageProvider extends ImageProvider {
 
     /**
      */
-    override cancelRequest( id: object )
+    override cancelRequest( _id: HTMLImageElement ): void
     {
         // TODO: Image 読み込みの取り消し方法は不明
     }

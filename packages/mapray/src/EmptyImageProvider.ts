@@ -6,7 +6,7 @@ import ImageProvider from "./ImageProvider";
  *
  * 状態は常に READY、レベル 0 のみの巨大画像、ただし画像は永遠に返さない。
  */
-class EmptyImageProvider extends ImageProvider {
+class EmptyImageProvider extends ImageProvider<void> {
 
     /**
      */
@@ -18,15 +18,14 @@ class EmptyImageProvider extends ImageProvider {
 
     /**
      */
-    override requestTile( z: number, x: number, y: number, callback: ImageProvider.RequestCallback ): object
+    override requestTile( _z: number, _x: number, _y: number, _callback: ImageProvider.RequestCallback ): void
     {
-        return this;
     }
 
 
     /**
      */
-    override cancelRequest( id: object )
+    override cancelRequest(): void
     {
     }
 

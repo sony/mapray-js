@@ -710,8 +710,8 @@ export class Flake implements Area {
         this._prev_Zr_dem = null;
 
         this._base_height = 0;     // 平均標高 (h~)
-        this._height_min  = 0;     // 最大標高 (h⇓)
-        this._height_max  = 0;     // 最小標高 (h⇑)
+        this._height_min  = 0;     // 最小標高 (h⇓)
+        this._height_max  = 0;     // 最大標高 (h⇑)
         this._dem_zlimit  = 0;     // メッシュ生成時の DEM Z レベル上限 (Zb)
 
         // 境界箱 (AABB)
@@ -1465,9 +1465,9 @@ export class Flake implements Area {
 
         // 境界箱の更新
         switch ( zg ) {
-        case 0:  this._updataBoundingBox_0(); break;
-        case 1:  this._updataBoundingBox_1(); break;
-        default: this._updataBoundingBox_N(); break;
+        case 0:  this._updateBoundingBox_0(); break;
+        case 1:  this._updateBoundingBox_1(); break;
+        default: this._updateBoundingBox_N(); break;
         }
     }
 
@@ -1614,7 +1614,7 @@ export class Flake implements Area {
     /**
      * 境界箱を更新 (Z == 0)
      */
-    private _updataBoundingBox_0(): void
+    private _updateBoundingBox_0(): void
     {
         var r = GeoMath.EARTH_RADIUS + this._height_max;
 
@@ -1631,7 +1631,7 @@ export class Flake implements Area {
     /**
      * 境界箱を更新 (Z == 1)
      */
-    private _updataBoundingBox_1(): void
+    private _updateBoundingBox_1(): void
     {
         var r = GeoMath.EARTH_RADIUS + this._height_max;
         var x = this.x;
@@ -1650,7 +1650,7 @@ export class Flake implements Area {
     /**
      * 境界箱を更新 (Z >= 2)
      */
-    private _updataBoundingBox_N(): void
+    private _updateBoundingBox_N(): void
     {
         var pi = Math.PI;
         var z = this.z;
@@ -2267,7 +2267,7 @@ class MeshNode {
 
     private _dem: DemBinary;
 
-    private _dpows: number[];
+    private _dpows: [number, number];
 
     private _aframe: number;
 
@@ -2282,11 +2282,11 @@ class MeshNode {
      * @param dem    DEM バイナリ
      * @param dpows  分割指数
      */
-    constructor( flake: Globe.Flake, dem: DemBinary, dpows: number[] )
+    constructor( flake: Globe.Flake, dem: DemBinary, dpows: [number, number] )
     {
         this._flake  = flake;
         this._dem    = dem;
-        this._dpows  = Array.from( dpows );
+        this._dpows  = [...dpows];
         this._aframe = -1;
 
         // 地表のメッシュ
@@ -2341,7 +2341,7 @@ class MeshNode {
      * @param  dpows  分割指数
      * @return 一致するとき true, 一致しないとき false
      */
-    match( dem: DemBinary, dpows: number[] ): boolean
+    match( dem: DemBinary, dpows: [number, number] ): boolean
     {
         return (this._dem === dem) && (this._dpows[0] === dpows[0]) && (this._dpows[1] === dpows[1]);
     }

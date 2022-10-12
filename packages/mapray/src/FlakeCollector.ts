@@ -230,10 +230,15 @@ class FlakeCollector {
         }
 
         // 地表断片の詳細レベルの範囲
-        var range = this._getLevelOfDetailRange( flake );
-        var    zt = range.mid + this._max_zbias;   // 最大タイルレベル
+        const range = this._getLevelOfDetailRange( flake );
+        const    zt = range.mid + this._max_zbias;   // 最大タイルレベル
 
-        if ( range.max - range.min > FlakeCollector.MAX_LOD_INTERVAL || zt > flake.z ) {
+        if ( range.max + this._max_zbias < 0 ) {
+            // 領域内で LOD が最も高い部分でも、どの種別のタイルの理想
+            // レベルも 0 未満となる。これ以上分割しても見える結果に影
+            // 響は与えられないと考えられるので分割を止める
+        }
+        else if ( range.max - range.min > FlakeCollector.MAX_LOD_INTERVAL || zt > flake.z ) {
             //    地表断片の LOD 幅が閾値より大きい
             // or 最大タイルレベル > 地表断片レベル
             this._collectNextLevelFlakes( flake );   // 地表断片を分割
