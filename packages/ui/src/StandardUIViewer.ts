@@ -234,6 +234,7 @@ class StandardUIViewer extends mapray.RenderCallback
                 moon_visualizer: options.moon_visualizer,
                 cloud_visualizer: options.cloud_visualizer,
                 star_visualizer: options.star_visualizer,
+                pole: options.pole,
             }
         );
 
@@ -1530,7 +1531,7 @@ class StandardUIViewer extends mapray.RenderCallback
      *
      * @param layer                  作成するレイヤのプロパティ
      */
-    addLayer( layer: any ): void
+    addLayer( layer: mapray.Layer.Option ): void
     {
         this.viewer.layers.add( layer );
     }
@@ -2083,6 +2084,9 @@ export interface Option extends mapray.Viewer.Option {
 
      /** 月表示オプション */
      moon_visualizer?: mapray.MoonVisualizer;
+
+     /** 極地に関連するオプション */
+     pole?: mapray.Viewer.PoleOption;
 }
 
 
