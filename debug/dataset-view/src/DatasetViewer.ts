@@ -23,8 +23,12 @@ class DatasetViewer extends DebugViewer {
                 sun_visualizer: new mapray.SunVisualizer( 32 ),
                 moon_visualizer: new mapray.MoonVisualizer( './data/moon.jpg' ),
                 star_visualizer: new mapray.StarVisualizer( './data/star75.json', './data/starmap_512n2.jpg' ),
-                // north_pole: { color: [0, 0.07, 0.12], },
-                // south_pole: { color: [0.88, 0.89, 0.94], },
+                pole: {
+                    north_height : 0.0,
+                    south_height : 0.0,
+                    north_color : [0, 0.07, 0.12],
+                    south_color : [0.88, 0.89, 0.94],
+                }
         } );
 
         this.setCloudApi( new mapray.cloud.CloudApiV1({
@@ -37,7 +41,11 @@ class DatasetViewer extends DebugViewer {
         this.addLayer( { 
             image_provider: new mapray.StandardImageProvider("https://opentiles.mapray.com/xyz/night-satellite/", ".png", 256, 0, 8),
             opacity: 1.0,
-            type: mapray.Layer.LayerType.NIGHT
+            type: mapray.Layer.LayerType.NIGHT,
+            pole: {
+                north_color : [0.004, 0.008, 0.059],
+                south_color : [0.171, 0.201, 0.335],
+            }
         } );
     }
 
