@@ -5,6 +5,7 @@ import TileTextureCache from "./TileTextureCache";
 import SurfaceMaterial from "./SurfaceMaterial";
 import WireframeMaterial from "./WireframeMaterial";
 import LayerCollection from "./LayerCollection";
+import { Vector3 } from "./GeoMath";
 
 
 /**
@@ -50,7 +51,7 @@ class Layer {
         this._opacity        = props.opacity    || 1.0;
         this._type = props.type === Layer.LayerType.NIGHT ? Layer.LayerType.NIGHT : Layer.LayerType.NORMAL;
 
-        this._tile_cache = new TileTextureCache( this._glenv, this._image_provider );
+        this._tile_cache = new TileTextureCache( this._glenv, this._image_provider, { pole_info: new Viewer.PoleInfo( props.pole ) } );
 
         const render_cache = this._viewer._render_cache || (this._viewer._render_cache = {});
         if ( this._type === Layer.LayerType.NIGHT ) {
@@ -182,6 +183,10 @@ export interface Option {
     /** レイヤータイプ */
     type?: LayerType;
 
+    /** 北極と南極の極地に関するオプション
+     * Groundの極地表示が無効であればレイヤーの極地表示も無効となる
+    */
+    pole?: PoleOption;
 }
 
 
@@ -204,6 +209,29 @@ export enum LayerType {
 
 };
 
+
+/**
+ * 北側と南側の極地に関するレイヤー用オプションの型
+ *
+ * @see [[Option.pole]]
+ */
+ export interface PoleOption {
+
+    /**
+     * 北側極地の表示色
+     *
+     * @defaultValue `[0.8, 0.8, 0.8]`
+     */
+    north_color?: Vector3;
+
+    /**
+     * 南側極地の表示色
+     *
+     * @defaultValue `[0.8, 0.8, 0.8]`
+     */
+    south_color?: Vector3;
+
+}
 
 
 } // namespace Layer
