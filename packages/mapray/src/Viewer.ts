@@ -1121,7 +1121,12 @@ export interface Option {
     /**
      * 極地に関連するオプション
      *
-     * @defaultValue [[PoleOption]] の既定値
+     * オプションを指定すると、北側と南側の極地に関する、地表の表示と交差判定の有効性が有効となり、通常領域以外に北側と南側の極地を表示することができる。
+     * 省略時は極地に関する表示と交差判定は無効となる。
+     *
+     * ただし現在は、[[LayerCollection]] のレイヤー画像、高度モード
+     * ([[Entity.altitude_mode]]) が [[AltitudeMode.ABSOLUTE]] 以外の
+     * エンティティは、通常領域にしか表示することができない。
      */
     pole?: PoleOption;
 
@@ -1158,20 +1163,6 @@ export interface Option {
  * @see [[Option.pole]], [[Viewer.constructor]], [[PoleInfo]]
  */
 export interface PoleOption {
-
-    /**
-     * 北側と南側の極地に関する、地表の表示と交差判定の有効性
-     *
-     * 有効 (`true`) を指定すると、通常領域以外に北側と南側の極地を表
-     * 示することができる。
-     *
-     * ただし現在は、[[LayerCollection]] のレイヤー画像、高度モード
-     * ([[Entity.altitude_mode]]) が [[AltitudeMode.ABSOLUTE]] 以外の
-     * エンティティは、通常領域にしか表示することができない。
-     *
-     * @defaultValue `false`
-     */
-    enabled?: boolean;
 
     /**
      * 北側極地の標高
@@ -1223,16 +1214,25 @@ export class PoleInfo {
     /**
      * @internal
      */
-    constructor( options: PoleOption = {} )
+    constructor( options?: PoleOption )
     {
         const default_height = 0.0;
         const default_color: Vector3 = [0.8, 0.8, 0.8];
 
-        this.enabled      = options.enabled ?? false;
-        this.north_height = options.north_height ?? default_height;
-        this.south_height = options.south_height ?? default_height;
-        this.north_color  = GeoMath.createVector3( options.north_color ?? default_color );
-        this.south_color  = GeoMath.createVector3( options.south_color ?? default_color );
+        if ( options ) {
+            this.enabled      = true;
+            this.north_height = options.north_height ?? default_height;
+            this.south_height = options.south_height ?? default_height;
+            this.north_color  = GeoMath.createVector3( options.north_color ?? default_color );
+            this.south_color  = GeoMath.createVector3( options.south_color ?? default_color );
+        }
+        else {
+            this.enabled      = false;
+            this.north_height = default_height;
+            this.south_height = default_height;
+            this.north_color  = default_color;
+            this.south_color  = default_color;
+        }
     }
 
 }
