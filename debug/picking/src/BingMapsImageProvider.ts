@@ -2,7 +2,6 @@ import mapray from "@mapray/mapray-js";
 
 
 var ImageProvider = mapray.ImageProvider;
-var        Status = ImageProvider.Status;
 
 
 
@@ -46,7 +45,7 @@ class BingMapsImageProvider extends ImageProvider {
 
         var opts = options;
 
-        this._status    = Status.NOT_READY;
+        this._status    = mapray.ImageProvider.Status.NOT_READY;
         this._callbacks = [];
 
         this._size       = undefined;
@@ -76,11 +75,11 @@ class BingMapsImageProvider extends ImageProvider {
             } )
             .then( json => {
                 this._analyze_matadata( json, opts );
-                this._status = Status.READY;
+                this._status = mapray.ImageProvider.Status.READY;
             } )
             .catch( err => {
                 console.error( "BingMapsImageProvider: " + err.message );
-                this._status = Status.FAILED;
+                this._status = mapray.ImageProvider.Status.FAILED;
             } ).then( () => {
                 // 状態変化を通知
                 for ( var i = 0; i < this._callbacks.length; ++i ) {
@@ -116,7 +115,7 @@ class BingMapsImageProvider extends ImageProvider {
      */
     status( callback: Callback )
     {
-        if ( this._status === Status.NOT_READY ) {
+        if ( this._status === mapray.ImageProvider.Status.NOT_READY ) {
             if ( callback ) {
                 this._callbacks.push( callback );
             }
