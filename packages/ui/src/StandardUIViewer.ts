@@ -1110,8 +1110,7 @@ class StandardUIViewer extends mapray.RenderCallback
             const delta_latitude = end_spherical_position.latitude - start_spherical_position.latitude;
             const delta_longitude = end_spherical_position.longitude - start_spherical_position.longitude;
 
-            this._camera_parameter.latitude += ( ( this._translate_drag[1] > 0 && delta_latitude < 0 )
-                                                || ( this._translate_drag[1] < 0 && delta_latitude > 0 ) )? -delta_latitude : delta_latitude;
+            this._camera_parameter.latitude -= delta_latitude;
             this._camera_parameter.longitude -= delta_longitude;
 
             this._translate_drag[0] = 0;
