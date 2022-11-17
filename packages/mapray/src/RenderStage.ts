@@ -326,7 +326,9 @@ abstract class RenderStage {
         }
 
         // すべての B3D タイルの描画
-        this._draw_b3d();
+        if ( this._viewer.getVisibility( Viewer.Category.B3D_SCENE ) ) {
+            this._draw_b3d();
+        }
 
         // ポイントクラウドを描画
         if ( this._viewer.getVisibility( Viewer.Category.POINT_CLOUD ) ) {
