@@ -108,18 +108,6 @@ abstract class EntityMaterial extends Material {
         this.setMatrix( "u_obj_to_view", obj_to_view );
     }
 
-    /**
-     */
-    private _setRenderId( id: number ) {
-        this.setVector4( "u_rid", [
-                (id >> 12 & 0xF) / 0xF,
-                (id >>  8 & 0xF) / 0xF,
-                (id >>  4 & 0xF) / 0xF,
-                (id       & 0xF) / 0xF
-        ]);
-    }
-
-
     private static readonly _obj_to_clip = GeoMath.createMatrixf();  // 計算用一時領域
     private static readonly _obj_to_view = GeoMath.createMatrixf();  // 計算用一時領域
 

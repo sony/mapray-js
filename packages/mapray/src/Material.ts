@@ -126,6 +126,16 @@ class Material {
         return dict;
     }
 
+    /**
+     */
+    protected _setRenderId( id: number ) {
+        this.setVector4( "u_rid", [
+                (id >> 12 & 0xF) / 0xF,
+                (id >>  8 & 0xF) / 0xF,
+                (id >>  4 & 0xF) / 0xF,
+                (id       & 0xF) / 0xF
+        ]);
+    }
 
     /**
      * リソースを破棄

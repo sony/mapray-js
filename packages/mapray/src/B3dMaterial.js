@@ -2,6 +2,7 @@ import Material from "./Material";
 import GeoMath from "./GeoMath";
 import vs_code from "./shader/b3d_basic.vert";
 import fs_code from "./shader/b3d_basic.frag";
+import rid_fs_code from "./shader/rid.frag";
 
 
 /**
@@ -14,17 +15,24 @@ class B3dMaterial extends Material {
 
     /**
      * @param {mapray.GLEnv} glenv
-     * @param {object}       debug   詳細は B3dCollection#$debug 非公開プロパティ
+     * @param {object}       options   詳細は B3dCollection#$debug 非公開プロパティ
      */
-    constructor( glenv, debug )
+    constructor( glenv, options )
     {
-        const preamble = B3dMaterial._getPreamble( debug );
-        super( glenv, preamble + vs_code, preamble + fs_code );
+        const preamble = B3dMaterial._getPreamble( options );
+        super( glenv,
+                preamble + vs_code,
+                preamble + ( options.ridMaterial ? rid_fs_code : fs_code )
+        );
 
         this.bindProgram();
         this.setInteger( "u_teximage", B3dMaterial.TEXUNIT_TEXIMAGE );
 
-        this._clip_coloring = debug.clip_coloring;
+        if ( options.ridMaterial ) {
+            this._setRenderId( 2 );
+        }
+
+        this._clip_coloring = options.clip_coloring;
     }
 
 

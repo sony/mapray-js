@@ -8,6 +8,7 @@ import B3dMaterial from "./B3dMaterial";
 import B3dCubeMaterial from "./B3dCubeMaterial";
 import WasmTool from "./WasmTool";
 import b3dtile_factory from "./wasm/b3dtile.js";
+import RenderStage from "./RenderStage";
 
 
 /**
@@ -485,6 +486,7 @@ class B3dStage {
         this._native   = tree._native;
         this._debug    = tree._owner.$debug;
         this._shader_cache = tree._owner.shader_cache;
+        this._render_target = pstage.getRenderTarget();
 
         // 変換行列
         this._a0cs_to_view = GeoMath.mul_AA( pstage._gocs_to_view, tree._a0cs_to_gocs, GeoMath.createMatrix() );
@@ -699,7 +701,7 @@ class B3dStage {
      */
     _draw_meshes()
     {
-        let material = this._getMaterial();
+        let material = this._getMaterial( this._render_target );
 
         material.bindProgram();
 
@@ -714,7 +716,7 @@ class B3dStage {
             mesh.draw( material );
         }
 
-        if ( this._debug.render_mode == 1 ) {
+        if ( this._debug.render_mode == 1 && this._render_target == RenderStage.RenderTarget.SCENE ) {
             // 立方体空間の表示
             let cube_mtl = this._getCubeMaterial();
             cube_mtl.bindProgram();
@@ -734,16 +736,27 @@ class B3dStage {
      *
      * @private
      */
-    _getMaterial()
-    {
-        let cache = this._shader_cache;
+     _getMaterial( render_target )
+     {
+         let cache = this._shader_cache;
+         if ( render_target === RenderStage.RenderTarget.SCENE ) {
+             if ( cache._B3dMaterial === undefined ) {
+                 cache._B3dMaterial = new B3dMaterial( this._glenv, this._debug);
+             }
+             return cache._B3dMaterial;
+         }
+         else if ( render_target === RenderStage.RenderTarget.RID ) {
+             if ( cache._B3dPickMaterial === undefined ) {
+                 this._debug.ridMaterial = true;
+                 cache._B3dPickMaterial = new B3dMaterial( this._glenv, this._debug );
+             }
+             return cache._B3dPickMaterial;
+         }
+         else {
+             throw new Error("unknown render target: " + render_target);
+         }
+     }
 
-        if ( cache._B3dMaterial === undefined ) {
-            cache._B3dMaterial = new B3dMaterial( this._glenv, this._debug );
-        }
-
-        return cache._B3dMaterial;
-    }
 
     /**
      * @summary マテリアルを取得

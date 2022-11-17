@@ -36,6 +36,10 @@ class SurfaceMaterial extends FlakeMaterial {
         this.setInteger( "u_image_hi", SurfaceMaterial.TEXUNIT_IMAGE_HI );
         this.setInteger( "u_image_lo", SurfaceMaterial.TEXUNIT_IMAGE_LO );
 
+        if ( options.ridMaterial ) {
+            this._setRenderId( 1 );
+        }
+
         this._viewer             = viewer;
         this._tile_texture_cache = viewer.tile_texture_cache;
         this._dummy_tile_texture = this._createDummyTileTexture( viewer.glenv, [128, 128, 128, 255] );

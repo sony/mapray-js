@@ -57,7 +57,7 @@ abstract class RenderStage {
     private _pixel_step: number;
 
     // モデルシーン
-    private _scene: Scene;
+    protected _scene: Scene;
 
     protected _globe: Globe;
 
@@ -280,7 +280,12 @@ abstract class RenderStage {
 
         // 描画領域全体にビューポートを設定
         gl.viewport( 0, 0, this._width, this._height );
-        gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
+        if ( this.getRenderTarget() === RenderStage.RenderTarget.SCENE ) {
+            gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
+        }
+        else {
+            gl.clearColor( 0.0, 0.0, 0.0, 0.0 );
+        }
         gl.depthMask( true );
         gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
 
@@ -321,7 +326,7 @@ abstract class RenderStage {
         }
 
         // すべての B3D タイルの描画
-        this._viewer.b3d_collection.draw( this );
+        this._draw_b3d();
 
         // ポイントクラウドを描画
         if ( this._viewer.getVisibility( Viewer.Category.POINT_CLOUD ) ) {
@@ -374,33 +379,33 @@ abstract class RenderStage {
             mesh.draw( flakeMaterial );
         }
 
-        let material = flakeMaterial;
+        if ( this.getRenderTarget() === RenderStage.RenderTarget.SCENE ) {
+            let material = flakeMaterial;
 
-        let layerRendered = false;
-        // レイヤーの地表 (半透明の可能性あり)
-        for ( let i = 1; i < num_drawings; ++i ) {
-            const mat = this._viewer.layers.getDrawingLayer( i - 1 ).getMateral();
-            // @ts-ignore
-            if ( material !== mat ) {
+            let layerRendered = false;
+            // レイヤーの地表 (半透明の可能性あり)
+            for ( let i = 1; i < num_drawings; ++i ) {
+                const mat = this._viewer.layers.getDrawingLayer( i - 1 ).getMateral();
                 // @ts-ignore
-                material = mat;
-                // @ts-ignore
-                material.bindProgram();
-            }
-            // @ts-ignore
-            if ( material.setFlakeParameter( this, rflake, mesh, i ) ) {
-                if ( !layerRendered ) {
-                    if ( this.getRenderTarget() === RenderStage.RenderTarget.SCENE ) {
-                        gl.enable( gl.BLEND );
-                    }
-                    gl.depthMask( false );
-                    layerRendered = true;
+                if ( material !== mat ) {
+                    // @ts-ignore
+                    material = mat;
+                    // @ts-ignore
+                    material.bindProgram();
                 }
-                mesh.draw( material );
+                // @ts-ignore
+                if ( material.setFlakeParameter( this, rflake, mesh, i ) ) {
+                    if ( !layerRendered ) {
+                        gl.enable( gl.BLEND );
+                        gl.depthMask( false );
+                        layerRendered = true;
+                    }
+                    mesh.draw( material );
+                }
             }
-        }
-        if ( layerRendered ) {
-            gl.depthMask( true );
+            if ( layerRendered ) {
+                gl.depthMask( true );
+            }
         }
 
         // 描画地表断頂点数を記録
@@ -464,12 +469,15 @@ abstract class RenderStage {
     }
 
 
-    _draw_point_cloud()
+    protected _draw_point_cloud()
     {
     }
 
+    protected _draw_b3d()
+    {
+    }
 
-    _draw_extras()
+    protected _draw_extras()
     {
         const gl = this._glenv.context;
 
@@ -520,7 +528,7 @@ abstract class RenderStage {
         gl.depthMask( true );
     }
 
-    private _draw_sky_layer()
+    protected _draw_sky_layer()
     {
         const gl = this._glenv.context;
 
@@ -601,10 +609,8 @@ export class SceneRenderStage extends RenderStage {
 
     /**
      * @summary 点群を描画
-     *
-     * @private
      */
-     _draw_point_cloud() {
+    protected _draw_point_cloud() {
         // const debug_handlers = PointCloud.getDebugHandlers() || {};
         // @ts-ignore
         const traverseDataRequestQueue = PointCloud.getTraverseDataRequestQueue();
@@ -656,6 +662,14 @@ export class SceneRenderStage extends RenderStage {
 
         s?.statistics_handler( s.statistics_obj );
     }
+
+    /**
+     * @summary B3Dを描画
+     */
+    protected _draw_b3d()
+    {
+        this._viewer.b3d_collection.draw( this );
+    }
 }
 
 
@@ -698,7 +712,7 @@ export class PickRenderStage extends RenderStage {
         this._flake_material = viewer._render_cache.surface_pick_material;
 
         this._pick_tool = pick_tool;
-        this._rid_map = [ null ]; // rid == 0 は要素なしを意味する
+        this._rid_map = [ null, null, null ]; // rid == 0 は要素なし  rid == 1 は地表  rid == 2 はB3Dを意味する
 
         this._pick_result = {};
 
@@ -756,7 +770,7 @@ export class PickRenderStage extends RenderStage {
         pick_tool.afterRender();
 
         const rid = pick_tool.readRid();
-        if ( rid > 0 ) {
+        if ( rid > 2 ) {
             const pick_object = this._rid_map[ rid ];
             if ( pick_object instanceof Entity ) {
                 this._pick_result.entity = pick_object;
@@ -771,10 +785,8 @@ export class PickRenderStage extends RenderStage {
 
     /**
      * @summary 点群を描画
-     *
-     * @private
      */
-    _draw_point_cloud() {
+    protected _draw_point_cloud() {
         if ( !this._pickOption.withPointCloud ) {
             return;
         }
@@ -802,8 +814,24 @@ export class PickRenderStage extends RenderStage {
     }
 
     /**
+     * @summary B3Dを描画
      */
-    get pick_result(): Viewer.PickResult {
+    protected _draw_b3d()
+    {
+        this._viewer.b3d_collection.draw( this );
+    }
+
+    protected _draw_extras()
+    {
+    }
+
+    protected _draw_sky_layer()
+    {
+    }
+
+    /**
+     */
+    get pick_result(): Viewer.PickResult | undefined {
         return this._pick_result;
     }
 }
