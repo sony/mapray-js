@@ -317,10 +317,10 @@ abstract class RenderStage {
 
         for ( let rflake of this._flake_list ) {
             let fro = rflake.getRenderObject();
-            if ( vis_ground ) {
+            if ( vis_ground && this._draw_flake_base_rid_check() ) {
                 this._draw_flake_base( rflake, fro.getBaseMesh() );
             }
-            if ( vis_entity ) {
+            if ( vis_entity && this._draw_entities_on_flake_rid_check() ) {
                 this._draw_entities_on_flake( fro );
             }
         }
@@ -337,7 +337,7 @@ abstract class RenderStage {
 
         // モデルシーン描画
         if ( vis_entity ) {
-            this._scene.draw( this );
+            this._draw_entity();
         }
 
         // 上空レイヤを描画
@@ -470,6 +470,21 @@ abstract class RenderStage {
         gl.disable( gl.POLYGON_OFFSET_FILL );
     }
 
+    // check need draw for rid
+    protected _draw_flake_base_rid_check()
+    {
+        return true;
+    }
+
+    // check need draw for rid
+    protected _draw_entities_on_flake_rid_check()
+    {
+        return true;
+    }
+
+    protected _draw_entity()
+    {
+    }
 
     protected _draw_point_cloud()
     {
@@ -608,6 +623,12 @@ export class SceneRenderStage extends RenderStage {
         this._viewer.layers.endFrame();
     }
 
+    /**
+     * @summary エンティティを描画
+     */
+    protected _draw_entity() {
+        this._scene.draw( this );
+    }
 
     /**
      * @summary 点群を描画
@@ -813,6 +834,32 @@ export class PickRenderStage extends RenderStage {
                 return;
             }
         }
+    }
+
+    protected _draw_flake_base_rid_check()
+    {
+        if ( (this._pickOption.exclude_category?.indexOf( Viewer.Category.GROUND ) ?? -1) !== -1 ) {
+            return false;
+        }
+        return true;
+    }
+
+    protected _draw_entities_on_flake_rid_check()
+    {
+        if ( (this._pickOption.exclude_category?.indexOf( Viewer.Category.ENTITY ) ?? -1) !== -1 ) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * @summary エンティティを描画
+     */
+    protected _draw_entity() {
+        if ( (this._pickOption.exclude_category?.indexOf( Viewer.Category.ENTITY ) ?? -1) !== -1 ) {
+            return;
+        }
+        this._scene.draw( this );
     }
 
     /**
