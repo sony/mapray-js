@@ -614,10 +614,11 @@ class StandardUIViewer extends mapray.RenderCallback
 
         // レイと地表の交点を求める
         const ray = viewer.camera.getCanvasRay( center_position, new mapray.Ray() );
-        const cross_point = viewer.getRayIntersection( ray );
-        if ( !cross_point ) {
+        const pickResult = viewer.pickWithRay( ray );
+        if ( !pickResult ) {
             return undefined;
         }
+        const cross_point = pickResult.position;
         const cross_geoPoint = new mapray.GeoPoint();
         cross_geoPoint.setFromGocs( cross_point );
         cross_geoPoint.altitude = viewer.getElevation( cross_geoPoint.latitude, cross_geoPoint.longitude );
@@ -742,7 +743,8 @@ class StandardUIViewer extends mapray.RenderCallback
                 this._operation_mode = StandardUIViewer.OperationMode.ROTATE;
 
                 const ray = viewer.camera.getCanvasRay( this._mouse_down_position );
-                this._rotate_center = viewer.getRayIntersection( ray );
+                const pickResult = viewer.pickWithRay( ray );
+                this._rotate_center = pickResult ? pickResult.position : undefined;
             }
             else if ( event.ctrlKey ) {
                 this._operation_mode = StandardUIViewer.OperationMode.FREE_ROTATE;
@@ -756,7 +758,8 @@ class StandardUIViewer extends mapray.RenderCallback
             this._operation_mode = StandardUIViewer.OperationMode.ROTATE;
 
             const ray = viewer.camera.getCanvasRay( this._mouse_down_position );
-            this._rotate_center = viewer.getRayIntersection( ray );
+            const pickResult = viewer.pickWithRay( ray );
+            this._rotate_center = pickResult ? pickResult.position : undefined;
         }
         // 右ボタン
         else if ( event.button === 2 ) {
@@ -1070,18 +1073,20 @@ class StandardUIViewer extends mapray.RenderCallback
 
             const camera = viewer.camera;
             let ray = camera.getCanvasRay( this._mouse_down_position );
-            const start_position = viewer.getRayIntersection( ray );
+            const pickResult_start = viewer.pickWithRay( ray );
 
             const end_mouse_position = GeoMath.createVector2([
                     this._mouse_down_position[0] + this._translate_drag[0],
                     this._mouse_down_position[1] + this._translate_drag[1]
             ]);
             ray = camera.getCanvasRay( end_mouse_position );
-            const end_position = viewer.getRayIntersection( ray );
+            const pickResult_end = viewer.pickWithRay( ray );
 
-            if ( !start_position || !end_position ) {
+            if ( !pickResult_start || !pickResult_end ) {
                 return;
             }
+            const start_position =  pickResult_start.position;
+            const end_position = pickResult_end.position;
 
             const start_spherical_position = new mapray.GeoPoint();
             start_spherical_position.setFromGocs( start_position );
@@ -1265,11 +1270,12 @@ class StandardUIViewer extends mapray.RenderCallback
 
         // 移動中心
         const ray = camera.getCanvasRay( this._mouse_down_position );
-        const translation_center = viewer.getRayIntersection( ray );
+        const pickResult = viewer.pickWithRay( ray );
 
-        if ( !translation_center ) {
+        if ( !pickResult ) {
             return;
         }
+        const translation_center =  pickResult.position;
 
         const center_spherical_position = new mapray.GeoPoint();
         center_spherical_position.setFromGocs( translation_center );
