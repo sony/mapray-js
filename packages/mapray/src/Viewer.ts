@@ -736,25 +736,6 @@ class Viewer {
 
 
     /**
-     * レイとの交点を取得
-     *
-     * ray と最も近いオブジェクトとの交点の情報を取得する。ただし交差が存在しない場合は
-     *    undefined を返す。
-     *
-     * 交差があればその交点の位置 (GOCS) を返す。
-     *
-     * @param ray    レイ (GOCS)
-     * @param options  オプション
-     *
-     * @return 交点または undefined
-     */
-    getRayIntersection( ray: Ray, opts: Viewer.RayIntersectionOption = {} ): Vector3 | undefined
-     {
-        const info = this.getRayIntersectionInfo( ray, opts );
-        return info ? info.position : undefined;
-     }
-
-    /**
      * レイとの交点情報を取得
      *
      * ray と最も近いオブジェクトとの交点の情報を取得する。ただし交差が存在しない場合は
@@ -765,34 +746,40 @@ class Viewer {
      *
      * @return 交点情報または undefined
      */
-    getRayIntersectionInfo( ray: Ray, opts: Viewer.RayIntersectionOption = {} ):  Viewer.RayIntersectionInfo | undefined
+    pickWithRay( ray: Ray, opts: Viewer.PickOption = {} ):  Viewer.PickResult | undefined
     {
         const limit      = (opts.limit      !== undefined) ? opts.limit      : Number.MAX_VALUE;
 
         let category;
         let distance = limit;
+        let b3d_info;
 
-        // B3D
-        const b3d_info = this._b3d_collection.getRayIntersection( ray, distance );
+        if ( (opts.exclude_category?.indexOf( Viewer.Category.B3D_SCENE ) ?? -1) === -1 ) {
+            // B3D
+            b3d_info = this._b3d_collection.getRayIntersection( ray, distance );
 
-        if ( b3d_info ) {
-            category = Viewer.Category.B3D_SCENE;
-            // @ts-ignore
-            distance = b3d_info.distance;
+            if ( b3d_info ) {
+                category = Viewer.Category.B3D_SCENE;
+                // @ts-ignore
+                distance = b3d_info.distance;
+            }
         }
+
 
         // 地表
         // ignore this._ground_visibility at this version.
         // if ( this._ground_visibility && (this._globe.status === Globe.Status.READY) ) {
-        if ( this._globe.status === Globe.Status.READY ) {
-            const globe_dist = this._globe.findRayDistance( ray, distance );
-
-            if ( globe_dist !== distance ) {
-                // 地表と交差した
-                category = Viewer.Category.GROUND;
-                distance = globe_dist;
+        if ( (opts.exclude_category?.indexOf( Viewer.Category.GROUND ) ?? -1) === -1 ) {
+            if ( this._globe.status === Globe.Status.READY ) {
+                const globe_dist = this._globe.findRayDistance( ray, distance );
+                if ( globe_dist !== distance  ) {
+                    // 地表と交差した
+                    category = Viewer.Category.GROUND;
+                    distance = globe_dist;
+                }
             }
         }
+
 
         // 交差の有無を確認
         if ( category === undefined ) {
@@ -810,7 +797,7 @@ class Viewer {
         }
 
         // 結果を返す
-        const ex_info: Viewer.RayIntersectionInfo = {
+        const ex_info: Viewer.PickResult = {
             category,
             distance,
             position: p
@@ -818,10 +805,12 @@ class Viewer {
 
         // B3D 専用の情報を追加
         if ( category === Viewer.Category.B3D_SCENE ) {
-            // @ts-ignore
-            ex_info.b3d_scene  = b3d_info!.b3d_scene;
-            // @ts-ignore
-            ex_info.feature_id = b3d_info!.feature_id;
+            if ( b3d_info ) {
+                // @ts-ignore
+                ex_info.b3d_scene  = b3d_info.b3d_scene;
+                // @ts-ignore
+                ex_info.feature_id = b3d_info.feature_id;
+            }
         }
 
         return ex_info;
@@ -1008,10 +997,20 @@ class Viewer {
      * @param pickOption ピックオプション
      * @return ピック結果
      */
-    pick( screen_position: Vector2, pickOption: Viewer.PickOption = {} ): Viewer.PickResult {
+    pick( screen_position: Vector2, pickOption: Viewer.PickOption = {} ): Viewer.PickResult | undefined
+    {
         const stage = new RenderStage.PickRenderStage( this, screen_position, pickOption );
         stage.render();
-        return stage.pick_result;
+        const pick_result = stage.pick_result;
+
+        if ( pick_result && pick_result.category === Viewer.Category.B3D_SCENE ) {
+            const ray = this._camera.getCanvasRay( screen_position );
+            const b3d_info = this.pickWithRay( ray, pickOption );
+            pick_result.b3d_scene = b3d_info?.b3d_scene;
+            pick_result.feature_id = b3d_info?.feature_id;
+        }
+
+        return pick_result;
     }
 
 
@@ -1249,39 +1248,6 @@ export class PoleInfo {
 }
 
 
-export interface RayIntersectionOption {
-    /** 制限距離 (ray.direction の長さが単位) */
-    limit?: number;
-
-    /** 交点位置以外の情報も返すとき true */
-    extra_info?: boolean;
-}
-
-
-
-export interface RayIntersectionInfo {
-    /** 交差したオブジェクトの種類 */
-    category:   Viewer.Category,
-
-    /** 交点した位置 (GOCS) */
-    position:   Vector3,
-
-    /** 交点までの距離 (ray.direction の長さが単位) */
-    distance:   number,
-
-    /**
-     * 交差したオブジェクトのインスタンス
-     * (種類が Viewer.Category.B3D_SCENE のとき、追加されるプロパティ)
-     */
-    b3d_scene?:  B3dScene,
-
-    /** feature ID (uint32 は 0 から 2^32 - 1 の整数値)
-     * (種類が Viewer.Category.B3D_SCENE のとき、追加されるプロパティ)
-     */
-    feature_id?: [number, number],
-}
-
-
 
 /**
  * 読み込み状況を格納する型
@@ -1319,9 +1285,14 @@ export type PostProcess = () => boolean;
  * {@link mapray.Viewer.pick} の引数として設定し、ピックする対象を指定する場合に使用する。
  */
 export interface PickOption {
-    /** 点群を対象に含めるかどうか。未指定の場合は含まない */
-    withPointCloud?: boolean;
+    /** 制限距離 (ray.direction の長さが単位 / pick の時はm) */
+    limit?: number;
+
+    /** pick対象外とするCategory pickWithRayでは一部Categoryのみ対象*/
+    exclude_category?: Viewer.Category[];
 }
+
+
 
 /**
  * ピック結果
@@ -1329,21 +1300,42 @@ export interface PickOption {
  * 関数型 {@link mapray.Viewer.pick} の戻り値のオブジェクト構造である。
  */
 export interface PickResult {
-    /** 
-     * ピックした3次元位置。ピックした画面上位置と、地形やエンティティと交差した位置です。空をピックした場合は `undefined` になります。
+    /**
+     * ピックしたオブジェクトの種類
      */
-    point?: Vector3,
-    /** 
+    category:   Viewer.Category,
+
+    /** ピックした位置 (GOCS) */
+    position:   Vector3,
+
+    /** ピックした位置までの距離 (ray.direction の長さが単位 / pick の時はm) */
+    distance:   number,
+
+    /**
      * ピックしたエンティティ。ピック位置にエンティティがない場合は `undefined` になります。
      */
     entity?: Entity,
-    /** 
-     * ピックした点群。点群をピック対象に含めるには、 {@link mapray.Viewer.PickOption} で対象に点群を含むよう指定する必要があります。
-     * 指定が無い場合、またはピック位置に点群がない場合は `undefined` になります。
-     */
-    pointCloud?: PointCloud
-}
 
+    /**
+     * ピックした点群。
+     * ピック位置に点群がない場合は `undefined` になります。
+     */
+    point_cloud?: PointCloud,
+
+    /**
+     * ピックしたB3dオブジェクトのインスタンス
+     * (種類が Viewer.Category.B3D_SCENE のとき、追加されるプロパティ)
+     * ピック位置にB3dがない場合は `undefined` になります。
+     */
+    b3d_scene?:  B3dScene,
+
+    /** feature ID (uint32 は 0 から 2^32 - 1 の整数値)
+     * (種類が Viewer.Category.B3D_SCENE のとき、追加されるプロパティ)
+     * @internal
+     * @experimental
+     */
+    feature_id?: [number, number],
+}
 
 
 /**
@@ -1352,7 +1344,7 @@ export interface PickResult {
  * [[Viewer.setVisibility]] と [[Viewer.getVisibility]] メソッドの
  * target 引数に指定する値の型である。
  *
- * @see [[RayIntersectionInfo.category]]
+ * @see [[PickResult.category]]
  */
 export const enum Category {
 
@@ -1366,6 +1358,12 @@ export const enum Category {
      * エンティティ
      */
     ENTITY = "@@_Viewer.Category.ENTITY",
+
+
+    /**
+     * 点群
+     */
+    POINT_CLOUD = "@@_Viewer.Category.POINT_CLOUD",
 
 
     /**

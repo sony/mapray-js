@@ -685,10 +685,12 @@ export class PickRenderStage extends RenderStage {
 
     private _pick_tool: PickTool;
 
-    private _pick_result: Viewer.PickResult;
+    private _pick_result?: Viewer.PickResult;
 
     /** ピック対象の指定など */
     private _pickOption: Viewer.PickOption;
+
+    private _camera: Camera;
 
     /**
      * @param viewer  所有者である Viewer
@@ -707,6 +709,8 @@ export class PickRenderStage extends RenderStage {
 
         super( viewer, camera, renderInfo );
 
+        this._camera = camera;
+
         // 地表マテリアルの選択
         // @ts-ignore
         this._flake_material = viewer._render_cache.surface_pick_material;
@@ -714,7 +718,7 @@ export class PickRenderStage extends RenderStage {
         this._pick_tool = pick_tool;
         this._rid_map = [ null, null, null ]; // rid == 0 は要素なし  rid == 1 は地表  rid == 2 はB3Dを意味する
 
-        this._pick_result = {};
+        this._pick_result = undefined;
 
         this._pickOption = pickOption;
     }
@@ -768,26 +772,56 @@ export class PickRenderStage extends RenderStage {
         }
 
         pick_tool.afterRender();
-
-        const rid = pick_tool.readRid();
-        if ( rid > 2 ) {
-            const pick_object = this._rid_map[ rid ];
-            if ( pick_object instanceof Entity ) {
-                this._pick_result.entity = pick_object;
-            }
-            else if ( pick_object instanceof PointCloud ) {
-                this._pick_result.pointCloud = pick_object;
-            }
+        const position = pick_tool.readDepth( this._view_to_clip, this._view_to_gocs );
+        if ( !position ) {
+            return;
         }
 
-        this._pick_result.point = pick_tool.readDepth( this._view_to_clip, this._view_to_gocs );
+        const view_to_gocs = this._camera.view_to_gocs;
+        const distance = GeoMath.length3( [
+                position[0] - view_to_gocs[12],
+                position[1] - view_to_gocs[13],
+                position[2] - view_to_gocs[14]
+        ] );
+
+        const limit = this._pickOption.limit ?? Number.MAX_VALUE;
+        if ( distance > limit ) return;
+
+        const rid = pick_tool.readRid();
+        if ( rid === 0 ) {
+            return;
+        }
+
+        if ( rid === 1 ) {
+            this._pick_result = { position, distance, category: Viewer.Category.GROUND };
+        }
+        else if ( rid === 2 ) {
+            this._pick_result = { position, distance, category: Viewer.Category.B3D_SCENE };
+        }
+        else {
+            const target = this._rid_map[ rid ];
+            if ( target instanceof Entity ) {
+                this._pick_result = { position, distance, category: Viewer.Category.ENTITY, entity: target };
+            }
+            else if ( target instanceof PointCloud ) {
+                this._pick_result = { position, distance, category: Viewer.Category.POINT_CLOUD, point_cloud: target };
+            }
+            else {
+                console.log("unknown target");
+                return;
+            }
+        }
     }
 
     /**
      * @summary 点群を描画
      */
     protected _draw_point_cloud() {
-        if ( !this._pickOption.withPointCloud ) {
+        const is_excluded = (
+            this._pickOption.exclude_category &&
+            this._pickOption.exclude_category.indexOf( Viewer.Category.POINT_CLOUD ) !== -1
+        );
+        if ( is_excluded ) {
             return;
         }
 
@@ -818,6 +852,9 @@ export class PickRenderStage extends RenderStage {
      */
     protected _draw_b3d()
     {
+        if ( (this._pickOption.exclude_category?.indexOf( Viewer.Category.B3D_SCENE ) ?? -1) !== -1 ) {
+            return;
+        }
         this._viewer.b3d_collection.draw( this );
     }
 
