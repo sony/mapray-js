@@ -105,12 +105,12 @@ class AnimePinCurveCombo extends mapray.RenderCallback {
         var ray = this.viewer.camera.getCanvasRay(clickPos, new mapray.Ray());
 
         // レイと地表の交点を求める
-        var clossPoint = this.viewer.getRayIntersection(ray);
+        var clossResult = this.viewer.pickWithRay( ray );
 
-        if (clossPoint != null) {
+        if ( clossResult ) {
             // 交点を球面座標系に変換する
             var closs_geoPoint = new mapray.GeoPoint();
-            closs_geoPoint.setFromGocs( clossPoint );
+            closs_geoPoint.setFromGocs( clossResult.position );
 
             // ピンのエンティティを作成
             var pin_entity = new mapray.PinEntity(this.viewer.scene);
