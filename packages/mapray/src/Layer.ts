@@ -47,8 +47,8 @@ class Layer {
 
         var props = (init instanceof ImageProvider) ? { image_provider: init } : init;
         this._image_provider = props.image_provider;
-        this._visibility     = props.visibility || true;
-        this._opacity        = props.opacity    || 1.0;
+        this._visibility     = props.visibility ?? true;
+        this._opacity        = props.opacity    ?? 1.0;
         this._type = props.type === Layer.LayerType.NIGHT ? Layer.LayerType.NIGHT : Layer.LayerType.NORMAL;
 
         this._tile_cache = new TileTextureCache( this._glenv, this._image_provider, { pole_info: new Viewer.PoleInfo( props.pole ) } );
