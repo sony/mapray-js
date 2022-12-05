@@ -320,9 +320,6 @@ abstract class RenderStage {
             }
         }
 
-        // 上空レイヤを描画
-        this._draw_sky_layer();
-
         // すべての B3D タイルの描画
         this._viewer.b3d_collection.draw( this );
 
@@ -333,6 +330,10 @@ abstract class RenderStage {
         if ( vis_entity ) {
             this._scene.draw( this );
         }
+
+        // 上空レイヤを描画
+        this._draw_sky_layer();
+
     }
 
     /**
