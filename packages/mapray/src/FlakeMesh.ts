@@ -117,23 +117,43 @@ class FlakeMesh {
         var mx_step = msize / u_count;
         var my_step = msize / v_count;
 
+        const u_step_count = u_count + 2;   // for edge bending
+        const v_step_count = v_count + 2;   // for edge bending
+
         var    center  = this._center;
         var demSampler = dem.newSampler( area );
 
-        var num_vertices = (u_count + 1) * (v_count + 1);
+        var num_vertices = (u_step_count + 1) * (v_step_count + 1);
         var        array = new Float32Array( FlakeMesh.VERTEX_SIZE * num_vertices );
         var        index = 0;
 
-        for ( var iv = 0, my = my_min; iv < v_count + 1; ++iv, my += my_step ) {
-            var ey    = Math.exp( my );
+        const edge_depth = (GeoMath.EARTH_RADIUS * 0.1) / ((area.z + 1) * (area.z + 1));
+        const angle = 2.0 * GeoMath.DEGREE;
+        const angle_unit = Math.PI / (GeoMath.EARTH_RADIUS * Math.PI);
+        const edge_length = edge_depth * angle * angle_unit;
+
+        for ( var iv = 0, my = my_min; iv < v_step_count + 1; ++iv, my += (iv == 1 || iv == v_step_count ? 0 : my_step) ) {
+            let my_edge = my;
+            if ( iv === 0 ) { my_edge -= edge_length; };
+            if ( iv === v_step_count ) { my_edge += edge_length; };
+
+            var ey    = Math.exp( my_edge );
             var ey2   = ey * ey;
             var sinφ = (ey2 - 1) / (ey2 + 1);
             var cosφ =   2 * ey  / (ey2 + 1);
-            for ( var iu = 0, mx = mx_min; iu < u_count + 1; ++iu, mx += mx_step ) {
-                var sinλ = Math.sin( mx );
-                var cosλ = Math.cos( mx );
+            for ( var iu = 0, mx = mx_min; iu < u_step_count + 1; ++iu, mx += (iu == 1 || iu == u_step_count ? 0 : mx_step) ) {
 
-                var height = demSampler.sample( mx, my );
+                let mx_edge = mx;
+                if ( iu === 0 ) { mx_edge -= edge_length; };
+                if ( iu === u_step_count ) { mx_edge += edge_length; };
+
+                var sinλ = Math.sin( mx_edge );
+                var cosλ = Math.cos( mx_edge );
+
+                var height = iv === 0 || iv === v_step_count ||
+                             iu === 0 || iu === u_step_count ? demSampler.sample( mx, my ) - edge_depth :
+                             demSampler.sample( mx, my );
+
                 var radius = GeoMath.EARTH_RADIUS + height;
 
                 // 法線 (GOCS)
@@ -149,16 +169,20 @@ class FlakeMesh {
                 array[index++] = gx - center[0];  // x
                 array[index++] = gy - center[1];  // y
                 array[index++] = gz - center[2];  // z
-                array[index++] = iu * u_step;     // mu
-                array[index++] = iv * v_step;     // mv
+                array[index++] = iu < 1 ? 0.0:
+                                 iu > u_step_count - 1 ? 1.0:
+                                 (iu - 1) * u_step; // mu
+                array[index++] = iv < 1 ? 0.0:
+                                 iv > v_step_count - 1 ? 1.0:
+                                 (iv - 1) * v_step; // mv
             }
         }
 
         return {
             array:        array,
             num_vertices: num_vertices,
-            num_quads_x:  u_count,
-            num_quads_y:  v_count
+            num_quads_x:  u_step_count,
+            num_quads_y:  v_step_count
         };
     }
 
@@ -260,8 +284,8 @@ class FlakeMesh {
         var index = 0;
 
         // 水平線
-        for ( var y = 0; y < this._num_quads_y + 1; ++y ) {
-            for ( var x = 0; x < this._num_quads_x; ++x ) {
+        for ( var y = 1; y < this._num_quads_y; ++y ) {
+            for ( var x = 1; x < this._num_quads_x - 1; ++x ) {
                 var i00 = (this._num_quads_x + 1) * y + x;  // 左下頂点
                 var i10 = i00 + 1;                          // 右下頂点
                 // 下水平線
@@ -271,8 +295,8 @@ class FlakeMesh {
         }
 
         // 垂直線
-        for ( x = 0; x < this._num_quads_x + 1; ++x ) {
-            for ( y = 0; y < this._num_quads_y; ++y ) {
+        for ( x = 1; x < this._num_quads_x; ++x ) {
+            for ( y = 1; y < this._num_quads_y - 1; ++y ) {
                 var j00 = (this._num_quads_x + 1) * y + x;  // 左下頂点
                 var j01 = j00 + this._num_quads_x + 1;      // 左上頂点
                 // 左垂直線
