@@ -16,12 +16,12 @@ varying highp float  v_length;  // 始点からの距離 (PathEntityのみ利用
 vec2
 offset( vec4 cpos )
 {
-    vec4 q0 = cpos;
-    q0.y *= u_sparam.z;  // q0 = A * q0
-    vec4 q1 = cpos + u_obj_to_clip * vec4( a_direction, 0 );
-    q1.y *= u_sparam.z;  // q1 = A * q1
+    vec4 p = cpos;
+    p.y *= u_sparam.z;  // 画面空間に変換
+    vec4 d = u_obj_to_clip * vec4( a_direction, 0 );
+    d.y *= u_sparam.z;  // 画面空間に変換
 
-    vec2 ds = normalize( q1.xy / q1.w - q0.xy / q0.w );
+    vec2 ds = normalize( p.w * d.xy - d.w * p.xy );
     vec2 wt = a_where * u_thickness;
     return mat2( ds.x, ds.y, -ds.y, ds.x ) * wt;
 }
