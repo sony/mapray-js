@@ -1126,7 +1126,7 @@ class B3dCube {
         if ( depth > 0 ) {
             // tgt_node 以下のレベルのタイルの子孫が存在
             const index = depth - 1;
-            return node_routes[index];
+            return node_routes[Math.min( index, B3dScene.MAX_SKIP_NODES )];
         }
         else {
             // tgt_node の位置に子孫タイルは存在しない
@@ -2201,6 +2201,10 @@ B3dScene.MESH_REDUCE_THRESH = 1.5;  // MeshNode 削減閾値
 B3dScene.MESH_REDUCE_FACTOR = 1.2;  // MeshNode 削減係数
 
 B3dScene.MAX_TILE_REQUESTEDS = 15;  // リクエスト中のリクエスト数の最大値
+
+// 現在読み込まれているレベルと次に読み込むレベルの差を制限する
+// 1は強制的に次のレベルを読み込むように制限することを意味する
+B3dScene.MAX_SKIP_NODES = 1;
 
 MeshNode.EMPTY_TILE_MESH = { id: "EMPTY_TILE_MESH" };
 
