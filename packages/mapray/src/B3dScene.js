@@ -67,6 +67,11 @@ class B3dScene {
         // 初期用の特殊プロパティ
         this._b3d_req_id = undefined;
 
+        // リクエストキュー
+        // - 常にPriority順にソート済み
+        // - サイズは B3dScene.MAX_TILE_REQUESTEDS を超えない
+        this._request_queue = [];
+
         if ( owner.getWasmModule() ) {
             this._startInitialization( owner.getWasmModule() );
         }
@@ -229,6 +234,8 @@ class B3dScene {
         // 次のフレームのカウンターを準備
         this._num_touch_cubes  = 0;
         this._num_touch_meshes = 0;
+        this._num_cube_createds = 0;
+        this._request_queue = [];
         ++this._frame_counter;
     }
 
@@ -537,8 +544,23 @@ class B3dStage {
      */
     _traverse()
     {
+        const scene = this._root_cube._owner;
+
         this._mesh_node_list = [];
         this._traverse_recur( this._root_cube );
+
+        // traverse中に追加されたリクエストを実行する
+        for ( const request of scene._request_queue ) {
+            if ( scene._num_tile_requesteds > B3dScene.MAX_TILE_REQUESTEDS ) {
+                break;
+            }
+            const node = request.node;
+            if ( node._b3d_state === B3dState.NONE ) {
+                node._requestTile();
+            }
+        }
+
+        // console.log( "B3dCube.created: " + scene._num_cube_createds + "  Tile.Requested: " + scene._num_tile_requesteds );
     }
 
 
@@ -883,6 +905,7 @@ class B3dCube {
         if ( child === null ) {
             // 子供がいなければ新規に生成
             child = new B3dCube( this, which );
+            this._owner._num_cube_createdd++;
             this._children[which] = child;
         }
 
@@ -949,7 +972,7 @@ class B3dCube {
         }
 
         // タイルのリクエストを試みる
-        target_node._tryRequestTile( loaded_node, failed_node );
+        target_node._tryRequestTile( loaded_node, failed_node, tile_level );
 
         // メッシュを使ったことにする
         mesh_node.touch();
@@ -992,14 +1015,10 @@ class B3dCube {
      * @private
      */
     _tryRequestTile( loaded_node,
-                     failed_node )
+                     failed_node,
+                     tile_level )
     {
         console.assert( loaded_node );
-
-        if ( this._owner._num_tile_requesteds >= B3dScene.MAX_TILE_REQUESTEDS ) {
-            // 要求が最大数に達しているので受け入れない
-            return;
-        }
 
         if ( this === loaded_node ) {
             // this 自身が loaded_node なのでリクエストは不要
@@ -1057,7 +1076,54 @@ class B3dCube {
         console.assert( cand_node._b3d_state === B3dState.NONE );
 
         // 最終候補ノードのタイルをリクエスト
-        cand_node._requestTile();
+        this._push_request_queue( cand_node, { diff: tile_level - loaded_node.level, level: loaded_node.level });
+    }
+
+
+    /**
+     * リクエストキューに追加する
+     */
+    _push_request_queue( node, priority ) {
+        const isAscendingDirection = (a, b) => (
+            a.diff > b.diff ? true:
+            a.diff < b.diff ? false:
+            a.level < b.level // ascending order by level if diff is the same
+        );
+        let index = -1;
+        let old_node = null;
+        const request_queue = this._owner._request_queue;
+        for ( let i=request_queue.length-1; i>=0; i-- ) {
+            const request = request_queue[i];
+            const hasHigherPriority = isAscendingDirection( priority, request.priority );
+            if ( hasHigherPriority ) {
+                index = i;
+            }
+            if ( request.node === node ) { // the node is already queued
+                if ( hasHigherPriority ) {
+                    // remove the older node from the queue and update priority value
+                    old_node = request_queue.splice( i, 1 )[0];
+                    old_node.priority = priority;
+                }
+                else {
+                    // newer node has lower priority
+                    return;
+                }
+            }
+        }
+
+        if ( index === -1 ) {
+            if ( B3dScene.MAX_TILE_REQUESTEDS < request_queue.length ) {
+                return;
+            }
+            request_queue.push( old_node ?? { node, priority });
+        }
+        else {
+            if ( B3dScene.MAX_TILE_REQUESTEDS <= index ) {
+                return;
+            }
+            // insert the node at index
+            request_queue.splice( index, 0, old_node ?? { node, priority });
+        }
     }
 
 
