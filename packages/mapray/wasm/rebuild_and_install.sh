@@ -12,3 +12,4 @@ rebuild() {
 cd $(dirname $0)
 /bin/rm -f -r "../src/wasm/"
 rebuild "b3dtile"
+rebuild "sdfield"
