@@ -245,6 +245,10 @@ class StandardUIViewer extends mapray.RenderCallback
         // For getting KeybordEvent
         element.setAttribute( 'tabindex', '0' );
 
+        if ( !options.attribution_controller ) {
+            viewer.attribution_controller.addAttribution( StandardUIViewer._standarduiviewer_attributions );
+        }
+
         return this._viewer;
     }
 
@@ -2276,6 +2280,12 @@ export const FOV_RANGE = { min: 5, max: 120 };
 
 // 画角の倍率　θ' = 2 atan(tan(θ/2)*f)
 export const FOV_FACTOR = 1.148698354997035;
+
+// StandardUIViewer で使用するデータの著作権情報
+export const _standarduiviewer_attributions: string[] = [
+    `<a href="http://www.jaxa.jp/">©JAXA</a>`,
+    `<a href="https://www.gsi.go.jp/kiban/index.html">測量法に基づく国土地理院長承認（複製）H30JHf626</a>`
+];
 
 
 

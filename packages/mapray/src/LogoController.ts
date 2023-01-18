@@ -1,3 +1,4 @@
+import Viewer from "./Viewer";
 import ContainerController from "./ContainerController"
 
 import Dom from "./util/Dom";
@@ -12,60 +13,26 @@ import LOGO_MINI from "./resources/svg/mapray_small.svg";
  */
 class LogoController extends ContainerController {
 
+    protected _sub_container: HTMLAnchorElement;
+
+
     /**
      * コンストラクタ
-     * @param container ルートコンテナ（Viewerクラスのcontainer_element）
      * @param options   表示オプション
      */
-    constructor( container: HTMLElement | string, options: LogoController.Option = {} )
+    constructor( options: LogoController.Option = {} )
     {
-        super( container, options );
-        
+        super( options );
+
         this._position = options.position ?? ContainerController.ContainerPosition.BOTTOM_LEFT;
-    }
 
+        this._sub_container = document.createElement( "a" );
+        this._sub_container.classList.add( "mapray-logo" );
+        this._sub_container.setAttribute( "href", "https://mapray.com" );
+        this._sub_container.setAttribute( "target", "_blank" );
+        this._sub_container.setAttribute( "aria-label", "mapray" );
 
-    /**
-     * リサイズイベント
-     */
-    protected _sizeChanged(): void
-    {
-        if (this._container) {
-            var sub_container = this._container.children[0];
-            var parent_container = this._container.parentElement;
-            
-            if ( parent_container!.parentElement!.clientWidth < ContainerController._compact_size) {
-                sub_container.classList.add( "mapray-logo-compact" )
-            }
-            else {
-                sub_container.classList.remove( "mapray-logo-compact" )
-            }
-        }
-    }
-
-
-    /**
-     * コンテナの作成
-     */
-    override createContainer(): void
-    {
-        const name = "control-" + this._position;
-        const parent_container = this._viewer_container.getElementsByClassName( name )[0];
-
-        const main_container = document.createElement( "div" );
-        main_container.className = "control";
-
-        const sub_container = document.createElement( "a" );
-        sub_container.className = "mapray-logo";
-        sub_container.href = "https://mapray.com";
-        sub_container.target = "_blank";
-        sub_container.setAttribute( "aria-label", "mapray" );
-
-        main_container.appendChild( sub_container );
-        this._container = main_container;
-
-        parent_container.appendChild( this._container );
-        this._sizeChanged();
+        this._container.appendChild( this._sub_container );
     }
 
 
@@ -103,7 +70,6 @@ export interface Option extends ContainerController.Option {
 
 
 } // namespace LogoController
-
 
 
 

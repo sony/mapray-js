@@ -7,7 +7,7 @@
 .control-bottom-right   { position: absolute; pointer-events: none; z-index: 2; }
 .control-top-left       { top: 0px; left: 0px; }
 .control-top-right      { top: 0px; right: 0px; }
-.control-bottom-left    { bottom: 0px; left: 0px; }
+.control-bottom-left    { bottom: 0px; left: 0px; display: flex; align-items: flex-end; }
 .control-bottom-right   { right: 0px; bottom: 0px; }
 
 /* 要素を格納するコントロール */
@@ -34,7 +34,7 @@ a.mapray-logo{
 }
 
 /* ロゴ（縮小表示） */
-a.mapray-logo.mapray-logo-compact{
+.compact > a.mapray-logo{
     width: 45px;
     height: 28px;
     background-image: svg-load("svg/mapray_small.svg");
@@ -50,7 +50,7 @@ a.mapray-logo.mapray-logo-compact{
 }
 
 /* 著作権（縮小表示） */
-.mapray-attribution.mapray-attribution-compact {
+.compact > .mapray-attribution {
     min-height: 24px;   
     padding: 2px 0px 2px 0px;
     margin: 10px;
@@ -60,54 +60,54 @@ a.mapray-logo.mapray-logo-compact{
 }
 
 /* 著作権（縮小表示）アイコン展開時の空白調整 */
-.mapray-attribution.mapray-attribution-compact:hover {
+.compact > .mapray-attribution:hover {
     padding: 2px 24px 2px 4px;
     visibility: visible;
 }
 
 /* 著作権（縮小表示）が左側配置の場合の調整 */
-.control-top-left > .mapray-attribution.mapray-attribution-compact:hover,
-.control-bottom-left > .mapray-attribution.mapray-attribution-compact:hover {
+.control-top-left > .mapray-attribution.compact:hover,
+.control-bottom-left > .mapray-attribution.compact:hover {
     padding: 2px 4px 2px 24px;
     border-radius: 12px 3px 3px 12px;
 }
 
 /* 著作権（縮小表示）コンテナ */
-.mapray-attribution.mapray-attribution-compact .mapray-attribution-container {
+.mapray-attribution.compact > .mapray-attribution-container {
     display: none;
 }
 
 /* 著作権（縮小表示）アイコンのホバーイベント */
-.mapray-attribution.mapray-attribution-compact:hover .mapray-attribution-container {
+.mapray-attribution.compact:hover .mapray-attribution-container {
     margin: 0px 10px 0px 10px;
     display: block;
 }
 
 /*著作権（縮小表示）アイコン*/
-.mapray-attribution.mapray-attribution-compact::after {
+.mapray-attribution.compact::after {
     content: '';
     cursor: pointer;
     position: absolute;
     background-image: svg-load("svg/attribution.svg");
     background-size: contain;
-    width: 24px;
-    height: 24px;
-    margin: 2px 0px 2px 0px;
+    width: 20px;
+    height: 20px;
+    margin: 2px;
     box-sizing: border-box;
     border-radius: 12px;    /* アイコンの大きさにより調整 */
 }
 
 /* 著作権（縮小表示）アイコンの位置調整 */
-.control-top-left > .mapray-attribution.mapray-attribution-compact::after       { top: 0; left: 0; }
-.control-top-right > .mapray-attribution.mapray-attribution-compact::after      { top: 0; right: 0; }
-.control-bottom-left > .mapray-attribution.mapray-attribution-compact::after    { bottom: 0; left: 0; }
-.control-bottom-right > .mapray-attribution.mapray-attribution-compact::after   { bottom: 0; right: 0; }
+.control-top-left > .mapray-attribution.compact::after       { top: 0; left: 0; }
+.control-top-right > .mapray-attribution.compact::after      { top: 0; right: 0; }
+.control-bottom-left > .mapray-attribution.compact::after    { bottom: 0; left: 0; }
+.control-bottom-right > .mapray-attribution.compact::after   { bottom: 0; right: 0; }
 
 /* 著作権テキストの設定 */
 .mapray-attribution a {
     font-family: 'Noto Sans JP', sans-serif;
     font-size: 12px;
-    color: rgba(0, 0, 0, 1);
+    color: inherit;
     text-decoration: none;
     padding: 0px 5px 0px 5px;
 }

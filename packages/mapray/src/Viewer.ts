@@ -230,14 +230,18 @@ class Viewer {
         }
 
         // マウス・Attribution開発
-        this._logo_controller = options.logo_controller ?? new LogoController( this._container_element );
-        this._attribution_controller = options.attribution_controller ?? new AttributionController( this._container_element );
+        this._logo_controller = options.logo_controller ?? new LogoController();
+        // Viewer にデフォルトで生成される著作権情報コンテナ
+        this._attribution_controller = options.attribution_controller ?? new AttributionController({
+            is_default: true,
+            position: AttributionController.ContainerPosition.BOTTOM_RIGHT
+        });
 
         // ロゴ・著作権表示用コンテナの作成
         this._createLogoAttributionContainer()
 
-        this._logo_controller.createContainer();
-        this._attribution_controller.createContainer();
+        this._logo_controller.init( this );
+        this._attribution_controller.init( this );
 
         // 最初のフレームの準備
         this._requestNextFrame();
@@ -298,10 +302,8 @@ class Viewer {
         this._scene.cancelLoaders();
 
         // マウス・Attribution開発
-        // @ts-ignore
-        this._logo_controller._destroy();
-        // @ts-ignore
-        this._attribution_controller._destroy();
+        this._logo_controller.destroy();
+        this._attribution_controller.destroy();
         // @ts-ignore
         this._attribution_controller = null;
 
@@ -1271,7 +1273,7 @@ export interface Option {
     /** ロゴ表示制御オブジェクト */
     logo_controller?: LogoController;
 
-    /** 著作権表示制御オブジェクト */
+    /** Mapray デフォルトの著作権表示制御オブジェクト */
     attribution_controller?: AttributionController;
 
     atmosphere?: Atmosphere;
@@ -1425,7 +1427,7 @@ export interface LoadStatus {
 export interface CaptureOption {
     type: "jpeg" | "png",
     sync?: boolean,
-    attribution_text?: string,
+    attribution_text?: string | string[],
 }
 
 
