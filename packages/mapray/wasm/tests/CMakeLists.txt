@@ -14,6 +14,9 @@ set(unit_test_src
   b3dtile_tests.cpp
   ../b3dtile/Tile.cpp
   ../b3dtile/Tile/Clipper.cpp
+  sdfield_tests.cpp
+  ../sdfield/Converter.cpp
+  ../sdfield/Grid.cpp
 )
 
 
