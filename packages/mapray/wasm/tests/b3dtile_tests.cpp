@@ -44,7 +44,8 @@ struct Env {
 
     static void
     ray_result( wasm_f64_t /*distance*/,
-                wasm_i32_t       /*id*/ )
+                wasm_f64_t     /*id_0*/,
+                wasm_f64_t     /*id_1*/ )
     {}
 
 
