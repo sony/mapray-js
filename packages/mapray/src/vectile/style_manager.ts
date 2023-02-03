@@ -270,12 +270,21 @@ export class StyleManager {
     /**
      * `this` が所属する [[Viewer]] インスタンスを設定
      *
+     * `viewer` に取り付けられたときに呼び出される。
+     *
+     * ただし、外されたときは `null` が指定される。
+     *
      * @internal
      * [[Viewer.setVectileManager]] から呼び出される。
      */
     public __install_viewer( viewer: Viewer | null ): void
     {
         this._viewer = viewer;
+
+        // 保有するレイヤーにも伝える
+        for ( const layer of this._layers.values() ) {
+            layer.__install_viewer( viewer );
+        }
     }
 
 

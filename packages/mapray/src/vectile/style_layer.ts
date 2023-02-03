@@ -9,6 +9,7 @@ import type { Vector4 } from "../GeoMath";
 import type Primitive from "../Primitive";
 import type { OJson } from "../util/json_type";
 import { isObject as json_isObject } from "../util/json_type";
+import type Viewer from "../Viewer";
 import { cfa_assert } from "../util/assertion";
 
 
@@ -220,6 +221,19 @@ export abstract class StyleLayer {
         this._visibility = (visibility === 'visible');
         this._properties = properties;
     }
+
+
+    /**
+     * `this.style_manager` 所属する [[Viewer]] インスタンスを設定
+     *
+     * デフォルトの実装は何もしない。
+     *
+     * @see [[StyleManager.__install_viewer]]
+     *
+     * @virtual
+     * @internal
+     */
+    public __install_viewer( viewer: Viewer | null ): void {}
 
 
     /**
