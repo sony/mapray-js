@@ -7,7 +7,8 @@ import debugCommon, {
     B3dTileModule,
     AtmosphereModule,
     Dataset2dModule,
-    Dataset3dModule
+    Dataset3dModule,
+    ImageProviderModule
 } from "debug-common";
 
 
@@ -75,6 +76,7 @@ class DatasetViewer extends DebugViewer {
 
         modules.push( new B3dTileModule() );
         modules.push( new AtmosphereModule() );
+        modules.push( new ImageProviderModule() );
     }
 
 
