@@ -414,6 +414,21 @@ export abstract class LayerFlake<StyleLayerT extends StyleLayer = StyleLayer> {
 
 
     /**
+     * インスタンスを破棄
+     *
+     * このメソッドを呼び出した後は `this` にアクセスすることができない。
+     *
+     * @virtual
+     */
+    public dispose(): void
+    {
+        for ( const layer_feature of this._layer_features.values() ) {
+            layer_feature.dispose();
+        }
+    }
+
+
+    /**
      * 初期化時のフィーチャを生成
      *
      * `this._layer_features` に、初期評価のフィーチャを設定する。
@@ -530,6 +545,11 @@ export abstract class LayerFlake<StyleLayerT extends StyleLayer = StyleLayer> {
         // に this._layer_features に追加
         for ( const layer_feature of summary.added_features ) {
             this._layer_features.set( layer_feature.feature, layer_feature );
+        }
+
+        // 削除された LayerFeature インスタンスの破棄
+        for ( const layer_feature of summary.deleted_features ) {
+            layer_feature.dispose();
         }
 
         // 前回ズーム値を更新
@@ -777,6 +797,18 @@ export abstract class LayerFeature<LayerFlakeT extends LayerFlake = LayerFlake,
             this._evaluated_value_cache.set( property, value );
         }
     }
+
+
+    /**
+     * インスタンスを破棄
+     *
+     * デフォルト実装は何もしない。
+     *
+     * このメソッドを呼び出した後は `this` にアクセスすることができない。
+     *
+     * @virtual
+     */
+    public dispose(): void {}
 
 
     /**

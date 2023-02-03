@@ -1441,6 +1441,7 @@ export class Flake implements Area {
         }
 
         this._style_flake.cancelRequest();
+        this._style_flake.dispose();
         this._style_flake = null;
     }
 
@@ -1458,6 +1459,12 @@ export class Flake implements Area {
         }
 
         const belt = this.belt;
+
+        // StyleFlake インスタンスを破棄
+        if ( this._style_flake !== null ) {
+            this._style_flake.dispose();
+            this._style_flake = null;
+        }
 
         // メッシュを破棄
         var meshes = this._meshes;

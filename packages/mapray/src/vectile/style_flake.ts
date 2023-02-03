@@ -37,6 +37,21 @@ export class StyleFlake {
 
 
     /**
+     * インスタンスを破棄
+     *
+     * このメソッドを呼び出した後は `this` にアクセスすることができない。
+     */
+    dispose(): void
+    {
+        // 所有するすべての LayerFlake インスタンスを破棄
+        for ( const layer_flake of this._layer_flakes.values() ) {
+            layer_flake.dispose();
+        }
+        this._layer_flakes.clear();
+    }
+
+
+    /**
      * `style_layer` に対応するプリミティブ配列を取得する。
      */
     getPrimitives( style_layer: StyleLayer,
