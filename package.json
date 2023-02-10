@@ -20,10 +20,10 @@
     "ui-devel": "yarn workspace @mapray/ui build-devel",
     "ui-watch": "yarn workspace @mapray/ui build-watch",
     "css": "yarn workspace @mapray/ui css",
-    "doc": "typedoc --tsconfig tsconfig.json",
-    "doc-watch": "typedoc --tsconfig tsconfig.json --watch",
-    "doc-devel": "typedoc --tsconfig tsconfig-devel.json",
-    "doc-devel-watch": "typedoc --tsconfig tsconfig-devel.json --watch",
+    "doc": "typedoc --validation.invalidLink --tsconfig tsconfig.json",
+    "doc-watch": "typedoc --validation.invalidLink --tsconfig tsconfig.json --watch",
+    "doc-devel": "typedoc --validation.invalidLink --tsconfig tsconfig-devel.json",
+    "doc-devel-watch": "typedoc --validation.invalidLink --tsconfig tsconfig-devel.json --watch",
     "test": "yarn workspace @mapray/mapray-js test"
   },
   "contributors": [
@@ -66,7 +66,7 @@
   ],
   "devDependencies": {
     "npm-run-all": "^4.1.5",
-    "typedoc": "^0.22.15"
+    "typedoc": "0.23.28"
   },
   "dependencies": {}
 }

@@ -57,8 +57,12 @@ class HTTP {
         try {
             response = await fetch( url + queryText, option);
         }
-        catch( error ) {
-            throw new HTTP.FetchError( "Failed to fetch", url, undefined, error );
+        catch( error: unknown ) {
+            if ( error instanceof Error) {
+                throw new HTTP.FetchError("Failed to fetch", url, undefined, error);
+            } else {
+                throw new HTTP.FetchError("Failed to fetch", url, undefined, undefined);
+            }
         }
         if ( !response.ok ) {
             throw new HTTP.FetchError( "Failed to fetch: " + response.statusText, url, response );

@@ -10,8 +10,7 @@
     ],
     "out": "doc/typedoc-devel",
     "hideGenerator": true,
-    "excludeInternal": false,
-    "listInvalidSymbolLinks": true,
+    "excludeInternal": false
   },
 
   "include": [

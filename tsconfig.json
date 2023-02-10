@@ -27,7 +27,11 @@
       "@mapray/mapray-js": ["./packages/mapray/src/mapray"],
       "@mapray/ui": ["packages/ui/src/"],
     },
+    "typeRoots": [
+      "node_modules/@types"
+    ]
   },
+
   "typedocOptions": {
     "name": "@mapray",
     "entryPoints": [
@@ -37,8 +41,7 @@
     ],
     "out": "doc/typedoc",
     "hideGenerator": true,
-    "excludeInternal": true,
-    "listInvalidSymbolLinks": true,
+    "excludeInternal": true
   },
   "include": [
     "./meta-info.ts",

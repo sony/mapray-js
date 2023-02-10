@@ -171,8 +171,7 @@ class SceneLoader extends Loader {
                     this._check_cancel();
                     // データを解析して gltf.Content を構築
                     // @ts-ignore
-                    return GltfTool.load( json, {
-                            base_resource: gltf_resource,
+                    return GltfTool.load( json, { base_resource: gltf_resource,
                               binary_type: Resource.Type.BINARY,
                                image_type: Resource.Type.IMAGE,
                      // @ts-ignore
