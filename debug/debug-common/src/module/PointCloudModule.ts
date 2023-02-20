@@ -81,6 +81,12 @@ const OPTION_PROPERTIES = [
         type: "boolean",
         value: false,
     },
+    {
+        key: "visibility",
+        type: "boolean",
+        description: "point_cloudのvisibility",
+        value: true,
+    },
 ];
 
 
@@ -121,6 +127,7 @@ export default class PointCloudModule extends Module {
 
     protected override async doUnloadData(): Promise<void>
     {
+        this.debugViewer.viewer.setVisibility( mapray.Viewer.Category.B3D_SCENE, this._option.get( "visibility" ) );
         const point_cloud_collection = this.debugViewer.viewer.point_cloud_collection;
         this._point_cloud_list.forEach( point_cloud => {
                 point_cloud_collection.remove( point_cloud );
@@ -307,6 +314,11 @@ time: ${statistics.total_time.toFixed(2)}ms (traverse: ${statistics.traverse_tim
         if ( this._log_area ) {
             ui.appendChild( this._log_area );
         }
+
+        option.onChange("visibility", event => {
+            this.debugViewer.viewer.setVisibility( mapray.Viewer.Category.POINT_CLOUD, event.value );
+        });
+        ui.append( DomTool.createCheckboxOption(option, "visibility" ) );
 
         return this._ui = ui;
     }

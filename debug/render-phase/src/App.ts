@@ -133,10 +133,10 @@ class App extends maprayui.StandardUIViewer {
         else if (event.ctrlKey) {
             this._override_mouse_event = true;
             this._pick(pickResult => {
-                    if (pickResult.point) {
+                    if (pickResult.position) {
                         var pin = new mapray.PinEntity( this.viewer.scene );
                         const p = new mapray.GeoPoint();
-                        p.setFromGocs( pickResult.point );
+                        p.setFromGocs( pickResult.position );
                         if (!pickResult.entity) {
                             // pin.altitude_mode = mapray.AltitudeMode.RELATIVE;
                             // p.altitude = 0;
@@ -169,9 +169,9 @@ class App extends maprayui.StandardUIViewer {
 
         if ( this._enable_ui.checked ) {
             this._pick(pickResult => {
-                    if (pickResult.point) {
+                    if (pickResult.position) {
                         const p = new mapray.GeoPoint();
-                        p.setFromGocs( pickResult.point );
+                        p.setFromGocs( pickResult.position );
                         this._mouse_log.innerHTML = (
                             "Ctrl + Click to put PinEntity\n" +
                             "Shift + Click Entity to chnge some property\n" +
@@ -215,7 +215,9 @@ class App extends maprayui.StandardUIViewer {
             const pickResult = this.viewer.pick(this._pre_mouse_position2);
             const end = Date.now();
             // console.log("Pick: " + (end-start) + "ms", pickResult);
-            this._pick_handler(pickResult);
+            if ( pickResult ){
+                this._pick_handler( pickResult );
+            }
             this._pick_handler = undefined;
         }
 

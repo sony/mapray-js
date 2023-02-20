@@ -441,26 +441,12 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
                 const center = new mapray.GeoPoint(
                     (bbox[0] + bbox[3]) / 2.0,
                     (bbox[1] + bbox[4]) / 2.0,
-                    (bbox[2] + bbox[5]) / 2.0,
+                    0 // (bbox[2] + bbox[5]) / 2.0,
                 );
                 const pin = new mapray.PinEntity( this.viewer.scene );
                 pin.addMakiIconPin( "landmark-15", center);
                 this.addEntity(pin);
-
-                ZOOM_TO_PC: {
-                    const canvas = this.viewer.canvas_element;
-                    const ray = this.viewer.camera.getCanvasRay( mapray.GeoMath.createVector2([ canvas.width/2, canvas.height/2 ]));
-                    const position = this.viewer.getRayIntersection( ray );
-                    if ( position ) {
-                        const geoPoint = new mapray.GeoPoint();
-                        geoPoint.setFromGocs( position );
-                        const distance = center.getGeographicalDistance( geoPoint );
-                        if ( distance < 1000 ) {
-                            break ZOOM_TO_PC;
-                        }
-                    }
-                    this.startFlyCamera({ iscs_end: center, end_altitude: 100, end_from_lookat: 500, time: 1 });
-                }
+                this.startFlyCamera({ iscs_end: center, end_altitude: 500, end_from_lookat: 100, time: 1 });
             }
 
             else if ( mode === "raw-bucket" ) {

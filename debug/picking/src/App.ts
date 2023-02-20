@@ -14,7 +14,7 @@ interface Option {
     tools?: HTMLElement;
 }
 
-type PickHandler = (pickResult: mapray.Viewer.PickResult) => void;
+type PickHandler = (pickResult: mapray.Viewer.PickResult | undefined) => void;
 
 
 export default class App extends maprayui.StandardUIViewer {
@@ -155,40 +155,53 @@ export default class App extends maprayui.StandardUIViewer {
         if ( event.shiftKey ) {
             this._override_mouse_event = true;
             this._pick(pickResult => {
-                    if (pickResult.entity instanceof mapray.PinEntity) {
+                    if ( !pickResult ){
+                        console.log("none")
+                        return;
+                    }
+                    console.log( pickResult );
+                    if ( pickResult.entity instanceof mapray.PinEntity) {
+                        console.log("pin");
                         // pickResult.entity.setSize(200, 200);
                         pickResult.entity.setFGColor( [1, 0, 0] );
                     }
                     else if (pickResult.entity instanceof mapray.TextEntity) {
+                        console.log("text");
                         // pickResult.entity.setFGColor( [1, 0, 0] );
                         pickResult.entity.setBackgroundColor([0, 0, 1]);
                         pickResult.entity.setEnableBackground(true);
                     }
                     else if (pickResult.entity instanceof mapray.ImageIconEntity) {
+                        console.log("ImageIcon");
                         pickResult.entity.setSize( [50, 30] );
                     }
                     else if (pickResult.entity instanceof mapray.ModelEntity) {
+                        console.log("Model");
                         this._cache_scale = this._cache_scale === 2 ? 1 : 2;
                         pickResult.entity.setScale( [this._cache_scale, this._cache_scale, this._cache_scale] );
                     }
                     else if (pickResult.entity instanceof mapray.MarkerLineEntity) {
+                        console.log("MarkerLineEntity");
                         pickResult.entity.setColor( [0, 0, 1] );
                     }
                     else if (pickResult.entity instanceof mapray.PathEntity) {
+                        console.log("PathEntity");
                         pickResult.entity.setColor( [0, 0, 1] );
                     }
                     else if (pickResult.entity instanceof mapray.PolygonEntity) {
+                        console.log("PolygonEntity");
                         pickResult.entity.setColor( [0, 0, 1] );
                         pickResult.entity.setOpacity( 1 );
                     }
                     else {
-                        console.log(pickResult.entity);
+                        // console.log( pickResult.entity );
                     }
             }, true);
         }
         else if ( event.ctrlKey ) {
             this._override_mouse_event = true;
             this._pick(pickResult => {
+                    if ( !pickResult ) return;
                     let eventConsumed = false;
                     if (pickResult.entity instanceof mapray.PinEntity) {
                         const index = this._pins.indexOf( pickResult.entity );
@@ -198,11 +211,11 @@ export default class App extends maprayui.StandardUIViewer {
                         }
                     }
                     if ( !eventConsumed ) {
-                        if (pickResult.point) {
+                        if ( pickResult.position ) {
                             const pin = new mapray.PinEntity( this.viewer.scene );
                             const p = new mapray.GeoPoint();
-                            p.setFromGocs( pickResult.point );
-                            if (!pickResult.entity) {
+                            p.setFromGocs( pickResult.position );
+                            if ( !pickResult.entity ) {
                                 // pin.altitude_mode = mapray.AltitudeMode.RELATIVE;
                                 // p.altitude = 0;
                             }
@@ -225,7 +238,7 @@ export default class App extends maprayui.StandardUIViewer {
             const ray = this.viewer.camera.getCanvasRay( this._pre_mouse_position_app );
             // @ts-ignore (calls internal api)
             this.viewer.globe.setupDebugPickInfo();
-            const point = this.viewer.getRayIntersection(ray);
+            //const point = this.viewer.getRayIntersection(ray);
             // @ts-ignore (calls internal api)
             const debugPickInfo = this.viewer.globe.popDebugPickInfo();
 
@@ -296,9 +309,10 @@ export default class App extends maprayui.StandardUIViewer {
         if ( this._targetPin ) {
             const targetPin = this._targetPin;
             this._pick( pickResult => {
-                    if ( pickResult.point ) {
+                    if ( !pickResult ) return;
+                    if ( pickResult.position ) {
                         const p = new mapray.GeoPoint();
-                        p.setFromGocs( pickResult.point );
+                        p.setFromGocs( pickResult.position );
                         targetPin.getEntry( "pos" )?.setPosition( p );
                     }
             }, true);
@@ -317,21 +331,22 @@ export default class App extends maprayui.StandardUIViewer {
 
 
     _updateMousePos() {
-        this._pick(pickResult => {
-                if (pickResult.point) {
-                    const p = new mapray.GeoPoint();
-                    p.setFromGocs( pickResult.point );
-                    if (this._mouse_log) {
-                        this._mouse_log.innerHTML = (
-                            "Ctrl + Click to put PinEntity\n" +
-                            "Shift + Click Entity to chnge some property\n" +
-                            p.longitude.toFixed(13) + ", " + p.latitude.toFixed(13) + ", " + p.altitude.toFixed(13) +
-                            "\n" +
-                            (pickResult.entity ? "Entity: " + pickResult.entity.constructor.name : "&nbsp;")
-                        );
-                    }
-                }
-        }, false);
+        // this._pick(pickResult => {
+        //         if ( !pickResult ) return;
+        //         if (pickResult.position) {
+        //             const p = new mapray.GeoPoint();
+        //             p.setFromGocs( pickResult.position );
+        //             if (this._mouse_log) {
+        //                 this._mouse_log.innerHTML = (
+        //                     "Ctrl + Click to put PinEntity\n" +
+        //                     "Shift + Click Entity to chnge some property\n" +
+        //                     p.longitude.toFixed(13) + ", " + p.latitude.toFixed(13) + ", " + p.altitude.toFixed(13) +
+        //                     "\n" +
+        //                     (pickResult.entity ? "Entity: " + pickResult.entity.constructor.name : " ")
+        //                 );
+        //             }
+        //         }
+        // }, false);
     }
 
 
@@ -365,10 +380,10 @@ export default class App extends maprayui.StandardUIViewer {
         const pick_handler = this._pick_handler;
         if ( pick_handler ) {
             const start = Date.now();
-            const pickResult = this.viewer.pick(this._pre_mouse_position_app);
+            const pickResult = this.viewer.pick( this._pre_mouse_position_app );
             const end = Date.now();
             // console.log("Pick: " + (end-start) + "ms", pickResult);
-            pick_handler(pickResult);
+            pick_handler( pickResult );
             this._pick_handler = undefined;
         }
 
