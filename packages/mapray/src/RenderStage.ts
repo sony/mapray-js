@@ -614,9 +614,12 @@ export class SceneRenderStage extends RenderStage {
         s?.statistics_obj.clear();
 
         for ( let i=0; i<this._point_cloud_collection.length; ++i ) {
+            const point_cloud = this._point_cloud_collection.get( i );
+            if ( !point_cloud.getVisibility() ) {
+                continue;
+            }
             s?.statistics_obj.start();
 
-            const point_cloud = this._point_cloud_collection.get( i );
             const load_limit = Math.max(0, 30 - point_cloud.provider.getNumberOfRequests());
 
             const pcb_collector = new PointCloudBoxCollector( this, load_limit );
@@ -779,6 +782,9 @@ export class PickRenderStage extends RenderStage {
         for ( let i=0; i<this._point_cloud_collection.length; ++i ) {
 
             const point_cloud = this._point_cloud_collection.get( i );
+            if ( !point_cloud.getVisibility() ) {
+                continue;
+            }
 
             const pcb_collector = new PointCloudBoxCollector( this, 0 );
             const traverse_result = pcb_collector.traverse( point_cloud );
@@ -786,6 +792,7 @@ export class PickRenderStage extends RenderStage {
             if ( traverse_result.visible_boxes.length > 0 ) {
                 this._pushPointCloudToRidMap( point_cloud );
             }
+
             for ( const ro of traverse_result.visible_boxes ) {
                 ro.draw( this );
             }

@@ -45,6 +45,8 @@ class PointCloud {
 
     private _point_size_limit: number;
 
+    private _visibility: boolean;
+
     private _dispersion: boolean;
 
     private _rid?: number;
@@ -81,6 +83,7 @@ class PointCloud {
         this._point_size_type = PointCloud.PointSizeType.FLEXIBLE;
         this._point_size = 1;
         this._point_size_limit = 10;
+        this._visibility = true;
 
         // hidden properties
         this._dispersion = true;
@@ -124,6 +127,25 @@ class PointCloud {
             PointCloud._instances.splice( index, 1 );
         }
     }
+
+
+    /**
+     * 可視性フラグを取得
+     */
+    getVisibility(): boolean
+    {
+        return this._visibility;
+    }
+
+
+     /**
+      * 可視性フラグを設定
+      * @param visibility  可視性フラグ
+      */
+     setVisibility( visibility: boolean )
+     {
+         this._visibility = visibility;
+     }
 
 
     /**
