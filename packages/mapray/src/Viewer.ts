@@ -80,6 +80,8 @@ class Viewer {
 
     private _entity_visibility: boolean;
 
+    private _point_cloud_visibility: boolean;
+
     private _b3d_scene_visibility: boolean;
 
     private _render_mode: Viewer.RenderMode;
@@ -167,6 +169,7 @@ class Viewer {
         this._scene              = new Scene( this, this._glenv );
         this._ground_visibility  = options.ground_visibility ?? true;
         this._entity_visibility  = options.entity_visibility ?? true;
+        this._point_cloud_visibility = options.point_cloud_visibility ?? true;
         this._b3d_scene_visibility = options.b3d_scene_visibility ?? true;
         this._render_mode        = options.render_mode || Viewer.RenderMode.SURFACE;
         this._debug_stats        = options.debug_stats;
@@ -584,6 +587,9 @@ class Viewer {
         case Viewer.Category.ENTITY:
             this._entity_visibility = visibility;
             break;
+        case Viewer.Category.POINT_CLOUD:
+            this._point_cloud_visibility = visibility;
+            break;
         case Viewer.Category.B3D_SCENE:
             this._b3d_scene_visibility = visibility;
             break;
@@ -610,6 +616,8 @@ class Viewer {
             return this._ground_visibility;
         case Viewer.Category.ENTITY:
             return this._entity_visibility;
+        case Viewer.Category.POINT_CLOUD:
+            return this._point_cloud_visibility;
         case Viewer.Category.B3D_SCENE:
             return this._b3d_scene_visibility;
         default:
@@ -1111,6 +1119,9 @@ export interface Option {
 
     /** 地表の可視性 */
     ground_visibility?: boolean;
+
+    /** 点群の可視性 */
+    point_cloud_visibility?: boolean;
 
     /** エンティティの可視性 */
     entity_visibility?: boolean;

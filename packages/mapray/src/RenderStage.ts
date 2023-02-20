@@ -324,7 +324,9 @@ abstract class RenderStage {
         this._viewer.b3d_collection.draw( this );
 
         // ポイントクラウドを描画
-        this._draw_point_cloud();
+        if ( this._viewer.getVisibility( Viewer.Category.POINT_CLOUD ) ) {
+            this._draw_point_cloud();
+        }
 
         // モデルシーン描画
         if ( vis_entity ) {
