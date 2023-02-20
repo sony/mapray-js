@@ -76,6 +76,7 @@ export { default as PointCloudBoxRenderObject } from "./PointCloudBoxRenderObjec
 export { default as PointCloudMaterial } from "./PointCloudMaterial";
 
 export { default as Resource, URLResource } from "./Resource";
+export { RequestResult, RequestCanceller } from "./RequestResult";
 
 export { default as Sun } from "./Sun";
 export { default as Moon } from "./Moon";
