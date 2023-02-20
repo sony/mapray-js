@@ -1,10 +1,10 @@
-import { Provider } from "./provider";
+import { TileProvider } from "./TileProvider";
+import { RequestResult } from "../RequestResult";
 import { Json, isObject as json_isObject } from "../util/json_type";
 import CredentialMode, { convertCredentialModeToString } from "../CredentialMode";
 
-type Area             = Provider.Area;
-type MetaData         = Provider.MetaData;
-type RequestResult<T> = Provider.RequestResult<T>;
+type Area     = TileProvider.Area;
+type MetaData = TileProvider.MetaData;
 
 
 /**
@@ -19,16 +19,20 @@ type RequestResult<T> = Provider.RequestResult<T>;
  * ```
  * prefix + area.z + '/' + area.x + '/' + area.y + options.tile_suffix
  * ```
+ *
+ * `prefix` は一般的に `"http://"` または `"https://"` で始まる
+ * 文字列を指定する。
+ *
  * @see [[constructor]], [[Option]]
  */
-class StandardProvider extends Provider {
+class StandardTileProvider extends TileProvider {
 
     /**
      * @param prefix  - URL の先頭文字列
      * @param options - オプション辞書
      */
     constructor( prefix:   string,
-                 options?: StandardProvider.Option )
+                 options?: StandardTileProvider.Option )
     {
         super();
 
@@ -44,7 +48,7 @@ class StandardProvider extends Provider {
     }
 
 
-    // from Provider
+    // from TileProvider
     override requestMeta(): RequestResult<MetaData>
     {
         const controller = new AbortController();
@@ -56,7 +60,7 @@ class StandardProvider extends Provider {
     }
 
 
-    // from Provider
+    // from TileProvider
     override requestTile( area: Area ): RequestResult<ArrayBuffer>
     {
         const controller = new AbortController();
@@ -89,41 +93,28 @@ class StandardProvider extends Provider {
     /**
      * `MetaData` インスタンスを取得 (Promise)
      */
-    private async _getMetaData( asignal: AbortSignal ): Promise<MetaData | null>
+    private async _getMetaData( asignal: AbortSignal ): Promise<MetaData>
     {
-        try {
-            const json_meta = await this._getMetaDataAsJson( asignal );
+        const json_meta = await this._getMetaDataAsJson( asignal );
 
-            if ( !json_isObject( json_meta ) ) {
-                // 予期しないデータ形式
-                throw new SyntaxError( "invalid meta data" );
-            }
-
-            const minzoom = json_meta['minzoom'];
-            const maxzoom = json_meta['maxzoom'];
-
-            if ( typeof minzoom !== 'string' || typeof maxzoom !== 'string' ) {
-                // 予期しないデータ形式
-                throw new SyntaxError( "invalid meta data" );
-            }
-
-            // メタデータを返す
-            return {
-                min_level: Number( minzoom ),
-                max_level: Number( maxzoom ),
-            }
+        if ( !json_isObject( json_meta ) ) {
+            // 予期しないデータ形式
+            throw new SyntaxError( "invalid meta data" );
         }
-        catch ( e: unknown ) {
-            // データの取得に失敗、またはキャンセル
 
-            const message = (e instanceof Error) ? e.message : e;
+        const minzoom = json_meta['minzoom'];
+        const maxzoom = json_meta['maxzoom'];
 
-            if ( e instanceof Error ) {
-                console.error( `Meta data error: ${message}` );
-            }
-
-            return null;
+        if ( typeof minzoom !== 'string' || typeof maxzoom !== 'string' ) {
+            // 予期しないデータ形式
+            throw new SyntaxError( "invalid meta data" );
         }
+
+        // メタデータを返す
+        return {
+            min_level: Number( minzoom ),
+            max_level: Number( maxzoom ),
+        };
     }
 
 
@@ -153,7 +144,7 @@ class StandardProvider extends Provider {
      * タイルのバイナリーデータを取得 (Promise)
      */
     private async _getTileBinary( area:    Area,
-                                  asignal: AbortSignal ): Promise<ArrayBuffer | null>
+                                  asignal: AbortSignal ): Promise<ArrayBuffer>
     {
         const fetch_init = {
             credentials: this._tile_credentials,
@@ -167,8 +158,7 @@ class StandardProvider extends Provider {
             return response.arrayBuffer();
         }
         else {
-            // データの取得に失敗、またはキャンセル
-            return null;
+            throw new Error( response.statusText );
         }
     }
 
@@ -177,24 +167,24 @@ class StandardProvider extends Provider {
     private readonly _metadata_path: string;
     private readonly _tile_suffix: string;
     private readonly _meta_credentials: RequestCredentials;
-    private readonly _meta_headers: StandardProvider.Headers;
+    private readonly _meta_headers: StandardTileProvider.Headers;
     private readonly _tile_credentials: RequestCredentials;
-    private readonly _tile_headers: StandardProvider.Headers;
+    private readonly _tile_headers: StandardTileProvider.Headers;
 
 }
 
 
-namespace StandardProvider {
+namespace StandardTileProvider {
 
 /**
- * [[StandardProvider.constructor]] に与えるオプションの型である。
+ * [[StandardTileProvider.constructor]] に与えるオプションの型である。
  */
 export interface Option {
 
     /**
      * メタデータの `prefix` からの パス
      *
-     * @default "metadata.json"
+     * @defaultValue "metadata.json"
      */
     metadata_path?: string;
 
@@ -202,7 +192,7 @@ export interface Option {
     /**
      * タイルデータの URL の末尾文字列
      *
-     * @default ".pbf"
+     * @defaultValue ".pbf"
      */
     tile_suffix?: string;
 
@@ -210,7 +200,7 @@ export interface Option {
     /**
      * メタデータ用のクレデンシャルモード
      *
-     * @default [[CredentialMode.OMIT]]
+     * @defaultValue [[CredentialMode.OMIT]]
      */
     meta_credentials?: CredentialMode;
 
@@ -218,7 +208,7 @@ export interface Option {
     /**
      * メタデータのリクエストに追加するヘッダーの辞書
      *
-     * @default {}
+     * @defaultValue `{}`
      */
     meta_headers?: Headers;
 
@@ -226,7 +216,7 @@ export interface Option {
     /**
      * タイルデータ用のクレデンシャルモード
      *
-     * @default [[CredentialMode.OMIT]]
+     * @defaultValue [[CredentialMode.OMIT]]
      */
     tile_credentials?: CredentialMode;
 
@@ -234,7 +224,7 @@ export interface Option {
     /**
      * タイルデータのリクエストに追加するヘッダーの辞書
      *
-     * @default {}
+     * @defaultValue `{}`
      */
     tile_headers?: Headers;
 
@@ -255,7 +245,7 @@ export interface Headers {
 
 }
 
-} // namespace StandardProvider
+} // namespace StandardTileProvider
 
 
-export { StandardProvider };
+export { StandardTileProvider };

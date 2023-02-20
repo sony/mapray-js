@@ -1,3 +1,28 @@
+import WasmTool, { EmModule } from "../WasmTool";
+import sdfield_base64 from "../wasm/sdfield.wasm";
+import sdfield_factory from "../wasm/sdfield.js";
+
+
+/**
+ * `wasm/sdfield` に対応する Emscripten モジュール
+ */
+export let sdfield_module: EmModule;
+
+
+/**
+ * `sdfield_module` を設定する処理
+ *
+ * `sdfield_readiness` は準備完了を監視する `Promise<void>` インスタンス
+ * である。
+ */
+export const sdfield_readiness =
+    WasmTool.createEmObjectByBese64( sdfield_base64, sdfield_factory )
+    .then( mod => {
+        // コンパイル成功
+        sdfield_module = mod;
+    } );
+
+
 /**
  * テクスチャのサンプル値と符号付き距離の関係を表す係数 1
  *

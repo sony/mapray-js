@@ -337,7 +337,7 @@ abstract class RenderStage {
 
         // ベクトルタイルのスタイルレイヤーを描画
         if ( this._viewer.getVisibility( Viewer.Category.VECTILE ) ) {
-            this._viewer.vectile_manager.draw( this, this._globe );
+            this._viewer.vectile_manager?.draw( this, this._globe );
         }
 
         // モデルシーン描画

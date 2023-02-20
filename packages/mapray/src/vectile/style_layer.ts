@@ -10,7 +10,6 @@ import type { Vector4 } from "../GeoMath";
 import type Primitive from "../Primitive";
 import type { OJson } from "../util/json_type";
 import { isObject as json_isObject } from "../util/json_type";
-import type Viewer from "../Viewer";
 import { cfa_assert } from "../util/assertion";
 
 
@@ -137,8 +136,7 @@ export abstract class StyleLayer {
 
         const global_context: GlobalContext = {
             zoom: 0, // この時点でズームは決定できない
-            // TODO: この時点では本当の image_names は取得できていない
-            image_names: owner.__getImageNames(),
+            image_names: owner.__image_manager.getImageNames(),
         }
 
         const filter = new Property( global_context, filter_pspec, json_layer['filter'] );
@@ -228,19 +226,6 @@ export abstract class StyleLayer {
         this._visibility = (visibility === 'visible');
         this._properties = properties;
     }
-
-
-    /**
-     * `this.style_manager` 所属する [[Viewer]] インスタンスを設定
-     *
-     * デフォルトの実装は何もしない。
-     *
-     * @see [[StyleManager.__install_viewer]]
-     *
-     * @virtual
-     * @internal
-     */
-    public __install_viewer( viewer: Viewer | null ): void {}
 
 
     /**
@@ -1084,7 +1069,7 @@ interface FeaturePropertyData {
 
 
 /**
- * 評価の概要を知らせるためのインタフェース
+ * [[LayerFlake]] での評価の概要を知らせるためのインタフェース
  *
  * [[LayerFlake.startEvaluation]] が返した [[EvaluationListener]] 型の
  * 関数の引数に与えられるオブジェクトの形式である。
@@ -1119,6 +1104,12 @@ export interface EvaluationSummary {
      * [[EvaluationListener]] 関数が呼び出された時点の
      * [[LayerFlake._layer_features]] に存在するフィーチャは、これらの
      * プロパティの評価値が変化した可能性のある。
+     *
+     * @remarks
+     *
+     * この集合に含まるプロパティは layout 型のみであることに注意する
+     * こと。paint 型のプロパティは評価値が変化してもこの集合には含ま
+     * れない。
      */
     evaluated_properties: Set<Property>;
 

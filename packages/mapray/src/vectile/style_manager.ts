@@ -9,13 +9,17 @@ import type { Json, OJson } from "../util/json_type";
 import { isObject as json_isObject,
          isArray as json_isArray,
          clone as json_clone } from "../util/json_type";
-import type { Provider } from "./provider";
+import type { TileProvider } from "./TileProvider";
+import type { SpriteProvider } from "./SpriteProvider";
 import { ProviderFactory } from "./ProviderFactory";
 import { FeatureState } from "./FeatureState";
+import { ImageManager, loadImageManager } from "./image";
 import { LayerFilter } from "./mvt_parser";
 import type { FeatureState as ExprFeatureState } from "./expression";
 import { TraverserManager, TraverseContext } from "./traverser";
 import { Renderer } from "./renderer";
+import { sdfield_readiness } from "./sdfield";
+import { RequestResult, CancelHelper } from "../RequestResult";
 import type RenderStage from "../RenderStage";
 import Globe from "../Globe";
 import type Viewer from "../Viewer";
@@ -40,7 +44,7 @@ interface SourceInfo {
     /**
      * ベクトルタイルを取得するためのプロバイダ
      */
-    provider: Provider;
+    tile_provider: TileProvider;
 
 
     /**
@@ -54,7 +58,7 @@ interface SourceInfo {
 /**
  * [[collectStyleInfo]] により収集したスタイル情報の型
  */
-interface StyleInfo {
+interface CollectedStyleInfo {
 
     /**
      * ソース ID からソース情報の辞書
@@ -65,41 +69,94 @@ interface StyleInfo {
     /**
      * 表示対象となるレイヤー
      *
-     * @remarks レイヤー間の順序は `json_root.layers` と同じである。
+     * @remarks レイヤー間の順序は `json_style.layers` と同じである。
      */
     json_layers: OJson[];
 
+
+    /**
+     * スプライト用のプロバイダ
+     */
+    sprite_provider: SpriteProvider | null;
+
+}
+
+
+/**
+ * タイルのソース名から `TileProvider.MetaData` インスタンスを取得する辞書の型
+ */
+type TileMetaDict = Map<string, TileProvider.MetaData>;
+
+
+/**
+ * すべての source のメタデータを一括で取得
+ */
+async function loadMetaData( source_dict: Map<string, SourceInfo>,
+                             cancel_helper: CancelHelper ): Promise<TileMetaDict>
+{
+    type    meta_t = TileProvider.MetaData;
+    type request_t = RequestResult<meta_t>;
+
+    const src_ids: string[]            = [];
+    const promises: request_t['promise'][] = [];
+
+    // src_ids と promises を同じサイズかつ同じ順序で設定
+    for ( const [src_id, src_info] of source_dict ) {
+        const request = src_info.tile_provider.requestMeta();
+        src_ids.push( src_id );
+        promises.push( request.promise );
+        cancel_helper.addCanceller( request.canceller );
+    }
+
+    // すべての source のメタデータを取得
+    const meta_list = await Promise.all( promises );
+
+    const result_dict = new Map();
+
+    for ( let i = 0; i < meta_list.length; ++i ) {
+        const metadata = meta_list[i];
+
+        // MetaData に存在するプロパティだけをコピー
+        const copied_meta = {
+            min_level: metadata.min_level,
+            max_level: metadata.max_level,
+        };
+
+        result_dict.set( src_ids[i], copied_meta );
+    }
+
+    return result_dict;
 }
 
 
 /**
  * スタイルの情報を収集する。
  *
- * @param json_root         JSON 形式のスタイルデータ
- * @param provider_factory  スタイル上のソースに対応するプロバイダを生成する
- *                          オブジェクト
+ * @param json_style       - JSON 形式のスタイルデータ
+ * @param provider_factory - スタイル上のソースに対応するプロバイダを生成する
+ *                           オブジェクト
  *
  * @returns 収集したスタイルの情報
  *
- * 例外は [[StyleManager.constructor]] を参照のこと。
+ * 例外は [[StyleManager.create]] を参照のこと。
  */
 function
-collectStyleInfo( json_root:        Json,
-                  provider_factory: ProviderFactory ): StyleInfo
+collectStyleInfo( json_style: Json,
+                  provider_factory: ProviderFactory ): CollectedStyleInfo
 {
-    if ( !json_isObject( json_root ) ) {
+    if ( !json_isObject( json_style ) ) {
         throw create_schema_error();
     }
 
-    const json_root_layers = json_root['layers'];  // 必須プロパティ
-    if ( !json_isArray( json_root_layers ) ) {
+    const json_style_layers = json_style['layers'];  // 必須プロパティ
+    if ( !json_isArray( json_style_layers ) ) {
         throw create_schema_error();
     }
 
     const used_source_dict = new Map<string, SourceInfo>();
     const used_json_layers: OJson[] = [];
 
-    for ( const json_layer of json_root_layers ) {
+    for ( const json_layer of json_style_layers ) {
         if ( !json_isObject( json_layer ) ) {
             throw create_schema_error();
         }
@@ -114,13 +171,13 @@ collectStyleInfo( json_root:        Json,
         }
 
         // スタイルのソース辞書
-        const json_root_sources = json_root['sources'];  // 必須プロパティ
+        const json_style_sources = json_style['sources'];  // 必須プロパティ
 
-        if ( !json_isObject( json_root_sources ) ) {
+        if ( !json_isObject( json_style_sources ) ) {
             throw create_schema_error();
         }
 
-        const json_source = json_root_sources[src_id];
+        const json_source = json_style_sources[src_id];
 
         if ( json_source === undefined ) {
             throw new Error( `"${src_id}" cannot be found in root.sources` );
@@ -140,14 +197,14 @@ collectStyleInfo( json_root:        Json,
         if ( src_info === undefined ) {
             // src_id に対応するソース情報を新規に追加
 
-            const provider = provider_factory.create( src_id,
-                                                      json_clone( json_source ) );
-            if ( provider === null ) {
-                throw new Error( `failed to create provider for "${src_id}"` );
+            const tile_provider = provider_factory.createTileProvider( src_id,
+                                                                       json_clone( json_source ) );
+            if ( tile_provider === null ) {
+                throw new Error( `failed to create tile provider for "${src_id}"` );
             }
 
             src_info = {
-                provider:    provider,
+                tile_provider,
                 tile_layers: new Set<string>(),
             };
 
@@ -158,9 +215,16 @@ collectStyleInfo( json_root:        Json,
         used_json_layers.push( json_layer );
     }
 
+    const json_sprite = json_style['sprite'];
+
+    if ( json_sprite !== undefined && typeof json_sprite !== 'string' ) {
+        throw create_schema_error();
+    }
+
     return {
         source_dict: used_source_dict,
         json_layers: used_json_layers,
+        sprite_provider: provider_factory.createSpriteProvider( json_sprite ),
     };
 }
 
@@ -185,15 +249,21 @@ export interface LayerCreator {
  * `layer_type` 型の [[StyleLayer]] インスタンスを生成する関数
  * `creator` を登録する。
  *
- * @param layer_type  レイヤー型を表す文字列
- * @param creator     [[StyleLayer]] インスタンスを生成する関数
+ * また、そのモジュールが準備可能になったかどうかを監視するためのオブ
+ * ジェクト `readiness` を登録する。
+ *
+ * @param layer_type - レイヤー型を表す文字列
+ * @param creator    - [[StyleLayer]] インスタンスを生成する関数
+ * @param readiness  - モジュールが準備可能になったかどうかを監視するためのオブジェクト
  *
  * @internal
  */
-export function registerLayerCreator( layer_type: string,
-                                      creator:    LayerCreator ): void
+export function registerLayerModule( layer_type: string,
+                                     creator: LayerCreator,
+                                     readiness: Promise<void> ): void
 {
     registered_layer_creators.set( layer_type, creator );
+    registered_module_readiness.push( readiness );
 }
 
 
@@ -204,9 +274,15 @@ const registered_layer_creators = new Map<string, LayerCreator>();
 
 
 /**
+ * 登録済みのモジュールの準備状態を監視するためのオブジェクト
+ */
+const registered_module_readiness: Promise<void>[] = [sdfield_readiness];
+
+
+/**
  * ベクトル地図のスタイル全体を管理する。
  */
-export class StyleManager {
+class StyleManager {
 
     /**
      * ビットマップを鮮明に表示するかどうか。
@@ -228,15 +304,20 @@ export class StyleManager {
 
 
     /**
-     * インスタンスの初期化する。
+     * インスタンスを生成する。
      *
-     *  @param json_root         JSON 形式のスタイルデータ
-     *  @param provider_factory  各レイヤーのソースに対応するプロバイダ
-     *                           を生成するためのオブジェクト
+     * 生成された [[StyleManager]] インスタンスは `viewer` にのみ設定
+     * することができる。
+     *
+     * 例外のスローは `Promise` の拒否を通して通知される。
+     *
+     * @param viewer           - 設定することが可能な [[Viewer]] インスタンス
+     * @param json_style       - JSON 形式のスタイルデータ
+     * @param provider_factory - プロバイダを生成するためのオブジェクト
+     *
+     * @returns リクエスト結果
      *
      * @throws Error
-     *
-     * 以下の何れかのときスローする。
      *
      * - あるレイヤーの `source` プロパティに対するソース情報が存在し
      *   なかったとき
@@ -244,47 +325,88 @@ export class StyleManager {
      * - あるレイヤーの `source` プロパティに対するソース情報からプロ
      *   バイダを生成することができなかった
      *
+     * - 何れかのソースに対するメタ情報を取得することができなかったとき
+     *
+     * - スプライトのリソースを取得することができなかったとき
+     *
+     * - レイヤーモジュールの初期化に失敗したとき
+     *
      * @throws SyntaxError
      *
-     * `json_root` の構造がスタイルのスキーマに適合しないとき。
+     * `json_style` の構造がスタイルのスキーマに適合しないとき。
      */
-    constructor( json_root:        OJson,
-                 provider_factory: ProviderFactory )
+    static create( viewer: Viewer,
+                   json_style: OJson,
+                   provider_factory: ProviderFactory ): RequestResult<StyleManager>
     {
-        this._viewer  = null;
-        this._sources = new Map();
-        this._layers  = new Map();
-        this._feature_states    = new Map();
-        this._traverser_manager = new TraverserManager( this );
-        this._max_tiles_requested = StyleManager._DEFAULT_MAX_TILES_REQUESTED;
-        this._num_tiles_requested = 0;
-        this.bitmap_sharpening = false;
+        const cancel_helper = new CancelHelper();
 
-        const style_info = collectStyleInfo( json_root, provider_factory );
+        return {
 
-        this.parseSources( style_info.source_dict );
-        this.parseLayers( style_info.json_layers );
+            promise: StyleManager._create( viewer,
+                                           json_style,
+                                           provider_factory,
+                                           cancel_helper ),
+
+            canceller: () => cancel_helper.cancel(),
+
+        };
+    }
+
+
+    /** create() の実装 */
+    private static async _create( viewer: Viewer,
+                                  json_style: OJson,
+                                  provider_factory: ProviderFactory,
+                                  cancel_helper: CancelHelper ): Promise<StyleManager>
+    {
+        // すべてのモジュールが使えるようになるまで待つ
+        await Promise.all( registered_module_readiness );
+
+        // スタイルの情報を収集する
+        const style_info = collectStyleInfo( json_style, provider_factory );
+
+        // source のメタ情報の辞書
+        const meta_dict = await loadMetaData( style_info.source_dict, cancel_helper );
+
+        // スプライト情報を取得
+        const image_manager = await loadImageManager( viewer.glenv, style_info.sprite_provider, cancel_helper );
+
+        return new StyleManager( viewer, style_info, meta_dict, image_manager );
     }
 
 
     /**
-     * `this` が所属する [[Viewer]] インスタンスを設定
+     * インスタンスの初期化する。
      *
-     * `viewer` に取り付けられたときに呼び出される。
+     * [[create]], [[__createDefualtInstance]] が使用する。
      *
-     * ただし、外されたときは `null` が指定される。
+     * @privateRemarks
+     *
+     * `__createDefualtInstance` から呼び出されるときは `viewer` が構
+     * 築中である可能性がある。その場合でも動作するように実装する必要
+     * がある。
      *
      * @internal
-     * [[Viewer.setVectileManager]] から呼び出される。
      */
-    public __install_viewer( viewer: Viewer | null ): void
+    private constructor( viewer: Viewer,
+                         style_info: CollectedStyleInfo,
+                         tile_meta_dict: TileMetaDict,
+                         image_manager: ImageManager )
     {
-        this._viewer = viewer;
+        this._viewer  = viewer;
+        this._sources = new Map();
+        this._layers  = new Map();
+        this._feature_states    = new Map();
+        this._traverser_manager = new TraverserManager( this );
+        this.__image_manager    = image_manager;
+        this._max_tiles_requested = StyleManager._DEFAULT_MAX_TILES_REQUESTED;
+        this._num_tiles_requested = 0;
+        this.bitmap_sharpening = false;
 
-        // 保有するレイヤーにも伝える
-        for ( const layer of this._layers.values() ) {
-            layer.__install_viewer( viewer );
-        }
+        this.parseSources( style_info.source_dict, tile_meta_dict );
+        this.parseLayers( style_info.json_layers );
+        this._traverser_manager.addTraversers( this._sources.values() );
     }
 
 
@@ -296,52 +418,26 @@ export class StyleManager {
      *
      * @see [[Viewer.setVectileManager]]
      */
-    get viewer(): Viewer | null
+    get viewer(): Viewer
     {
         return this._viewer;
     }
 
 
     /**
-     * 無レイヤーの StyleManager インスタンスを生成する。
-     *
-     * @internal
-     */
-    public static __createDefualtInstance(): StyleManager
-    {
-        // 空の style データ
-        const style = {
-            layers: [],
-            sources: {}
-        };
-
-        // 何も作ることのできない ProviderFactory
-        const factory = new class extends ProviderFactory {
-
-            constructor() {
-                super();
-            }
-
-            override create( _source_id:   string,
-                             _json_source: OJson ): Provider | null
-            {
-                return null;
-            }
-
-        }
-
-        return new StyleManager( style, factory );
-    }
-
-
-    /**
      * `src_info_list` の各ソース情報を解析して `Source` インスタンス
      * を生成し、 `this._sources` に追加する。
+     *
+     * `tile_meta_dict` はソース名からメタ情報を取得するための辞書である。
      */
-    private parseSources( src_info_list: Iterable<[string, SourceInfo]> ): void
+    private parseSources( src_info_list: Iterable<[string, SourceInfo]>,
+                          tile_meta_dict: TileMetaDict ): void
     {
         for ( const [src_id, src_info] of src_info_list ) {
-            const source = new Source( src_info.provider, src_info.tile_layers );
+            const metadata = tile_meta_dict.get( src_id );
+            cfa_assert( metadata );  // src_info_list が元になっているので存在する
+
+            const source = new Source( src_info.tile_provider, metadata, src_info.tile_layers );
             this._sources.set( src_id, source );
         }
     }
@@ -574,6 +670,89 @@ export class StyleManager {
 
 
     /**
+     * インスタンスに含まれる画像の数を返す。
+     */
+    get num_images(): number { return this.__image_manager.num_images; }
+
+
+    /**
+     * 画像を追加する。
+     *
+     * `src_image` を元にした画像を `this` に追加する。
+     *
+     * 追加した画像の ID は `id` となる。
+     *
+     * @param id        - 画像の ID
+     * @param src_image - 元画像
+     * @param options   - 追加オプション
+     *
+     * @throws `Error`  すでに `id` の画像が `this` に存在するとき。
+     *
+     * @category Image
+     */
+    addImage( id: string,
+              src_image: StyleManager.ImageSource,
+              options?: StyleManager.ImageOption ): void
+    {
+        this.__image_manager.addImage( id, src_image, options );
+    }
+
+
+    /**
+     * 画像を削除する。
+     *
+     * ID が `id` である画像を `this` から削除する。
+     *
+     * `id` の画像が `this` に存在しないときは何も行わない。
+     *
+     * @param id - 画像の ID
+     *
+     * @remarks
+     *
+     * 画像を `this` から削除した後に、[[addImage]] により ID が `id`
+     * である別の画像を `this` に追加することができる。
+     *
+     * @category Image
+     */
+    removeImage( id: string ): void
+    {
+        this.__image_manager.removeImage( id );
+    }
+
+
+    /**
+     * 画像の有無を確認する。
+     *
+     * ID が `id` である画像が `this` に存在するかどうかを確認する。
+     *
+     * @param id - 画像の ID
+     *
+     * @returns 存在するとき `true`, それ以外のとき `false`
+     *
+     * @category Image
+     */
+    hasImage( id: string ): boolean
+    {
+        return this.__image_manager.findImage( id ) !== undefined;
+    }
+
+
+    /**
+     * すべての画像の ID を取得する。
+     *
+     * `this` が持つすべての画像の ID に対する、反復可能な反復子オブジェクトを返す。
+     *
+     * @returns 画像 ID の反復可能な反復子オブジェクト
+     *
+     * @category Image
+     */
+    getImageIDs(): IterableIterator<string>
+    {
+        return this.__image_manager.getImageNames().values();
+    }
+
+
+    /**
      * 指定したフィーチャ ID の [[ExprFeatureState]] インスタンスを検
      * 索する。
      *
@@ -599,7 +778,7 @@ export class StyleManager {
     {
         const context = new TraverseContext( this, stage, globe );
 
-        for ( const traverser of this._traverser_manager.enumerate( this._sources.values() ) ) {
+        for ( const traverser of this._traverser_manager.enumerate() ) {
             traverser.run( context );
         }
 
@@ -634,18 +813,16 @@ export class StyleManager {
     public __cancel( globe: Globe ): void
     {
         const cancelFlakeRecur = ( flake: Globe.Flake ) => {
-            // 自身を取り消し
+            // flake 自身を取り消す
             flake.cancelStyleFlake();
 
-            // 子孫を取り消し
+            // flake の子孫を取り消す
             for ( const child of flake.children ) {
                 if ( child !== null ) {
                     cancelFlakeRecur( child );
                 }
             }
         };
-
-        this._traverser_manager.cancel();
 
         if ( globe.status === Globe.Status.READY ) {
             // Globe 内の StyleFlake のリクエストを取り消し、StyleFlake
@@ -683,13 +860,20 @@ export class StyleManager {
     }
 
 
-    private _viewer: Viewer | null;
+    private _viewer: Viewer;
 
     private readonly        _sources: Map<string, Source>;
     private readonly         _layers: Map<string, StyleLayer>;
     private readonly _feature_states: Map<number, FeatureState>;
 
     private readonly _traverser_manager: TraverserManager;
+
+    /**
+     * 画像管理
+     *
+     * @internal
+     */
+    public readonly __image_manager: ImageManager;
 
     /**
      * 同時にリクエストできる最大の mvt タイル数
@@ -709,6 +893,38 @@ export class StyleManager {
 }
 
 
+namespace StyleManager {
+
+
+/**
+ * 追加可能な画像の型
+ *
+ * @see [[StyleManager.addImage]]
+ */
+export type ImageSource = TexImageSource & CanvasImageSource;
+
+
+/**
+ * 画像追加時のオプションの型
+ *
+ * @see [[StyleManager.addImage]]
+ */
+export interface ImageOption {
+
+    /**
+     * 色付けと縁取りが可能な画像とするときは `true` を指定する。
+     * その場合、元画像の色は無視され、アルファ値のみが参照される。
+     *
+     * @defaultValue `false`
+     */
+    sdf?: boolean;
+
+}
+
+
+}
+
+
 /**
  * タイルデータのソースデータを表現する。
  */
@@ -717,7 +933,13 @@ export class Source {
     /**
      * ソースに対応するデータプロバイダ
      */
-    public readonly provider: Provider;
+    public readonly tile_provider: TileProvider;
+
+
+    /**
+     * ソースに対応するメタ情報
+     */
+    public readonly metadata: TileProvider.MetaData;
 
 
     /**
@@ -727,14 +949,19 @@ export class Source {
 
 
     /**
-     * @param provider     ソースデータに対応するプロバイダ
-     * @param tile_layers  実際に読み込むタイルのレイヤー (省略時はすべ
-     *                     てのレイヤーを読み込む)
+     * 初期化
+     *
+     * @param provider    - ソースデータに対応するプロバイダ
+     * @param metadata    - `provider` により得たメタデータの複製
+     * @param tile_layers - 実際に読み込むタイルのレイヤー (省略時はすべ
+     *                      てのレイヤーを読み込む)
      */
-    constructor( provider:             Provider,
+    constructor( tile_provider: TileProvider,
+                 metadata: TileProvider.MetaData,
                  tile_layers?: Iterable<string> )
     {
-        this.provider = provider;
+        this.tile_provider = tile_provider;
+        this.metadata      = metadata;
 
         // 指定されていればレイヤーのフィルターを設定
         if ( tile_layers ) {
@@ -749,3 +976,6 @@ export class Source {
     }
 
 }
+
+
+export { StyleManager };

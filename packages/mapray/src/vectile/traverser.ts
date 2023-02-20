@@ -1,8 +1,7 @@
-import { cfa_assert } from "../util/assertion";
 import type { StyleManager, Source } from "./style_manager";
 import type { FlakeContext } from "./style_flake";
 import type { StyleLayer } from "./style_layer";
-import type { Provider } from "./provider";
+import type { TileProvider } from "./TileProvider";
 import { IdealLevelCalculator, IdealLevelInfo  } from "./ideal_level";
 import GeoMath from "../GeoMath";
 import type { Vector4 } from "../GeoMath";
@@ -10,7 +9,7 @@ import type RenderStage from "../RenderStage";
 import type Globe from "../Globe";
 import type Primitive from "../Primitive";
 
-type MetaData = Provider.MetaData;
+type MetaData = TileProvider.MetaData;
 type    Flake = Globe.Flake;
 
 
@@ -20,9 +19,6 @@ type    Flake = Globe.Flake;
  * [[StyleManager]] インスタンスに対する [[Traverser]] インスタンスを
  * 列挙する。
  *
- * [[Traverser]] インスタンスは非同期に (暗黙的に) 生成され、列挙を要
- * 求された時点で生成されているものだけを列挙する。
- *
  * このクラスは [[StyleManager]] 内部で使用する。
  */
 export class TraverserManager {
@@ -31,99 +27,43 @@ export class TraverserManager {
 
 
     /**
-     * @param owner - this を管理する [[StyleManager]] インスタンス
+     * 初期化
+     *
+     * @param owner - `this` を管理する [[StyleManager]] インスタンス
      *                (未初期化でも可能)
      */
     constructor( owner: StyleManager )
     {
         this.style_manager = owner;
-        this._is_metadata_requested = false;
-        this._metadata_cancellers = new Map();
-        this._traversers = [];
+        this._traversers   = [];
     }
 
 
     /**
-     * すでに存在する [[Traverser]] インスタンスを列挙する。
+     * [[Traverser]] インスタンスを追加する。
+     *
+     * `sources` の各ソースに対応する [[Traverser]] インスタンスを追加する。
+     *
+     * @param sources - ソースを列挙するオブジェクト
      */
-    enumerate( sources: Iterable<Source> ): Iterable<Traverser>
+    addTraversers( sources: Iterable<Source> ): void
     {
-        this._ensureRequestMetadata( sources );
+        for ( const source of sources ) {
+            this._traversers.push( new Traverser( this, source, source.metadata ) );
+        }
+    }
 
+
+    /**
+     * 現在のスタイルのレンダリングに必要な [[Traverser]] インスタンス
+     * を列挙する。
+     */
+    enumerate(): Iterable<Traverser>
+    {
         return this._traversers;
     }
 
 
-    /**
-     * リクエストの取り消し処理
-     *
-     * @remarks
-     *
-     * 再び `this` を使用するときは、初期状態からからやり直す。
-     */
-    cancel(): void
-    {
-        if ( !this._is_metadata_requested ) {
-            // リクエストしていないので、することがない
-            return;
-        }
-
-        // すべてのメタデータのリクエストを取り消す
-        for ( const canceller of this._metadata_cancellers.values() ) {
-            canceller();
-        }
-
-        // 再び使用するときは、最初からやり直すように初期化状態に戻す
-        this._is_metadata_requested = false;
-        this._metadata_cancellers.clear();
-        this._traversers.length = 0;
-    }
-
-
-    /**
-     * メタデータをリクエストしていなければリクエストする。
-     */
-    private _ensureRequestMetadata( sources: Iterable<Source> ): void
-    {
-        if ( this._is_metadata_requested ) {
-            // すでにリクエスト済みなので何もしない
-            return;
-        }
-
-        // すべての Source のメタデータをリクエストする
-
-        for ( const source of sources ) {
-            // source に対するメタデータをリクエスト
-            const { promise, canceller } = source.provider.requestMeta();
-
-            // source に対するメタデータを受け取る処理
-            promise.then( ( data: MetaData | null ) => {
-                if ( data ) {
-                    // データ取得に成功
-                    this._traversers.push( new Traverser( this, source, data ) );
-                }
-                else {
-                    // 失敗または取り消し
-                }
-
-                // ここに来た時点で取り消し情報は不要になったので削除
-                if ( this._metadata_cancellers.has( source ) ) {
-                    this._metadata_cancellers.delete( source );
-                }
-            } );
-
-            // source に対するリクエストの取り消し処理を登録
-            cfa_assert( !this._metadata_cancellers.has( source ) );
-            this._metadata_cancellers.set( source, canceller );
-        }
-
-        // リクエストが済んだことを記録
-        this._is_metadata_requested = true;
-    }
-
-
-    private          _is_metadata_requested: boolean;
-    private readonly _metadata_cancellers: Map<Source, Provider.RequestCanceller>;
     private readonly _traversers: Traverser[];
 
 }
@@ -483,7 +423,7 @@ class Traverser {
             y: flake.y,
 
             zoom:        info.center,
-            image_names: ctx.style_manager.__getImageNames(),
+            image_names: ctx.style_manager.__image_manager.getImageNames(),
 
             stage: ctx.stage,
             dem_sampler: style_flake.dem_sampler,

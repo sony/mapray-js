@@ -1,21 +1,14 @@
 /**
  * @module
  *
- * `symbol` 型スタイルレイヤーで使用する画像生成の負荷を抑えるための
- * キャッシュを実装する。
+ * SDF 画像の生成の負荷を抑えるためのキャッシュを実装する。
  */
 
-import { MAX_SDF_WIDTH, MAX_SDF_HEIGHT, DIST_FACTOR, DIST_LOWER } from "./symbol_base";
-import GLEnv from "../../GLEnv";
-import WasmTool, { EmModule } from "../../WasmTool";
-import sdfield_base64 from "../../wasm/sdfield.wasm";
-import sdfield_factory from "../../wasm/sdfield.js";
-import { cfa_assert } from "../../util/assertion";
-
-
-// TODO: 正式に同期させる
-let sdfield_module: EmModule | undefined;
-WasmTool.createEmObjectByBese64( sdfield_base64, sdfield_factory ).then( mod => { sdfield_module = mod; } );
+import { sdfield_module,
+         MAX_SDF_WIDTH, MAX_SDF_HEIGHT, DIST_FACTOR, DIST_LOWER } from "./sdfield";
+import type { ImageManager } from "./image";
+import GLEnv from "../GLEnv";
+import { cfa_assert } from "../util/assertion";
 
 
 /**
@@ -70,10 +63,9 @@ const HALO_WIDTH_DISP_LIMIT = 1 / DIST_FACTOR + DIST_LOWER;
 /**
  * `symbol` 型スタイルレイヤーの画像をキャッシュを管理
  *
- * 一般的に `ImageCache` インスタンスは複数の [[SymbolLayer]]
- * インスタンス間で共有される。
+ *  [[TextImageCache]] と [[IconImageCache]] の共通の実装である。
  */
-export class ImageCache {
+abstract class SdfImageCache {
 
     readonly glenv: GLEnv;
 
@@ -105,7 +97,7 @@ export class ImageCache {
      *
      * @param glenv - WebGL 環境
      */
-    constructor( glenv: GLEnv )
+    protected constructor( glenv: GLEnv )
     {
         this.glenv = glenv;
         this._canvas_width   = 1;
@@ -121,35 +113,27 @@ export class ImageCache {
     /**
      * 画像ハンドルを取得
      *
-     * @param text       - テキスト文字列
-     * @param style      - フォントスタイル
-     * @param font_size  - フォント px サイズ
      * @param halo_width - 現在の縁取り幅
+     * @param node_key   - ノードのキー文字列
+     * @param createNode - ノードを生成する関数
      *
      * @return 画像ハンドル
      */
-    getHandle( text: string,
-               style: string,
-               font_size: number,
-               halo_width: number ): ImageHandle
+    protected get_handle( halo_width: number,
+                          node_key: string,
+                          createNode: NodeCreator ): ImageHandle
     {
-        halo_width = Math.min( Math.max( halo_width, 0 ), HALO_WIDTH_DISP_LIMIT );
-        font_size  = Math.max( font_size, MIN_FONT_SIZE );
+        const clamped_halo_width = Math.min( Math.max( halo_width, 0 ), HALO_WIDTH_DISP_LIMIT );
 
-        const key = make_node_key( text, style );
-        let  node = this._cache_nodes.get( key );
+        let node = this._cache_nodes.get( node_key );
 
         if ( !node ) {
-            this._canvas_context.font = style;
-            const metrics = this._canvas_context.measureText( text );
-
-            node = new CacheNode( this, text, style, font_size, halo_width, metrics );
-            this._cache_nodes.set( key, node );
-
+            node = createNode( this._canvas_context, clamped_halo_width );
+            this._cache_nodes.set( node_key, node );
             ++this._num_nodes_created;
         }
 
-        const handle = new ImageHandle( node, halo_width );
+        const handle = new ImageHandle( node, clamped_halo_width );
 
         if ( node.ref_count === 1 ) {
             // ノードは始めて参照された
@@ -222,7 +206,7 @@ export class ImageCache {
 
         // キャッシュからノードを削除
         for ( const node of unreferenced_nodes ) {
-            const key = make_node_key( node.text, node.style );
+            const key = node.getNodeKey();
             cfa_assert( this._cache_nodes.has( key ) );
             this._cache_nodes.delete( key );
         }
@@ -262,12 +246,21 @@ export class ImageCache {
             throw new Error( "Cannot get context of canvas" );
         }
 
-        context.textAlign    = "left";
-        context.textBaseline = "top";
-        context.fillStyle    = "rgba( 255, 255, 255, 1.0 )";
+        // 独自のコンテキストを設定
+        this.setupCanvasContext( context );
 
         return context;
     }
+
+
+    /**
+     * 実装クラス独自のコンテキストを設定
+     *
+     * キャンバスを生成または再生性するときに呼び出される。
+     *
+     * @internal
+     */
+    abstract setupCanvasContext( ctx: CanvasRenderingContext2D ): void;
 
 
     /**
@@ -321,6 +314,7 @@ export class ImageCache {
                                               width: number,
                                               height: number ) => void ): void
     {
+        // 計算式は TextAndIconProperties.sdf_texture の説明を参照
         const sdf_ext    = Math.ceil( node.sdf_max_width + 0.5 );
         const sdf_width  = node.canvas_width  + 2 * sdf_ext;
         const sdf_height = node.canvas_height + 2 * sdf_ext;
@@ -330,24 +324,17 @@ export class ImageCache {
             throw new Error( "Symbol image is too large" );
         }
 
-        if ( !sdfield_module ) {
-            // TODO
-            const empty = new Uint8Array( sdf_pitch * sdf_height );
-            empty.fill( 255 );
-            consume( empty, sdf_width, sdf_height );
-            console.warn( "no sdfield_module!" );
-            return;
-        }
-
         const cov_width  = node.canvas_width;
         const cov_height = node.canvas_height;
+
+        cfa_assert( sdfield_module ); // ここに到達するときには設定されると想定
 
         const conv = sdfield_module._converter_create( cov_width, cov_height, sdf_ext );
         try {
             // 被覆率画像を sdfield_module に渡す
             const num_cov_pixels = cov_width * cov_height;
 
-            const src_cov_data = this._get_text_image_data( node ).data;
+            const src_cov_data = this._get_image_data( node ).data;
             let src_cov_pos = 3;  // A 要素の位置
             let dst_cov_pos = sdfield_module._converter_get_write_position( conv ) as number;
 
@@ -391,9 +378,9 @@ export class ImageCache {
 
 
     /**
-     * キャンバスにテキストを描画して、その画像データを取得
+     * キャンバスに画像を描画して、その画像データを取得
      */
-    private _get_text_image_data( node: CacheNode ): ImageData
+    private _get_image_data( node: CacheNode ): ImageData
     {
         this._ensure_canvas_info( node );
 
@@ -402,12 +389,24 @@ export class ImageCache {
         // テキスト部分の背景を消去
         ctx.clearRect( 0, 0, node.canvas_width, node.canvas_height );
 
-        // テキストを描画
-        ctx.font = node.style;
-        ctx.fillText( node.text, node.bbox_L, node.bbox_A );
+        // キャンバスに画像を描画
+        this.drawImage( ctx, node );
 
         return ctx.getImageData( 0, 0, node.canvas_width, node.canvas_height );
     }
+
+
+    /**
+     * 実装クラス独自の画像を描画
+     *
+     * SDF 画像を生成するときに、入力画像を取得するために呼び出される。
+     *
+     * キャンバスの対象領域はすでに透明になっている。
+     *
+     * @internal
+     */
+    abstract drawImage( ctx: CanvasRenderingContext2D,
+                        node: CacheNode ): void;
 
 
     /**
@@ -415,7 +414,7 @@ export class ImageCache {
      *
      * @internal
      */
-    __make_unreferenced( node: CacheNode ): void
+    __make_unreferenced( node: CacheNodeImpl ): void
     {
         cfa_assert( node.ref_count == 0 );
 
@@ -430,10 +429,170 @@ export class ImageCache {
 
 
 /**
- * キャッシュノード辞書用のキーを生成
+ * テキスト用の [[SdfImageCache]] 実装クラス
  */
-function make_node_key( text:  string,
-                        style: string ): string
+export class TextImageCache extends SdfImageCache {
+
+    /**
+     * 初期化
+     *
+     * @param glenv - WebGL 環境
+     */
+    constructor( glenv: GLEnv )
+    {
+        super( glenv );
+    }
+
+
+    /**
+     * 画像ハンドルを取得
+     *
+     * @param text       - テキスト文字列
+     * @param style      - フォントスタイル
+     * @param font_size  - フォント px サイズ
+     * @param halo_width - 現在の縁取り幅
+     *
+     * @return 画像ハンドル
+     */
+    getHandle( text: string,
+               style: string,
+               font_size: number,
+               halo_width: number ): ImageHandle
+    {
+        const clamped_font_size = Math.max( font_size, MIN_FONT_SIZE );
+
+        return this.get_handle( halo_width,
+                                make_text_node_key( text, style ),
+                                ( canvas_context,
+                                  clamped_halo_width ) => {
+                                      canvas_context.font = style;
+                                      const metrics = canvas_context.measureText( text );
+
+                                      return new TextCacheNode( this,
+                                                                text,
+                                                                style,
+                                                                clamped_font_size,
+                                                                clamped_halo_width,
+                                                                metrics );
+                                } );
+    }
+
+
+    // from SdfImageCache
+    override setupCanvasContext( ctx: CanvasRenderingContext2D ): void
+    {
+        ctx.textAlign    = "left";
+        ctx.textBaseline = "top";
+        ctx.fillStyle    = "rgba( 255, 255, 255, 1.0 )";
+    }
+
+
+    // from SdfImageCache
+    override drawImage( ctx: CanvasRenderingContext2D,
+                        node: CacheNode ): void
+    {
+        const text_node = node as TextCacheNode;
+
+        // テキストを描画
+        ctx.font = text_node.style;
+        ctx.fillText( text_node.text, node.bbox_L, node.bbox_A );
+    }
+
+}
+
+
+/**
+ * アイコン用の [[SdfImageCache]] 実装クラス
+ */
+export class IconImageCache extends SdfImageCache {
+
+    /**
+     * `this` に対応する `ImageManager` インスタンス
+     *
+     * `IconCacheNode` が参照する。
+     *
+     * @internal
+     */
+    public readonly __image_manager: ImageManager;
+
+
+    /**
+     * 初期化
+     *
+     * @param glenv         - WebGL 環境
+     * @param image_manager - 画像データを得るための `ImageManager` インスタンス
+     */
+    constructor( glenv: GLEnv,
+                 image_manager: ImageManager )
+    {
+        super( glenv );
+        this.__image_manager = image_manager;
+    }
+
+
+    /**
+     * 画像ハンドルを取得
+     *
+     * @param name       - テキスト文字列
+     * @param halo_width - 現在の縁取り幅
+     *
+     * @return 画像ハンドル
+     */
+    getHandle( name: string,
+               halo_width: number ): ImageHandle
+    {
+        return this.get_handle( halo_width,
+                                make_icon_node_key( name ),
+                                ( _canvas_context,
+                                  clamped_halo_width ) => {
+                                      return new IconCacheNode( this,
+                                                                name,
+                                                                clamped_halo_width );
+                                  } );
+    }
+
+
+    // from SdfImageCache
+    override setupCanvasContext( _ctx: CanvasRenderingContext2D ): void
+    {
+        // drawImage() はデフォルトのままで問題なし
+    }
+
+
+    // from SdfImageCache
+    override drawImage( ctx: CanvasRenderingContext2D,
+                        node: CacheNode ): void
+    {
+        const icon_node = node as IconCacheNode;
+
+        const sdf_image = this.__image_manager.getSdfImage( icon_node.name );
+
+        const dst_x = 0;
+        const dst_y = 0;
+
+        // アイコンを描画
+        ctx.drawImage( sdf_image.image, dst_x, dst_y );
+    }
+
+}
+
+
+/**
+ * `SdfImageCache.get_handle` の `createNode` 引数の型
+ */
+interface NodeCreator {
+
+    ( canvas_context: CanvasRenderingContext2D,
+      clamped_halo_width: number ): CacheNode;
+
+}
+
+
+/**
+ * テキスト用のキャッシュノード辞書用のキーを生成
+ */
+function make_text_node_key( text:  string,
+                             style: string ): string
 {
     // text, style の異なる組み合わせは、必ず異なる文字列にする
     return `${style} ~~~ ${text}`;
@@ -441,46 +600,26 @@ function make_node_key( text:  string,
 
 
 /**
- * ImageCache インスタンス内で管理されるノード
+ * アイコン用のキャッシュノード辞書用のキーを生成
+ */
+function make_icon_node_key( name: string ): string
+{
+    return name;
+}
+
+
+/**
+ * テキストとアイコンが独自の値を設定するプロパティの集合
  *
  * 各パラメータの意味は資料 `vector-tile-style.org` の「テキスト画像の
  * 座標系」を参照のこと。
  */
-class CacheNode {
+interface TextAndIconProperties {
 
     /**
-     * 参照カウンタ
-     *
-     * `this` を参照している `ImageHandle` インスタンスの個数を表す。
+     * `this` を保有している `SdfImageCache` インスタンス
      */
-    ref_count: number;
-
-
-    /**
-     * 参照されなくなった時刻
-     *
-     * 実際にはノード生成ベースの時刻 (ImageCache._num_nodes_created)
-     * である。
-     */
-    unreferenced_time: number;
-
-
-    /**
-     * `this` を保有している `ImageCache` インスタンス
-     */
-    readonly image_cache: ImageCache;
-
-
-    /**
-     * `sdf_texture` に描画されているテキスト
-     */
-    readonly text: string;
-
-
-    /**
-     * `sdf_texture` に描画されているフォントスタイル
-     */
-    readonly style: string;
+    readonly image_cache: SdfImageCache;
 
 
     /**
@@ -494,15 +633,7 @@ class CacheNode {
 
 
     /**
-     * `sdf_texture` で描画可能な縁取りの最大幅 (w)
-     *
-     * 条件: `sdf_max_width >= 0`
-     */
-    sdf_max_width: number;
-
-
-    /**
-     * テキスト描画キャンバスの水平画素数 (int)
+     * 描画キャンバスの水平画素数 (int)
      *
      * `canvas_width == max( ceil( bbox_L + bbox_R ), 1 )`
      *
@@ -512,7 +643,7 @@ class CacheNode {
 
 
     /**
-     * テキスト描画キャンバスの垂直画素数 (int)
+     * 描画キャンバスの垂直画素数 (int)
      *
      * `canvas_height == max( ceil( bbox_A + bbox_D ), 1 )`
      *
@@ -522,91 +653,138 @@ class CacheNode {
 
 
     /**
-     * テキストの `TextMetrics.width` プロパティ値
+     * 左アンカーから右アンカーまでの距離
      *
-     * 条件: `text_width >= 0`
+     * テキストの場合は `TextMetrics.width` プロパティ値と同じ値になる。
+     *
+     * アイコンのときは元画像の水平画素数である。
+     *
+     * 条件: `anchor_dist_x >= 0`
+     *
+     * @remarks
+     * `vector-tile-style.org` では `text width` と記述している。
      */
-    readonly text_width: number;
+    readonly anchor_dist_x: number;
 
 
     /**
-     * `style` に指定したフォントの px サイズ
+     * 上アンカーから下アンカーまでの距離
      *
-     * 条件: `font_size > 0`
+     * テキストの場合は `style` に指定したフォントの px サイズと同じ値になる。
+     *
+     * アイコンのときは元画像の垂直画素数である。
+     *
+     * 条件: `anchor_dist_y >= 0`
+     *
+     * @remarks
+     * `vector-tile-style.org` では `font size` と記述している。
      */
-    readonly font_size: number;
+    readonly anchor_dist_y: number;
 
 
     /**
      * テキストの `TextMetrics.actualBoundingBoxLeft` プロパティ値
+     *
+     * アイコンのときは 0 である。
      */
     readonly bbox_L: number;
 
 
     /**
      * テキストの `TextMetrics.actualBoundingBoxAscent` プロパティ値
+     *
+     * アイコンのときは 0 である。
      */
     readonly bbox_A: number;
+
+}
+
+
+/**
+ * インスタンスの有効性の検査
+ */
+function isValidTextAndIcon( prop: TextAndIconProperties ): boolean
+{
+    if ( prop.canvas_width < 1 ) return false;
+    if ( prop.canvas_height < 1 ) return false;
+    if ( prop.anchor_dist_x < 0 ) return false;
+    if ( prop.anchor_dist_y < 0 ) return false;
+    if ( !isFinite( prop.bbox_L ) ) return false;
+    if ( !isFinite( prop.bbox_A ) ) return false;
+
+    // すべて合格
+    return true;
+}
+
+
+/**
+ * テキストとアイコンのキャッシュノードの共通型
+ */
+type CacheNode = TextCacheNode | IconCacheNode;
+
+
+/**
+ * テキストとアイコンのキャッシュノードの共通実装
+ */
+abstract class CacheNodeImpl {
+
+    /**
+     * 参照カウンタ
+     *
+     * `this` を参照している `ImageHandle` インスタンスの個数を表す。
+     */
+    ref_count: number;
+
+
+    /**
+     * 参照されなくなった時刻
+     *
+     * 実際にはノード生成ベースの時刻 (SdfImageCache._num_nodes_created)
+     * である。
+     */
+    unreferenced_time: number;
+
+
+    /**
+     * `this` を保有している `SdfImageCache` インスタンス
+     */
+    readonly image_cache: SdfImageCache;
+
+
+    /**
+     * `sdf_texture` で描画可能な縁取りの最大幅 (w)
+     *
+     * 条件: `sdf_max_width >= 0`
+     */
+    sdf_max_width: number;
 
 
     /**
      * CacheNode インスタンスを初期化
      *
-     * @see [[ImageCache.getHandle]]
+     * @see [[SdfImageCache.getHandle]]
      */
-    constructor( owner: ImageCache,
-                 text: string,
-                 style: string,
-                 font_size: number,
-                 halo_width: number,
-                 metrics: TextMetrics )
+    protected constructor( owner: SdfImageCache,
+                           halo_width: number )
     {
         cfa_assert( halo_width >= 0 );
-        cfa_assert( font_size > 0 );
 
         this.ref_count = 0;
         this.unreferenced_time = 0;
 
         this.image_cache = owner;
 
-        this.text  = text;
-        this.style = style;
-
         this.sdf_max_width = halo_width;
-
-        const bbox_L = metrics.actualBoundingBoxLeft;
-        const bbox_R = metrics.actualBoundingBoxRight;
-        const bbox_A = metrics.actualBoundingBoxAscent;
-        const bbox_D = metrics.actualBoundingBoxDescent;
-
-        this.canvas_width  = Math.max( Math.ceil( bbox_L + bbox_R ), 1 );
-        this.canvas_height = Math.max( Math.ceil( bbox_A + bbox_D ), 1 );
-
-        this.text_width = metrics.width;
-        this.font_size  = font_size;
-
-        this.bbox_L = bbox_L;
-        this.bbox_A = bbox_A;
-
-        this.sdf_texture = owner._create_sdf_texture( this );
-
-        cfa_assert( this.is_valid() );
     }
 
 
     /**
      * インスタンスの有効性の検査
      */
-    is_valid(): boolean
+    protected is_valid(): boolean
     {
         if ( this.ref_count < 0 ) return false;
         if ( this.sdf_max_width < 0 ) return false;
-        if ( this.canvas_width < 1 ) return false;
-        if ( this.canvas_height < 1 ) return false;
-        if ( this.text_width < 0 ) return false;
-        if ( this.font_size <= 0 ) return false;
-        if ( !isFinite( this.bbox_L ) ) return false;
-        if ( !isFinite( this.bbox_A ) ) return false;
 
         // すべて合格
         return true;
@@ -637,13 +815,189 @@ class CacheNode {
         }
     }
 
+
+    /**
+     * ノード用のキーを取得
+     */
+    abstract getNodeKey(): string;
+
+}
+
+
+/**
+ * テキスト用のキャッシュノード
+ */
+class TextCacheNode extends CacheNodeImpl implements TextAndIconProperties {
+
+    /**
+     * `sdf_texture` に描画されているテキスト
+     */
+    readonly text: string;
+
+
+    /**
+     * `sdf_texture` に描画されているフォントスタイル
+     */
+    readonly style: string;
+
+
+    // from TextAndIconProperties
+    sdf_texture: WebGLTexture;
+    readonly canvas_width: number;
+    readonly canvas_height: number;
+    readonly anchor_dist_x: number;
+    readonly anchor_dist_y: number;
+    readonly bbox_L: number;
+    readonly bbox_A: number;
+
+
+    /**
+     * `TextCacheNode` インスタンスを初期化
+     *
+     * @see [[SdfImageCache.getHandle]]
+     */
+    constructor( owner: TextImageCache,
+                 text: string,
+                 style: string,
+                 font_size: number,
+                 halo_width: number,
+                 metrics: TextMetrics )
+    {
+        super( owner, halo_width );
+
+        cfa_assert( font_size > 0 );
+
+        this.text  = text;
+        this.style = style;
+
+        const bbox_L = metrics.actualBoundingBoxLeft;
+        const bbox_R = metrics.actualBoundingBoxRight;
+        const bbox_A = metrics.actualBoundingBoxAscent;
+        const bbox_D = metrics.actualBoundingBoxDescent;
+
+        this.canvas_width  = Math.max( Math.ceil( bbox_L + bbox_R ), 1 );
+        this.canvas_height = Math.max( Math.ceil( bbox_A + bbox_D ), 1 );
+
+        this.anchor_dist_x = metrics.width;
+        this.anchor_dist_y = font_size;
+
+        this.bbox_L = bbox_L;
+        this.bbox_A = bbox_A;
+
+        this.sdf_texture = owner._create_sdf_texture( this );
+
+        cfa_assert( this.is_valid() );
+    }
+
+
+    /**
+     * インスタンスの有効性の検査
+     */
+    is_valid(): boolean
+    {
+        if ( !super.is_valid() ) return false;
+        if ( !isValidTextAndIcon( this) ) return false;
+
+        // すべて合格
+        return true;
+    }
+
+
+    // from CacheNodeImpl
+    override getNodeKey(): string
+    {
+        return make_text_node_key( this.text, this.style );
+    }
+
+}
+
+
+/**
+ * アイコン用のキャッシュノード
+ */
+class IconCacheNode extends CacheNodeImpl implements TextAndIconProperties {
+
+    /**
+     * `sdf_texture` に描画されているアイコンの名前
+     */
+    readonly name: string;
+
+
+    // from TextAndIconProperties
+    sdf_texture: WebGLTexture;
+    readonly canvas_width: number;
+    readonly canvas_height: number;
+    readonly anchor_dist_x: number;
+    readonly anchor_dist_y: number;
+    readonly bbox_L: number;
+    readonly bbox_A: number;
+
+
+    /**
+     * `IconCacheNode` インスタンスを初期化
+     *
+     * @see [[SdfImageCache.getHandle]]
+     */
+    constructor( owner: IconImageCache,
+                 name: string,
+                 halo_width: number )
+    {
+        super( owner, halo_width );
+
+        this.name = name;
+
+        const sdf_image = owner.__image_manager.getSdfImage( name );
+
+        // アイコンの寸法
+        const icon_width  = sdf_image.image.width;
+        const icon_height = sdf_image.image.height;
+
+        const bbox_L = 0;
+        const bbox_R = icon_width;
+        const bbox_A = 0;
+        const bbox_D = icon_height;
+
+        this.canvas_width  = Math.max( Math.ceil( bbox_L + bbox_R ), 1 );
+        this.canvas_height = Math.max( Math.ceil( bbox_A + bbox_D ), 1 );
+
+        this.anchor_dist_x = icon_width;
+        this.anchor_dist_y = icon_height;
+
+        this.bbox_L = bbox_L;
+        this.bbox_A = bbox_A;
+
+        this.sdf_texture = owner._create_sdf_texture( this );
+
+        cfa_assert( this.is_valid() );
+    }
+
+
+    /**
+     * インスタンスの有効性の検査
+     */
+    is_valid(): boolean
+    {
+        if ( !super.is_valid() ) return false;
+        if ( !isValidTextAndIcon( this) ) return false;
+
+        // すべて合格
+        return true;
+    }
+
+
+    // from CacheNodeImpl
+    override getNodeKey(): string
+    {
+        return make_icon_node_key( this.name );
+    }
+
 }
 
 
 /**
  * キャッシュされた画像を扱うオブジェクト
  *
- * インスタンスは [[ImageCache.getHandle]] により取得する。
+ * インスタンスは [[SdfImageCache.getHandle]] により取得する。
  */
 export class ImageHandle {
 
@@ -667,11 +1021,19 @@ export class ImageHandle {
 
 
     /**
+     * `_cache_node` に対応するテクスチャ
+     *
+     * メッシュの再作成の判定にも使用する。
+     */
+    private _texture: WebGLTexture;
+
+
+    /**
      * `ImageHandle` インスタンスを初期化
      *
      * @internal
      *
-     * [[ImageCache.getHandle]] から呼び出される。
+     * [[SdfImageCache.getHandle]] から呼び出される。
      */
     constructor( node: CacheNode,
                  halo_width: number )
@@ -687,6 +1049,8 @@ export class ImageHandle {
             node.sdf_texture   = node.image_cache._create_sdf_texture( node );
             cfa_assert( node.is_valid() );
         }
+
+        this._texture = node.sdf_texture;
 
         // ハンドルが node を参照することを通知
         node.add_ref();
@@ -727,22 +1091,34 @@ export class ImageHandle {
 
         let rebuild = false;
 
+        // 必要ならノードのテクスチャのサイズを拡張
+
         if ( halo_width > node.sdf_max_width ) {
-            // halo_width に対してテクスチャが小さいので、少し余裕のある大きさに拡張
+            // halo_width に対してテクスチャが小さいので、少し余裕のある大きさにテクスチャを拡張
             node.sdf_max_width = Math.max( halo_width, node.sdf_max_width + TEXTURE_EXTENSION_STEP );
             node.sdf_texture   = node.image_cache._create_sdf_texture( node );
             cfa_assert( node.is_valid() );
             rebuild = true;
         }
 
+        // 必要なら表示を拡張または縮小
+
         if ( halo_width > this._disp_ext_size ) {
-            // halo_width に対して表示が小さいので、少し余裕のある大きさに拡張
+            // halo_width に対して表示が小さいので、少し余裕のある大きさに表示を拡張
             this._disp_ext_size = Math.min( halo_width + DISPLAY_EXTENSION_STEP, node.sdf_max_width );
             rebuild = true;
         }
         else if ( halo_width < this._disp_ext_size - DISPLAY_EXTENSION_STEP ) {
-            // halo_width に対して表示が大きすぎるので、そうならない状態に縮小
+            // halo_width に対して表示が大きすぎるので、そうならない表示を縮小
             this._disp_ext_size = Math.max( this._disp_ext_size - DISPLAY_EXTENSION_STEP, 0 );
+            rebuild = true;
+        }
+
+        // テクスチャが前回と違う場合は、テクスチャのサイズが変化して
+        // いる可能性があるので、メッシュの再作成を強制する
+
+        if ( this._texture !== node.sdf_texture ) {
+            this._texture = node.sdf_texture;
             rebuild = true;
         }
 
@@ -756,7 +1132,7 @@ export class ImageHandle {
      */
     getTexture(): WebGLTexture
     {
-        return this._cache_node.sdf_texture;
+        return this._texture;
     }
 
 
@@ -770,12 +1146,13 @@ export class ImageHandle {
     {
         const node = this._cache_node;
 
+        // 計算式は TextAndIconProperties.sdf_texture の説明を参照
         const sdf_ext = Math.ceil( node.sdf_max_width + 0.5 );
         const texture_width  = node.canvas_width  + 2 * sdf_ext;
         const texture_height = node.canvas_height + 2 * sdf_ext;
 
         const anchor_lower_x = sdf_ext + node.bbox_L;
-        const anchor_lower_y = sdf_ext + node.canvas_height - node.bbox_A;
+        const anchor_upper_y = sdf_ext + node.canvas_height - node.bbox_A;
 
         const disp_ext = this._disp_ext_size;
 
@@ -789,9 +1166,9 @@ export class ImageHandle {
             display_upper_y: texture_height - sdf_ext + disp_ext,
 
             anchor_lower_x,
-            anchor_lower_y,
-            anchor_upper_x: anchor_lower_x + node.text_width,
-            anchor_upper_y: anchor_lower_x + node.font_size,
+            anchor_lower_y: anchor_upper_y - node.anchor_dist_y,
+            anchor_upper_x: anchor_lower_x + node.anchor_dist_x,
+            anchor_upper_y,
         };
     }
 

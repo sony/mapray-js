@@ -27,7 +27,6 @@ import EasyBindingBlock from "./animation/EasyBindingBlock";
 import BindingBlock from "./animation/BindingBlock";
 import Util from "./util/Util";
 import Dom from "./util/Dom";
-import { cfa_assert } from "./util/assertion";
 import Sun from "./Sun";
 import Atmosphere from "./Atmosphere";
 import SunVisualizer from "./SunVisualizer";
@@ -82,7 +81,7 @@ class Viewer {
 
     private _b3d_collection: B3dCollection;
 
-    private _vectile_manager: StyleManager;
+    private _vectile_manager: StyleManager | null;
 
     private _scene: Scene;
 
@@ -178,7 +177,7 @@ class Viewer {
         this._layers             = this._createLayerCollection( options );
         this._globe              = new Globe( this._glenv, this._dem_provider, { pole_info } );
         this._b3d_collection     = new B3dCollection( this );
-        this._vectile_manager    = StyleManager.__createDefualtInstance();
+        this._vectile_manager    = null;
         this._scene              = new Scene( this, this._glenv );
         this._ground_visibility  = options.ground_visibility ?? true;
         this._entity_visibility  = options.entity_visibility ?? true;
@@ -280,7 +279,7 @@ class Viewer {
         this._container_element.removeChild( this._canvas_element );
 
         // ベクトルタイルの後処理
-        this._vectile_manager.__cancel( this._globe );
+        this._vectile_manager?.__cancel( this._globe );
 
         // DemProvider のリクエストを取り消す
         this._globe.cancel();
@@ -508,12 +507,15 @@ class Viewer {
 
 
     /**
-     * ベクトルタイルの管理オブジェクト
+     * ベクトルタイルを管理するオブジェクト
+     *
+     * @defaultValue `null`
      *
      * @see [[setVectileManager]],
      *      [[Category.VECTILE]]
      */
-    get vectile_manager(): StyleManager { return this._vectile_manager; }
+    get vectile_manager(): StyleManager | null
+    { return this._vectile_manager; }
 
 
     /**
@@ -662,53 +664,38 @@ class Viewer {
     /**
      * ベクトルタイルの管理オブジェクトを設定
      *
-     * ベクトルタイルを管理するオブジェクトを `manager` に切り替える。
+     * `StyleManager` インスタンス `manager` を設定し、そのベクトルタ
+     * イルをレンダリングできるようにする。
      *
-     * `manager` 引数を省略したときは、新規のデフォルトオブジェクト
-     * (レイヤーが 1 つも存在しないスタイル) が設定される。
+     * 以前に別の `StyleManager` インスタンスを設定していた場合は、そ
+     * のベクトルタイルはレンダリングされなくなる。
      *
-     * 設定されたオブジェクトは [[vectile_manager]] により参照すること
-     * ができる。
+     * `manager` に `null` を指定したとき、ベクトルタイルはレンダリン
+     * グされなくなる。
      *
-     * @remarks
-     *
-     * 1 つの [[StyleManager]] インスタンスは、同時に複数の [[Viewer]]
-     * インスタンスに設定することはできない。
-     *
-     * このメソッドを呼び出す以前に `this` に設定されていた [[StyleManager]]
-     * インスタンスは、再度 `this` または他の [[Viewer]] インスタンスに設定す
-     * ることができる。
+     * 設定された値は [[vectile_manager]] により参照することができる。
      *
      * @see [[vectile_manager]],
      *      [[Category.VECTILE]],
      *      [[StyleManager.viewer]]
      */
-    setVectileManager( manager?: StyleManager ): void
+    setVectileManager( manager: StyleManager | null ): void
     {
         if ( manager === this._vectile_manager ) {
             // オブジェクトが変更されないときは何もしない
-            cfa_assert( manager.viewer === this );
             return;
         }
 
-        // this に新しく設定する StyleManager インスタンス
-        const new_manager = manager ?? StyleManager.__createDefualtInstance();
-        cfa_assert( new_manager.viewer !== this );
-
-        if ( new_manager.viewer ) {
-            // new_manager は this 以外の Viewer インスタンスに設定さ
-            // れている
-            throw new Error( "StyleManager instance is already set to another Viewer instance" );
+        if ( manager && manager.viewer !== this ) {
+            // manager は this のために生成されたインスタンスではない
+            throw new Error( "The given StyleManager instance was not created for this Viewer instance" );
         }
 
-        // 以前のオブジェクトは、処理を停止してから、どの Viewer イン
-        // スタンスにも所属しないようにする
-        this._vectile_manager.__cancel( this._globe );
-        this._vectile_manager.__install_viewer( null );
+        // 以前のオブジェクトは、処理を停止する
+        this._vectile_manager?.__cancel( this._globe );
 
         // 新しいオブジェクトに切り替える
-        this._vectile_manager = new_manager;
-        this._vectile_manager.__install_viewer( this );
+        this._vectile_manager = manager;
     }
 
 

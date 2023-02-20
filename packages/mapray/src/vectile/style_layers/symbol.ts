@@ -5,15 +5,16 @@
  * [[LayerFeature]] の具象クラスを定義する。
  */
 
-import { DIST_FACTOR, DIST_LOWER } from "./symbol_base";
 import { StyleLayer, LayerFlake, LayerFeature } from "../style_layer";
 import type { EvaluationListener, LayerJson } from "../style_layer";
 import type { StyleManager } from "../style_manager";
 import type { FlakeContext } from "../style_flake";
 import { Property, Specification as PropSpec } from "../property";
-import { GeomType } from "../expression";
+import { GeomType, ResolvedImage } from "../expression";
 import { Feature, PointFeature, TileLayer } from "../tile_layer";
-import { ImageCache, ImageHandle, ImageInfo } from "./symbol_cache";
+import { DIST_FACTOR, DIST_LOWER } from "../sdfield";
+import { TextImageCache, ImageHandle, ImageInfo } from "../sdfield_cache";
+import { ImageManager, SdfImage, ColorImage } from "../image";
 import GLEnv from "../../GLEnv";
 import Primitive from "../../Primitive";
 import Mesh, { MeshData } from "../../Mesh";
@@ -21,11 +22,11 @@ import GeoMath, { Vector2, Vector3, Vector4, Matrix } from "../../GeoMath";
 import AreaUtil from "../../AreaUtil";
 import RenderStage from "../../RenderStage";
 import EntityMaterial from "../../EntityMaterial";
-import type Viewer from "../../Viewer";
 import { cfa_assert } from "../../util/assertion";
 
-import symbol_text_vs_code from "../../shader/vectile/symbol_text.vert";
-import symbol_text_fs_code from "../../shader/vectile/symbol_text.frag";
+import symbol_vs_code from "../../shader/vectile/symbol.vert";
+import symbol_sdfield_fs_code from "../../shader/vectile/symbol_sdfield.frag";
+import symbol_color_fs_code from "../../shader/vectile/symbol_color.frag";
 
 
 /**
@@ -45,15 +46,30 @@ export class SymbolLayer extends StyleLayer {
     readonly prop_text_halo_color: Property;
     readonly prop_text_halo_width: Property;
 
+    readonly prop_icon_image:   Property;
+    readonly prop_icon_size:    Property;
+    readonly prop_icon_color:   Property;
+    readonly prop_icon_opacity: Property;
+    readonly prop_icon_anchor:  Property;
+    readonly prop_icon_offset:  Property;
+    readonly prop_icon_halo_color: Property;
+    readonly prop_icon_halo_width: Property;
+
 
     /**
-     * 現在のレンダリングに使う画像キャッシュ
-     *
-     * レンダリング中は、非 `null` が保証されている。
+     * レンダリングに使うテキスト画像キャッシュ
      *
      * @internal
      */
-    __image_cache: ImageCache | null;
+    readonly __text_image_cache: TextImageCache;
+
+
+    /**
+     * アイコン用の画像管理
+     *
+     * @internal
+     */
+    readonly __image_manager: ImageManager;
 
 
     constructor( owner:   StyleManager,
@@ -71,30 +87,43 @@ export class SymbolLayer extends StyleLayer {
         this.prop_text_halo_color = this.__getProperty( 'text-halo-color' );
         this.prop_text_halo_width = this.__getProperty( 'text-halo-width' );
 
-        this.__image_cache = null;
+        this.prop_icon_image   = this.__getProperty( 'icon-image' );
+        this.prop_icon_size    = this.__getProperty( 'icon-size' );
+        this.prop_icon_color   = this.__getProperty( 'icon-color' );
+        this.prop_icon_opacity = this.__getProperty( 'icon-opacity' );
+        this.prop_icon_anchor  = this.__getProperty( 'icon-anchor' );
+        this.prop_icon_offset  = this.__getProperty( 'icon-offset' );
+        this.prop_icon_halo_color = this.__getProperty( 'icon-halo-color' );
+        this.prop_icon_halo_width = this.__getProperty( 'icon-halo-width' );
+
+        this.__text_image_cache = this._ensure_text_image_cache();
+        this.__image_manager    = owner.__image_manager;
     }
 
 
-    // from StyleLayer
-    override __install_viewer( viewer: Viewer | null ): void
+    /**
+     * 画像キャッシュの準備と取得
+     */
+    private _ensure_text_image_cache(): TextImageCache
     {
-        if ( viewer !== null ) {
-            const shared_cache = SymbolLayer._shared_image_caches.get( viewer.glenv );
+        const viewer = this.style_manager.viewer;
 
-            if ( shared_cache ) {
-                // すでに共有されているキャッシュ
-                this.__image_cache = shared_cache;
-            }
-            else {
-                // 新規に作成するキャッシュ
-                this.__image_cache = new ImageCache( viewer.glenv );
-                SymbolLayer._shared_image_caches.set( viewer.glenv, this.__image_cache );
-            }
+        const    text_cache_key = viewer.glenv;
+        const shared_text_cache = SymbolLayer._shared_text_image_caches.get( text_cache_key );
+
+        let text_image_cache: TextImageCache;
+
+        if ( shared_text_cache ) {
+            // すでに共有されているキャッシュ
+            text_image_cache = shared_text_cache;
         }
         else {
-            // StyleManager が Viewer から外された
-            this.__image_cache = null;
+            // 新規に作成するキャッシュ
+            text_image_cache = new TextImageCache( viewer.glenv );
+            SymbolLayer._shared_text_image_caches.set( text_cache_key, text_image_cache );
         }
+
+        return text_image_cache;
     }
 
 
@@ -117,18 +146,24 @@ export class SymbolLayer extends StyleLayer {
     /**
      * マテリアルを取得
      */
-    getTextMaterial( glenv: GLEnv ): SymbolTextMaterial
+    getMaterial( glenv: GLEnv,
+                 stype: 'sdf' | 'color' ): SymbolMaterial
     {
-        const is_sharp = this.style_manager.bitmap_sharpening;
+        let map = SymbolLayer._material_cache.get( glenv );
 
-        const name = is_sharp ? '_text_material_sharp' : '_text_material_normal';
+        if ( map === undefined ) {
+            map = new Map();
+            SymbolLayer._material_cache.set( glenv, map );
+        }
 
-        let material = SymbolLayer[name].get( glenv );
+        const key = `stype: ${stype}`;
+
+        let material = map.get( key );
 
         if ( material === undefined ) {
             // 存在しないので新たにマテリアルを生成
-            material = new SymbolTextMaterial( glenv, { is_sharp } );
-            SymbolLayer[name].set( glenv, material );
+            material = new SymbolMaterial( glenv, stype );
+            map.set( key, material );
         }
 
         return material;
@@ -196,20 +231,71 @@ export class SymbolLayer extends StyleLayer {
             value_type: 'number',
             default_value: 0,
         },
+        {
+            name: 'icon-image',
+            category: 'layout',
+            value_type: 'resolvedImage',
+        },
+        {
+            name: 'icon-size',
+            category: 'layout',
+            value_type: 'number',
+            default_value: 1.0,
+        },
+        {
+            name: 'icon-color',
+            category: 'paint',
+            value_type: 'color',
+            default_value: "#000000",
+        },
+        {
+            name: 'icon-opacity',
+            category: 'paint',
+            value_type: 'number',
+            default_value: 1.0,
+        },
+        {
+            name: 'icon-anchor',
+            category: 'layout',
+            value_type: 'string',
+            default_value: 'center',
+        },
+        {
+            name: 'icon-offset',
+            category: 'layout',
+            value_type: 'array',
+            element_type: 'number',
+            default_value: [0, 0],
+        },
+        {
+            name: 'icon-halo-color',
+            category: 'paint',
+            value_type: 'color',
+            default_value: "rgba(0, 0, 0, 0)",
+        },
+        {
+            name: 'icon-halo-width',
+            category: 'paint',
+            value_type: 'number',
+            default_value: 0,
+        },
     ];
 
 
     /**
      * マテリアル・キャッシュ
      */
-    private static readonly _text_material_normal = new WeakMap<GLEnv, SymbolTextMaterial>();
-    private static readonly _text_material_sharp  = new WeakMap<GLEnv, SymbolTextMaterial>();
+    private static readonly _material_cache = new WeakMap<GLEnv, Map<string, SymbolMaterial>>();
 
 
     /**
-     * `SymbolLayer` インスタンス間で共有する `ImageCache` インスタンス
+     * `SymbolLayer` インスタンス間で共有する `TextImageCache` インスタンス
+     *
+     * これは、違う `StyleManager` インスタンスの `SymbolLayer`
+     * インスタンス間でも共有する。
      */
-    private static readonly _shared_image_caches = new WeakMap<GLEnv, ImageCache>();
+    private static readonly _shared_text_image_caches =
+        new WeakMap<GLEnv, TextImageCache>();
 
 }
 
@@ -257,39 +343,41 @@ class SymbolFlake extends LayerFlake<SymbolLayer> {
     override startEvaluation( flake_ctx: FlakeContext ): EvaluationListener
     {
         return summary => {
+            // LayerFlake インスタンスの再評価が終わったとき、ここに到達する。
+            // 再評価は LayerFlake.getPrimitives() の実行前に行われる。
 
             if ( summary.evaluated_properties.size === 0 ) {
                 // 変化した layout プロパティは存在しない
                 return;
             }
 
-            const sym_layer = this.style_layer;
+            // ここに到達した場合、LayerFlake インスタンスの、何らかの
+            // layout プロパティの評価値が変化した可能性がある
 
-            if ( !summary.evaluated_properties.has( sym_layer.prop_text_field ) &&
-                !summary.evaluated_properties.has( sym_layer.prop_text_size ) ) {
-                // 対象のプロパティは変化していない
-                return;
-            }
 
+            // 現在は特別な最適化を行っていないので、何れかの layout
+            // プロパティが変化した可能性があれば、
+            // LayerFlake._layer_features のすべてのフィーチャを更新
             for ( const layer_feature of this._layer_features.values() ) {
                 cfa_assert( layer_feature instanceof SymbolFeature );
                 layer_feature.updatePrimitive( flake_ctx );
             }
-        }
+        };
     }
 
 
     // from LayerFlake
     override getPrimitives( flake_ctx: FlakeContext ): Primitive[]
     {
-        const result: Primitive[] = [];
+        const flake_primitives: Primitive[] = [];
 
         for ( const layer_feature of this._layer_features.values() ) {
             cfa_assert( layer_feature instanceof SymbolFeature );
-            result.push( layer_feature.createPrimitive( flake_ctx ) );
+            const feature_primitives = layer_feature.createPrimitives( flake_ctx );
+            Array.prototype.push.apply( flake_primitives, feature_primitives );
         }
 
-        return result;
+        return flake_primitives;
     }
 
 }
@@ -306,17 +394,19 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
     {
         super( feature, layer_flake, flake_ctx );
 
-        const values = this._getEvaluatedLayoutValues();
-        this._text_field  = values.text_field;
-        this._text_size   = values.text_size;
-        this._text_font   = values.text_font;
-        this._text_anchor = values.text_anchor;
-        this._text_offset = values.text_offset;
+        ({ text_field:  this._text_field,
+           text_size:   this._text_size,
+           text_font:   this._text_font,
+           text_anchor: this._text_anchor,
+           text_offset: this._text_offset,
+           icon_name:   this._icon_name,
+           icon_size:   this._icon_size,
+           icon_offset: this._icon_offset,
+           icon_anchor: this._icon_anchor,
+        } = this._getEvaluatedLayoutValues());
 
-        const gres = this._buildGraphicsResources( flake_ctx );
-        this._mesh = gres.mesh;
-        this._image_handle = gres.image_handle;
-        this._img_isize = gres.img_isize;
+        this._gres_text = this._buildTextGraphicsResource( flake_ctx );
+        this._gres_icon = this._buildIconGraphicsResource( flake_ctx );
 
         this._position = GeoMath.createVector3f( this._get_local_position( flake_ctx ) );
     }
@@ -325,7 +415,13 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
     // from LayerFeature
     override dispose(): void
     {
-        this._image_handle.dispose();
+        if ( this._gres_text ) {
+            this._gres_text.image_handle.dispose();
+        }
+
+        if ( this._gres_icon && this._gres_icon.tag === 'sdf-icon' ) {
+            this._gres_icon.image_handle.dispose();
+        }
     }
 
 
@@ -334,26 +430,64 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
      */
     updatePrimitive( flake_ctx: FlakeContext ): void
     {
-        const values = this._getEvaluatedLayoutValues();
+        const {
+            text_field,
+            text_size,
+            text_font,
+            text_anchor,
+            text_offset,
+            icon_name,
+            icon_size,
+            icon_anchor,
+            icon_offset,
+        } = this._getEvaluatedLayoutValues();
 
-        const is_changed =
-            (values.text_field !== this._text_field) ||
-            (values.text_size  !== this._text_size)  ||
-            !equalsArray( values.text_font, this._text_font ) ||
-            (values.text_anchor !== this._text_anchor) ||
-            !equalsArray( values.text_offset, this._text_offset );
+        // テキスト
 
-        if ( is_changed ) {
-            this._text_field  = values.text_field;
-            this._text_size   = values.text_size;
-            this._text_font   = values.text_font;
-            this._text_anchor = values.text_anchor;
-            this._text_offset = values.text_offset;
+        const is_text_changed =
+            (text_field !== this._text_field) ||
+            (text_size  !== this._text_size)  ||
+            !equalsArray( text_font, this._text_font ) ||
+            (text_anchor !== this._text_anchor) ||
+            !equalsArray( text_offset, this._text_offset );
 
-            const gres = this._buildGraphicsResources( flake_ctx );
-            this._mesh = gres.mesh;
-            this._image_handle = gres.image_handle;
-            this._img_isize = gres.img_isize;
+        if ( is_text_changed ) {
+            this._text_field  = text_field;
+            this._text_size   = text_size;
+            this._text_font   = text_font;
+            this._text_anchor = text_anchor;
+            this._text_offset = text_offset;
+
+            if ( this._gres_text ) {
+                // 既存のグラフィックス資源を破棄
+                this._gres_text.image_handle.dispose();
+                this._gres_text = null;
+            }
+
+            this._gres_text = this._buildTextGraphicsResource( flake_ctx );
+        }
+
+        // アイコン
+
+        const is_icon_changed =
+            (icon_name   !== this._icon_name)   ||
+            (icon_size   !== this._icon_size)   ||
+            (icon_anchor !== this._icon_anchor) ||
+            (icon_offset !== this._icon_offset);
+
+        if ( is_icon_changed ) {
+            this._icon_name   = icon_name;
+            this._icon_size   = icon_size;
+            this._icon_anchor = icon_anchor;
+            this._icon_offset = icon_offset;
+
+            if ( this._gres_icon && this._gres_icon.tag === 'sdf-icon' ) {
+                // 既存のグラフィックス資源を破棄
+                this._gres_icon.image_handle.dispose();
+                this._gres_icon = null;
+            }
+
+            this._gres_icon = this._buildIconGraphicsResource( flake_ctx );
         }
     }
 
@@ -361,55 +495,147 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
     /**
      * プリミティブを作成
      */
-    createPrimitive( flake_ctx: FlakeContext ): Primitive
+    createPrimitives( flake_ctx: FlakeContext ): Primitive[]
     {
         const     glenv = flake_ctx.stage.glenv;
         const sym_layer = this.layer_flake.style_layer;
 
-        const color = this.getEvaluatedColor( sym_layer.prop_text_color,
-                                              GeoMath.createVector4f() );
+        const primitives: Primitive[] = [];
 
-        const opacity = this.getEvaluatedValue( sym_layer.prop_text_opacity ) as number;
+        const transform = this._createTransform();
 
-        const halo_color = this.getEvaluatedColor( sym_layer.prop_text_halo_color,
-                                                   GeoMath.createVector4f() );
+        // テキスト
+        if ( this._gres_text ) {
+            const color = this.getEvaluatedColor( sym_layer.prop_text_color,
+                                                  GeoMath.createVector4f() );
 
-        const halo_width = this.getEvaluatedValue( sym_layer.prop_text_halo_width ) as number;
+            const opacity = this.getEvaluatedValue( sym_layer.prop_text_opacity ) as number;
 
-        if ( halo_width < 1.0 ) {
-            // 縁取りが細いとき、距離補間の誤差が目立つので、
-            // 縁取りの不透明度を下げて、目立ちにくいようにする
-            const factor = Math.max( 0, halo_width );
-            for ( let i = 0; i < 4; ++i ) {
-                halo_color[i] *= factor;
+            const halo_color = this.getEvaluatedColor( sym_layer.prop_text_halo_color,
+                                                       GeoMath.createVector4f() );
+
+            const halo_width = this.getEvaluatedValue( sym_layer.prop_text_halo_width ) as number;
+
+            adjustHaloOpacity( halo_width, halo_color );
+
+            const gres = this._gres_text;
+
+            // 必要ならメッシュとテクスチャを作り直す
+            if ( gres.image_handle.checkRebuild( halo_width ) ) {
+                const image_info = gres.image_handle.getImageInfo();
+
+                const build_info: MeshBuildInfo = {
+                    anchor:       this._text_anchor,
+                    offset:       [this._text_offset[0] * this._text_size,
+                                   this._text_offset[1] * this._text_size],
+                    scale:        1,
+                    depth_factor: this._calculateTextDepthFactor(),
+                };
+
+                gres.mesh = createSymbolMesh( glenv, image_info, build_info );
+                gres.img_isize[0] = 1 / image_info.texture_width;
+                gres.img_isize[1] = 1 / image_info.texture_height;
+            }
+
+            const props: SymbolMaterialProperty = {
+                u_position:   this._position,
+                u_image:      gres.image_handle.getTexture(),
+                u_img_isize:  gres.img_isize,
+                u_img_scale:  1.0,
+                u_color:      color,
+                u_opacity:    opacity,
+                u_halo_color: halo_color,
+                u_halo_width: getShaderHaloWidth( halo_width ),
+            };
+
+            const prim = new Primitive( glenv,
+                                        gres.mesh,
+                                        sym_layer.getMaterial( glenv, 'sdf' ),
+                                        transform );
+            prim.properties = props;
+
+            primitives.push( prim );
+        }
+
+        // アイコン
+        if ( this._gres_icon ) {
+            const color = this.getEvaluatedColor( sym_layer.prop_icon_color,
+                                                  GeoMath.createVector4f() );
+
+            const opacity = this.getEvaluatedValue( sym_layer.prop_icon_opacity ) as number;
+
+            const halo_color = this.getEvaluatedColor( sym_layer.prop_icon_halo_color,
+                                                       GeoMath.createVector4f() );
+
+            const halo_width = this.getEvaluatedValue( sym_layer.prop_icon_halo_width ) as number
+                / this._icon_size;  // スケール済みの縁取り幅
+
+            adjustHaloOpacity( halo_width, halo_color );
+
+            const gres = this._gres_icon;
+            if ( gres.tag === 'sdf-icon' ) {
+                /* SdfIconGraphicsResource */
+
+                // 必要ならメッシュとテクスチャを作り直す
+                if ( gres.image_handle.checkRebuild( halo_width ) ) {
+                    const image_info = gres.image_handle.getImageInfo();
+
+                    const build_info: MeshBuildInfo = {
+                        anchor:       this._icon_anchor,
+                        offset:       this._icon_offset,
+                        scale:        this._icon_size,
+                        depth_factor: this._calculateIconDepthFactor( gres.src_image.image.height ),
+                    };
+
+                    gres.mesh = createSymbolMesh( glenv, image_info, build_info );
+                    gres.img_isize[0] = 1 / image_info.texture_width;
+                    gres.img_isize[1] = 1 / image_info.texture_height;
+                }
+
+                const props: SymbolMaterialProperty = {
+                    u_position:   this._position,
+                    u_image:      gres.image_handle.getTexture(),
+                    u_img_isize:  gres.img_isize,
+                    u_img_scale:  1 / this._icon_size,
+                    u_color:      color,
+                    u_opacity:    opacity,
+                    u_halo_color: halo_color,
+                    u_halo_width: getShaderHaloWidth( halo_width ),
+                };
+
+                const prim = new Primitive( glenv,
+                                            gres.mesh,
+                                            sym_layer.getMaterial( glenv, 'sdf' ),
+                                            transform );
+                prim.properties = props;
+
+                primitives.push( prim );
+            }
+            else {
+                /* ColorIconGraphicsResource */
+
+                const props: SymbolMaterialProperty = {
+                    u_position:   this._position,
+                    u_image:      gres.texture,
+                    u_img_isize:  gres.img_isize,
+                    u_img_scale:  1 / this._icon_size,
+                    u_color:      color,
+                    u_opacity:    opacity,
+                    u_halo_color: halo_color,
+                    u_halo_width: getShaderHaloWidth( halo_width ),
+                };
+
+                const prim = new Primitive( glenv,
+                                            gres.mesh,
+                                            sym_layer.getMaterial( glenv, 'color' ),
+                                            transform );
+                prim.properties = props;
+
+                primitives.push( prim );
             }
         }
 
-        // 必要ならメッシュとテクスチャを作り直す
-        if ( this._image_handle.checkRebuild( halo_width ) ) {
-            const image_info = this._image_handle.getImageInfo();
-            this._mesh = this._createSymbolMesh( glenv, image_info );
-            this._img_isize[0] = 1 / image_info.texture_width;
-            this._img_isize[1] = 1 / image_info.texture_height;
-        }
-
-        const props: SymbolTextMaterialProperty = {
-            u_position:   this._position,
-            u_image:      this._image_handle.getTexture(),
-            u_img_isize:  this._img_isize,
-            u_color:      color,
-            u_opacity:    opacity,
-            u_halo_color: halo_color,
-            u_halo_width: (halo_width - DIST_LOWER) * DIST_FACTOR,
-        };
-
-        const primitive = new Primitive( glenv,
-                                         this._mesh,
-                                         sym_layer.getTextMaterial( glenv ),
-                                         this._createTransform() );
-        primitive.properties = props;
-
-        return primitive;
+        return primitives;
     }
 
 
@@ -436,33 +662,40 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
     {
         const sym_layer = this.layer_flake.style_layer;
 
-        const text_field  = this.getEvaluatedValue( sym_layer.prop_text_field )  as string;
-        const text_size   = this.getEvaluatedValue( sym_layer.prop_text_size )   as number;
-        const text_font   = this.getEvaluatedValue( sym_layer.prop_text_font )   as string[];
-        const text_anchor = this.getEvaluatedValue( sym_layer.prop_text_anchor ) as string;
-        const text_offset = this.getEvaluatedValue( sym_layer.prop_text_offset ) as [number, number];
+        const icon_image = this.getEvaluatedValue( sym_layer.prop_icon_image ) as ResolvedImage | null;
+        const icon_name  = (icon_image !== null && icon_image.available) ? icon_image.name : null;
 
         return {
-            text_field,
-            text_size,
-            text_font,
-            text_anchor,
-            text_offset,
+            text_field:  this.getEvaluatedValue( sym_layer.prop_text_field )  as string,
+            text_size:   this.getEvaluatedValue( sym_layer.prop_text_size )   as number,
+            text_font:   this.getEvaluatedValue( sym_layer.prop_text_font )   as string[],
+            text_anchor: this.getEvaluatedValue( sym_layer.prop_text_anchor ) as string,
+            text_offset: this.getEvaluatedValue( sym_layer.prop_text_offset ) as [number, number],
+
+            icon_name,
+            icon_size:   this.getEvaluatedValue( sym_layer.prop_icon_size )   as number,
+            icon_anchor: this.getEvaluatedValue( sym_layer.prop_icon_anchor ) as string,
+            icon_offset: this.getEvaluatedValue( sym_layer.prop_icon_offset ) as [number, number],
         };
     }
 
 
     /**
-     * グラフィックス資源を構築
+     * グラフィックス資源を構築 (テキスト)
      *
      * `this` に設定済みのパラメータからグラフィックス資源を構築する。
      */
-    private _buildGraphicsResources( flake_ctx: FlakeContext ) /* auto-type */
+    private _buildTextGraphicsResource( flake_ctx: FlakeContext ): TextGraphicsResource | null
     {
-        const sym_layer = this.layer_flake.style_layer;
-        cfa_assert( sym_layer.__image_cache );
+        if ( this._text_field.length === 0 || this._text_size <= 0 ) {
+            // テキストが空文字列、またはサイズが 0 以下ならグラフィッ
+            // クス資源を作らない。つまり Primitive を作らない。
+            return null;
+        }
 
-        const image_cache = sym_layer.__image_cache;
+        const sym_layer = this.layer_flake.style_layer;
+
+        const image_cache = sym_layer.__text_image_cache;
 
         const halo_width = this.getEvaluatedValue( sym_layer.prop_text_halo_width ) as number;
 
@@ -473,12 +706,105 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
 
         const image_info = image_handle.getImageInfo();
 
+        const build_info: MeshBuildInfo = {
+            anchor:       this._text_anchor,
+            offset:       [this._text_offset[0] * this._text_size,
+                           this._text_offset[1] * this._text_size],
+            scale:        1,
+            depth_factor: this._calculateTextDepthFactor(),
+        };
+
         return {
-            mesh: this._createSymbolMesh( flake_ctx.stage.glenv, image_info ),
+            mesh: createSymbolMesh( flake_ctx.stage.glenv, image_info, build_info ),
             image_handle,
             img_isize: GeoMath.createVector2f( [1 / image_info.texture_width,
                                                 1 / image_info.texture_height] ),
         };
+    }
+
+
+    /**
+     * グラフィックス資源を構築 (アイコン)
+     *
+     * `this` に設定済みのパラメータからグラフィックス資源を構築する。
+     */
+    private _buildIconGraphicsResource( flake_ctx: FlakeContext ): IconGraphicsResource | null
+    {
+        if ( this._icon_name === null || this._icon_size <= 0 ) {
+            // アイコンが存在しない、またはサイズが 0 以下ならグラフィッ
+            // クス資源を作らない。つまり Primitive を作らない。
+            return null;
+        }
+
+        const build_info: MeshBuildInfo = {
+            anchor:       this._icon_anchor,
+            offset:       this._icon_offset,
+            scale:        this._icon_size,
+            depth_factor: 0,  // 後で設定
+        };
+
+        const image_manager = this.layer_flake.style_layer.__image_manager;
+
+        const image = image_manager.findImage( this._icon_name );
+
+        if ( image instanceof SdfImage ) {
+            // SdfImage アイコン
+            const sym_layer = this.layer_flake.style_layer;
+
+            const image_cache = image_manager.sdf_image_cache;
+
+            const halo_width = this.getEvaluatedValue( sym_layer.prop_icon_halo_width ) as number
+                / this._icon_size;  // スケール済みの縁取り幅
+
+            const image_handle = image_cache.getHandle( this._icon_name, halo_width );
+
+            const image_info = image_handle.getImageInfo();
+
+            build_info.depth_factor = this._calculateIconDepthFactor( image.image.height );
+
+            return {
+                tag:  'sdf-icon',
+
+                src_image: image,
+
+                mesh: createSymbolMesh( flake_ctx.stage.glenv, image_info, build_info ),
+
+                image_handle,
+
+                img_isize: GeoMath.createVector2f( [1 / image_info.texture_width,
+                                                    1 / image_info.texture_height] ),
+            };
+        }
+        else {
+            // ColorImage アイコン
+            cfa_assert( image instanceof ColorImage );
+
+            const icon_height = image.image_upper[1] - image.image_lower[1];
+
+            build_info.depth_factor = this._calculateIconDepthFactor( icon_height );
+
+            return {
+                tag:  'color-icon',
+
+                mesh: createSymbolMesh( flake_ctx.stage.glenv, {
+                    texture_width:   image.texture_size[0],
+                    texture_height:  image.texture_size[1],
+                    display_lower_x: image.image_lower[0],
+                    display_lower_y: image.image_lower[1],
+                    display_upper_x: image.image_upper[0],
+                    display_upper_y: image.image_upper[1],
+                    anchor_lower_x:  image.image_lower[0],
+                    anchor_lower_y:  image.image_lower[1],
+                    anchor_upper_x:  image.image_upper[0],
+                    anchor_upper_y:  image.image_upper[1],
+                },
+                                        build_info ),
+                texture: image.texture,
+
+                img_isize: GeoMath.createVector2f( [1 / image.texture_size[0],
+                                                    1 / image.texture_size[1]] ),
+            };
+        }
     }
 
 
@@ -527,96 +853,22 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
 
 
     /**
-     * シンボル用のメッシュを生成
-     */
-    private _createSymbolMesh( glenv: GLEnv,
-                               image_info: ImageInfo ): Mesh
-    {
-        const mesh_data: MeshData = {
-            vtype: [
-                { name: "a_offset",   size: 3 },
-                { name: "a_texcoord", size: 2 },
-            ],
-            vertices: this._createSymbolVertices( image_info ),
-            indices:  [0, 1, 2, 2, 1, 3],
-        };
-
-        return new Mesh( glenv, mesh_data );
-    }
-
-
-    /**
-     * シンボル用の頂点配列を生成
-     */
-    private _createSymbolVertices( image_info: ImageInfo ): number[]
-    {
-        // 頂点配列を設定
-        const vertices: number[] = [];
-
-        // 中央アンカーの座標
-        const center_anchor_x = (image_info.anchor_lower_x + image_info.anchor_upper_x) / 2;
-        const center_anchor_y = (image_info.anchor_lower_y + image_info.anchor_upper_y) / 2;
-
-        // スクリーン座標オフセット (初期値は中央アンカー用)
-        let offset_lx = image_info.display_lower_x - center_anchor_x;
-        let offset_rx = image_info.display_upper_x - center_anchor_x;
-        let offset_by = image_info.display_lower_y - center_anchor_y;
-        let offset_ty = image_info.display_upper_y - center_anchor_y;
-
-        // アンカーによるオフセットの変換
-        const at_dir = anchor_translate_direction[this._text_anchor];
-        if ( at_dir !== undefined ) {
-            const delta_x = at_dir[0] * (image_info.anchor_upper_x - image_info.anchor_lower_x) / 2;
-            const delta_y = at_dir[1] * (image_info.anchor_upper_y - image_info.anchor_lower_y) / 2;
-            offset_lx += delta_x;
-            offset_rx += delta_x;
-            offset_by += delta_y;
-            offset_ty += delta_y;
-        }
-
-        // 'text-offset' プロパティによるオフセットの変換
-        // この値はキャンバス座標系の em 単位
-        offset_lx += this._text_offset[0] * this._text_size;
-        offset_rx += this._text_offset[0] * this._text_size;
-        offset_by -= this._text_offset[1] * this._text_size;
-        offset_ty -= this._text_offset[1] * this._text_size;
-
-        // 文字を手前に移動する係数
-        const dfactor = this._calculateDepthFactor();
-
-        // テクスチャ座標
-        const tc_lx = image_info.display_lower_x;
-        const tc_rx = image_info.display_upper_x;
-        const tc_by = image_info.display_lower_y;
-        const tc_ty = image_info.display_upper_y;
-
-        // 左下
-        vertices.push( offset_lx, offset_by, dfactor );  // a_offset
-        vertices.push( tc_lx, tc_by );                   // a_texcoord
-
-        // 右下
-        vertices.push( offset_rx, offset_by, dfactor );  // a_offset
-        vertices.push( tc_rx, tc_by );                   // a_texcoord
-
-        // 左上
-        vertices.push( offset_lx, offset_ty, dfactor );  // a_offset
-        vertices.push( tc_lx, tc_ty );                   // a_texcoord
-
-        // 右上
-        vertices.push( offset_rx, offset_ty, dfactor );  // a_offset
-        vertices.push( tc_rx, tc_ty );                   // a_texcoord
-
-        return vertices;
-    }
-
-
-    /**
      * 文字列を手前に移動する量 (画素数相当)
      */
-    private _calculateDepthFactor(): number
+    private _calculateTextDepthFactor(): number
     {
         // TODO: 計算方法を検討
         return 1.75 * this._text_size;
+    }
+
+
+    /**
+     * アイコンを手前に移動する量 (画素数相当)
+     */
+    private _calculateIconDepthFactor( icon_height: number ): number
+    {
+        // TODO: 計算方法を検討
+        return 1.75 * icon_height * this._icon_size;
     }
 
 
@@ -643,10 +895,16 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
     private _text_anchor: string;
     private _text_offset: [number, number];
 
-    // 構築済みのグラフィックス資源
-    private _mesh: Mesh;
-    private _image_handle: ImageHandle;
-    private _img_isize: Vector2;  // _texture の画素数の逆数
+    private _icon_name: string | null;
+    private _icon_size: number;
+    private _icon_anchor: string;
+    private _icon_offset: [number, number];
+
+    // テキストのグラフィックス資源
+    private _gres_text: TextGraphicsResource | null;
+
+    // アイコンのグラフィックス資源
+    private _gres_icon: IconGraphicsResource | null;
 
     // 位置 (モデル座標系)
     private readonly _position: Vector3;
@@ -655,22 +913,252 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
 
 
 /**
- * symbol 型レイヤーのテキスト用のマテリアル
+ * シンボル用のメッシュを生成
  */
-class SymbolTextMaterial extends EntityMaterial {
+function createSymbolMesh( glenv: GLEnv,
+                           image_info: ImageInfo,
+                           build_info: MeshBuildInfo ): Mesh
+{
+    const mesh_data: MeshData = {
+        vtype: [
+            { name: "a_offset",   size: 3 },
+            { name: "a_texcoord", size: 2 },
+        ],
+        vertices: createSymbolVertices( image_info, build_info ),
+        indices:  [0, 1, 2, 2, 1, 3],
+    };
+
+    return new Mesh( glenv, mesh_data );
+}
+
+
+/**
+ * シンボル用の頂点配列を生成
+ */
+function createSymbolVertices( image_info: ImageInfo,
+                               build_info: MeshBuildInfo ): number[]
+{
+    // アンカーの座標
+    let anchor_x = (image_info.anchor_lower_x + image_info.anchor_upper_x) / 2;
+    let anchor_y = (image_info.anchor_lower_y + image_info.anchor_upper_y) / 2;
+    const at_dir = anchor_translate_direction[build_info.anchor];
+    if ( at_dir !== undefined ) {
+        anchor_x += at_dir[0] * (image_info.anchor_upper_x - image_info.anchor_lower_x) / 2;
+        anchor_y += at_dir[1] * (image_info.anchor_upper_y - image_info.anchor_lower_y) / 2;
+    }
+
+    // オフセットによるアンカーの移動
+    anchor_x -= build_info.offset[0];
+    anchor_y += build_info.offset[1];
+
+    // スクリーン座標オフセット
+    const offset_lx = (image_info.display_lower_x - anchor_x) * build_info.scale;
+    const offset_rx = (image_info.display_upper_x - anchor_x) * build_info.scale;
+    const offset_by = (image_info.display_lower_y - anchor_y) * build_info.scale;
+    const offset_ty = (image_info.display_upper_y - anchor_y) * build_info.scale;
+
+    // 文字を手前に移動する係数
+    const dfactor = build_info.depth_factor;
+
+    // テクスチャ座標
+    const tc_lx = image_info.display_lower_x;
+    const tc_rx = image_info.display_upper_x;
+    const tc_by = image_info.display_lower_y;
+    const tc_ty = image_info.display_upper_y;
+
+    // 頂点配列を設定
+    const vertices: number[] = [];
+
+    // 左下
+    vertices.push( offset_lx, offset_by, dfactor );  // a_offset
+    vertices.push( tc_lx, tc_by );                   // a_texcoord
+
+    // 右下
+    vertices.push( offset_rx, offset_by, dfactor );  // a_offset
+    vertices.push( tc_rx, tc_by );                   // a_texcoord
+
+    // 左上
+    vertices.push( offset_lx, offset_ty, dfactor );  // a_offset
+    vertices.push( tc_lx, tc_ty );                   // a_texcoord
+
+    // 右上
+    vertices.push( offset_rx, offset_ty, dfactor );  // a_offset
+    vertices.push( tc_rx, tc_ty );                   // a_texcoord
+
+    return vertices;
+}
+
+
+/**
+ * シェーダの `u_halo_width` に設定する値である。
+ *
+ * 詳細は定数 `DIST_FACTOR` の説明を参照のこと。
+ */
+function getShaderHaloWidth( halo_width: number ): number
+{
+    return (halo_width - DIST_LOWER) * DIST_FACTOR;
+}
+
+
+/**
+ * 縁取りの不透明度を調整する。
+ *
+ * 縁取りが細いとき、距離補間の誤差が目立つので、`halo_color` の不透明
+ * 度を下げて、目立ちにくいようにする。
+ */
+function adjustHaloOpacity( halo_width: number,
+                            halo_color: Vector4 ): void
+{
+    if ( halo_width < 1.0 ) {
+        const factor = Math.max( 0, halo_width );
+        for ( let i = 0; i < 4; ++i ) {
+            halo_color[i] *= factor;
+        }
+    }
+}
+
+
+/**
+ * メッシュの生成情報
+ */
+interface MeshBuildInfo {
+
+    /**
+     * アンカー名
+     *
+     * `text-anchor`, `icon-anchor` に指定するアンカーの名前である。
+     */
+    anchor: string;
+
+
+    /**
+     * アンカーのオフセット量
+     *
+     * 表示スケール無しでの表示の画素単位の変位量を表している。
+     *
+     * そのため、アンカー点がこの量の逆方向に動くことと同等である。
+     *
+     * テキストの場合は `text-offset` に `text-size` を掛けた値、
+     * アイコンの場合は `icon-offset` の値が設定される。
+     *
+     * @remarks
+     *
+     * キャンバス座標系と同じ。
+     */
+    offset: [number, number];
+
+
+    /**
+     * 表示スケール
+     *
+     * テキストの場合は 1、アイコンの場合は `icon-size` の値が設定される。
+     */
+    scale: number;
+
+
+    /**
+     * 深度を変位させるための係数
+     */
+    depth_factor: number;
+
+}
+
+
+/**
+ * グラフィックス資源
+ */
+interface GraphicsResource {
+
+    /**
+     * シンボルのメッシュ
+     */
+    mesh: Mesh;
+
+
+    /**
+     * テクスチャの画素数の逆数
+     */
+    img_isize: Vector2;
+
+}
+
+
+/**
+ * SDF 画像用のグラフィックス資源
+ */
+interface SdfGraphicsResource extends GraphicsResource {
+
+    /**
+     * シンボルの画像ハンドル
+     */
+    image_handle: ImageHandle;
+
+}
+
+
+/**
+ * テキスト用のグラフィックス資源
+ */
+interface TextGraphicsResource extends SdfGraphicsResource {
+}
+
+
+/**
+ * SDF アイコン (SdfImage) 用のグラフィックス資源
+ */
+interface SdfIconGraphicsResource extends SdfGraphicsResource {
+
+    tag: 'sdf-icon';
+
+    /**
+     * 元画像
+     */
+    src_image: SdfImage;
+
+}
+
+
+/**
+ * 通常アイコン (ColorImage) 用のグラフィックス資源
+ */
+interface ColorIconGraphicsResource extends GraphicsResource {
+
+    tag: 'color-icon';
+
+
+    /**
+     * シンボルのテクスチャ
+     */
+    texture: WebGLTexture;
+
+}
+
+
+/**
+ * アイコン用のグラフィックス資源
+ */
+type IconGraphicsResource = SdfIconGraphicsResource | ColorIconGraphicsResource;
+
+
+/**
+ * symbol 型レイヤーのマテリアル
+ */
+class SymbolMaterial extends EntityMaterial {
 
     constructor( glenv:   GLEnv,
+                 stype: 'sdf' | 'color',
                  options: MaterailOption = {} )
     {
-        const preamble = SymbolTextMaterial._getPreamble( options );
+        const preamble = SymbolMaterial._getPreamble( options );
+        const  fs_code = (stype === 'sdf') ? symbol_sdfield_fs_code : symbol_color_fs_code;
 
         super( glenv,
-               preamble + symbol_text_vs_code,
-               preamble + symbol_text_fs_code );
+               preamble + symbol_vs_code,
+               preamble + fs_code );
 
         // 不変パラメータを事前設定
         this.bindProgram();
-        this.setInteger( "u_image", SymbolTextMaterial.TEXUNIT_IMAGE );
+        this.setInteger( "u_image", SymbolMaterial.TEXUNIT_IMAGE );
     }
 
 
@@ -688,19 +1176,19 @@ class SymbolTextMaterial extends EntityMaterial {
     {
         super.setParameters( stage, primitive );
 
-        const props = primitive.properties as SymbolTextMaterialProperty;
+        const props = primitive.properties as SymbolMaterialProperty;
 
         // mat4 u_obj_to_view
         this.setObjToView( stage, primitive );
 
         // mat4 u_view_to_clip
-        const view_to_clip = SymbolTextMaterial._view_to_clip;
+        const view_to_clip = SymbolMaterial._view_to_clip;
         GeoMath.copyMatrix( stage._view_to_clip, view_to_clip );
         this.setMatrix( "u_view_to_clip", view_to_clip );
 
         // 画面パラメータ: {2/w, 2/h, pixel_step}
         // vec3 u_sparam
-        const sparam = SymbolTextMaterial._sparam;
+        const sparam = SymbolMaterial._sparam;
         sparam[0] = 2 / stage._width;
         sparam[1] = 2 / stage._height;
         sparam[2] = stage.pixel_step;
@@ -710,13 +1198,16 @@ class SymbolTextMaterial extends EntityMaterial {
             // テクスチャのバインド
             // sampler2D u_image
             const image_tex = props["u_image"];
-            this.bindTexture2D( SymbolTextMaterial.TEXUNIT_IMAGE, image_tex );
+            this.bindTexture2D( SymbolMaterial.TEXUNIT_IMAGE, image_tex );
 
             // フィーチャー位置 (モデル座標系)
             this.setVector3( "u_position", props["u_position"] );
 
             // u_image の画素数の逆数
             this.setVector2( "u_img_isize", props["u_img_isize"] );
+
+            // テクスチャ画素に対する画面画素の寸法比
+            this.setFloat( "u_img_scale", props["u_img_scale"] );
 
             // シンボル本体の RGBA 色
             this.setVector4( "u_color", props["u_color"] );
@@ -729,7 +1220,7 @@ class SymbolTextMaterial extends EntityMaterial {
 
             // シンボル縁取り太さ - DIST_LOWER
             this.setFloat( "u_halo_width", GeoMath.clamp( props["u_halo_width"],
-                                                          0.0, SymbolTextMaterial.MAX_HALO_WIDTH ) );
+                                                          0.0, SymbolMaterial.MAX_HALO_WIDTH ) );
         }
     }
 
@@ -739,11 +1230,10 @@ class SymbolTextMaterial extends EntityMaterial {
      *
      * @private
      */
-    private static _getPreamble( options: MaterailOption ): string
+    private static _getPreamble( _options: MaterailOption ): string
     {
         const lines = [];
 
-        lines.push( `#define BITMAP_SHARPENING (${options.is_sharp ?? false})` );
         lines.push( `#define _DIST_FACTOR_ (float(${DIST_FACTOR}))` );
         lines.push( `#define _DIST_LOWER_ (float(${DIST_LOWER}))` );
 
@@ -764,20 +1254,20 @@ class SymbolTextMaterial extends EntityMaterial {
 
 
 /**
- * アンカーによる平行移動の方向 (スクリーン座標系)
+ * 中央アンカーに対するアンカーの方向 (テクスチャー座標系)
  */
 const anchor_translate_direction: {
     [key: string]: [number, number] | undefined
 } = {
     // 'center':    [ 0 ,  0],  デフォルト値、または認識できないアンカー
-    'left':         [+1 ,  0],
-    'right':        [-1 ,  0],
-    'top':          [ 0 , -1],
-    'bottom':       [ 0 , +1],
-    'top-left':     [+1 , -1],
-    'top-right':    [-1 , -1],
-    'bottom-left':  [+1 , +1],
-    'bottom-right': [-1 , +1],
+    'left':         [-1 ,  0],
+    'right':        [+1 ,  0],
+    'top':          [ 0 , +1],
+    'bottom':       [ 0 , -1],
+    'top-left':     [-1 , +1],
+    'top-right':    [+1 , +1],
+    'bottom-left':  [-1 , -1],
+    'bottom-right': [+1 , -1],
 };
 
 
@@ -804,14 +1294,15 @@ function equalsArray<T>( a: ArrayLike<T>,
 
 
 /**
- * [[SymbolTextMaterial]] 用のプロパティ型
+ * [[SymbolMaterial]] 用のプロパティ型
  */
-interface SymbolTextMaterialProperty {
+interface SymbolMaterialProperty {
 
     u_position: Vector3;
 
     u_image:     WebGLTexture;
     u_img_isize: Vector2;
+    u_img_scale: number;
     u_color:     Vector4;
     u_opacity:   number;
 
@@ -825,12 +1316,4 @@ interface SymbolTextMaterialProperty {
  * マテリアル構築子のオプション
  */
 interface MaterailOption {
-
-    /**
-     * シンボルの表示を鮮明化するか？
-     *
-     * @default false
-     */
-    is_sharp?: boolean;
-
 }

@@ -7,57 +7,16 @@
  * @module
  */
 
+import { RequestResult } from "../RequestResult";
 import { Area as PrivateArea } from "../AreaUtil";
 
 
-export namespace Provider {
-
-    /**
-     * プロパティ [[RequestResult.canceller]] の型である。
-     */
-    export interface RequestCanceller {
-
-        (): void;
-
-    }
-
-
-    /**
-     * データ要求メソッドの戻り値の型
-     *
-     * @typeParam T - データ要求で返されるデータの型
-     */
-    export interface RequestResult<T> {
-
-        /**
-         * 要求されたデータを受け取るための `Promise` インスタンスである。
-         *
-         * これは要求したデータを取得できたとき `T` 型のインスタンスで
-         * 解決し、取得できなかったとき `null` で解決する。
-         *
-         * ただし `this` の [[canceller]] プロパティの関数が呼び出され
-         * た後は、`T` 型のインスタンス、または `null` のどちらで解決
-         * してもよい。
-         *
-         * 注意: 上記は何れも解決 (resolve) であり、拒否 (reject) でない。
-         */
-        promise: Promise<T | null>;
-
-
-        /**
-         * 要求を取り消すときに呼び出される関数である。
-         *
-         * 取り消す方法がないときは、取り消す処理を行わなくてもよい。
-         */
-        canceller: RequestCanceller;
-
-    }
-
+namespace TileProvider {
 
     /**
      * ベクトルタイルのメタデータの型
      *
-     * @see [[Provider.requestMeta]]
+     * @see [[TileProvider.requestMeta]]
      */
     export interface MetaData {
 
@@ -101,7 +60,7 @@ export namespace Provider {
     /**
      * ベクトルタイルの地表領域
      *
-     * [[Provider.requestTile]] に与えられるベクトルタイルの地表領域を
+     * [[TileProvider.requestTile]] に与えられるベクトルタイルの地表領域を
      * 表す型である。
      *
      * 座標の定義は
@@ -143,7 +102,7 @@ export namespace Provider {
  * - [[requestMeta]]
  * - [[requestTile]]
  */
-export abstract class Provider {
+abstract class TileProvider {
 
     protected constructor()
     {}
@@ -152,12 +111,15 @@ export abstract class Provider {
     /**
      * ベクトルタイルのメタデータを要求する。
      */
-    abstract requestMeta(): Provider.RequestResult<Provider.MetaData>;
+    abstract requestMeta(): RequestResult<TileProvider.MetaData>;
 
 
     /**
      * 指定したベクトルタイルのタイルデータを要求する。
      */
-    abstract requestTile( area: Provider.Area ): Provider.RequestResult<ArrayBuffer>;
+    abstract requestTile( area: TileProvider.Area ): RequestResult<ArrayBuffer>;
 
 };
+
+
+export { TileProvider };

@@ -1,36 +1,30 @@
 /**
- * SymbolLayer のテキスト (フラグメントシェーダ)
+ * SymbolLayer のテキストまたは SDF アイコン (フラグメントシェーダ)
  */
 
 precision highp float; // TODO: 最後に調整
 
-varying vec2 v_texcoord;     // テキスト画像上での位置 (特殊単位)
+varying vec2 v_texcoord;     // シンボル画像上での位置 (特殊単位)
 
-uniform sampler2D u_image;   // テキスト画像 (x: 最小距離 - DIST_LOWER)
+uniform sampler2D u_image;   // シンボル画像 (x: 最小距離 - DIST_LOWER)
 uniform vec2  u_img_isize;   // 特殊単位からテクスチャ座標への変換
+uniform float u_img_scale;   // テクスチャ画素に対する画面画素の寸法比
 
-uniform vec4  u_color;       // テキスト本体の RGBA 色 (α前乗算)
-uniform float u_opacity;     // テキスト全体の不透明度
+uniform vec4  u_color;       // シンボル本体の RGBA 色 (α前乗算)
+uniform float u_opacity;     // シンボル全体の不透明度
 
-uniform vec4  u_halo_color;   // テキスト縁取りの RGBA 色 (α前乗算)
-uniform float u_halo_width;   // テキスト縁取りの太さ - DIST_LOWER
-
-
-/**
- * ビットマップを鮮明に表示するかどうか
- * (シェーダのバリエーション)
- */
-const bool bitmap_sharpening = BITMAP_SHARPENING;
+uniform vec4  u_halo_color;   // シンボル縁取りの RGBA 色 (α前乗算)
+uniform float u_halo_width;   // シンボル縁取りの太さ - DIST_LOWER
 
 
 /**
- * symbol.ts の SymbolFeature.DIST_FACTOR と同じ値
+ * sdfield.ts の DIST_FACTOR と同じ値
  */
 const float DIST_FACTOR = _DIST_FACTOR_;
 
 
 /**
- * symbol.ts の SymbolFeature.DIST_LOWER と同じ値
+ * sdfield.ts の DIST_LOWER と同じ値
  */
 const float DIST_LOWER = _DIST_LOWER_;
 
@@ -52,15 +46,7 @@ const float chessboard = 1.0;
 void main()
 {
     // 画素の左下角に対応するテクスチャ座標 (特殊単位)
-    vec2 tc_base;
-    if ( bitmap_sharpening ) {
-        // 鮮明版
-        tc_base = floor( v_texcoord );
-    }
-    else {
-        // 通常版
-        tc_base = v_texcoord - vec2( 0.5 );
-    }
+    vec2 tc_base = v_texcoord - vec2( 0.5 * u_img_scale );
 
     // ζ_b: シンボル本体の被覆率
     float zeta_b = 0.0;
@@ -80,7 +66,7 @@ void main()
             float p0 = (mod( float( k1 ), 2.0 ) == 0.0 ? -0.25 : 0.25) * chessboard;
 
             // 標本点のテクスチャ座標 (特殊単位)
-            vec2 tc = tc_base + (vec2( k0, k1 ) + vec2( 0.5 + p0, 0.5 )) / vec2( DIVS_Zeta );
+            vec2 tc = tc_base + (vec2( k0, k1 ) + vec2( 0.5 + p0, 0.5 )) / vec2( DIVS_Zeta ) * vec2( u_img_scale );
 
             // 符号付きの最小距離
             float n = texture2D( u_image, tc * u_img_isize ).x;

@@ -1,6 +1,6 @@
 import type { StyleManager, Source } from "./style_manager";
 import type { StyleLayer, LayerFlake } from "./style_layer";
-import type { Provider } from "./provider";
+import type { RequestCanceller } from "../RequestResult";
 import { TileLayer } from "./tile_layer";
 import { parseTile } from "./mvt_parser";
 import type { Context as ExprContext } from "./expression";
@@ -133,21 +133,25 @@ export class StyleFlake {
         else if ( this._canRequestTile() ) {
             // SourceState インスタンスを生成して追加する。それと同時にプロバイダに
             // タイルデータをリクエストする。
-            const { promise, canceller } = source_inst.provider.requestTile( area );
+            const { promise, canceller } = source_inst.tile_provider.requestTile( area );
             this._countTileRequested( 1 );
 
             const new_source_state = new SourceState( source_inst, canceller );
             this._source_states.set( source_inst, new_source_state );
 
             promise.then( data => {
-                if ( data === null || new_source_state.tile_status === TileStatus.CANCELLED ) {
-                    // 取得に失敗またはキャンセル中
+                if ( new_source_state.tile_status === TileStatus.CANCELLED ) {
+                    // すでにキャンセル中
                     new_source_state.makeFail();
                 }
                 else {
                     // 読み込み成功
                     new_source_state.loadTileLayers( data );
                 }
+                this._countTileRequested( -1 );
+            } ).catch( () => {
+                // 取得に失敗またはキャンセル中
+                new_source_state.makeFail();
                 this._countTileRequested( -1 );
             } );
         }
@@ -193,7 +197,7 @@ class SourceState {
      * 状態は `TileStatus.requested` になる。
      */
     constructor( source:    Source,
-                 canceller: Provider.RequestCanceller )
+                 canceller: RequestCanceller )
     {
         this._source      = source;
         this._tile_status = TileStatus.REQUESTED;
@@ -278,7 +282,7 @@ class SourceState {
     /**
      * リクエスト取り消し関数
      */
-    private _canceller: Provider.RequestCanceller | null;
+    private _canceller: RequestCanceller | null;
 
 
     /**
