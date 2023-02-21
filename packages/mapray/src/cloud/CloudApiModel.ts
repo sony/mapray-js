@@ -395,13 +395,13 @@ class PointCloudDataset extends AbstractDataset {
     private _url?: string;
 
     // @ts-ignore
-    private _bounding_box: GeoJson.BBox3d;
+    private _bounding_box?: GeoJson.BBox3d;
 
     // @ts-ignore
-    private _content_root: string;
+    private _content_root?: string;
 
     // @ts-ignore
-    private _format: string;
+    private _format?: string;
 
     /**
      * @param api
@@ -420,7 +420,7 @@ class PointCloudDataset extends AbstractDataset {
     /**
      * 点群のバウンディングボックスを取得
      */
-    getBoundingBox() {
+    getBoundingBox(): GeoJson.BBox3d | undefined {
         return this._bounding_box;
     }
 
@@ -428,14 +428,14 @@ class PointCloudDataset extends AbstractDataset {
      * 1レベルに1ボックスしか存在しないボックスの中で最も高いレベルのボックス。
      * （点群に含まれる全ての点を包含するボックスの中で最も高いレベルのボックス）
      */
-    getContentRoot(): string {
+    getContentRoot(): string | undefined {
         return this._content_root;
     }
 
     /**
      * フォーマット（現在はrawのみ対応）
      */
-    getFormat(): string {
+    getFormat(): string | undefined {
         return this._format;
     }
 
@@ -446,6 +446,9 @@ class PointCloudDataset extends AbstractDataset {
         super._restoreFromJson( json );
         // this._srid = json.srid;
         this._url = json.url;
+        if ( !json.fileinfo ) {
+            return;
+        }
         const bbox = json.fileinfo.bbox;
         this._bounding_box = (
             GeoJson.isBBox3d(bbox) ? bbox:
