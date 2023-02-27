@@ -438,15 +438,17 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
                 const dataset = await maprayApi.loadPointCloudDataset( process.env.DATASET_POINT_CLOUD_ID as string );
                 console.log( dataset );
                 const bbox = dataset.getBoundingBox();
-                const center = new mapray.GeoPoint(
-                    (bbox[0] + bbox[3]) / 2.0,
-                    (bbox[1] + bbox[4]) / 2.0,
-                    0 // (bbox[2] + bbox[5]) / 2.0,
-                );
-                const pin = new mapray.PinEntity( this.viewer.scene );
-                pin.addMakiIconPin( "landmark-15", center);
-                this.addEntity(pin);
-                this.startFlyCamera({ iscs_end: center, end_altitude: 500, end_from_lookat: 100, time: 1 });
+                if ( bbox ) {
+                    const center = new mapray.GeoPoint(
+                        (bbox[0] + bbox[3]) / 2.0,
+                        (bbox[1] + bbox[4]) / 2.0,
+                        0 // (bbox[2] + bbox[5]) / 2.0,
+                    );
+                    const pin = new mapray.PinEntity( this.viewer.scene );
+                    pin.addMakiIconPin( "landmark-15", center);
+                    this.addEntity(pin);
+                    this.startFlyCamera({ iscs_end: center, end_altitude: 500, end_from_lookat: 100, time: 1 });
+                }
             }
 
             else if ( mode === "raw-bucket" ) {
