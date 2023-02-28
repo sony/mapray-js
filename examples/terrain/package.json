@@ -27,8 +27,8 @@
     "typescript": "^4.3.2"
   },
   "dependencies": {
-    "@mapray/mapray-js": "^0.9.0",
-    "@mapray/ui": "^0.9.0",
+    "@mapray/mapray-js": "^0.9.1",
+    "@mapray/ui": "^0.9.1",
     "@types/luxon": "^3.0.0",
     "luxon": "^3.0.1",
     "suncalc": "1.9.0"
