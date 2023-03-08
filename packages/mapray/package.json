@@ -81,7 +81,6 @@
     "eslint": "^8.1.0",
     "eslint-config-eslint": "^7.0.0",
     "jest": "^25.1.0",
-    "mapbox-gl": "^1.0",
     "rollup": "^2.77.2",
     "rollup-plugin-babel": "^4.4.0",
     "rollup-plugin-base64": "^1.0.1",
@@ -94,6 +93,7 @@
     "whatwg-fetch": "^3.6.2"
   },
   "dependencies": {
+    "mapbox-gl": "^1.0",
     "tslib": "^2.2.0"
   },
   "jest": {
