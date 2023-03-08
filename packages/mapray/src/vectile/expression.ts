@@ -1,5 +1,6 @@
 import { expression } from "mapbox-gl/dist/style-spec/index.es.js";
 import { Json, clone as json_clone } from "../util/json_type";
+import { cfa_assert } from "../util/assertion";
 
 
 /**
@@ -13,6 +14,13 @@ import { Json, clone as json_clone } from "../util/json_type";
 export interface Context {
 
     zoom: number
+
+    /**
+     * image 演算子のための画像名の配列
+     *
+     * これは Mapray が独自に追加したプロパティである。
+     */
+    image_names: string[];
 
 }
 
@@ -83,6 +91,31 @@ export interface FeatureState {
 
 
 /**
+ * `image` 演算子の評価値の型
+ *
+ * `style-spec/expression/types/resolved_image.js` を参考にした。
+ */
+export interface ResolvedImage {
+
+    /**
+     * 評価された画像名
+     *
+     * `image` 演算子の第 1 パラメータを評価した値が設定される。
+     */
+    name: string,
+
+    /**
+     * 画像の有無
+     *
+     * [[Context.image_names]] に `name` の値が存在するとき `true`, そ
+     * れ以外のとき `false` が設定される。
+     */
+    available: boolean
+
+}
+
+
+/**
  * 式の仕様情報を表現する。
  *
  * この値は [[MapboxExpr.constructor]] の `expr_spec` 引数に指定される。
@@ -97,8 +130,11 @@ export type Specification = {
     value_type:     'boolean';
     default_value?: boolean;
 } | {
-    value_type:     'color'
+    value_type:     'color';
     default_value?: string;
+} | {
+    value_type:     'resolvedImage';
+    default_value?: null;
 } | {
     value_type:     'array';
     element_type:   'number';
@@ -114,6 +150,10 @@ export type Specification = {
 
 /**
  * `expression.createExpression()` の引数の型
+ *
+ * @privateRemarks
+ *
+ * `src/style-spec/style-spec.js` を参考にした。
  */
 type MBSpecification = {
     type:     string;
@@ -154,11 +194,13 @@ export class MapboxExpr {
 
 
     /**
-     * @throws {Error}  構文解析または型検査に失敗
+     * 初期化
      *
-     * @param json_expr   JSON 形式の式
-     * @param expr_spec   式の仕様
-     * @param value_type  評価値の型
+     * @param json_expr  - JSON 形式の式
+     * @param expr_spec  - 式の仕様
+     * @param value_type - 評価値の型
+     *
+     * @throws `Error`  構文解析または型検査に失敗
      */
     constructor( json_expr:     Json,
                  spec_or_type?: Specification | Specification['value_type'] )
@@ -169,10 +211,17 @@ export class MapboxExpr {
         let prop_spec: MBSpecification | undefined;
 
         if ( typeof spec_or_type === 'string' ) {
-            prop_spec = { type: spec_or_type };
+            const value_type: Specification['value_type'] = spec_or_type; // CFA 型検査
+            prop_spec = { type: value_type };
         }
         else if ( spec_or_type !== undefined ) {
-            prop_spec = MapboxExpr.createPropSpec( spec_or_type );
+            const expr_spec: Specification = spec_or_type; // CFA 型検査
+            prop_spec = MapboxExpr.createPropSpec( expr_spec );
+        }
+        else {
+            // value_type も expr_spec も指定されていない
+            spec_or_type as undefined; // CFA 型検査
+            cfa_assert( prop_spec === undefined );
         }
 
         // json_expr の構文解析と型検査
@@ -200,16 +249,16 @@ export class MapboxExpr {
         };
 
         if ( expr_spec.value_type === 'array' ) {
-            if ( expr_spec.element_type ) {
+            if ( expr_spec.element_type !== undefined ) {
                 prop_spec.value = expr_spec.element_type;
             }
 
-            if ( expr_spec.num_elements ) {
+            if ( expr_spec.num_elements !== undefined ) {
                 prop_spec.length = expr_spec.num_elements;
             }
         }
 
-        if ( expr_spec.default_value ) {
+        if ( expr_spec.default_value !== undefined ) {
             // 配列でありえるので deep copy が必要
             prop_spec.default = json_clone( expr_spec.default_value );
         }
@@ -228,9 +277,9 @@ export class MapboxExpr {
      * 既定値 (`expr_spec.default_value`) を返す。`expr_spec` に既定値
      * を指定していないときは `null` を返す。
      *
-     * @param context グローバルの状態
-     * @param fdata   フィーチャの固定情報
-     * @param fstate  フィーチャの状態
+     * @param context - グローバルの状態
+     * @param fdata   - フィーチャの固定情報
+     * @param fstate  - フィーチャの状態
      *
      * @returns  評価結果を表すオブジェクト
      */
@@ -240,7 +289,11 @@ export class MapboxExpr {
     {
         // 元々の evaluate() は style-spec/expression/index.js にある。
 
-        return this._style_expr.evaluate( context, fdata, fstate );
+        // image_names が非 undefined で、canonical が undefined のと
+        // きの動作が保証されているかどうかは不明
+        const canonical = undefined; // CanonicalTileID
+
+        return this._style_expr.evaluate( context, fdata, fstate, canonical, context.image_names );
     }
 
 

@@ -333,6 +333,9 @@ export interface FlakeContext extends Area, ExprContext {
     // 地表断片のズムレベル (from ExprContext)
     zoom: number;
 
+    // 画像名のリスト (from ExprContext)
+    image_names: string[];
+
     /**
      * 現行のレンダリングステージ
      */

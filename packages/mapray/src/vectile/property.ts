@@ -68,12 +68,13 @@ class ConstantEvaluator implements Evaluator {
  * 定数式または色リテラルを評価する Evaluator インスタンスを生成
  */
 function
-createConstantEvaluator( json_value: Json,
+createConstantEvaluator( context: Context,
+                         json_value: Json,
                          prop_spec:  Specification ): Evaluator
 {
     const expr = new MapboxExpr( json_value, prop_spec );
 
-    return new ConstantEvaluator( expr.evaluate( { zoom: 0 } ) );
+    return new ConstantEvaluator( expr.evaluate( context ) );
 }
 
 
@@ -94,7 +95,8 @@ export class Property {
      * @param prop_spec   プロパティの仕様情報
      * @param json_value  スタイルで指定されたプロパティ値
      */
-    constructor( prop_spec:   Specification,
+    constructor( context: Context,
+                 prop_spec: Specification,
                  json_value?: Json )
     {
         this.name        = prop_spec['name'];
@@ -115,7 +117,7 @@ export class Property {
 
                 if ( this.isConstant() ) {
                     // 定数式
-                    evaluator = createConstantEvaluator( json_value, prop_spec );
+                    evaluator = createConstantEvaluator( context, json_value, prop_spec );
                 }
                 else {
                     // 非定数式
@@ -124,7 +126,7 @@ export class Property {
             }
             else if ( typeof json_value === 'string' && prop_spec['value_type'] === 'color' ) {
                 // プロパティは色リテラル
-                evaluator = createConstantEvaluator( json_value, prop_spec );
+                evaluator = createConstantEvaluator( context, json_value, prop_spec );
             }
             else {
                 // プロパティはその他のリテラル
@@ -144,8 +146,8 @@ export class Property {
                 if ( prop_spec['value_type'] === 'color' ) {
                     // color 型のプロパティは、値が指定されていないとき
                     // default_value を色オブジェクトに変換したものに評価
-                    const to_color = createConstantEvaluator( default_value, prop_spec );
-                    constant_value = to_color.evaluate( { zoom: 0 } );
+                    const to_color = createConstantEvaluator( context, default_value, prop_spec );
+                    constant_value = to_color.evaluate( context );
                 }
                 else {
                     // color 型以外のプロパティは、値が指定されていないとき default_value に評価
@@ -216,16 +218,16 @@ export class Property {
     /**
      * 式インスタンスを評価する。
      *
-     * {@link constructor} の `json_expr` に与えた式を評価して、その評
-     * 価値を返す。
+     * [[constructor]] の `json_expr` に与えた式を評価して、その評価値
+     * を返す。
      *
      * だだし、評価値が `prop_spec` に与えた型と一致しないときは、既定
      * 値 (`prop_spec.default_value`) を返す。`prop_spec` に既定値を指
      * 定していないときは `null` を返す。
      *
-     * @param context  グローバルの状態
-     * @param fdata    フィーチャの固定情報
-     * @param fstate   フィーチャの状態
+     * @param context - グローバルの状態
+     * @param fdata   - フィーチャの固定情報
+     * @param fstate  - フィーチャの状態
      *
      * @returns  評価結果を表すオブジェクト
      */

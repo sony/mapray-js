@@ -1,6 +1,7 @@
 import type { StyleManager, Source } from "./style_manager";
 import type { FlakeContext } from "./style_flake";
-import type { FeatureState as ExprFeatureState } from "./expression";
+import type { FeatureState as ExprFeatureState,
+              Context as GlobalContext } from "./expression";
 import { GeomType } from "./expression";
 import type { Specification as PropSpec } from "./property";
 import { Property } from "./property";
@@ -134,7 +135,13 @@ export abstract class StyleLayer {
             default_value: true
         };
 
-        const filter = new Property( filter_pspec, json_layer['filter'] );
+        const global_context: GlobalContext = {
+            zoom: 0, // この時点でズームは決定できない
+            // TODO: この時点では本当の image_names は取得できていない
+            image_names: owner.__getImageNames(),
+        }
+
+        const filter = new Property( global_context, filter_pspec, json_layer['filter'] );
 
         if ( filter.hasFState() ) {
             // filter プロパティの評価値はフィーチャ状態の変化を想定しない
@@ -161,7 +168,7 @@ export abstract class StyleLayer {
             const json_prop = (prop_spec.category === 'layout') ?
                 json_layout[prop_spec.name] : json_paint[prop_spec.name];
 
-            const property = new Property( prop_spec, json_prop );
+            const property = new Property( global_context, prop_spec, json_prop );
 
             if ( property.isLayoutType() && property.hasFState() ) {
                 // layout 内のプロパティの評価値はフィーチャ状態の変化を想定しない
@@ -203,7 +210,7 @@ export abstract class StyleLayer {
                 else {
                     // 非データ式で zoom=0 (定数)
                     // 定数値のプロパティと値を登録
-                    evaluated_value_cache.set( property, property.evaluate( { zoom: 0 } ) );
+                    evaluated_value_cache.set( property, property.evaluate( global_context ) );
                 }
             }
         }

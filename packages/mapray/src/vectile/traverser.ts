@@ -482,7 +482,8 @@ class Traverser {
             x: flake.x,
             y: flake.y,
 
-            zoom: info.center,
+            zoom:        info.center,
+            image_names: ctx.style_manager.__getImageNames(),
 
             stage: ctx.stage,
             dem_sampler: style_flake.dem_sampler,
