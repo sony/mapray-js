@@ -14,8 +14,8 @@ namespace sdfield {
  *  d はサンプル位置からシンボル本体エッジまでの最小距離 (シン
  *  ボルの外側を正、内側を負とする画素単位の符号付き距離) である。
  *
- *  @attention mapray/src/vectile/style_layers/symbol_base.ts 内の
- *             対応する定数と同じ値でなければならない。
+ *  @attention mapray/src/vectile/sdfield.ts 内の対応する定数と同じ値
+ *             でなければならない。
  *
  *  @seealso DIST_LOWER
  */
@@ -26,8 +26,8 @@ inline constexpr auto DIST_FACTOR = static_cast<float>( 1 / 20.0 );
  *
  *  詳細は DIST_FACTOR を参照のこと。
  *
- *  @attention mapray/src/vectile/style_layers/symbol_base.ts 内の
- *             対応する定数と同じ値でなければならない。
+ *  @attention mapray/src/vectile/sdfield.ts 内の対応する定数と同じ値
+ *             でなければならない。
  *
  *  @seealso DIST_FACTOR
  */
@@ -38,8 +38,8 @@ inline constexpr auto DIST_LOWER = static_cast<float>( -1.4142135623730950488 );
  *
  *  converter_create() において、許可される width + 2 * sdf_ext の最大値
  *
- *  @attention mapray/src/vectile/style_layers/symbol_base.ts 内の
- *             対応する定数と同じ値でなければならない。
+ *  @attention mapray/src/vectile/sdfield.ts 内の対応する定数と同じ値
+ *             でなければならない。
  *
  *  @seealso MAX_SDF_HEIGHT
  */
@@ -50,8 +50,8 @@ inline constexpr unsigned int MAX_SDF_WIDTH = 4096;
  *
  *  converter_create() において、許可される height + 2 * sdf_ext の最大値
  *
- *  @attention mapray/src/vectile/style_layers/symbol_base.ts 内の
- *             対応する定数と同じ値でなければならない。
+ *  @attention mapray/src/vectile/sdfield.ts 内の定数と同じ値でなければ
+ *             ならない。
  *
  *  @seealso MAX_SDF_WIDTH
  */
