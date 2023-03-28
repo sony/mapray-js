@@ -53,8 +53,16 @@
    #+end_example
 
    * The Emscripten SDK might not be used for other projects, since it is patched for Mapray.
-   * zsh needs to be launched as x86_64 mode in M1 Mac(Apple silicon).
+   * zsh needs to be launched as x86_64 mode in M1/M2 Mac(Apple silicon).
      Execute =arch -x86_64 zsh= to switch the mode on zsh.
+     If it fails in x86_64 mode, hack emsdk.py (python script) as below.
+    #+begin_example
+        ARCH = 'x86'
+      elif machine.startswith('aarch64') or machine.lower().startswith('arm64'):
+        ARCH = 'aarch64'
+    +     if MACOS:
+    +       ARCH = 'x86_64'
+    #+end_example
 
 * Build Wasm Module
 

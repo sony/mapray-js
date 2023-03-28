@@ -60,9 +60,16 @@
    ※ この Emscripten SDK は Mapray 用の特殊バージョンなので、他のプロジェクトで
       使うことは推奨しない。
 
-   ※ M1 Mac(Apple silicon)の場合は zsh を x86_64 にした状態でインストールする必要がある。
-
-      ターミナルの「情報を見る」で「Rosettaを使用して開く」を設定してからターミナルを起動するか zsh上で =arch -x86_64 zsh= として切り替える。
+   ※ M1/M2 Mac(Apple silicon)の場合は zsh を x86_64 にした状態でインストールする必要がある。
+    ターミナルの「情報を見る」で「Rosettaを使用して開く」を設定してからターミナルを起動するか zsh上で =arch -x86_64 zsh= として切り替える。
+    x86_64 にしてもエラーとなる場合、emsdk.py (python script) を下記のように変更する。
+    #+begin_example
+        ARCH = 'x86'
+      elif machine.startswith('aarch64') or machine.lower().startswith('arm64'):
+        ARCH = 'aarch64'
+    +     if MACOS:
+    +       ARCH = 'x86_64'
+    #+end_example
 
 * wasm モジュールのビルド方法
 
