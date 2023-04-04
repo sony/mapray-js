@@ -4,11 +4,10 @@
 
 precision highp float; // TODO: 最後に調整
 
-varying vec2 v_texcoord;     // シンボル画像上での位置 (特殊単位)
+varying vec2 v_texcoord;     // シンボル画像上での位置
 
 uniform sampler2D u_image;   // シンボル画像 (x: 最小距離 - DIST_LOWER)
-uniform vec2  u_img_isize;   // 特殊単位からテクスチャ座標への変換
-uniform float u_img_scale;   // テクスチャ画素に対する画面画素の寸法比
+uniform vec2  u_img_psize;   // テクスチャ空間での画面画素の寸法
 
 uniform vec4  u_color;       // シンボル本体の RGBA 色 (α前乗算)
 uniform float u_opacity;     // シンボル全体の不透明度
@@ -45,8 +44,8 @@ const float chessboard = 1.0;
 
 void main()
 {
-    // 画素の左下角に対応するテクスチャ座標 (特殊単位)
-    vec2 tc_base = v_texcoord - vec2( 0.5 * u_img_scale );
+    // 画素の左下角に対応するテクスチャ座標
+    vec2 tc_base = v_texcoord - 0.5 * u_img_psize;
 
     // ζ_b: シンボル本体の被覆率
     float zeta_b = 0.0;
@@ -65,11 +64,11 @@ void main()
         for ( int k0 = 0; k0 < DIVS_Zeta[0]; ++k0 ) {
             float p0 = (mod( float( k1 ), 2.0 ) == 0.0 ? -0.25 : 0.25) * chessboard;
 
-            // 標本点のテクスチャ座標 (特殊単位)
-            vec2 tc = tc_base + (vec2( k0, k1 ) + vec2( 0.5 + p0, 0.5 )) / vec2( DIVS_Zeta ) * vec2( u_img_scale );
+            // 標本点のテクスチャ座標
+            vec2 tc = tc_base + (vec2( k0, k1 ) + vec2( 0.5 + p0, 0.5 )) / vec2( DIVS_Zeta ) * u_img_psize;
 
             // 符号付きの最小距離
-            float n = texture2D( u_image, tc * u_img_isize ).x;
+            float n = texture2D( u_image, tc ).x;
 
             if ( n <= body_edge_dist ) {
                 zeta_b += delta;

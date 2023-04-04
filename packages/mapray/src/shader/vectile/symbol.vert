@@ -3,7 +3,7 @@
  */
 
 attribute vec3 a_offset;      // 頂点変位 (X,Y: スクリーン座標系, Z: 深度係数)
-attribute vec2 a_texcoord;    // テクスチャ座標 (特殊単位)
+attribute vec2 a_texcoord;    // テクスチャ座標
 
 uniform vec3 u_position;      // 頂点位置 (モデル座標系)
 uniform mat4 u_obj_to_view;   // モデル座標系からビュー座標系への変換

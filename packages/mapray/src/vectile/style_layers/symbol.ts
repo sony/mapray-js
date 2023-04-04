@@ -533,15 +533,14 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
                 };
 
                 gres.mesh = createSymbolMesh( glenv, image_info, build_info );
-                gres.img_isize[0] = 1 / image_info.texture_width;
-                gres.img_isize[1] = 1 / image_info.texture_height;
+                gres.img_psize[0] = 1 / image_info.texture_width;
+                gres.img_psize[1] = 1 / image_info.texture_height;
             }
 
             const props: SymbolMaterialProperty = {
                 u_position:   this._position,
                 u_image:      gres.image_handle.getTexture(),
-                u_img_isize:  gres.img_isize,
-                u_img_scale:  1.0,
+                u_img_psize:  gres.img_psize,
                 u_color:      color,
                 u_opacity:    opacity,
                 u_halo_color: halo_color,
@@ -588,15 +587,14 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
                     };
 
                     gres.mesh = createSymbolMesh( glenv, image_info, build_info );
-                    gres.img_isize[0] = 1 / image_info.texture_width;
-                    gres.img_isize[1] = 1 / image_info.texture_height;
+                    gres.img_psize[0] = 1 / image_info.texture_width  / this._icon_size;
+                    gres.img_psize[1] = 1 / image_info.texture_height / this._icon_size;
                 }
 
                 const props: SymbolMaterialProperty = {
                     u_position:   this._position,
                     u_image:      gres.image_handle.getTexture(),
-                    u_img_isize:  gres.img_isize,
-                    u_img_scale:  1 / this._icon_size,
+                    u_img_psize:  gres.img_psize,
                     u_color:      color,
                     u_opacity:    opacity,
                     u_halo_color: halo_color,
@@ -617,8 +615,7 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
                 const props: SymbolMaterialProperty = {
                     u_position:   this._position,
                     u_image:      gres.texture,
-                    u_img_isize:  gres.img_isize,
-                    u_img_scale:  1 / this._icon_size,
+                    u_img_psize:  gres.img_psize,
                     u_color:      color,
                     u_opacity:    opacity,
                     u_halo_color: halo_color,
@@ -717,7 +714,7 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
         return {
             mesh: createSymbolMesh( flake_ctx.stage.glenv, image_info, build_info ),
             image_handle,
-            img_isize: GeoMath.createVector2f( [1 / image_info.texture_width,
+            img_psize: GeoMath.createVector2f( [1 / image_info.texture_width,
                                                 1 / image_info.texture_height] ),
         };
     }
@@ -771,8 +768,8 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
 
                 image_handle,
 
-                img_isize: GeoMath.createVector2f( [1 / image_info.texture_width,
-                                                    1 / image_info.texture_height] ),
+                img_psize: GeoMath.createVector2f( [1 / image_info.texture_width  / this._icon_size,
+                                                    1 / image_info.texture_height / this._icon_size] ),
             };
         }
         else {
@@ -801,8 +798,8 @@ class SymbolFeature extends LayerFeature<SymbolFlake, PointFeature> {
                                         build_info ),
                 texture: image.texture,
 
-                img_isize: GeoMath.createVector2f( [1 / image.texture_size[0],
-                                                    1 / image.texture_size[1]] ),
+                img_psize: GeoMath.createVector2f( [1 / image.texture_size[0] / this._icon_size,
+                                                    1 / image.texture_size[1] / this._icon_size] ),
             };
         }
     }
@@ -961,10 +958,10 @@ function createSymbolVertices( image_info: ImageInfo,
     const dfactor = build_info.depth_factor;
 
     // テクスチャ座標
-    const tc_lx = image_info.display_lower_x;
-    const tc_rx = image_info.display_upper_x;
-    const tc_by = image_info.display_lower_y;
-    const tc_ty = image_info.display_upper_y;
+    const tc_lx = image_info.display_lower_x / image_info.texture_width;
+    const tc_rx = image_info.display_upper_x / image_info.texture_width;
+    const tc_by = image_info.display_lower_y / image_info.texture_height;
+    const tc_ty = image_info.display_upper_y / image_info.texture_height;
 
     // 頂点配列を設定
     const vertices: number[] = [];
@@ -1076,9 +1073,9 @@ interface GraphicsResource {
 
 
     /**
-     * テクスチャの画素数の逆数
+     * テクスチャ空間での画面画素の寸法
      */
-    img_isize: Vector2;
+    img_psize: Vector2;
 
 }
 
@@ -1203,11 +1200,8 @@ class SymbolMaterial extends EntityMaterial {
             // フィーチャー位置 (モデル座標系)
             this.setVector3( "u_position", props["u_position"] );
 
-            // u_image の画素数の逆数
-            this.setVector2( "u_img_isize", props["u_img_isize"] );
-
-            // テクスチャ画素に対する画面画素の寸法比
-            this.setFloat( "u_img_scale", props["u_img_scale"] );
+            // テクスチャ空間での画面画素の寸法
+            this.setVector2( "u_img_psize", props["u_img_psize"] );
 
             // シンボル本体の RGBA 色
             this.setVector4( "u_color", props["u_color"] );
@@ -1301,8 +1295,7 @@ interface SymbolMaterialProperty {
     u_position: Vector3;
 
     u_image:     WebGLTexture;
-    u_img_isize: Vector2;
-    u_img_scale: number;
+    u_img_psize: Vector2;
     u_color:     Vector4;
     u_opacity:   number;
 
