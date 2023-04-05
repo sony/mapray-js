@@ -281,6 +281,50 @@ const registered_module_readiness: Promise<void>[] = [sdfield_readiness];
 
 /**
  * ベクトル地図のスタイル全体を管理する。
+ *
+ * [[create]] メソッドにより `StyleManager` インスタンスを生成すること
+ * ができる。
+ *
+ * 以下は、すべてのレイヤータイプで共通に使用できるプロパティである。
+ *
+ * - `id`
+ * - `type`
+ * - `source`
+ * - `source-layer`
+ * - `filter`
+ * - `minzoom`
+ * - `maxzoom`
+ *
+ * ただし現在のところ、スタイルに指定できるレイヤーの `type` は
+ * [symbol](https://docs.mapbox.com/mapbox-gl-js/style-spec/layers/#symbol)
+ * のみで、それ以外を `type` に設定しても、そのレイヤーは無視される。
+ *
+ * `symbol` レイヤー専用のプロパティで使用できるものは以下のものに限られ、
+ * それ以外のプロパティは設定しても無視される。
+ *
+ * - `layout.text-field`
+ * - `layout.text-size`
+ * - `layout.text-font`
+ * - `layout.text-anchor`
+ * - `layout.text-offset`
+ * - `paint.text-color`
+ * - `paint.text-opacity`
+ * - `paint.text-halo-color`
+ * - `paint.text-halo-width`
+ * - `layout.icon-image`
+ * - `layout.icon-size`
+ * - `layout.icon-anchor`
+ * - `layout.icon-offset`
+ * - `paint.icon-color`
+ * - `paint.icon-opacity`
+ * - `paint.icon-halo-color`
+ * - `paint.icon-halo-width`
+ *
+ * `layout.text-field` プロパティは文字列のみを指定することができ、
+ * [formatted](https://docs.mapbox.com/mapbox-gl-js/style-spec/types/#formatted)
+ * 型の値を指定することはできない。
+ *
+ * @see [[Viewer.setVectileManager]]
  */
 class StyleManager {
 
@@ -315,6 +359,8 @@ class StyleManager {
      * @throws SyntaxError
      *
      * `json_style` の構造がスタイルのスキーマに適合しないとき。
+     *
+     * @see [[Viewer.setVectileManager]]
      */
     static create( viewer: Viewer,
                    json_style: OJson,
@@ -879,7 +925,8 @@ namespace StyleManager {
 /**
  * 追加可能な画像の型
  *
- * @see [[StyleManager.addImage]]
+ * [[StyleManager.addImage]] の `src_image` 引数に指定可能な画像オブジェ
+ * クトの型である。
  */
 export type ImageSource = TexImageSource & CanvasImageSource;
 
@@ -887,15 +934,26 @@ export type ImageSource = TexImageSource & CanvasImageSource;
 /**
  * 画像追加時のオプションの型
  *
- * @see [[StyleManager.addImage]]
+ * [[StyleManager.addImage]] の `options` 引数に指定可能なオブジェクト
+ * の型である。
  */
 export interface ImageOption {
 
     /**
-     * 色付けと縁取りが可能な画像とするときは `true` を指定する。
-     * その場合、元画像の色は無視され、アルファ値のみが参照される。
+     *
+     * [[StyleManager.addImage]] で追加した画像に対し、色を指定したり縁取りを
+     * 表示できるようにするためには `sdf` プロパティに `true` を指定する。
+     * その場合、元画像の色は無視され、アルファ値が図形の形状として使われる。
      *
      * @defaultValue `false`
+     *
+     * @remarks
+     *
+     * `sdf` に `true` を指定したとき、`src_image` 引数に指定した画像の一部に
+     * 半透明が使われている (0 から 1 の中間のアルファ値が使われてる) 場合、
+     * 画像が正常に表示されないことがある。ただし、アンチエイリアスの表現とし
+     * てアルファ値 (この場合は被覆率を表す) が使われている部分に関しては適切
+     * に表示される。
      */
     sdf?: boolean;
 

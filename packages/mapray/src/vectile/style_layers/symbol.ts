@@ -33,6 +33,8 @@ import symbol_color_fs_code from "../../shader/vectile/symbol_color.frag";
  * symbol 型のレイヤーを表現する。
  *
  * @see [style-spec/layers/symbol](https://docs.mapbox.com/mapbox-gl-js/style-spec/layers/#symbol)
+ *
+ * @internal 今のところクラスは非公開。公開する場合は不要な部分を internal にすること。
  */
 export class SymbolLayer extends StyleLayer {
 

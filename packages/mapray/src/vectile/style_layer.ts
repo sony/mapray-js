@@ -16,12 +16,15 @@ import { cfa_assert } from "../util/assertion";
 /**
  * ベクトル地図スタイルのレイヤーを表現する。
  *
+ * このクラスのインスタンスは [[StyleManager]] インスタンスが保有する。
+ *
+ * @privateRemarks
+ *
  * 各スタイルレイヤー型の実装では [[StyleLayer]], [[LayerFlake]],
  * [[LayerFeature]] の具象クラスをセットで定義する。
  *
  * これらインスタンス間の動的関係は `vectile.asta` のシーケンス図
  * "LayerFlake 初期評価" と "LayerFlake 再評価" を参照のこと。
- *
  */
 export abstract class StyleLayer {
 
@@ -34,9 +37,11 @@ export abstract class StyleLayer {
     /**
      * スタイルに記述されたレイヤーの ID
      *
-     * [Layers](https://docs.mapbox.com/mapbox-gl-js/style-spec/layers/) の
+     * mapbox の
+     * [Layers](https://docs.mapbox.com/mapbox-gl-js/style-spec/layers/)
+     * の
      * [id](https://docs.mapbox.com/mapbox-gl-js/style-spec/layers/#id)
-     * プロパティの値である。
+     * プロパティと同じ文字列が設定される。
      */
     public readonly id: string;
 
@@ -44,9 +49,11 @@ export abstract class StyleLayer {
     /**
      * スタイルに記述されたレイヤーの型
      *
-     * [Layers](https://docs.mapbox.com/mapbox-gl-js/style-spec/layers/) の
+     * mapbox の
+     * [Layers](https://docs.mapbox.com/mapbox-gl-js/style-spec/layers/)
+     * の
      * [type](https://docs.mapbox.com/mapbox-gl-js/style-spec/layers/#id)
-     * プロパティの値である。
+     * プロパティと同じ文字列が設定される。
      */
     public readonly type: string;
 
