@@ -63,6 +63,12 @@ export class StyleFlake {
             return [];
         }
 
+        if ( flake_ctx.zoom <  (style_layer.__minzoom.evaluate( flake_ctx ) as number) ||
+             flake_ctx.zoom >= (style_layer.__maxzoom.evaluate( flake_ctx ) as number) ) {
+            // flake_ctx.zoom が [minzoom, maxzoom) の範囲にない場合は非表示
+            return [];
+        }
+
         const layer_flake = this.evaluateLayer( style_layer, tile_layer, flake_ctx );
 
         return layer_flake.getPrimitives( flake_ctx );

@@ -76,6 +76,22 @@ export abstract class StyleLayer {
 
 
     /**
+     * レイヤーの `minzoom` プロパティ
+     *
+     * @internal
+     */
+    public readonly __minzoom: Property;
+
+
+    /**
+     * レイヤーの `maxzoom` プロパティ
+     *
+     * @internal
+     */
+    public readonly __maxzoom: Property;
+
+
+    /**
      * `LayerFlake` インスタンス単位で変化するプロパティに関するデータ
      *
      * @internal
@@ -145,6 +161,22 @@ export abstract class StyleLayer {
             // filter プロパティの評価値はフィーチャ状態の変化を想定しない
             throw new Error( "Layer's 'filter' property cannot use the 'feature-state' operator." );
         }
+
+        const minzoom_pspec: PropSpec = {
+            name:         'minzoom',
+            category:     'paint',
+            value_type:   'number',
+            default_value: 0
+        };
+        const maxzoom_pspec: PropSpec = {
+            name:         'maxzoom',
+            category:     'paint',
+            value_type:   'number',
+            default_value: 24
+        };
+
+        const minzoom = new Property( global_context, minzoom_pspec, json_layer['minzoom'] );
+        const maxzoom = new Property( global_context, maxzoom_pspec, json_layer['maxzoom'] );
 
         const properties            = new Map<string, Property>();
         const evaluated_value_cache = new Map<Property, unknown>();
@@ -219,6 +251,8 @@ export abstract class StyleLayer {
         this.__source_inst  = source_inst;
         this.__source_layer = source_layer;
         this.__filter       = filter;
+        this.__minzoom      = minzoom;
+        this.__maxzoom      = maxzoom;
         this.__flake_property_data   = flake_property_data;
         this.__feature_property_data = feature_property_data;
         this._evaluated_value_cache  = evaluated_value_cache;
