@@ -10,7 +10,7 @@ import CommonData from "./CommonData";
  *
  * @memberof mapray.gltf
  * @private
- * @see https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/schema/scene.schema.json
+ * @see https://github.com/KhronosGroup/glTF/blob/main/specification/2.0/schema/scene.schema.json
  */
 class Scene {
 

@@ -101,5 +101,5 @@ You can use debug applications under [debug](./debug/) for development.
 # Contributing by Pull Request
 
 We appreciate contributors in the community, that are willing to improve maprayJS.
-Please create a pull request of your development branch to master branch.
+Please create a pull request of your development branch to main branch.
 Our maintainers will then review your changes.

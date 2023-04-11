@@ -13,7 +13,7 @@ class Sampler {
     constructor( ctx, index )
     {
         // specification/2.0/schema/sampler.schema.json
-        // https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#samplers
+        // https://github.com/KhronosGroup/glTF/blob/main/specification/2.0/README.md#samplers
 
         var jsampler = (typeof index == 'number') ? ctx.gjson.samplers[index] : {};
 

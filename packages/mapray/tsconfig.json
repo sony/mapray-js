@@ -31,7 +31,7 @@
     "out": "docs",
     "theme": "default",
     "hideGenerator": true,
-    "gitRevision": "master",
+    "gitRevision": "main",
     "excludeInternal": true,
   },
   "include": [
