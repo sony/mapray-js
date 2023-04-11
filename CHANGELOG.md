@@ -1,4 +1,36 @@
 # Change Log
+## 0.9.1
+### Features and improvements
+- WebGL2 Support [#247](https://github.com/sony/mapray-js/issues/247)
+- Added functionality to measure processing time information for point cloud loading [#248](https://github.com/sony/mapray-js/issues/248)
+- Web Mercator projection does not support drawing of Arctic and Antarctic regions [#249](https://github.com/sony/mapray-js/issues/249)
+- Add PinEntity and ImageIconEntity to Mapray's Scene definition [#251](https://github.com/sony/mapray-js/issues/251)
+- Add REST API to access Mapray Cloud Scene data in Mapray Cloud API [#252](https://github.com/sony/mapray-js/issues/252)
+- Add new mathematical operations to the GeoMath class [#254](https://github.com/sony/mapray-js/issues/254)
+- Make Material class public API and add support for integer uniform parameters [#253](https://github.com/sony/mapray-js/issues/253)
+- Add ability to specify elevation and maximum level in FlatDemProvider[#255](https://github.com/sony/mapray-js/issues/255)
+- Add API to toggle visibility of point clouds and B3D models and standardize their formats [#256](https://github.com/sony/mapray-js/issues/256)
+- Add the ability to click on B3D models and retrieve their unique IDs via API [#257](https://github.com/sony/mapray-js/issues/257)
+- Update build-related development tools [#258](https://github.com/sony/mapray-js/issues/258)
+- Convert remaining JavaScript code to TypeScript [#264](https://github.com/sony/mapray-js/issues/264)
+- Refactoring [#266](https://github.com/sony/mapray-js/issues/266)
+- Improve the Debug App [#267](https://github.com/sony/mapray-js/issues/267)
+- Add an Example for ImageIconEntity [#268](https://github.com/sony/mapray-js/issues/268)
+- Change default branch name to main [#272](https://github.com/sony/mapray-js/issues/272)
+
+### Breaking Changes
+- Added/fixed the features to specify elevation and maximum level to FlatDemProvider
+- Pick function interface unification
+
+### Bug fix
+- Improved timing to update URL hash [#237](https://github.com/sony/mapray-js/issues/237)
+- Dragging near the poles in software is not intuitive [#250](https://github.com/sony/mapray-js/issues/250)
+- Fix Clamp Calculation Bug in LineEntity [#259](https://github.com/sony/mapray-js/issues/259)
+- URLHash update process [#260](https://github.com/sony/mapray-js/issues/260)
+- Enabling CloudVisualize causes B3D to disappear [#261](https://github.com/sony/mapray-js/issues/261)
+- visibility:false option not being applied when adding layers [#262](https://github.com/sony/mapray-js/issues/262)
+- Camera does not animate when time parameter is set to 0 [#263](https://github.com/sony/mapray-js/issues/263)
+
 ## 0.9.0
 ### Features and improvements
 - Improve b3dtiles, building data　[#177](https://github.com/sony/mapray-js/issues/177)
