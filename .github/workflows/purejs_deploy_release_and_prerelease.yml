@@ -18,6 +18,10 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 14
+      - id: 'gcp-auth'
+        uses: 'google-github-actions/auth@v1'
+        with:
+          credentials_json: ${{ secrets.STORE_CREDENTIALS }}
       - name: Setup EMSDK
         run: |
           mkdir -p ${{ env.EMSDK_DIR }}/../
@@ -64,23 +68,20 @@ jobs:
           cp -r ${{ env.UI_PACKAGE_DIR }}/dist/mapray.css ${{ env.DEPLOY_DIR }}/public/styles/v1/
         shell: bash
       - name: Upload core files
-        uses: google-github-actions/upload-cloud-storage@main
+        uses: google-github-actions/upload-cloud-storage@v1
         with:
           path: ${{ env.CORE_DEPLOY_DIR }}
           destination: inou-pro-released/mapray-js
-          credentials: ${{ secrets.STORE_CREDENTIALS }}
           parent: false
       - name: Upload ui files
-        uses: google-github-actions/upload-cloud-storage@main
+        uses: google-github-actions/upload-cloud-storage@v1
         with:
           path: ${{ env.UI_DEPLOY_DIR }}
           destination: inou-pro-released/ui
-          credentials: ${{ secrets.STORE_CREDENTIALS }}
           parent: false
       - name: Upload style sheet
-        uses: google-github-actions/upload-cloud-storage@main
+        uses: google-github-actions/upload-cloud-storage@v1
         with:
           path: ${{ env.DEPLOY_DIR }}/public/styles
           destination: inou-pro-released/styles
-          credentials: ${{ secrets.STORE_CREDENTIALS }}
           parent: false
