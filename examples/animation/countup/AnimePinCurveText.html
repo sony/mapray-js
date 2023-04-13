@@ -19,10 +19,21 @@
                 position: relative;
                 height: 100%;
             }
+
+            #tools {
+                position: fixed;
+                font-family: monospace;
+                bottom: 50px;
+                left: 10px;
+                background: black;
+                color: white;
+                padding: 10px;
+            }
         </style>
     </head>
 
     <body onload="new AnimePinCurveText('mapray-container');">
       <div id="mapray-container"></div>
+      <div id="tools">Click mouse to start animation.</div>
     </body>
 </html>

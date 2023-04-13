@@ -108,12 +108,12 @@ class AnimePinCurveText extends mapray.RenderCallback {
         var ray = this.viewer.camera.getCanvasRay(clickPos, new mapray.Ray());
 
         // レイと地表の交点を求める
-        var clossResult = this.viewer.pickWithRay( ray );
+        var crossResult = this.viewer.pickWithRay( ray );
 
-        if ( clossResult ) {
+        if ( crossResult ) {
             // 交点を球面座標系に変換する
             var closs_geoPoint = new mapray.GeoPoint();
-            closs_geoPoint.setFromGocs( clossResult.position );
+            closs_geoPoint.setFromGocs( crossResult.position );
 
             // ピンのエンティティを作成
             var entity = new mapray.PinEntity(this.viewer.scene);

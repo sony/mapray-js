@@ -18,6 +18,16 @@
                 font-size:13px;
             }
 
+            #tools {
+                position: fixed;
+                font-family: monospace;
+                top: 10px;
+                right: 10px;
+                background: black;
+                color: white;
+                padding: 10px;
+            }
+
             div#mapray-container {
                 display: flex;
                 position: relative;
@@ -72,6 +82,16 @@
         <div id="HeightStringBox">
             <p style="margin-left:5px;">Height:</p>
             <p id="HeightValue">0</p>
+        </div>
+
+        <div id="tools">
+            <div>Operation method</div>
+            <ul>
+                <li>shift + drag       : Rotate camera.
+                <li>alt + drag         : Change camera altitude.
+                <li>mouse wheel scroll : Move camera forward/backward.
+                <li>mouse click        : Display longitude, latitude and altitude of the clicked location.
+            </ul>
         </div>
     </body>
 </html>

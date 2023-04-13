@@ -10,7 +10,7 @@ class CameraControl extends mapray.RenderCallback{
         var accessToken = "<your access token here>";
 
         // Viewerを作成する
-        new mapray.Viewer(container, {
+        this.viwer = new mapray.Viewer( container, {
             render_callback: this,
             image_provider: this.createImageProvider(),
             dem_provider: new mapray.CloudDemProvider(accessToken)
@@ -21,9 +21,9 @@ class CameraControl extends mapray.RenderCallback{
         this.camera_Vec = [0, 0, 0];                // カメラの前進後退方向
         this.camera_Turn_Angle = 145;               // ターン角度
         this.camera_Pitch = 20;                     // 仰俯角
-        this.camera_Move_Correction = 30;           // 前進後退の補正値
+        this.camera_Move_Correction = 60;           // 前進後退の補正値
         this.camera_Turn_Correction = 0.1;          // ターン、仰俯角の補正値
-        this.camera_Height_Correction = 0.5;        // 高度更新の補正値
+        this.camera_Height_Correction = 5;        // 高度更新の補正値
 
         // 入力検知クラス
         this.input_Checker = new CheckInput(this.viewer);
@@ -130,12 +130,12 @@ class CameraControl extends mapray.RenderCallback{
         var ray = this.viewer.camera.getCanvasRay(clickPos, new mapray.Ray());
 
         // レイと地表の交点を求める
-        var clossResult = this.viewer.pickWithRay(ray);
+        var crossResult = this.viewer.pickWithRay(ray);
 
-        if ( !clossResult ) {
+        if ( crossResult ) {
             // 交点を球面座標系に変換する
             var closs_geoPoint = new mapray.GeoPoint();
-            closs_geoPoint.setFromGocs( clossResult.position );
+            closs_geoPoint.setFromGocs( crossResult.position );
 
             // UIを更新する
             document.getElementById( "LongitudeValue" ).innerText = closs_geoPoint.longitude.toFixed(6);
@@ -160,7 +160,7 @@ class CameraControl extends mapray.RenderCallback{
         
         this.camera_Pos.longitude = next_camera_geoPoint.longitude;
         this.camera_Pos.latitude = next_camera_geoPoint.latitude;
-        this.camera_Pos.height = next_camera_geoPoint.altitude;
+        this.SetCameraAltitude( next_camera_geoPoint.altitude );
     }
 
     BackwardCameraPos() {
@@ -179,7 +179,8 @@ class CameraControl extends mapray.RenderCallback{
 
         this.camera_Pos.longitude = next_camera_geoPoint.longitude;
         this.camera_Pos.latitude = next_camera_geoPoint.latitude;
-        this.camera_Pos.height = next_camera_geoPoint.altitude;
+        this.SetCameraAltitude( next_camera_geoPoint.altitude );
+
     }
 
     TurnCamera(drag_Vec) {
@@ -206,12 +207,25 @@ class CameraControl extends mapray.RenderCallback{
         var add_Height = drag_Vec[1] * this.camera_Height_Correction;
         
         // 値が小さい場合０にする
-        if (add_Height > -1 & add_Height < 1) {
+        if (add_Height > -10 & add_Height < 10) {
             add_Height = 0;
         }
 
-        // カメラ座標の高度を更新する
-        this.camera_Pos.height -= add_Height;
+        var next_Height = this.camera_Pos.height - add_Height;
+        this.SetCameraAltitude( next_Height );
+
     }
-    
+
+    SetCameraAltitude( next_Height ) {
+        // 地表の高度の100m上空を最低高度とする
+        var lower_Limit_Altitude = this.viwer.getElevation(this.camera_Pos.latitude, this.camera_Pos.longitude) + 100;
+
+        // カメラ座標の高度を更新する
+        if ( lower_Limit_Altitude < next_Height ) {
+            this.camera_Pos.height = next_Height;
+        } else {
+            this.camera_Pos.height = lower_Limit_Altitude;
+        }
+    }
+
 }
