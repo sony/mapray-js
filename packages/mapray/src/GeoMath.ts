@@ -229,6 +229,16 @@ class GeoMath {
         return vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2];
     }
 
+    /**
+     * 4 次ベクトルの長さの2乗を計算
+     * @param  vec  ベクトル
+     * @return ベクトルの長さの2乗
+     */
+    static lengthSquared4( vec: Vector4 ): number
+    {
+        return vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2] + vec[3] * vec[3];
+    }
+
 
     /**
      * 2 次ベクトルの長さを計算
@@ -249,6 +259,16 @@ class GeoMath {
     static length3( vec: Vector3 ): number
     {
         return Math.sqrt( GeoMath.lengthSquared3( vec ) );
+    }
+
+    /**
+     * 4 次ベクトルの長さを計算
+     * @param  vec  ベクトル
+     * @return ベクトルの長さ
+     */
+    static length4( vec: Vector4 ): number
+    {
+        return Math.sqrt( GeoMath.lengthSquared4( vec ) );
     }
 
 
@@ -315,6 +335,18 @@ class GeoMath {
 
 
     /**
+     * 2 次ベクトルの内積を計算
+     * @param  a  左のベクトル
+     * @param  b  右のベクトル
+     * @return    a と b の内積
+     */
+    static dot2( a: Vector2, b: Vector2 ): number
+    {
+        return a[0]*b[0] + a[1]*b[1];
+    }
+
+
+    /**
      * 3 次ベクトルの内積を計算
      * @param  a  左のベクトル
      * @param  b  右のベクトル
@@ -323,6 +355,18 @@ class GeoMath {
     static dot3( a: Vector3, b: Vector3 ): number
     {
         return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+    }
+
+
+    /**
+     * 4 次ベクトルの内積を計算
+     * @param  a  左のベクトル
+     * @param  b  右のベクトル
+     * @return    a と b の内積
+     */
+    static dot4( a: Vector4, b: Vector4 ): number
+    {
+        return a[0]*b[0] + a[1]*b[1] + a[2]*b[2] + a[3]*b[3];
     }
 
 
@@ -368,6 +412,17 @@ class GeoMath {
         return GeoMath.scale3( 1.0 / GeoMath.length3( vec ), vec, dst );
     }
 
+    /**
+     * 4次ベクトルの正規化を計算
+     * @param   vec  ベクトル
+     * @param   dst  正規化された値を代入するベクトル
+     * @return       dst
+     */
+    static normalize4( vec: Vector4, dst: Vector4 ): Vector4 
+    {
+        return GeoMath.scale4( 1.0 /  GeoMath.length4( vec ), vec, dst );
+    }
+
 
     /**
      * 2次ベクトルのスカラ倍を計算
@@ -396,6 +451,22 @@ class GeoMath {
         dst[0] = a * vec[0];
         dst[1] = a * vec[1];
         dst[2] = a * vec[2];
+        return dst;
+    }
+
+    /**
+     * 4次ベクトルのスカラ倍を計算
+     * @param   a    スカラ
+     * @param   vec  ベクトル
+     * @param   dst  計算結果を代入するベクトル
+     * @return       dst
+     */
+    static scale4( a: number, vec: Vector4, dst: Vector4 ): Vector4
+    {
+        dst[0] = a * vec[0];
+        dst[1] = a * vec[1];
+        dst[2] = a * vec[2];
+        dst[3] = a * vec[3];
         return dst;
     }
 
@@ -1081,53 +1152,252 @@ class GeoMath {
      * この数値は `π / 180` である。
      * 度数を DEGREE で掛け合せることによってラジアンに変換することができる。
      */
-     static readonly DEGREE: number = 0.017453292519943295769;
+    static readonly DEGREE: number = 0.017453292519943295769;
 
 
-     /**
-      * log2(π)
-      */
-     static readonly LOG2PI: number = 1.6514961294723187980;
+    /**
+     * log2(π)
+     */
+    static readonly LOG2PI: number = 1.6514961294723187980;
 
 
-     // GeoMath の内部テンポラリ変数を生成
-     private static _xaxis: Vector3 = GeoMath.createVector3();
+    // GeoMath の内部テンポラリ変数を生成
+    private static _xaxis: Vector3 = GeoMath.createVector3();
 
 
-     // GeoMath の内部テンポラリ変数を生成
-     private static _yaxis: Vector3 = GeoMath.createVector3();
+    // GeoMath の内部テンポラリ変数を生成
+    private static _yaxis: Vector3 = GeoMath.createVector3();
 
 
-     // GeoMath の内部テンポラリ変数を生成
-     private static _zaxis: Vector3 = GeoMath.createVector3();
+    // GeoMath の内部テンポラリ変数を生成
+    private static _zaxis: Vector3 = GeoMath.createVector3();
 
 
-     /**
-      * 2次ベクトルであるかを判定
-      */
-     static isVector2( vec: Vector2 | Vector3 | Vector4 ): vec is Vector2
-     {
-         return vec.length === 2;
-     }
+    /**
+     * 2次ベクトルであるかを判定
+     */
+    static isVector2( vec: Vector2 | Vector3 | Vector4 ): vec is Vector2
+    {
+        return vec.length === 2;
+    }
 
 
-     /**
-      * 3次ベクトルであるかを判定
-      */
-     static isVector3( vec: Vector2 | Vector3 | Vector4 ): vec is Vector3
-     {
-         return vec.length === 3;
-     }
+    /**
+     * 3次ベクトルであるかを判定
+     */
+    static isVector3( vec: Vector2 | Vector3 | Vector4 ): vec is Vector3
+    {
+        return vec.length === 3;
+    }
 
 
-     /**
-      * 4次ベクトルであるかを判定
-      */
-     static isVector4( vec: Vector2 | Vector3 | Vector4 ): vec is Vector4
-     {
-         return vec.length === 4;
-     }
+    /**
+     * 4次ベクトルであるかを判定
+     */
+    static isVector4( vec: Vector2 | Vector3 | Vector4 ): vec is Vector4
+    {
+        return vec.length === 4;
+    }
 
+
+    /**
+     * 任意軸周りに回転する四元数を計算
+     * @param  axis   回転軸
+     * @param  angle  回転角 (Degrees)
+     * @param  dst  　結果を代入する四元数
+     * @return        dst
+     */
+    static rotation_quat( axis: Vector3, angle: number, dst: Vector4 ): Vector4
+    {
+        const angleRad = 0.5 * angle * GeoMath.DEGREE;
+        const cos = Math.cos( angleRad );
+        const sin = Math.sin( angleRad );
+        const s = sin / GeoMath.length3( axis );
+        dst[0] = s * axis[0];
+        dst[1] = s * axis[1];
+        dst[2] = s * axis[2];
+        dst[3] = cos;
+        return dst;
+    }
+
+
+    /**
+     * 行列と同じ回転を表す四元数を計算
+     * @param  mat    行列
+     * @param  dst  　結果を代入する四元数
+     * @return        dst
+     */
+    static matrix_to_quat( mat: Matrix, dst: Vector4 ): Vector4
+    {
+        dst[0] = + mat[0] - mat[5] - mat[10] + 1.0;
+        dst[1] = - mat[0] + mat[5] - mat[10] + 1.0;
+        dst[2] = - mat[0] - mat[5] + mat[10] + 1.0;
+        dst[3] = + mat[0] + mat[5] + mat[10] + 1.0;
+        let bIdx = 0;
+        for ( let i = 1; i < 4; i++ ) {
+            if ( dst[i] > dst[bIdx] ) {
+                bIdx = i;
+            }
+        }
+        const v = 0.5 * Math.sqrt( dst[bIdx] );
+        dst[bIdx] = v;
+        const div = 0.25 / v;
+        switch (bIdx) {
+            case 0: {
+                dst[1] = (mat[1] + mat[4]) * div;
+                dst[2] = (mat[8] + mat[2]) * div;
+                dst[3] = (mat[6] - mat[9]) * div;
+            } break;
+            case 1: {
+                dst[0] = (mat[1] + mat[4]) * div;
+                dst[2] = (mat[6] + mat[9]) * div;
+                dst[3] = (mat[8] - mat[2]) * div;
+            } break;
+            case 2: {
+                dst[0] = (mat[8] + mat[2]) * div;
+                dst[1] = (mat[6] + mat[9]) * div;
+                dst[3] = (mat[1] - mat[4]) * div;
+            } break;
+            case 3: {
+                dst[0] = (mat[6] - mat[9]) * div;
+                dst[1] = (mat[8] - mat[2]) * div;
+                dst[2] = (mat[1] - mat[4]) * div;
+            } break;
+        }
+        return GeoMath.normalize4( dst, dst );
+    }
+
+    /**
+     * 四元数と同じ回転を表す行列を計算。
+     * 平行移動成分は (0, 0, 0) になります。
+     * @param  scale  スケール
+     * @param  quat   四元数
+     * @param  dst  　結果を代入する行列
+     * @return        dst
+     */
+    static quat_to_matrix( scale: Vector3, quat: Vector4, dst: Matrix ): Matrix
+    {
+        const [ x, y, z, w ] = quat;
+        const xx2 = x * x * 2,  yy2 = y * y * 2,  zz2 = z * z * 2;
+        const xy2 = x * y * 2,  yz2 = y * z * 2,  zx2 = z * x * 2;
+        const xw2 = w * x * 2,  yw2 = w * y * 2,  zw2 = w * z * 2;
+
+        dst[ 0] = scale[0] * (1 - yy2 - zz2);
+        dst[ 1] = scale[0] * (    xy2 + zw2);
+        dst[ 2] = scale[0] * (    zx2 - yw2);
+        dst[ 3] = 0;
+
+        dst[ 4] = scale[1] * (    xy2 - zw2);
+        dst[ 5] = scale[1] * (1 - zz2 - xx2);
+        dst[ 6] = scale[1] * (    yz2 + xw2);
+        dst[ 7] = 0;
+
+        dst[ 8] = scale[2] * (    zx2 + yw2);
+        dst[ 9] = scale[2] * (    yz2 - xw2);
+        dst[10] = scale[2] * (1 - xx2 - yy2);
+        dst[11] = 0;
+
+        dst[12] = 0;
+        dst[13] = 0;
+        dst[14] = 0;
+        dst[15] = 1;
+
+        return dst;
+    }
+
+    /**
+     * 四元数の積を計算
+     * @param  p      左の四元数
+     * @param  q      右の四元数
+     * @param  dst  　結果を代入する四元数
+     * @return        dst
+     */
+    static mul_quat( p: Vector4, q: Vector4, dst: Vector4 ): Vector4
+    {
+        const x =   p[0] * q[3] + p[1] * q[2] - p[2] * q[1] + p[3] * q[0];
+        const y = - p[0] * q[2] + p[1] * q[3] + p[2] * q[0] + p[3] * q[1];
+        const z =   p[0] * q[1] - p[1] * q[0] + p[2] * q[3] + p[3] * q[2];
+        const w = - p[0] * q[0] - p[1] * q[1] - p[2] * q[2] + p[3] * q[3];
+        dst[0] = x;
+        dst[1] = y;
+        dst[2] = z;
+        dst[3] = w;
+        return dst;
+    }
+
+    /**
+     * 四元数の複素共役を計算
+     * @param  q      四元数
+     * @param  dst  　結果を代入する四元数
+     * @return        dst
+     */
+    static conjugate_quat( q: Vector4, dst: Vector4 ): Vector4
+    {
+        dst[0] = -q[0];
+        dst[1] = -q[1];
+        dst[2] = -q[2];
+        dst[3] =  q[3];
+        return dst;
+    }
+
+    /**
+     * 逆四元数の計算
+     * @param  q      四元数
+     * @param  dst  　結果を代入する四元数
+     * @return        dst
+     */
+    static inverse_quat( q: Vector4, dst: Vector4 ): Vector4
+    {
+        const d = 1.0 / GeoMath.lengthSquared4(q);
+        dst[0] = - d * q[0];
+        dst[1] = - d * q[1];
+        dst[2] = - d * q[2];
+        dst[3] =   d * q[3];
+        return dst;
+    }
+
+    /**
+     * 球面線形補間を計算
+     * @param  q1      四元数(単位ベクトル)
+     * @param  q2      四元数(単位ベクトル)
+     * @param  alpha   補間、0 ≤ alpha ≤ 1
+     * @param  dst  　 結果を代入する四元数
+     * @return         dst
+     */
+    static slerp_quat( q1: Vector4, q2: Vector4, alpha: number, dst: Vector4 ): Vector4
+    {
+        let dot = GeoMath.dot4(q1, q2);
+        const longerFlag = dot < 0;
+        let flip = 1;
+
+        if ( longerFlag ) {
+            dot = -dot;
+            flip = -1;
+        }
+
+        const sq_tdot = 1.0 - dot * dot;
+        let s1, s2;
+        if ( sq_tdot <= 0.0 ) {
+            s1 = 1.0 - alpha;
+            s2 = alpha;
+        }
+        else {
+            const om = Math.acos( dot );
+            const sin_om = Math.sqrt(sq_tdot); 
+            s1 = Math.sin((1.0 - alpha) * om) / sin_om;
+            s2 = Math.sin(alpha * om) / sin_om;
+            if ( longerFlag ) {
+                s2 = -s2;
+            }
+        }
+
+        dst[0] = s1 * q1[0] + s2 * q2[0] * flip;
+        dst[1] = s1 * q1[1] + s2 * q2[1] * flip;
+        dst[2] = s1 * q1[2] + s2 * q2[2] * flip;
+        dst[3] = s1 * q1[3] + s2 * q2[3] * flip;
+
+        return dst;
+    }
 }
 
 
@@ -1162,7 +1432,7 @@ type GeoPointData = {
 /**
  * 4行4列の行列
  *
- * このクラスは実在しない便宜的なものであり、Array や TypedArray 等の 16 要素の配列に置き換えることができる。
+ * この型は実在しない便宜的なものであり、Array や TypedArray 等の 16 要素の配列に置き換えることができる。
  * この配列の数値の並びは列優先である。
  */
 type Matrix = Float64Array | Float32Array | [
@@ -1174,25 +1444,30 @@ type Matrix = Float64Array | Float32Array | [
 
 
 /**
- * 2次ベクトル
+ * 2次ベクトル `[x, y]`
  *
- * このクラスは実在しない便宜的なものであり、Array や TypedArray 等の 2 要素の配列に置き換えることができる。
+ * この型は実在しない便宜的なものであり、Array や TypedArray 等の 2 要素の配列に置き換えることができる。
  */
 type Vector2 = Float64Array | Float32Array | [ x: number, y: number ];
 
 
 /**
- * 3次ベクトル
+ * 3次ベクトル `[x, y, z]`
  *
- * このクラスは実在しない便宜的なものであり、Array や TypedArray 等の 3 要素の配列に置き換えることができる。
+ * この型は実在しない便宜的なものであり、Array や TypedArray 等の 3 要素の配列に置き換えることができる。
+ *
+ * - RGB色を表現する場合は `[red, green, blue]` に対応し、値の範囲は `0.0〜1.0` または `0〜255` で表現される({@link mapray.Color} 参照)。
  */
 type Vector3 = Float64Array | Float32Array | [ x: number, y: number, z: number ];
 
 
 /**
- * 4次ベクトル
+ * 4次ベクトル `[x, y, z, w]`
  *
- * このクラスは実在しない便宜的なものであり、Array や TypedArray 等の 4 要素の配列に置き換えることができる。
+ * この型は実在しない便宜的なものであり、Array や TypedArray 等の 4 要素の配列に置き換えることができる。
+ *
+ * - Quaternionを表現する場合は `[x, y, z, w]` に対応する(`w + xi + yj +zk`)。
+ * - RGBA色を表現する場合は `[red, green, blue, alpha]` に対応する。値は `0.0〜1.0` または `0〜255` で表現される({@link mapray.Color} 参照)。
  */
 type Vector4 = Float64Array | Float32Array | [ x: number, y: number, z: number, w: number ];
 
