@@ -97,6 +97,6 @@
     "tslib": "^2.2.0"
   },
   "jest": {
-    "testRegex": "(/tests/.*\\_tests\\.js)$"
+    "testRegex": "/tests/.*_tests\\.js$"
   }
 }
