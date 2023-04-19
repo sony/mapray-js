@@ -1,4 +1,8 @@
 # Change Log
+## 0.9.2
+### Features and improvements
+- Support Vector tiles [#238](https://github.com/sony/mapray-js/issues/238)
+
 ## 0.9.1
 ### Features and improvements
 - WebGL2 Support [#247](https://github.com/sony/mapray-js/issues/247)
