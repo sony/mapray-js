@@ -114,3 +114,4 @@ npm run doc
 
 ## License
 maprayJS is licensed under the [Apache License Version 2.0](/LICENSE).
+It also depends on open source software packages. For more information, see [LICENSES](third_party/LICENSES.md).
