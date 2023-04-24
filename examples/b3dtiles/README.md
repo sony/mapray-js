@@ -16,7 +16,7 @@ brew install yarn
 ## Usage
 **To set access token:**
 
-To see the terrian data, you need a [Mapray access token](/doc/developer-guide/GettingStarted/index.md). You can either set an environment variable:
+To see the terrian data, you need a [Mapray access token](https://mapray.com/documents/overview/token/index.html). You can either set an environment variable:
 
 ```bash
 export MAPRAY_ACCESS_TOKEN=<mapray_access_token>

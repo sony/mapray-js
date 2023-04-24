@@ -16,7 +16,7 @@ brew install yarn
 ## Usage
 **To set access token:**
 
-To see the terrian data, you need a [Mapray access token](/doc/developer-guide/GettingStarted/index.md). You can either set an environment variable:
+To see the terrian data, you need a [Mapray access token](https://mapray.com/documents/overview/token/index.html). You can either set an environment variable:
 
 ```bash
 export MAPRAY_ACCESS_TOKEN=<mapray_access_token>
@@ -39,7 +39,7 @@ Or set token to `process.env.BINGMAP_ACCESS_TOKEN` directly in `PointCloudViewer
 
 **To set api key:**
 
-To access the cloud data, you need a [Mapray access token](/doc/developer-guide/GettingStarted/index.md). You can either set an environment variable:
+To access the cloud data, you need a [Mapray access token](https://mapray.com/documents/overview/token/index.html). You can either set an environment variable:
 
 ```bash
 export MAPRAY_API_KEY=<mapray_api_key>
@@ -50,7 +50,7 @@ Or set api key to `process.env.MAPRAY_API_KEY` directly in `PointCloudViewer.ts`
 
 **To set user id:**
 
-To use the dataset, you need a [Mapray API user id ](/doc/developer-guide/Account/index.md). You can either set an environment variable:
+To use the dataset, you need a [Mapray API user id ](https://mapray.com/documents/overview/account/index.html). You can either set an environment variable:
 
 ```bash
 export MAPRAY_API_USER_ID=<your user id>
@@ -61,7 +61,7 @@ Or set user id to `process.env.MAPRAY_API_USER_ID` directly in `PointCloudViewer
 
 **To set user dataset id:**
 
-To use the dataset, you need a [Point Cloud Dataset id](/doc/developer-guide/ConnectMaprayCloud-PC/index.md). You can either set an environment variable:
+To use the dataset, you need a [Point Cloud Dataset id](https://mapray.com/documents/overview/connectmapraycloud-pc/index.html). You can either set an environment variable:
 
 ```bash
 export DATASET_POINT_CLOUD_ID = <point cloud dataset id>;
