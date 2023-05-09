@@ -12,4 +12,5 @@ export { default as EasyBindingBlock } from  "./EasyBindingBlock";
 export { default as ConstantCurve } from "./ConstantCurve";
 export { default as KFLinearCurve } from "./KFLinearCurve";
 export { default as KFStepCurve } from "./KFStepCurve";
+export { default as KFQuatLinearCurve } from "./KFQuatLinearCurve";
 export { default as ComboVectorCurve } from "./ComboVectorCurve";

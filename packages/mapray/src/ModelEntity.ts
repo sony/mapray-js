@@ -3,7 +3,7 @@ import Primitive from "./Primitive";
 
 import Scene from "./Scene";
 import Entity from "./Entity";
-import GeoMath, { Vector3, Matrix } from "./GeoMath";
+import GeoMath, { Vector3, Matrix, Vector4 } from "./GeoMath";
 import GeoPoint from "./GeoPoint";
 import GeoRegion from "./GeoRegion";
 import Orientation from "./Orientation";
@@ -141,6 +141,7 @@ class ModelEntity extends Entity {
 
         const number  = Type.find( "number"  );
         const vector3 = Type.find( "vector3" );
+        const vector4 = Type.find( "vector4" );
         const matrix  = Type.find( "matrix"  );
 
         // パラメータ名: position
@@ -161,16 +162,19 @@ class ModelEntity extends Entity {
         let   orientation_type: Type | null;
 
         let orientation_tsolver = ( curve: Curve ) => {
-            orientation_type = AnimUtil.findFirstTypeSupported( curve, [matrix, vector3] );
+            orientation_type = AnimUtil.findFirstTypeSupported( curve, [matrix, vector3, vector4] );
             if ( !orientation_type ) {
                 throw new Error("could not find type of orientation.");
             }
             return orientation_type;
         };
 
-        block.addEntry( "orientation", [matrix, vector3], orientation_tsolver, ( value: any ) => {
+        block.addEntry( "orientation", [matrix, vector3, vector4], orientation_tsolver, ( value: any ) => {
                 if ( orientation_type === matrix ) {
                     this._setRotation( value );
+                }
+                else if ( orientation_type === vector4 ) {
+                    this._setQuaternion( value );
                 }
                 else { // orientation_type === vector3
                     orientation_temp.heading = value[0];
@@ -319,6 +323,11 @@ class ModelEntity extends Entity {
             return;
         }
         GeoMath.copyMatrix( value, this._matrix );
+    }
+
+    private _setQuaternion( value: Vector4 )
+    {
+        GeoMath.copyMatrix(GeoMath.quat_to_matrix( [1,1,1], value, GeoMath.createMatrix()), this._matrix );
     }
 
     /**
