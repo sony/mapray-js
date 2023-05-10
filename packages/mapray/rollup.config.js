@@ -72,6 +72,7 @@ export default [
       preserveModulesRoot: 'src'
     },
     external: [
+      'mapbox-gl/dist/style-spec/index.es.js',
       'tslib',
     ],
     plugins: [
