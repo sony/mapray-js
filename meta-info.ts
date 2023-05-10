@@ -13,7 +13,7 @@
  * ### CDN
  * HTML
  * ```html
- * <script src="https://resource.mapray.com/mapray-js/v0.9.2/mapray.js"></script>
+ * <script src="https://resource.mapray.com/mapray-js/v0.9.3/mapray.js"></script>
  * ```
  *
  * JavaScript
@@ -43,8 +43,8 @@ export { default as mapray } from "./packages/mapray/src/mapray";
  * ### CDN
  * HTML
  * ```html
- * <script src="https://resource.mapray.com/mapray-js/v0.9.2/mapray.js"></script>
- * <script src="https://resource.mapray.com/ui/v0.9.2/maprayui.js"></script>
+ * <script src="https://resource.mapray.com/mapray-js/v0.9.3/mapray.js"></script>
+ * <script src="https://resource.mapray.com/ui/v0.9.3/maprayui.js"></script>
  * ```
  *
  * JavaScript
