@@ -7,13 +7,28 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     env:
+      CORE_PACKAGE_DIR: "./packages/mapray"
       DOC_DIR: "./doc/typedoc"
       DOC_DEPLOY_DIR: "./_deploy/doc/"
+      EMSDK_DIR: "./_deploy/emsdk"
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: 14
+          node-version: 18
+      - name: Setup EMSDK
+        run: |
+          mkdir -p ${{ env.EMSDK_DIR }}/../
+          echo "Cloning EMSDK from github"
+          git clone --branch=2.0.9 --depth=1 https://github.com/emscripten-core/emsdk.git ${{ env.EMSDK_DIR }}
+          echo "Coping patch file to the EMSDK directory"
+          cp ${{ env.CORE_PACKAGE_DIR }}/wasm/emsdk.patch ${{ env.EMSDK_DIR }}/emsdk.patch
+          echo "Install and Activate EMSDK"
+          cd ${{ env.EMSDK_DIR }}
+          ./emsdk install latest
+          ./emsdk activate latest
+          echo "Apply the patch to EMSDK"
+          git apply -p1 emsdk.patch
       - run:  git fetch --prune --unshallow
       - name: Get deploy version
         run: |
@@ -23,6 +38,14 @@ jobs:
         id: get_version
         shell: bash
         working-directory: ${{ env.CORE_PACKAGE_DIR }}
+      - name: Build wasm code
+        run: |
+          echo "Activate EMSDK"
+          source ${{ env.EMSDK_DIR }}/emsdk_env.sh
+          echo "Build wasm code"
+          cd ${{ env.CORE_PACKAGE_DIR }}
+          ./wasm/rebuild_and_install.sh
+        shell: bash
       - name: Setup
         run: yarn install
       - name: Generate documents
