@@ -1,4 +1,13 @@
 # Change Log
+## 0.9.3
+### Features and improvements
+- add operation text and fix mouse control in example [#284](https://github.com/sony/mapray-js/issues/284)
+- Update document generation to include wasm build for successful generation [#285](https://github.com/sony/mapray-js/issues/285)
+
+### Bug Fix
+- Resolve build error in vectile/expression.ts  [#283](https://github.com/sony/mapray-js/issues/283)
+
+
 ## 0.9.2
 ### Features and improvements
 - Support Vector tiles [#238](https://github.com/sony/mapray-js/issues/238)
