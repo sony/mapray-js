@@ -3,11 +3,15 @@ dist/
 doc/typedoc/
 doc/typedoc-devel/
 node_modules/
+
 yarn-error.log
 package-lock.json
 build-info.json
 
 packages/mapray/tests/report.html
+
+browser-test/report/
+browser-test/results/
 
 .idea
 .vscode

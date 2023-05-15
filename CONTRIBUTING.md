@@ -78,19 +78,27 @@ You can also use following commands.
 yarn run <command>
 ```
 
-| command             | summary                                       |
-|---------------------|-----------------------------------------------|
-| build               | run mapray, ui, css and typedoc               |
-| mapray              | build mapray package                          |
-| mapray-watch        | build and watch mapray package                |
-| ui                  | build ui package                              |
-| ui-watch            | build and watch ui package                    |
-| css                 | build css for ui package                      |
-| typedoc             | generate typedoc(for SDK user)                |
-| typedoc-watch       | generate typedoc(for SDK user) and watch      |
-| typedoc-devel       | generate typedoc(for SDK developer)           |
-| typedoc-devel-watch | generate typedoc(for SDK developer) and watch |
-| test                | execute test                                  |
+| command                 | summary                                                            |
+|-------------------------|--------------------------------------------------------------------|
+| build                   | build mapray ui css doc (build-devel)                              |
+| mapray                  | build mapray package (mapray-devel, mapray-watch)                  |
+| ui                      | build ui package (ui-devel, ui-watch)                              |
+| css                     | build css                                                          |
+| doc                     | build doc (doc-watch, doc-devel, doc-devel-watch)                  |
+| lint                    | lint code (lint-mapray, lint-ui)                                   |
+| test                    | execute test-expression and test-browser                           |
+| test-expression         | execute expression test                                            |
+| test-browser            | execute browser test (playwright)                                  |
+| test-browser-setup      | setup browser test (install & downloading golden images)           |
+| test-browser-make-image | generate the golden image with the current version of the software |
+
+
+### Testing maprayJS
+
+There are two types of test.
+
+- expression test: See `packages/mapray/tests/README.md`
+- browser test: See `browser-test`
 
 
 # Serving the application for development

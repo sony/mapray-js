@@ -1,0 +1,27 @@
+{
+  "name": "tester",
+  "version": "0.0.0",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "start": "run-p server build-watch",
+    "build-debug": "rollup -c",
+    "build": "rollup -c --environment BUILD:production",
+    "build-watch": "rollup -c -w",
+    "server": "st --no-cache -H 0.0.0.0 --port 7776 --dir ../"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5",
+    "postcss": "^8.4.16",
+    "rollup": "^2.78.1",
+    "rollup-plugin-inject-process-env": "^1.3.1",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "rollup-plugin-postcss": "^4.0.2",
+    "rollup-plugin-terser": "^7.0.2",
+    "rollup-plugin-typescript2": "0.33.0",
+    "st": "^3.0.0",
+    "tslib": "^2.2.0",
+    "typescript": "^4.3.2"
+  },
+  "dependencies": {}
+}

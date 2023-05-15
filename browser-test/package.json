@@ -1,0 +1,23 @@
+{
+  "name": "browser-test",
+  "version": "0.0.0",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "test": "yarn playwright test --project=chromium",
+    "setup": "run-s setup-browser setup-test-app",
+    "make-image": "yarn playwright test --project=chromium --update-snapshots",
+    "setup-browser": "run-s pw-install pw-install-deps pw-install-images",
+    "pw-install": "yarn playwright install",
+    "pw-install-deps": "yarn playwright install-deps",
+    "pw-install-images": "node ./download-images.js",
+    "setup-test-app": "yarn --cwd apps install && yarn --cwd apps build",
+    "server": "st --no-cache -H 0.0.0.0 --port 7070 --index index.html"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5",
+    "@playwright/test": "^1.36.2",
+    "st": "^3.0.0"
+  },
+  "dependencies": {}
+}

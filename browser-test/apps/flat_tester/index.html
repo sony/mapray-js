@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+
+
+<html>
+
+<head>
+<meta charset="UTF-8"/>
+<link rel="stylesheet" type="text/css" href="app.css"/>
+<script type="text/javascript" src="dist/bundle.js"></script>
+<script type="text/javascript">
+window.addEventListener("load", () => {
+  const node = document.getElementById("ui");
+  window.app = new App(node, {
+  });
+});
+</script>
+</head>
+
+<body>
+<div id="ui"></div>
+</div>
+</body>
+</html>

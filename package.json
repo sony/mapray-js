@@ -24,10 +24,14 @@
     "doc-watch": "typedoc --validation.invalidLink --tsconfig tsconfig.json --watch",
     "doc-devel": "typedoc --validation.invalidLink --tsconfig tsconfig-devel.json",
     "doc-devel-watch": "typedoc --validation.invalidLink --tsconfig tsconfig-devel.json --watch",
-    "test": "yarn workspace @mapray/mapray-js test",
     "lint": "run-s lint-mapray lint-ui",
     "lint-mapray": "yarn workspace @mapray/mapray-js lint",
-    "lint-ui": "yarn workspace @mapray/ui lint"
+    "lint-ui": "yarn workspace @mapray/ui lint",
+    "test": "run-s test-expression test-browser",
+    "test-expression": "yarn workspace @mapray/mapray-js test",
+    "test-browser": "yarn --cwd browser-test test",
+    "test-browser-setup": "yarn --cwd browser-test install && yarn --cwd browser-test setup",
+    "test-browser-make-image": "yarn --cwd browser-test install && yarn --cwd browser-test make-image"
   },
   "contributors": [
     {
