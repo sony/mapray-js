@@ -51,4 +51,8 @@ Key binding
 
 4: Easy Binding Animation
 
-5: StandardUIViewer.startFlyCamera()
+5: Heading-Tilt-Roll Interpolated Animation
+
+6: Quaternion Interpolated Animation
+
+7: StandardUIViewer.startFlyCamera()

@@ -1,4 +1,4 @@
-import mapray from "@mapray/mapray-js";
+import mapray, { GeoMath } from "@mapray/mapray-js";
 import maprayui from "@mapray/ui";
 
 import CosCurve from "./CosCurve";
@@ -93,8 +93,16 @@ export default class App extends maprayui.StandardUIViewer {
                 this._startAnimation4();
             } break;
             case "5": {
-                console.log( 'start animation 5' );
-                this._startAnimation5();
+                console.log( 'start Heading Tilt Roll animation' );
+                this.startHeadingTiltRollAnimation();
+            } break;
+            case "6": {
+                console.log( 'start Quaternion animation' );
+                this.startQuaternionAnimation();
+            } break;
+            case "7": {
+                console.log( 'camera animation' );
+                this._startCameraAnimation();
             } break;
             default: {
                 super.onKeyDown( event );
@@ -392,9 +400,9 @@ export default class App extends maprayui.StandardUIViewer {
 
 
     /**
-     * Animation Example 5
+     * Camera Animation Example
      */
-     async _startAnimation5() {
+     async _startCameraAnimation() {
          await this.startFlyCamera({
                  end_altitude: 800,
                  end_from_lookat: 300,
@@ -404,6 +412,96 @@ export default class App extends maprayui.StandardUIViewer {
          console.log( "done" );
     }
 
+
+    /**
+     * Heading Tilt Roll Animation Example
+     */
+    async startHeadingTiltRollAnimation() {
+        // Entityのクリア
+        this.viewer.scene.clearEntities();
+
+        const SCENE_3D_URL = "https://resource.mapray.com/assets/www/model/mapray-box-with-texture/scene.json";
+        const sceneResource = new mapray.URLResource( SCENE_3D_URL, {
+                transform: ( url, type ) => {
+                    if (type.id === "IMAGE" ) {
+                        return { url, init: { crossOrigin: mapray.CredentialMode.SAME_ORIGIN } };
+                    }
+                    else return { url }
+                }
+        });
+
+        await new mapray.SceneLoader( this.viewer.scene, sceneResource, {
+                onEntity: (loader, entity, props) => {
+                    if ( entity instanceof mapray.ModelEntity ) {
+                        const position = new mapray.GeoPoint(139.699985, 35.690777, 300);
+                        entity.setPosition(position);
+                        entity.setScale([2.0, 2.0, 2.0]);
+                        loader.scene.addEntity(entity);
+
+                        const vector3 = mapray.animation.Type.find( "vector3" );
+                        let curve = new mapray.animation.KFLinearCurve( vector3 );
+                        const keyframes = [];
+                        keyframes.push( mapray.animation.Time.fromNumber( 0 ) );
+                        keyframes.push( mapray.GeoMath.createVector3([0,30,0]));
+                        keyframes.push( mapray.animation.Time.fromNumber( 3 ));
+                        keyframes.push( mapray.GeoMath.createVector3([180,-30,0]));
+                        curve.setKeyFrames( keyframes );
+
+                        // 経過時間の初期化
+                        this._total_time = 0;
+                        entity.animation.bind("orientation", this._animation_updater, curve);
+
+                        // Animation開始
+                        this._is_animation_start = true;
+                    }
+                }
+        } ).load();
+    }
+
+
+    /**
+     * Quaternion Animation Example
+     */
+    async startQuaternionAnimation() {
+        // Entityのクリア
+        this.viewer.scene.clearEntities();
+
+        const SCENE_3D_URL = "https://resource.mapray.com/assets/www/model/mapray-box-with-texture/scene.json";
+        const sceneResource = new mapray.URLResource( SCENE_3D_URL, {
+                transform: ( url, type ) => {
+                    if (type.id === "IMAGE" ) {
+                        return { url, init: { crossOrigin: mapray.CredentialMode.SAME_ORIGIN } };
+                    }
+                    else return { url }
+                }
+        });
+
+        await new mapray.SceneLoader( this.viewer.scene, sceneResource, {
+                onEntity: (loader, entity, props) => {
+                    if ( entity instanceof mapray.ModelEntity ) {
+                        const position = new mapray.GeoPoint(139.699985, 35.690777, 300);
+                        entity.setPosition(position);
+                        entity.setScale([2.0, 2.0, 2.0]);
+                        loader.scene.addEntity(entity);
+
+                        let curve = new mapray.animation.KFQuatLinearCurve();
+                        const keyframes = [];
+                        keyframes.push( mapray.animation.Time.fromNumber( 0 ) );
+                        keyframes.push( mapray.GeoMath.createVector4([-0.183013, 0.183013, 0.683013, 0.683013]));
+                        keyframes.push( mapray.animation.Time.fromNumber( 3 ));
+                        keyframes.push( mapray.GeoMath.createVector4([-0.183013, -0.183013, -0.683013, 0.683012]));
+                        curve.setKeyFrames( keyframes );
+
+                        // 経過時間の初期化
+                        this._total_time = 0;
+                        entity.animation.bind("orientation", this._animation_updater, curve);
+
+                        // Animation開始
+                        this._is_animation_start = true;
+                    }
+                }
+        } ).load();
+    }
 }
 
 
