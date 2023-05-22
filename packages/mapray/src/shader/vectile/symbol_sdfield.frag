@@ -111,12 +111,40 @@ void main()
      // 距離のサンプリング
     float sdistance[(DIVS_Zeta[0] + 1) * (DIVS_Zeta[1] + 1)];
 
-    for ( int k1 = 0; k1 < DIVS_Zeta[1] + 1; ++k1 ) {
-        for ( int k0 = 0; k0 < DIVS_Zeta[0] + 1; ++k0 ) {
-            // 標本点のテクスチャ座標 (特殊単位)
-            vec2 tc = tc_base + vec2( k0, k1 ) / vec2( DIVS_Zeta ) * u_img_psize;
-            sdistance[index( k0, k1 )] = texture2D( u_image, tc ).x;
-        }
+//     for ( int k1 = 0; k1 < DIVS_Zeta[1] + 1; ++k1 ) {
+//         for ( int k0 = 0; k0 < DIVS_Zeta[0] + 1; ++k0 ) {
+//             // 標本点のテクスチャ座標 (特殊単位)
+//             vec2 tc = tc_base + vec2( k0, k1 ) / vec2( DIVS_Zeta ) * u_img_psize;
+//             sdistance[index( k0, k1 )] = texture2D( u_image, tc ).x;
+//         }
+//     }
+    {
+        vec2 tc = tc_base + vec2( 0.0, 0.0 ) * u_img_psize;
+        sdistance[index( 0, 0 )] = texture2D( u_image, tc ).x;
+
+        tc = tc_base + vec2( 0.0, 0.5 ) * u_img_psize;
+        sdistance[index( 0, 1 )] = texture2D( u_image, tc ).x;
+
+        tc = tc_base + vec2( 0.0, 1.0 ) * u_img_psize;
+        sdistance[index( 0, 2 )] = texture2D( u_image, tc ).x;
+
+        tc = tc_base + vec2( 0.5, 0.0 ) * u_img_psize;
+        sdistance[index( 1, 0 )] = texture2D( u_image, tc ).x;
+
+        tc = tc_base + vec2( 0.5, 0.5 ) * u_img_psize;
+        sdistance[index( 1, 1 )] = texture2D( u_image, tc ).x;
+
+        tc = tc_base + vec2( 0.5, 1.0 ) * u_img_psize;
+        sdistance[index( 1, 2 )] = texture2D( u_image, tc ).x;
+
+        tc = tc_base + vec2( 1.0, 0.0 ) * u_img_psize;
+        sdistance[index( 2, 0 )] = texture2D( u_image, tc ).x;
+
+        tc = tc_base + vec2( 1.0, 0.5 ) * u_img_psize;
+        sdistance[index( 2, 1 )] = texture2D( u_image, tc ).x;
+
+        tc = tc_base + vec2( 1.0, 1.0 ) * u_img_psize;
+        sdistance[index( 2, 2 )] = texture2D( u_image, tc ).x;
     }
 
    // ζ_b: シンボル本体の被覆率
