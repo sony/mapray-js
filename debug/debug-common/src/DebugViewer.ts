@@ -652,7 +652,7 @@ class DebugViewer extends maprayui.StandardUIViewer {
     {
         if ( this._commander.isCapture() ) {
             const is_png = false;
-            const options: mapray.Viewer.CaptureOption = is_png ? {type: 'png'} : {type: 'jpeg'};
+            const options: mapray.Capture.Option = is_png ? {type: 'png'} : {type: 'jpeg'};
             const blob = await this.viewer.capture( options );
             const a = document.createElement('a');
             const url = URL.createObjectURL(blob);
