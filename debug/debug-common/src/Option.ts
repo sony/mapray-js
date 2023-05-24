@@ -221,10 +221,10 @@ class DomTool {
         return pane;
     }
 
-    static createCheckboxOption( option: Option, key: string ) {
+    static createCheckboxOption( option: Option, key: string, options: { name?: string } = {} ) {
         const property = option.getProperty(key);
         if (property.type !== "boolean") throw new Error("unsupported type: " + property.type);
-        const checkbox = this.createCheckbox(key, {
+        const checkbox = this.createCheckbox(options.name ?? key, {
                 initialValue: option.get(key),
                 onui: ui => {
                     option.onChange(key, event => {

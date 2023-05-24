@@ -11,6 +11,7 @@ export type TMapType = {
 type PropertyTypeOf<T extends TOption.PropertyInfo> = (
     T extends TOption.RangePropertyInfo ? number:
     T extends TOption.BooleanPropertyInfo ? boolean:
+    T extends TOption.TextPropertyInfo ? string:
     T extends TOption.ColorPropertyInfo<infer Type extends TOption.ColorType> ? Type:
     T extends TOption.ColorPropertyInfo<any> ? TOption.ColorType:
     T extends TOption.SelectPropertyInfo<infer Item> ? Item:
@@ -24,6 +25,7 @@ type PropertyTypeOf<T extends TOption.PropertyInfo> = (
 type InternalClassOf<T extends TOption.PropertyInfo> = (
     T extends TOption.RangePropertyInfo ? TOption.RangeProperty:
     T extends TOption.BooleanPropertyInfo ? TOption.BooleanProperty:
+    T extends TOption.TextPropertyInfo ? TOption.TextProperty:
     T extends TOption.ColorPropertyInfo<infer Type extends TOption.ColorType> ? TOption.ColorProperty<Type>:
     T extends TOption.SelectPropertyInfo<infer Item> ? TOption.SelectProperty<Item>:
     T extends TOption.KVSelectPropertyInfo<infer Item> ? TOption.SelectProperty<Item>:
@@ -97,6 +99,9 @@ class TOption<TMap extends TMapType> {
         }
         else if ( property.type === "boolean" ) {
             this._tmap.set( key, new TOption.BooleanProperty( this, key.toString(), property ) as InternalClassOf<TMap[Key]>);
+        }
+        else if ( property.type === "text" ) {
+            this._tmap.set( key, new TOption.TextProperty( this, key.toString(), property ) as InternalClassOf<TMap[Key]>);
         }
         else if ( property.type === "color" ) {
             this._tmap.set( key, new TOption.ColorProperty( this, key.toString(), property ) as InternalClassOf<TMap[Key]>);
@@ -188,7 +193,15 @@ interface CheckboxParam {
     class?: string;
     initialValue?: boolean;
     onchange?: (value: boolean, domEvent: Event) => void;
-    onui?: (ui: HTMLInputElement) => void;
+    onui?: (ui: HTMLInputElement, apply: (value: boolean) => void) => void;
+    description?: string;
+}
+
+interface TextParam {
+    class?: string;
+    initialValue?: string;
+    onchange?: (value: string, domEvent: Event) => void;
+    onui?: (ui: HTMLElement, apply: (value: string) => void) => void;
     description?: string;
 }
 
@@ -212,6 +225,7 @@ interface SliderParam {
 interface NumberInputParam {
     min?: number;
     max?: number;
+    step?: number;
     initialValue: number;
     onchange?: (value: number, domEvent: Event) => void;
     onui?: (ui: HTMLInputElement, apply: (value: number) => void) => void;
@@ -225,6 +239,11 @@ interface ColorParam<T extends TOption.ColorType = TOption.RGBType> {
     description?: string;
 }
 
+interface DomOption {
+    name?: string;
+    mode?: "key-value-table-row";
+}
+
 
 
 const LoadedStyles = {
@@ -232,6 +251,7 @@ const LoadedStyles = {
   COLOR: false,
   CEHCKBOX: false,
   NUMBER: false,
+  TEXT: false,
 };
 let styleTag: HTMLStyleElement;
 
@@ -409,6 +429,8 @@ export class TDomTool {
         checkbox.type = "checkbox";
         pane.append(checkbox);
 
+        const setValue = (value: boolean) => { checkbox.checked = value; }
+
         const label = document.createElement("div");
         label.innerText = name;
         pane.append(label);
@@ -419,7 +441,7 @@ export class TDomTool {
             onchange( checkbox.checked, event );
         }
         label.onclick = event => { checkbox.click(); };
-        if (options.onui) options.onui(checkbox);
+        if (options.onui) options.onui(checkbox, setValue);
         if (options.description) {
             pane.title = options.description;
         }
@@ -432,14 +454,14 @@ export class TDomTool {
      * @param property プロパティ
      * @returns HTML要素
      */
-    static createCheckboxOption<TMap extends TMapType, Key extends keyof TMap>( property: TOption.BooleanProperty ): HTMLDivElement
+    static createCheckboxOption<TMap extends TMapType, Key extends keyof TMap>( property: TOption.BooleanProperty, options: DomOption = {} ): HTMLDivElement
     {
-        const checkbox = this.createCheckbox( property.key, {
+        const checkbox = this.createCheckbox( options.name ?? property.key, {
             initialValue: property.get(),
             description: property.key + (property.description ? "\n" + property.description : ""),
-            onui: ui => {
+            onui: (ui, apply) => {
                 property.onChange( event => {
-                    if (ui.checked != event.value) ui.checked = event.value;
+                    apply(event.value);
                 });
             },
             onchange: (value, event) => {
@@ -447,6 +469,77 @@ export class TDomTool {
             }
         });
         return checkbox;
+    }
+
+    /**
+     * テキストフィールドを作成
+     * 
+     * @param name テキストフィールド名
+     * @param options オプション
+     * @returns テキストフィールド要素
+     */
+    static createText( name: string, options: TextParam ): HTMLElement
+    {
+        if ( !LoadedStyles.TEXT ) {
+            this.insertStyle(`
+            .TDomTool_text {
+                display: flex;
+                align-items: center;
+            }
+            .TDomTool_text > input{
+                width: 100%;
+            }
+    `);
+            LoadedStyles.TEXT = true;
+        }
+
+        const pane = document.createElement("div");
+        pane.classList.add("TDomTool_text");
+
+        const textInput = document.createElement("input");
+        textInput.type = "text";
+        if (options.initialValue !== undefined) textInput.value = options.initialValue;
+        pane.append(textInput);
+        const setValue = (text: string) => { textInput.value = text; }
+
+        // const textInput = document.createElement("textarea");
+        // if (options.initialValue !== undefined) textInput.innerText = options.initialValue;
+        // pane.append(textInput);
+        // const setValue = (text: string) => { textInput.innerText = text; }
+
+        if (options.class) textInput.classList.add(options.class);
+        const onchange = options.onchange;
+        if (onchange) textInput.onchange = (event: Event) => {
+            onchange( textInput.value, event );
+        }
+        if (options.onui) options.onui(textInput, setValue);
+        if (options.description) {
+            pane.title = options.description;
+        }
+        return pane;
+    }
+
+    /**
+     * Property<string>オブジェクトを表示、編集するHTML要素を作成
+     *
+     * @param property プロパティ
+     * @returns HTML要素
+     */
+    static createTextOption<TMap extends TMapType, Key extends keyof TMap>( property: TOption.TextProperty, domOption: DomOption = {} ): HTMLElement
+    {
+        const textInput = this.createText( domOption.name ?? property.key, {
+            initialValue: property.get(),
+            description: property.key + (property.description ? "\n" + property.description : ""),
+            onui: (ui, apply) => {
+                property.onChange( event => {
+                    apply(event.value);
+                });
+            },
+            onchange: (value, event) => {
+                property.set( value );
+            }
+        });
+        return this.createOuter(textInput, property.key, domOption);
     }
 
     /**
@@ -544,7 +637,7 @@ export class TDomTool {
      * @param property プロパティ
      * @returns HTML要素
      */
-    static createSliderOption( property: TOption.RangeProperty, domOption: { mode: string }): HTMLElement
+    static createSliderOption( property: TOption.RangeProperty, domOption: DomOption = {} ): HTMLElement
     {
         const pane = this.createSlider({
                 min: Number(property.min),
@@ -589,13 +682,14 @@ export class TDomTool {
             LoadedStyles.NUMBER = true;
         }
 
-        const inputToValue = (input: string) => parseInt(input);
+        const inputToValue = (input: string) => Number(input);
         const valueToInput = (value: number) => (value).toString();
         const input = document.createElement("input");
         input.type = "number";
         input.classList.add("TDomTool_number");
         if (option.min !== undefined) input.min = option.min.toString();
         if (option.max !== undefined) input.max = option.max.toString();
+        if (option.step !== undefined) input.step = option.step.toString();
         const setValue = (value: number) => {
             input.value = valueToInput(value);
         };
@@ -631,6 +725,7 @@ export class TDomTool {
             .TDomTool_color>div:first-child { /* colorBox */
                 border: solid 1px black;
                 height: 80%;
+                min-height: 15px;
                 width: 20px;
                 background: white;
             }
@@ -641,6 +736,7 @@ export class TDomTool {
           LoadedStyles.COLOR = true;
         }
         let colorValue = option.initialValue.slice() as T;
+        const isRGBA = TOption.isRGBAType( colorValue );
         const pane = document.createElement("div");
         pane.classList.add("TDomTool_color");
         const colorBox = document.createElement("div");
@@ -658,15 +754,22 @@ export class TDomTool {
             green: (value: number) => {},
             blue: (value: number) => {},
         };
+        if ( isRGBA ) {
+            applyers["alpha"] = (value: number) => {};
+        }
 
         Object.keys(applyers).forEach((color, index) => {
             const s = applyers[color];
+            const max = index === 3 ? 1 : 255;
+            const step = index === 3 ? 0.1 : 10;
             const input = TDomTool.createNumberInput({
-                min:0, max:255, initialValue: colorValue[index] * 255,
+                min:0, max: max,
+                initialValue: colorValue[index] * max,
+                step: step,
                 onui: (ui, apply) => applyers[color] = apply,
                 onchange: (value, domEvent) => {
                     const newColorValue = colorValue.slice() as T;
-                    newColorValue[index] = value / 255;
+                    newColorValue[index] = value / max;
                     updateValue(newColorValue, domEvent);
                 },
             });
@@ -677,7 +780,13 @@ export class TDomTool {
             applyers["red"](value[0]*255);
             applyers["green"](value[1]*255);
             applyers["blue"](value[2]*255);
-            colorBox.style.background = `rgb(${Math.floor(value[0]*255)},${Math.floor(value[1]*255)},${Math.floor(value[2]*255)})`;
+            if (value.length === 4) {
+                applyers["alpha"](value[3]);
+                colorBox.style.background = `rgba(${Math.floor(value[0]*255)},${Math.floor(value[1]*255)},${Math.floor(value[2]*255)},${Math.floor(value[3])})`;
+            }
+            else {
+                colorBox.style.background = `rgb(${Math.floor(value[0]*255)},${Math.floor(value[1]*255)},${Math.floor(value[2]*255)})`;
+            }
         };
 
         const onui = option.onui;
@@ -698,7 +807,7 @@ export class TDomTool {
      * @param property プロパティ
      * @returns HTML要素
      */
-    static createColorOption<T extends TOption.ColorType>( property: TOption.ColorProperty<T>, domOption: { mode: string }): HTMLElement
+    static createColorOption<T extends TOption.ColorType>( property: TOption.ColorProperty<T>, domOption: DomOption = {} ): HTMLElement
     {
         const pane = this.createColor({
                 initialValue: property.value,
@@ -723,7 +832,7 @@ export class TDomTool {
      * @param domOption オプション
      * @returns HTML要素
      */
-    private static createOuter(pane: HTMLElement, key: string, domOption: { mode:string } = { mode: '' }): HTMLElement
+    private static createOuter(pane: HTMLElement, key: string, domOption: DomOption = {}): HTMLElement
     {
         if (domOption.mode === "key-value-table-row") {
             pane.style.position = "absolute";
@@ -737,7 +846,7 @@ export class TDomTool {
             const td = document.createElement("td");
             td.style.width = "100%";
             const label  = document.createElement("label");
-            label.innerText = key;
+            label.innerText = domOption.name ?? key;
             th.appendChild(label);
             th.style.textAlign = "right";
             th.style.padding = "0 5px 0 0";
@@ -860,6 +969,23 @@ export class RangeProperty extends AbstractProperty<number> {
 }
 
 /**
+ * テキストプロパティの初期化パラメータ
+ */
+export interface TextPropertyInfo extends AbstractPropertyInfo<string> {
+    type: "text";
+}
+
+/**
+ * テキストプロパティ
+ */
+export class TextProperty extends AbstractProperty<string> {
+
+    constructor( owner: TOption<any>, key: string, info: TextPropertyInfo ) {
+        super( owner, key, info );
+    }
+}
+
+/**
  * 真偽値プロパティの初期化パラメータ
  */
 export interface BooleanPropertyInfo extends AbstractPropertyInfo<boolean> {
@@ -878,6 +1004,12 @@ export class BooleanProperty extends AbstractProperty<boolean> {
 export type RGBType = [red: number, green: number, blue: number]; // [0.0 - 1.0]
 export type RGBAType = [red: number, green: number, blue: number, alpha: number]; // [0.0 - 1.0]
 export type ColorType = RGBType | RGBAType;
+export function isRGBType( type: ColorType ): type is RGBType {
+    return type.length === 3;
+}
+export function isRGBAType( type: ColorType ): type is RGBAType {
+    return type.length === 4;
+}
 
 /**
  * 色プロパティの初期化パラメータ
@@ -964,6 +1096,7 @@ export class SelectProperty<T> extends AbstractProperty<T> {
 export type PropertyInfo = (
     RangePropertyInfo |
     BooleanPropertyInfo |
+    TextPropertyInfo |
     ColorPropertyInfo<ColorType> |
     SelectPropertyInfo<any> |
     KVSelectPropertyInfo<any>
