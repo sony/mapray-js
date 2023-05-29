@@ -107,7 +107,7 @@ export function toRGBString( rgb: Vector3 | Vector4 ): string
     const g = Color.floatToByte( rgb[1] );
     const b = Color.floatToByte( rgb[2] );
     if ( GeoMath.isVector4( rgb ) ) {
-        const a = Color.floatToByte( rgb[3] );
+        const a = rgb[3];
         return `rgba(${r},${g},${b},${a})`;
     }
     else {
