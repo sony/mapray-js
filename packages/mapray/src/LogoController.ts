@@ -63,6 +63,7 @@ class LogoController extends ContainerController
         sub_container.className = "mapray-logo";
         sub_container.href = "https://mapray.com";
         sub_container.target = "_blank";
+        sub_container.setAttribute( "aria-label", "mapray" );
 
         main_container.appendChild( sub_container );
         this._container = main_container;

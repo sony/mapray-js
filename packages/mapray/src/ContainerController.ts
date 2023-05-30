@@ -38,8 +38,8 @@ class ContainerController
         this._viewer_container = container_element;
         this._is_compact = false;
 
-        var self = this;
-        window.addEventListener("resize", function() { self._sizeChanged(); }, false);
+        this._sizeChanged = this._sizeChanged.bind( this );
+        window.addEventListener( "resize", this._sizeChanged, { passive: false } );
     }
 
     /**
@@ -85,8 +85,7 @@ class ContainerController
      */
     private _destroy(): void
     {
-        var self = this;
-        window.removeEventListener( "resize", function () { self._sizeChanged(); }, false );
+        window.removeEventListener( "resize", this._sizeChanged, { passive: false } as EventListenerOptions );
 
         this._deleteContainer();
     }
