@@ -106,18 +106,9 @@ class DatasetViewer extends DebugViewer {
      */
     override async clearGISInfo()
     {
-        // 2D
-        this.removeGeoJson();
-
-        // 3D
-        this.removeModelEntity();
-
-        // PointCloud
-        this.removePointCloud();
-
-        // B3D
-        this.removeB3d();
-
+        // - Each remove functions is called from module class in debug-common.
+        //  And we don't need to remove method of 2D, 3D, point cloud and b3dtiles is called multiple and occurs unknow error.
+        //
         // Pin
         this.removePinEntity();
 

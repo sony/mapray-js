@@ -7,8 +7,12 @@
     "esModuleInterop": true,
 
     "allowJs": true,
-    "removeComments": true,
+    "removeComments": false,
     "downlevelIteration": true,
+
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
 
     "strict": true,
     "strictNullChecks": true,
@@ -20,12 +24,14 @@
     "noFallthroughCasesInSwitch": true,
 
     "outDir": "dist",
+    "rootDir": "src",
+    "baseUrl": "src/"
   },
   "include": [
     "src/**/*",
   ],
   "exclude": [
-    "node_module",
-    "dist",
+    "node_modules/**/*",
+    "dist/**/*"
   ]
 }

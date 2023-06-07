@@ -1,0 +1,25 @@
+<!-- esm-module sample -->
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>ES Browser test</title>
+        <link rel="stylesheet" href="./styles/v1/mapray.css">
+        <style>
+            html, body {
+                height: 100%;
+                margin: 0;
+            }
+
+            div#mapray-container {
+                display: flex;
+                position: relative;
+                height: 100%;
+            }
+        </style>
+        <script type="module" src="./bundle.js"></script>
+    </head>
+    <body onload="window.startApp('mapray-container');">
+        <div id="mapray-container"></div>
+    </body>
+</html>

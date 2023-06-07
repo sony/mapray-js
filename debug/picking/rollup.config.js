@@ -1,8 +1,9 @@
-import { terser } from 'rollup-plugin-terser';
+import terser from '@rollup/plugin-terser';
 import postcss from 'rollup-plugin-postcss';
-import resolve from 'rollup-plugin-node-resolve';
+import pluginNodeResolve from '@rollup/plugin-node-resolve';
 import injectProcessEnv from 'rollup-plugin-inject-process-env';
 import typescript from 'rollup-plugin-typescript2';
+import sourcemaps from 'rollup-plugin-sourcemaps';
 
 
 
@@ -12,6 +13,9 @@ const env = {
     MAPRAY_ACCESS_TOKEN: process.env.MAPRAY_ACCESS_TOKEN,
     BINGMAP_ACCESS_TOKEN: process.env.BINGMAP_ACCESS_TOKEN,
 };
+
+const { BUILD } = process.env;
+const production = BUILD === 'production';
 
 [
     "MAPRAY_ACCESS_TOKEN"
@@ -28,22 +32,18 @@ export default function() {
             file: outdir + 'bundle.js',
             format: 'iife',
             indent: false,
-            sourcemap: env.BUILD !== 'production',
+            sourcemap:  production ? true : 'inline',
             name: "App",
         },
         plugins: [
             postcss(),
             injectProcessEnv( env ),
-            resolve(),
+            sourcemaps(),
+            pluginNodeResolve(),
             typescript({
                 tsconfig: './tsconfig.json',
-                tsconfigOverride: {
-                    compilerOptions: {
-                        sourceMap: true,
-                    }
-                }
             }),
-            (env.BUILD === 'production' ?
+            (production ?
                 terser({
                     compress: {
                         unused: false,

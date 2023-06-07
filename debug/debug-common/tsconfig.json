@@ -12,6 +12,10 @@
     "removeComments": false,
     "downlevelIteration": true,
 
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+
     "strict": true,
     "strictNullChecks": true,
     "noImplicitReturns": true,

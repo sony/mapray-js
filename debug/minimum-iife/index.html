@@ -1,0 +1,28 @@
+<!-- AMD sample -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>umd test</title>
+    <script src="./dist/mapray/umd/mapray.min.js"></script>
+    <script src="./dist/ui/umd/maprayui.min.js"></script>
+    <link rel="stylesheet" href="./dist/styles/v1/mapray.css">
+    <script src="DebugViewer.js"></script>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+
+        div#mapray-container {
+            display: flex;
+            position: relative;
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body onload="new DebugViewer('mapray-container');">
+<div id="mapray-container"></div>
+</body>
+</html>

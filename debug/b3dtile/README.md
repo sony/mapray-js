@@ -53,7 +53,7 @@ yarn
 
 **Key binding:**
 
-g: Toggle Dataset Visible
-
+- Press the g key to toggle the display of the 3D City.
+- Press the m key to toggle the rendering mode to wireframe.
 
 [http://localhost:7776/apps/local/index-umd.html](http://localhost:7776/apps/local/index-umd.html)

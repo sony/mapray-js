@@ -8,17 +8,13 @@ class Commander {
      */
     constructor( viewer )
     {
-        var element = viewer.canvas_element;
         var    self = this;
 
         // イベント登録
         window.addEventListener(   "blur",      function( event ) { self._onBlur( event );      }, false );
      
         this._rmode_chg  = false;  // レンダリングモード切替
-        this._layer_up   = false;  // Layer透明度アップ
-        this._layer_dn   = false;  // Layer透明度ダウン
         this._gis_chg    = false;  // GIS情報のON/OFF
-        this._bing_chg   = false;  // BingMap
     }
 
     /**
@@ -35,20 +31,7 @@ class Commander {
     endFrame()
     {
         this._rmode_chg  = false;
-        this._layer_up   = false;
-        this._layer_dn   = false;
         this._gis_chg    = false;
-        this._bing_chg   = false;
-    }
-
-    /**
-     * @summary Layer変化量を取得
-     *  0: Layerなし
-     *  1: layerイン
-     */
-    getLayer()
-    {
-        return (this._layer_up ? 1 : 0) + (this._layer_dn  ? -1 : 0);
     }
 
     /**
@@ -59,25 +42,12 @@ class Commander {
         return this._gis_chg;
     }
 
-    isBingModeChanged()
-    {
-        return this._bing_chg;
-    }
-
     OnKeyDown( event )
     {
         switch ( event.key ) {
             case "m": case "M":
             this._rmode_chg = true;
             break;
-
-            case ">":
-                this._layer_up = true;
-                break;
-
-            case "<":
-                this._layer_dn = true;
-                break;
 
             case "g": case "G":
             this._gis_chg = true;
@@ -96,10 +66,7 @@ class Commander {
     _onBlur( event )
     {
         this._rmode_chg  = false;
-        this._layer_up   = false;
-        this._layer_dn   = false;
         this._gis_chg    = false;
-        this._bing_chg   = false;
     }
 
 }

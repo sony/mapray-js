@@ -2,20 +2,22 @@
   "name": "debug-common",
   "version": "0.0.0",
   "license": "Apache-2.0",
+  "type": "module",
   "module": "./dist/es/debug-common.js",
-  "types": "./dist/es/@type/index.d.ts",
+  "types": "./dist/es/@types/index.d.ts",
   "scripts": {
     "start": "run-p build-watch",
     "build": "rollup -c",
+    "build-prod": "rollup -c --environment BUILD:production",
     "build-watch": "rollup -c -w"
   },
   "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.0.2",
     "npm-run-all": "^4.1.5",
-    "rollup": "^2.78.1",
-    "rollup-plugin-node-resolve": "^5.2.0",
-    "rollup-plugin-typescript2": "0.33.0",
-    "tslib": "^2.2.0",
-    "typescript": "^4.3.2"
+    "rollup": "^3.23.0",
+    "rollup-plugin-typescript2": "0.34.1",
+    "tslib": "^2.5.2",
+    "typescript": "^5.0.4"
   },
   "dependencies": {}
 }

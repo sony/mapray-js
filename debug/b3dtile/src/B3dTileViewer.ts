@@ -1,22 +1,14 @@
-import mapray, { URLResource } from "@mapray/mapray-js";
+import mapray from "@mapray/mapray-js";
 import maprayui from "@mapray/ui";
 import StatusBar from "./StatusBar";
 import Commander from "./Commander";
 import BingMapsImageProvider from "./BingMapsImageProvider";
-
-import { snakeToCamel } from "./utils";
 import Option, { DomTool } from "./Option";
-
-
 
 // Attirbute
 const GSI_ATTRIBUTE = "国土地理院";
 
-
-
 const targetPos = new mapray.GeoPoint(137.7238014361, 34.7111256306);
-
-
 
 const RENDER_OPTION_PROPERTIES = [
     {
@@ -62,11 +54,7 @@ class B3DTileViewer extends maprayui.StandardUIViewer {
 
     private _isChangedGIS: boolean;
 
-    private _layerUpParameter: number;
-
     private _isGIS: boolean;
-
-    private _layer_transparency: number;
 
     private _mode?: string;
 
@@ -126,11 +114,9 @@ class B3DTileViewer extends maprayui.StandardUIViewer {
 
         // コンテンツ制御
         this._isChangedGIS = false;
-        this._layerUpParameter = 0;
 
         // DEMOコンテンツ
         this._isGIS = false;
-        this._layer_transparency = 10; //layer
 
         this._mode = undefined;
         this._cache = {
@@ -144,7 +130,6 @@ class B3DTileViewer extends maprayui.StandardUIViewer {
     {
         this.destroy();
         this._isGIS = false;
-        this._layer_transparency = 10;
     }
 
     /**
@@ -190,10 +175,7 @@ class B3DTileViewer extends maprayui.StandardUIViewer {
         }
         super.onUpdateFrame( delta_time );
 
-        var layer = this._commander.getLayer();
-
         this._updateRenderMode();
-        this._updateLayerParams(layer);
         this._updateGISMode();
 
         const camera_position = this.getCameraPosition();
@@ -211,7 +193,6 @@ class B3DTileViewer extends maprayui.StandardUIViewer {
         statusbar.setDirection( direction, pitch );
         statusbar.setFovAngle( camera_parameter.fov );
         statusbar.updateElements( delta_time );
-        statusbar.setLayer( this._layer_transparency );
 
         this._commander.endFrame();
     }
@@ -320,37 +301,6 @@ class B3DTileViewer extends maprayui.StandardUIViewer {
             }
             else {
                 viewer.render_mode = mapray.Viewer.RenderMode.SURFACE;
-            }
-        }
-    }
-
-    /**
-     * @summary Layerパラメータ更新
-     * @desc
-     * <p>入力パラメータ</p>
-     * <pre>
-     * this._layer  Layer
-     * layer      layer更新
-     * </pre>
-     * <p>出力パラメータ</p>
-     * <pre>
-     * this._fov  画角
-     * </pre>
-     * @param {number} value 増減値
-     * @private
-     */
-    _updateLayerParams( value: number )
-    {
-        if ( value != 0 ){
-            this._layer_transparency = this._layer_transparency + value;
-            if ( this._layer_transparency > 10 ) {
-                this._layer_transparency = 10;
-            } else if ( this._layer_transparency < 0 ) {
-                this._layer_transparency = 0;
-            }
-            var d = ( this._layer_transparency ) / 10.0;
-            if (this.viewer.layers && this.viewer.layers.getLayer(0)) {
-                this.viewer.layers.getLayer(0).setOpacity(d);
             }
         }
     }
