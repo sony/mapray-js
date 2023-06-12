@@ -1809,7 +1809,7 @@ class StandardUIViewer extends mapray.RenderCallback
         const fly_iscs_end = this._getOffsetPoint( target_iscs_end.longitude, target_iscs_end.latitude, end_from_lookat, 0, new GeoPoint() );
         fly_iscs_end.altitude = viewer.getElevation( fly_iscs_end.latitude, fly_iscs_end.longitude ) + end_altitude;
 
-        if ( options.target_clamp || true ) {
+        if ( options.target_clamp ?? true ) {
             target_iscs_end.altitude = viewer.getElevation( target_iscs_end.latitude, target_iscs_end.longitude );
         }
         const target_angle = this._getLookAtAngle( fly_iscs_end, target_iscs_end );
