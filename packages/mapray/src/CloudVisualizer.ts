@@ -182,7 +182,7 @@ class CloudVisualizer {
             sj = Math.sin(aj);
             cj = Math.cos(aj);
             for (let i = 0; i < this._image_width; i++) {
-                ai = i * 0.25 * GeoMath.DEGREE;
+                ai = ( i * 0.25 - 180 ) * GeoMath.DEGREE;
                 si = Math.sin(ai);
                 ci = Math.cos(ai);
 
