@@ -28,7 +28,11 @@ export default function() {
         },
         plugins: [
             postcss(),
-            injectProcessEnv( env ),
+            injectProcessEnv( env, {
+                    // This plugin inserts a line into all included source codes.
+                    // The following option prevents the effect from being applied to the core library.
+                    include: ["./src/**/*.js"],
+            }),
             sourcemaps(),
             pluginNodeResolve(),
             (process.env.BUILD === 'production' ?
