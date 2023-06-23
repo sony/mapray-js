@@ -34,14 +34,16 @@ class Globe {
      *
      * @internal
      */
-    public readonly npole_provider: DemProvider;
+    public _npole_provider: DemProvider;
+    get npole_provider() { return this._npole_provider; }
 
     /**
      * 南側極地の DEM プロバイダ
      *
      * @internal
      */
-    public readonly spole_provider: DemProvider;
+    public _spole_provider: DemProvider;
+    get spole_provider() { return this._spole_provider; }
 
     /**
      * Globe の状態
@@ -56,12 +58,12 @@ class Globe {
     /**
      * Belt の Y 座標の下限
      */
-    private readonly _belt_lower_y: number;
+    private _belt_lower_y: number;
 
     /**
      * Belt の Y 座標の上限
      */
-    private readonly _belt_upper_y: number;
+    private _belt_upper_y: number;
 
     /**
      * すべての Belt インスタンス
@@ -86,8 +88,8 @@ class Globe {
 
         this.glenv        = glenv;
         this.dem_provider = dem_provider;
-        this.npole_provider = new FlatDemProvider( { rho, height: pole_opts?.north_height ?? 0.0 } );
-        this.spole_provider = new FlatDemProvider( { rho, height: pole_opts?.south_height ?? 0.0 } );
+        this._npole_provider = new FlatDemProvider( { rho, height: pole_opts?.north_height ?? 0.0 } );
+        this._spole_provider = new FlatDemProvider( { rho, height: pole_opts?.south_height ?? 0.0 } );
         this._status      = Globe.Status.NOT_READY;
         this._num_ready_belts = 0;
 
@@ -99,6 +101,49 @@ class Globe {
         for ( let y = this._belt_lower_y; y <= this._belt_upper_y; ++y ) {
             this._belts.push( new Belt( this, y ) );
         }
+    }
+
+
+    /**
+     * Pole を切り替える
+     *
+     * @param pole_info Pole情報
+     */
+    setPole( pole_info: PoleInfo ): void
+    {
+        // すべての DEM の ρ を合わせる
+        const rho = this.dem_provider.getResolutionPower();
+
+        // 極地オプション
+        const pole_opts = pole_info;
+
+        this._npole_provider = new FlatDemProvider( { rho, height: pole_opts?.north_height ?? 0.0 } );
+        this._spole_provider = new FlatDemProvider( { rho, height: pole_opts?.south_height ?? 0.0 } );
+
+        const pole_enabled = pole_info?.enabled ?? false;
+        this._belt_lower_y = pole_enabled ? GLOBE_BELT_LOWER_Y : 0;
+        this._belt_upper_y = pole_enabled ? GLOBE_BELT_UPPER_Y : 0;
+
+        // update belts
+        let dem_belt: Belt | undefined = undefined;
+        for ( const belt of this._belts ) {
+            if ( belt.belt_y === 0 ) {
+                dem_belt = belt; // keep the main belt
+            }
+            else {
+                belt.dispose();
+            }
+        }
+        cfa_assert( dem_belt !== undefined );
+        this._belts.splice( 0, this._belts.length );
+        for ( let y = this._belt_lower_y; y <= this._belt_upper_y; ++y ) {
+            if ( y === 0 ) {
+                this._belts.push( dem_belt );
+            }
+            else {
+                this._belts.push( new Belt( this, y ) );
+            }
+        };
     }
 
 

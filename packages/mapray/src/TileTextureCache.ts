@@ -28,7 +28,8 @@ class TileTextureCache {
      *
      * @internal
      */
-    public readonly main_provider: ImageProvider;
+    private _main_provider: ImageProvider;
+    get main_provider() { return this._main_provider; }
 
     /**
      * 北側極地の画像プロバイダ
@@ -39,7 +40,8 @@ class TileTextureCache {
      *
      * @internal
      */
-    public readonly npole_provider: ImageProvider
+    private _npole_provider: ImageProvider
+    get npole_provider() { return this._npole_provider; }
 
     /**
      * 南側極地の画像プロバイダ
@@ -50,17 +52,18 @@ class TileTextureCache {
      *
      * @internal
      */
-    public readonly spole_provider: ImageProvider
+    private _spole_provider: ImageProvider
+    get spole_provider() { return this._spole_provider; }
 
     /**
      * Belt の Y 座標の下限
      */
-    private readonly _belt_lower_y: number;
+    private _belt_lower_y: number;
 
     /**
      * Belt の Y 座標の上限
      */
-    private readonly _belt_upper_y: number;
+    private _belt_upper_y: number;
 
     /**
      * すべての [[Belt]] インスタンス
@@ -81,9 +84,9 @@ class TileTextureCache {
         const pole_opts = options?.pole_info;
 
         this.glenv = glenv;
-        this.main_provider  = provider;
-        this.npole_provider = new PoleImageProvider( provider, pole_opts?.north_color ?? DEFAULT_NPOLE_COLOR );
-        this.spole_provider = new PoleImageProvider( provider, pole_opts?.south_color ?? DEFAULT_SPOLE_COLOR );
+        this._main_provider  = provider;
+        this._npole_provider = new PoleImageProvider( provider, pole_opts?.north_color ?? DEFAULT_NPOLE_COLOR );
+        this._spole_provider = new PoleImageProvider( provider, pole_opts?.south_color ?? DEFAULT_SPOLE_COLOR );
 
         const pole_enabled = pole_opts?.enabled ?? false;
         this._belt_lower_y = pole_enabled ? GLOBE_BELT_LOWER_Y : 0;
@@ -94,6 +97,64 @@ class TileTextureCache {
         for ( let y = this._belt_lower_y; y <= this._belt_upper_y; ++y ) {
             this._belts.push( new Belt( this, y ) );
         }
+    }
+
+
+    /**
+     * ImageProviderを切り替える
+     *
+     * @param provider  地図画像プロバイダ
+     * @param pole_info Pole情報
+     */
+    setImageProvider( provider: ImageProvider ): void
+    {
+        if ( this._main_provider !== provider ) {
+            this._main_provider = provider;
+
+            // update belts
+            for ( let i=0; i<this._belts.length; i++ ) {
+                const belt = this._belts[i];
+                if ( belt._belt_y === 0 ) {
+                    belt.setImageProvider( this, provider );
+                }
+            }
+        }
+    }
+
+
+    /**
+     * Pole を切り替える
+     *
+     * @param pole_info Pole情報
+     */
+    setPole( pole_info: PoleInfo ): void
+    {
+        this._npole_provider = new PoleImageProvider( this._main_provider, pole_info.north_color ?? DEFAULT_NPOLE_COLOR );
+        this._spole_provider = new PoleImageProvider( this._main_provider, pole_info.south_color ?? DEFAULT_SPOLE_COLOR );
+        const pole_enabled = pole_info.enabled;
+        this._belt_lower_y = pole_enabled ? GLOBE_BELT_LOWER_Y : 0;
+        this._belt_upper_y = pole_enabled ? GLOBE_BELT_UPPER_Y : 0;
+
+        // update belts
+        let main_belt: Belt | undefined = undefined;
+        for ( const belt of this._belts ) {
+            if ( belt._belt_y === 0 ) {
+                main_belt = belt; // keep the main belt
+            }
+            else {
+                belt.dispose();
+            }
+        }
+        cfa_assert( main_belt !== undefined );
+        this._belts.splice( 0, this._belts.length );
+        for ( let y = this._belt_lower_y; y <= this._belt_upper_y; ++y ) {
+            if ( y === 0 ) {
+                this._belts.push( main_belt );
+            }
+            else {
+                this._belts.push( new Belt( this, y ) );
+            }
+        };
     }
 
 
@@ -252,6 +313,7 @@ class Belt {
     {
         const  glenv = owner.glenv;
 
+        this._belt_y      = belt_y;
         this._glenv       = glenv;
         this._provider    = new EmptyImageProvider();
         this._min_image_z = 0;
@@ -349,7 +411,6 @@ class Belt {
         const status_callback: ImageProvider.StatusCallback = ( status ) => {
             if ( status === ImageProvider.Status.READY ) {
                 // EmptyImageProvider から本来の provider に切り替える
-                this._flush();
                 this._setImageProviderInner( provider );
             }
             else if ( status === ImageProvider.Status.FAILED ) {
@@ -358,6 +419,7 @@ class Belt {
             }
         };
 
+        new NodeReplacer( this, this._croot );
         const is_provider_ready = (provider.status( status_callback ) === ImageProvider.Status.READY);
         this._setImageProviderInner( is_provider_ready ? provider : new EmptyImageProvider() );
     }
@@ -460,11 +522,12 @@ class Belt {
             cfa_assert( (d_min < d_max) && (d_min < zlimit && zlimit <= d_max) );
 
             for ( ; depth <= d_lo; ++depth ) {
-                if ( node.state === NodeState.LOADED ) {
+                if ( node.data ) {
                     // 候補テクスチャを更新
                     tex_lo = node;
                 }
-                else if ( node.state === NodeState.NEED_REQUEST ) {
+
+                if ( node.state === NodeState.NEED_REQUEST ) {
                     // 新規リクエスト
                     node.state     = NodeState.REQUESTED;
                     node.req_power = req_power !== -1 ? req_power : zlimit - depth;
@@ -495,11 +558,12 @@ class Belt {
 
             tex_hi = tex_lo;
 
-            if ( node.state === NodeState.LOADED ) {
+            if ( node.data ) {
                 // 候補テクスチャを更新
                 tex_hi = node;
             }
-            else if ( node.state === NodeState.NEED_REQUEST ) {
+
+            if ( node.state === NodeState.NEED_REQUEST ) {
                 // 新規リクエスト
                 node.state     = NodeState.REQUESTED;
                 node.req_power = req_power !== -1 ? req_power : zlimit - depth;
@@ -515,11 +579,12 @@ class Belt {
             cfa_assert( (d_min === d_max) || (zlimit <= d_min) || (zlimit > d_max) );
 
             for ( ;; ++depth ) {
-                if ( node.state === NodeState.LOADED ) {
+                if ( node.data ) {
                     // 候補テクスチャを更新
                     tex_lo = node;
                 }
-                else if ( node.state === NodeState.NEED_REQUEST ) {
+
+                if ( node.state === NodeState.NEED_REQUEST ) {
                     // 新規リクエスト
                     node.state     = NodeState.REQUESTED;
                     node.req_power = req_power !== -1 ? req_power : zlimit - depth;
@@ -617,7 +682,6 @@ class Belt {
         this._new_requesteds.slice( num_requests ).forEach( function( req ) {
             const node = req[0];
             node.state = NodeState.NEED_REQUEST;
-            cfa_assert( node.data === null );
         } );
 
         // 新規リクエストのリストをクリア
@@ -641,7 +705,6 @@ class Belt {
         const request_id = this._provider.requestTile( z, x, y, image => {
 
             if ( node.state !== NodeState.REQUESTED ) {
-                // キャンセルされているので無視
                 return;
             }
 
@@ -650,6 +713,9 @@ class Belt {
             }
 
             if ( image ) {
+                if ( node.data ) {
+                    node.data.dispose( this._glenv.context );
+                }
                 node.data  = new TileTexture( z, x, y, this._createTexture( image ) );
                 node.state = NodeState.LOADED;
             }
@@ -758,13 +824,10 @@ class Belt {
         const force_keep_level = (min_level <= 1) ? min_level : -1;
 
         collector.nodes.slice( num_nodes ).forEach( node => {
-            if ( node.state === NodeState.LOADED ) {
-                cfa_assert( node.data instanceof TileTexture );
-
+            if ( node.data ) {
                 if ( node.data.z === force_keep_level ) {
                     return;
                 }
-
                 node.data.dispose( gl );
             }
             node.state = NodeState.NEED_REQUEST;
@@ -776,7 +839,9 @@ class Belt {
     }
 
 
-    private readonly _glenv: GLEnv;
+    public readonly _glenv: GLEnv;
+
+    public readonly _belt_y: number;
 
     private _provider: ImageProvider;
     private _min_image_z: number;
@@ -1078,12 +1143,56 @@ class NodeCanceller {
 
 
 /**
+ * すべてのリクエストを取り消し、新たに再リクエストするように設定する。
+ * ただし、読み込み済みのリソースはそのまま保持し続ける
+ */
+class NodeReplacer {
+
+    /**
+     * @param owner - 管理者
+     * @param root  - 最上位ノード
+     */
+    constructor( owner: Belt,
+                 root: CacheNode )
+    {
+        this._belt = owner;
+        this._traverse( root );
+    }
+
+    private _traverse( node: CacheNode ): void
+    {
+        const children = node.children;
+        for ( let i = 0; i < 4; ++i ) {
+            const child = children[i];
+            if ( child !== null ) {
+                this._traverse( child );
+            }
+        }
+
+        if ( node.state === NodeState.REQUESTED ) {
+            this._belt.cancelTileTexture( node.request_id );
+        }
+
+        node.state = NodeState.NEED_REQUEST;
+    }
+
+    private readonly _belt: Belt;
+}
+
+
+/**
  * ノード状態の列挙型
  */
 const enum NodeState {
+    //       .---------------------------------.
+    //       v                                 |
+    // NEED_REQUEST --> REQUESTED --> LOADED --'
+    //                      |
+    //                      '-------> FAILED
 
     /**
      * タイルを取得する必要があることを示す
+     * 既にタイルが存在するが、再取得する必要がある場合もこの状態となる。
      */
     NEED_REQUEST = "@@_NEED_REQUEST",
 

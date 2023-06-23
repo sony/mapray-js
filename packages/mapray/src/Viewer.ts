@@ -34,6 +34,7 @@ import Moon from "./Moon";
 import MoonVisualizer from "./MoonVisualizer";
 import CloudVisualizer from "./CloudVisualizer";
 import StarVisualizer from "./StarVisualizer";
+import SurfaceMaterial from "./SurfaceMaterial";
 
 // マウス・Attribution開発
 import LogoController from "./LogoController";
@@ -71,7 +72,7 @@ class Viewer {
     /**
      * 北側と南側の極地に関する情報
      */
-    readonly pole_info: Viewer.PoleInfo;
+    private _pole_info: Viewer.PoleInfo;
 
     private _layers: LayerCollection;
 
@@ -172,7 +173,7 @@ class Viewer {
         this._animation          = this._createAnimationBindingBlock();
         this._dem_provider       = this._createDemProvider( options );
         this._image_provider     = this._createImageProvider( options );
-        this.pole_info           = pole_info;
+        this._pole_info          = pole_info;
         this._tile_texture_cache = new TileTextureCache( this._glenv, this._image_provider, { pole_info } );
         this._layers             = this._createLayerCollection( options );
         this._globe              = new Globe( this._glenv, this._dem_provider, { pole_info } );
@@ -945,6 +946,46 @@ class Viewer {
     }
 
 
+    /**
+     * 画像プロバイダを設定
+     *
+     * `clear_cache` を指定することで、切り替え時に画像キャッシュをクリアするかを指定することができます。
+     * 切り替え時に画像キャッシュをクリアすると瞬間的に画面全体が無地になります。
+     * キャッシュをクリアしない場合は、画像を入手するまでは切り替え前の画像が表示されます。
+     *
+     * @param provider          画像プロバイダ
+     * @param clear_cache       切り替え時にキャッシュをクリアするか
+     */
+    setImageProvider( provider: ImageProvider, clear_cache: boolean = true ): void
+    {
+        this._image_provider = provider;
+        if ( clear_cache ) {
+            this._tile_texture_cache.dispose();
+        }
+        this.tile_texture_cache.setImageProvider( provider );
+    }
+
+
+    /**
+     * 北極・南極情報を設定
+     *
+     * @param pole_option       極地オプション
+     */
+    setPole( pole_option?: Viewer.PoleOption ): void
+    {
+        const prev_pole_info = this._pole_info;
+        this._pole_info = new Viewer.PoleInfo( pole_option );
+
+        if ( !prev_pole_info.imageEquals( this._pole_info ) ) {
+            this.tile_texture_cache.setPole( this._pole_info );
+        }
+
+        if ( !prev_pole_info.demEquals( this._pole_info ) ) {
+            this._globe.setPole( this._pole_info );
+        }
+    }
+
+
    /**
     * キャプチャ画像にロゴやアノテーションを描画する
     * @param context 書き込む2Dキャンバスコンテキスト
@@ -1321,6 +1362,47 @@ export class PoleInfo {
         }
     }
 
+    /**
+     * @internal
+     */
+    imageEquals( info: PoleInfo ): boolean
+    {
+        if ( this.enabled !== info.enabled ) {
+            return false;
+        }
+
+        if ( !this.enabled ) {
+            return true;
+        }
+
+        return (
+            this.north_color[0] === info.north_color[0] &&
+            this.north_color[1] === info.north_color[1] &&
+            this.north_color[2] === info.north_color[2] &&
+            this.south_color[0] === info.south_color[0] &&
+            this.south_color[1] === info.south_color[1] &&
+            this.south_color[2] === info.south_color[2]
+        );
+    }
+
+    /**
+     * @internal
+     */
+    demEquals( info: PoleInfo ): boolean
+    {
+        if ( this.enabled !== info.enabled ) {
+            return false;
+        }
+
+        if ( !this.enabled ) {
+            return true;
+        }
+
+        return (
+            this.north_height === info.north_height &&
+            this.south_height === info.south_height
+        );
+    }
 }
 
 
