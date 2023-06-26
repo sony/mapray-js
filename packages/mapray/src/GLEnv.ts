@@ -25,6 +25,8 @@ class GLEnv {
 
     readonly WEBGL_depth_texture: WEBGL_depth_texture | null;
 
+    readonly EXT_color_buffer_float: EXT_color_buffer_float | null;
+
 
     /**
      * @param canvas レンダリングターゲットとするキャンバス
@@ -46,6 +48,7 @@ class GLEnv {
         this.OES_element_index_uint = exts.OES_element_index_uint;
         this.EXT_texture_filter_anisotropic = exts.EXT_texture_filter_anisotropic;
         this.WEBGL_depth_texture = exts.WEBGL_depth_texture;
+        this.EXT_color_buffer_float = exts.EXT_color_buffer_float;
     }
 
 
@@ -92,10 +95,14 @@ class GLEnv {
             gl.getExtension( "WEBKIT_EXT_texture_filter_anisotropic" ) ||
             gl.getExtension( "MOZ_EXT_texture_filter_anisotropic" );
 
+        // EXT_color_buffer_float
+        const EXT_color_buffer_float = gl.getExtension("EXT_color_buffer_float");
+
         return {
             OES_element_index_uint,
             WEBGL_depth_texture,
             EXT_texture_filter_anisotropic,
+            EXT_color_buffer_float
         };
     }
 

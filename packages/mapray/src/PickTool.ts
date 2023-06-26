@@ -39,7 +39,7 @@ class PickTool {
 
     private _rid_value: Uint8Array;
 
-    private _depth_value: Uint8Array;
+    private _depth_value: Float32Array;
 
 
     /**
@@ -55,17 +55,15 @@ class PickTool {
         this._camera = new Camera({ width: this._width, height: this._height });
 
         this._frame_buffer = new FrameBuffer( this._glenv, this._width, this._height, {
-                color_containers: [this._createColorContainer()],
+                color_containers: [this._createRGBA4ColorContainer()],
                 depth_container: this._createDepthContainer(),
         } as FrameBuffer.Option );
 
         this._depth_to_color_frame_buffer = new FrameBuffer( this._glenv, this._width, this._height, {
-                color_containers: [this._createColorContainer()],
+            color_containers: [this._createR32FColorContainer()],
         });
-
         this._depth_to_color_materials = [
-            new Material( this._glenv, depth_vs_code, define_PASS_BASE_0 + "\n\n" + depth_fs_code ),
-            new Material( this._glenv, depth_vs_code, define_PASS_BASE_1 + "\n\n" + depth_fs_code ),
+            new Material( this._glenv, depth_vs_code, depth_fs_code )
         ];
 
         {
@@ -125,14 +123,14 @@ class PickTool {
         }
 
         this._rid_value   = new Uint8Array( 4 * this._width * this._height );
-        this._depth_value = new Uint8Array( 4 * this._width * this._height );
+        this._depth_value = new Float32Array( this._width * this._height );
     }
 
 
     /**
      * カラーコンテナを作成します
      */
-    private _createColorContainer() /* auto-type */
+    private _createRGBA4ColorContainer() /* auto-type */
     {
         const gl = this._glenv.context;
         return {
@@ -141,6 +139,19 @@ class PickTool {
                 internal_format: gl.RGBA4,
                 format: gl.RGBA4,
                 type: gl.UNSIGNED_BYTE,
+            },
+        };
+    }
+
+    private _createR32FColorContainer()
+    {
+        const gl = this._glenv.context;
+        return {
+            type: FrameBuffer.ContainerType.RENDER_BUFFER,
+            option: {
+                internal_format: gl.R32F,
+                format: gl.RED,
+                type: gl.FLOAT,
             },
         };
     }
@@ -271,36 +282,23 @@ class PickTool {
 
         let depth_clip = 0;
         gl.viewport( 0, 0, this._width, this._height );
-        for ( let i=0; i<2; i++ ) {
-            const depth_buffer = this._frame_buffer.depth_container as WebGLTexture | WebGLRenderbuffer;
-            const material = this._depth_to_color_materials[ i ];
-            material.bindProgram();
-            material.bindVertexAttribs(this._vertex_attribs);
-            material.setInteger( "u_sampler", 0 );
-            material.bindTexture2D( 0, depth_buffer );
-            gl.depthFunc( gl.ALWAYS );
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this._index_buf);
-            gl.drawElements(gl.TRIANGLES, this._indices_length, gl.UNSIGNED_SHORT, 0);
-            gl.bindTexture(gl.TEXTURE_2D, null);
+        const depth_buffer = this._frame_buffer.depth_container as WebGLTexture | WebGLRenderbuffer;
+        const material = this._depth_to_color_materials[0];
+        material.bindProgram();
+        material.bindVertexAttribs(this._vertex_attribs);
+        material.setInteger( "u_sampler", 0 );
+        material.bindTexture2D( 0, depth_buffer );
+        gl.depthFunc( gl.ALWAYS );
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this._index_buf);
+        gl.drawElements(gl.TRIANGLES, this._indices_length, gl.UNSIGNED_SHORT, 0);
+        gl.bindTexture(gl.TEXTURE_2D, null);
 
-            startDepthRead = Date.now();
-            gl.readPixels( 0, 0, this._width, this._height, gl.RGBA, gl.UNSIGNED_BYTE, this._depth_value );
-            endDepthRead = Date.now();
+        startDepthRead = Date.now();
+        gl.readPixels( 0, 0, this._width, this._height, gl.RED, gl.FLOAT, this._depth_value );
+        endDepthRead = Date.now();
 
-            // 4bit x4 の値が 8bit x4 に格納されている。 => [0.0 〜 1.0]
-            /*
-            depth_clip += (
-                this._depth_value[ 0 ] * Math.pow(2, i==0 ? -3  : -15) / 17.0 +
-                this._depth_value[ 1 ] * Math.pow(2, i==0 ? -6  : -18) / 17.0 +
-                this._depth_value[ 2 ] * Math.pow(2, i==0 ? -9  : -21) / 17.0 +
-                this._depth_value[ 3 ] * Math.pow(2, i==0 ? -12 : -24) / 17.0
-            );
-            */
-            const coef = COEFFICIENTS_DEPTH[ i ];
-            for ( let j=0; j<4; j++ ) {
-                depth_clip += coef[ j ] * this._depth_value[ j ];
-            }
-        }
+        depth_clip = this._depth_value[0];
+
         this._depth_to_color_frame_buffer.unbind();
 
         depth_clip = 2.0 * depth_clip - 1.0; // [0.0 〜 1.0] => [-1.0 〜 1.0]
@@ -359,16 +357,5 @@ const COEFFICIENTS_RID: number[] = [];
 for ( let i=0; i<4; i++ ) {
     COEFFICIENTS_RID[ i ] = Math.pow(16, 3 - i);
 }
-
-const COEFFICIENTS_DEPTH: number[][] = [[],[]];
-for ( let i=0; i<4; i++ ) {
-    COEFFICIENTS_DEPTH[ 0 ][ i ] = Math.pow(2, -3 * (i+1)) / 17.0;
-    COEFFICIENTS_DEPTH[ 1 ][ i ] = Math.pow(2, -3 * (i+5)) / 17.0;
-}
-
-
-const define_PASS_BASE_0 = "#define PASS_BASE 0";
-const define_PASS_BASE_1 = "#define PASS_BASE 1";
-
 
 export default PickTool;
