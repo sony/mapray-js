@@ -23,8 +23,6 @@ class GLEnv {
 
     readonly EXT_texture_filter_anisotropic: EXT_texture_filter_anisotropic | null;
 
-    readonly WEBGL_depth_texture: WEBGL_depth_texture | null;
-
     readonly EXT_color_buffer_float: EXT_color_buffer_float | null;
 
 
@@ -47,7 +45,6 @@ class GLEnv {
         const exts = this._getExtensions( context );
         this.OES_element_index_uint = exts.OES_element_index_uint;
         this.EXT_texture_filter_anisotropic = exts.EXT_texture_filter_anisotropic;
-        this.WEBGL_depth_texture = exts.WEBGL_depth_texture;
         this.EXT_color_buffer_float = exts.EXT_color_buffer_float;
     }
 
@@ -83,12 +80,6 @@ class GLEnv {
         // OES_element_index_uint
         const OES_element_index_uint = gl.getExtension( "OES_element_index_uint" );
 
-        // WEBGL_depth_texture
-        const WEBGL_depth_texture =
-            gl.getExtension( "WEBGL_depth_texture" ) ||
-            gl.getExtension( "WEBKIT_WEBGL_depth_texture" ) ||
-            gl.getExtension( "MOZ_WEBGL_depth_texture" );
-
         // EXT_texture_filter_anisotropic
         const EXT_texture_filter_anisotropic =
             gl.getExtension( "EXT_texture_filter_anisotropic" ) ||
@@ -100,7 +91,6 @@ class GLEnv {
 
         return {
             OES_element_index_uint,
-            WEBGL_depth_texture,
             EXT_texture_filter_anisotropic,
             EXT_color_buffer_float
         };
