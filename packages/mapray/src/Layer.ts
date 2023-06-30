@@ -119,7 +119,7 @@ class Layer {
         this._image_provider = provider;
 
         // タイルキャッシュを再構築
-        this._tile_cache.cancel();
+        this._tile_cache.dispose();
         this._tile_cache = new TileTextureCache( this._glenv, provider );
     }
 

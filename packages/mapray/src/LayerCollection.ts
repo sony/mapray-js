@@ -167,12 +167,12 @@ class LayerCollection {
      * 取り消し処理
      * @internal
      */
-    cancel()
+    dispose()
     {
         const layers = this._layers;
 
         for ( let i = 0; i < layers.length; ++i ) {
-            layers[i].tile_cache.cancel();
+            layers[i].tile_cache.dispose();
         }
     }
 

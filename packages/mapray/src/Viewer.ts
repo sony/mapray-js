@@ -284,11 +284,11 @@ class Viewer {
         // DemProvider のリクエストを取り消す
         this._globe.cancel();
 
-        // ImageProvider のリクエストを取り消す
-        this._tile_texture_cache.cancel();
+        // ImageProvider のリソースを破棄
+        this._tile_texture_cache.dispose();
 
-        // 各レイヤーの のリクエストを取り消す
-        this._layers.cancel();
+        // 各レイヤーのリソースを破棄
+        this._layers.dispose();
 
         // すべての B3dScene インスタンスを削除
         this._b3d_collection.clearScenes();

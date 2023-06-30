@@ -111,12 +111,12 @@ class TileTextureCache {
 
 
     /**
-     * すべてのリクエストを取り消す
+     * すべてのリクエストを取り消し、リソースを破棄する。
      */
-    cancel(): void
+    dispose(): void
     {
         for ( const belt of this._belts ) {
-            belt.cancel();
+            belt.dispose();
         }
     }
 
@@ -328,20 +328,11 @@ class Belt {
 
 
     /**
-     * すべてのリクエストを取り消す
+     * すべてのリクエストを取り消し、ノードも解放する。
      */
-    cancel(): void
+    dispose(): void
     {
-        this._flush();
-    }
-
-
-    /**
-     * キャッシュをフラッシュ
-     */
-    private _flush(): void
-    {
-        new NodeCanceller( this, this._croot );  // リクエストを取り消す
+        new NodeCanceller( this, this._croot, true );  // リクエストを取り消す
         this._croot = new CacheNode();           // 取り消したノードは使えないので、単純にすべて捨てる
         this._max_accesses = 0;
         cfa_assert( this._num_requesteds === 0 );
@@ -647,10 +638,14 @@ class Belt {
                                  y: number,
                                  node: CacheNode ): void
     {
-        node.data = this._provider.requestTile( z, x, y, image => {
+        const request_id = this._provider.requestTile( z, x, y, image => {
 
             if ( node.state !== NodeState.REQUESTED ) {
                 // キャンセルされているので無視
+                return;
+            }
+
+            if ( request_id !== node.request_id ) {
                 return;
             }
 
@@ -665,6 +660,8 @@ class Belt {
             --this._num_requesteds;
 
         } );
+
+        node.request_id = request_id;
 
         ++this._num_requesteds;
     }
@@ -839,7 +836,11 @@ class CacheNode {
     /**
      * TileTexture オブジェクト、または取り消しオブジェクト
      */
-    data: TileTexture | null | unknown;
+    data: TileTexture | null;
+
+
+    /** リクエストID */
+    request_id: unknown;
 
 
     /** 要求度 */
@@ -862,6 +863,7 @@ class CacheNode {
         this.data      = null;  // TileTexture オブジェクト、または取り消しオブジェクト
         this.req_power = -1;    // 要求度
         this.aframe    = -1;    // 最終アクセスフレーム
+        this.request_id = null;
     }
 
     /**
@@ -1032,13 +1034,14 @@ class NodeCollector {
 class NodeCanceller {
 
     /**
-     * @param owner - 管理者
-     * @param root  - 最上位ノード
+     * @param owner   - 管理者
+     * @param root    - 最上位ノード
+     * @param dispose - リソースを破棄する
      */
-    constructor( owner: Belt,
-                 root: CacheNode )
+    constructor( owner: Belt, root: CacheNode, dispose: boolean = false )
     {
         this._belt = owner;
+        this._dispose = dispose;
         this._traverse( root );
     }
 
@@ -1051,14 +1054,26 @@ class NodeCanceller {
                 this._traverse( child );
             }
         }
-        if ( node.state === NodeState.REQUESTED ) {
+        if ( this._dispose ) {
+            if ( node.state === NodeState.REQUESTED ) {
+                this._belt.cancelTileTexture( node.request_id );
+            }
+            if ( node.data ) {
+                node.data.dispose( this._belt._glenv.context );
+                node.data = null;
+            }
             node.state = NodeState.NEED_REQUEST;
-            this._belt.cancelTileTexture( node.data );
+        }
+        else {
+            if ( node.state === NodeState.REQUESTED ) {
+                node.state = NodeState.NEED_REQUEST;
+                this._belt.cancelTileTexture( node.request_id );
+            }
         }
     }
 
     private readonly _belt: Belt;
-
+    private readonly _dispose: boolean;
 }
 
 
