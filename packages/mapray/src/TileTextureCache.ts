@@ -251,35 +251,12 @@ class Belt {
                  belt_y: number )
     {
         const  glenv = owner.glenv;
-        let provider: ImageProvider;
-
-        if ( belt_y < 0 ) {
-            provider = owner.npole_provider;
-        }
-        else if ( belt_y > 0 ) {
-            provider = owner.spole_provider;
-        }
-        else {
-            provider = owner.main_provider;
-        }
 
         this._glenv       = glenv;
         this._provider    = new EmptyImageProvider();
         this._min_image_z = 0;
         this._max_image_z = 0;
         this._image_zbias = 0;
-
-        const status_callback: ImageProvider.StatusCallback = ( status ) => {
-            if ( status === ImageProvider.Status.READY ) {
-                // EmptyImageProvider から本来の provider に切り替える
-                this._flush();
-                this._resetImageProvider( provider );
-            }
-            else if ( status === ImageProvider.Status.FAILED ) {
-                // provider が READY 状態にならなかった
-                console.error( "ImageProvider.Status.FAILED in TileTextureCache" );
-            }
-        };
 
         // キャッシュを初期化
         this._croot = new CacheNode();
@@ -310,8 +287,11 @@ class Belt {
         }
         this._use_mipmap = false;
 
-        const is_provider_ready = (provider.status( status_callback ) === ImageProvider.Status.READY);
-        this._resetImageProvider( is_provider_ready ? provider : new EmptyImageProvider() );
+        this.setImageProvider( owner, (
+                belt_y < 0 ? owner.npole_provider:
+                belt_y > 0 ? owner.spole_provider:
+                owner.main_provider
+        ));
     }
 
 
@@ -323,7 +303,7 @@ class Belt {
      * - `_max_image_z`
      * - `_image_zbias`
      */
-    private _resetImageProvider( provider: ImageProvider ): void
+    private _setImageProviderInner( provider: ImageProvider ): void
     {
         this._provider = provider;
 
@@ -365,6 +345,30 @@ class Belt {
         this._croot = new CacheNode();           // 取り消したノードは使えないので、単純にすべて捨てる
         this._max_accesses = 0;
         cfa_assert( this._num_requesteds === 0 );
+    }
+
+
+    /**
+     * ImageProviderを切り替える
+     * @param owner    TileTextureCache
+     * @param provider ImageProvider
+     */
+    setImageProvider( owner: TileTextureCache, provider: ImageProvider ): void
+    {
+        const status_callback: ImageProvider.StatusCallback = ( status ) => {
+            if ( status === ImageProvider.Status.READY ) {
+                // EmptyImageProvider から本来の provider に切り替える
+                this._flush();
+                this._setImageProviderInner( provider );
+            }
+            else if ( status === ImageProvider.Status.FAILED ) {
+                // provider が READY 状態にならなかった
+                console.error( "ImageProvider.Status.FAILED in TileTextureCache" );
+            }
+        };
+
+        const is_provider_ready = (provider.status( status_callback ) === ImageProvider.Status.READY);
+        this._setImageProviderInner( is_provider_ready ? provider : new EmptyImageProvider() );
     }
 
 
@@ -469,7 +473,7 @@ class Belt {
                     // 候補テクスチャを更新
                     tex_lo = node;
                 }
-                else if ( node.state === NodeState.NONE ) {
+                else if ( node.state === NodeState.NEED_REQUEST ) {
                     // 新規リクエスト
                     node.state     = NodeState.REQUESTED;
                     node.req_power = req_power !== -1 ? req_power : zlimit - depth;
@@ -504,7 +508,7 @@ class Belt {
                 // 候補テクスチャを更新
                 tex_hi = node;
             }
-            else if ( node.state === NodeState.NONE ) {
+            else if ( node.state === NodeState.NEED_REQUEST ) {
                 // 新規リクエスト
                 node.state     = NodeState.REQUESTED;
                 node.req_power = req_power !== -1 ? req_power : zlimit - depth;
@@ -524,7 +528,7 @@ class Belt {
                     // 候補テクスチャを更新
                     tex_lo = node;
                 }
-                else if ( node.state === NodeState.NONE ) {
+                else if ( node.state === NodeState.NEED_REQUEST ) {
                     // 新規リクエスト
                     node.state     = NodeState.REQUESTED;
                     node.req_power = req_power !== -1 ? req_power : zlimit - depth;
@@ -621,7 +625,7 @@ class Belt {
         // リクエストしなかったノードを空に戻す
         this._new_requesteds.slice( num_requests ).forEach( function( req ) {
             const node = req[0];
-            node.state = NodeState.NONE;
+            node.state = NodeState.NEED_REQUEST;
             cfa_assert( node.data === null );
         } );
 
@@ -766,11 +770,11 @@ class Belt {
 
                 node.data.dispose( gl );
             }
-            node.state = NodeState.NONE;
+            node.state = NodeState.NEED_REQUEST;
             node.data  = null;
         } );
 
-        // NodeState.NONE の葉ノードを消去
+        // NodeState.NEED_REQUEST の葉ノードを消去
         collector.clean();
     }
 
@@ -854,7 +858,7 @@ class CacheNode {
     constructor()
     {
         this.children  = [null, null, null, null];
-        this.state     = NodeState.NONE;
+        this.state     = NodeState.NEED_REQUEST;
         this.data      = null;  // TileTexture オブジェクト、または取り消しオブジェクト
         this.req_power = -1;    // 要求度
         this.aframe    = -1;    // 最終アクセスフレーム
@@ -987,7 +991,7 @@ class NodeCollector {
     }
 
     /**
-     * `NodeState.NONE` の葉ノードを消去
+     * `NodeState.NEED_REQUEST` の葉ノードを消去
      */
     clean(): void
     {
@@ -995,12 +999,12 @@ class NodeCollector {
     }
 
     /**
-     * @return 自己と子孫がすべて `NodeState.NONE` のとき `true`,
+     * @return 自己と子孫がすべて `NodeState.NEED_REQUEST` のとき `true`,
      *         それ以外のとき `false`
      */
     private _clean_recur( node: CacheNode ): boolean
     {
-        let isNodeNone = (node.state === NodeState.NONE);
+        let isNodeNone = (node.state === NodeState.NEED_REQUEST);
 
         const children = node.children;
         for ( let i = 0; i < 4; ++i ) {
@@ -1048,7 +1052,7 @@ class NodeCanceller {
             }
         }
         if ( node.state === NodeState.REQUESTED ) {
-            node.state = NodeState.NONE;
+            node.state = NodeState.NEED_REQUEST;
             this._belt.cancelTileTexture( node.data );
         }
     }
@@ -1064,9 +1068,9 @@ class NodeCanceller {
 const enum NodeState {
 
     /**
-     * タイルが存在しない
+     * タイルを取得する必要があることを示す
      */
-    NONE = "@@_NONE",
+    NEED_REQUEST = "@@_NEED_REQUEST",
 
     /**
      * タイルが存在する
