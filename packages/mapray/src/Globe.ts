@@ -118,10 +118,10 @@ class Globe {
     /**
      * すべてのリクエストを取り消す
      */
-    cancel()
+    dispose()
     {
         for ( let belt of this._belts ) {
-            belt.cancel();
+            belt.dispose();
         }
     }
 
@@ -491,7 +491,7 @@ class Belt {
     /**
      * すべてのリクエストを取り消す
      */
-    cancel()
+    dispose()
     {
         if ( this._status === Globe.Status.READY ) {
             // root の真子孫を破棄 (リクエストをキャンセル)

@@ -282,7 +282,7 @@ class Viewer {
         this._vectile_manager?.__cancel( this._globe );
 
         // DemProvider のリクエストを取り消す
-        this._globe.cancel();
+        this._globe.dispose();
 
         // ImageProvider のリソースを破棄
         this._tile_texture_cache.dispose();
