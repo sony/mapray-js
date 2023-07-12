@@ -5,10 +5,9 @@ import ContainerController from "./ContainerController"
 /**
  * 著作権表示の表示制御
  */
-class AttributionController extends ContainerController
-{
-    private _attributions: AttributionController.Attribution[];
+class AttributionController extends ContainerController {
 
+    private _attributions: AttributionController.Attribution[];
 
     /**
      * コンストラクタ
@@ -18,9 +17,9 @@ class AttributionController extends ContainerController
     constructor( container: HTMLElement | string, options: AttributionController.Option = {} )
     {
         super( container, options );
-        this._position = options.position || ContainerController.ContainerPosition.BOTTOM_RIGHT;
+        this._position = options.position ?? ContainerController.ContainerPosition.BOTTOM_RIGHT;
         this._attributions = [];
-        if ( options && options.attributions ) {
+        if ( options.attributions ) {
             this._copyAttributions(options.attributions);
         } else {
             this._copyAttributions(AttributionController._default_attribution);
@@ -61,16 +60,13 @@ class AttributionController extends ContainerController
      */
     protected _sizeChanged(): void
     {
-        if ( this._container )
-        {
+        if ( this._container ) {
             var parent_container = this._container.parentElement;
 
-            if ( parent_container!.parentElement!.clientWidth < ContainerController._compact_size )
-            {
+            if ( parent_container!.parentElement!.clientWidth < ContainerController._compact_size ) {
                 this._container.classList.add( "mapray-attribution-compact" )
             }
-            else
-            {
+            else {
                 this._container.classList.remove( "mapray-attribution-compact" )
             }
         }
@@ -80,28 +76,26 @@ class AttributionController extends ContainerController
     /**
      * 追加コンテナの作成
      */
-    createContainer(): void
+    override createContainer(): void
     {
-        var name = "control-" + this._position;
-        var parent_container = this._viewer_container.getElementsByClassName( name )[0];
+        const name = "control-" + this._position;
+        const parent_container = this._viewer_container.getElementsByClassName( name )[0];
 
-        var main_container = document.createElement( "div" );
+        const main_container = document.createElement( "div" );
         main_container.classList.add( "control" );
         main_container.classList.add( "mapray-attribution" );
 
-        var sub_container = document.createElement( "div" );
+        const sub_container = document.createElement( "div" );
         sub_container.classList.add( "mapray-attribution-container" );
 
-        for (var attribution of this._attributions )
-        {
-            if ( attribution.display )
-            {
-                var attribution_container = document.createElement( "a" );
+        for ( const attribution of this._attributions ) {
+            if ( attribution.display ) {
+                const attribution_container = document.createElement( "a" );
                 if (attribution.link) {
                     attribution_container.href = ( attribution.link );
                     attribution_container.target = "_blank";
                 }
-                var text = document.createTextNode( attribution.display )
+                const text = document.createTextNode( attribution.display )
                 attribution_container.appendChild( text );
 
                 sub_container.appendChild( attribution_container )
@@ -110,7 +104,6 @@ class AttributionController extends ContainerController
 
         main_container.appendChild(sub_container);
         this._container = main_container;
-
         parent_container.appendChild( this._container );
 
         this._sizeChanged();

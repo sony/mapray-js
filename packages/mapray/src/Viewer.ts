@@ -230,8 +230,8 @@ class Viewer {
         }
 
         // マウス・Attribution開発
-        this._logo_controller = ( options && options.logo_controller ) || new LogoController( this._container_element );
-        this._attribution_controller = ( options && options.attribution_controller ) || new AttributionController( this._container_element );
+        this._logo_controller = options.logo_controller ?? new LogoController( this._container_element );
+        this._attribution_controller = options.attribution_controller ?? new AttributionController( this._container_element );
 
         // ロゴ・著作権表示用コンテナの作成
         this._createLogoAttributionContainer()
@@ -550,6 +550,7 @@ class Viewer {
      */
     get logo_controller(): LogoController { return this._logo_controller; }
 
+
     /**
      *
      */
@@ -574,8 +575,8 @@ class Viewer {
     /**
      */
     get atmosphere() { return this._atmosphere; }
- 
- 
+
+
     /**
      */
     get sunVisualizer() { return this._sunVisualizer; }
@@ -889,6 +890,7 @@ class Viewer {
 
         return ex_info;
     }
+
 
     /**
      * Canvas画面のキャプチャ
