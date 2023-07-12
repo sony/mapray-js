@@ -91,3 +91,4 @@ export { default as StarVisualizer } from "./StarVisualizer";
 export { default as  LogoController } from "./LogoController";
 export { default as  AttributionController } from "./AttributionController";
 export { default as  ContainerController } from "./ContainerController";
+export { default as  Capture } from "./Capture";

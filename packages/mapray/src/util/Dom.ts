@@ -56,12 +56,28 @@ namespace Dom {
         if ( dst.height !== canvas.height ) {
             dst.height = canvas.height;
         }
-        const context = dst.getContext( "2d" );
+        const context = dst_ctx ?? dst.getContext( "2d" );
         if ( !context ) {
             throw new Error("Cannot get context of canvas");
         }
         context.drawImage( canvas, 0, 0 );
         return context;
+    }
+
+
+
+    /**
+     * キャンバスの内容を保持する画像データを Blob として返却します。
+     */
+    export async function convertCanvasToBlob( canvas: HTMLCanvasElement, mimeType: string ): Promise<Blob>
+    {
+        const blob = await new Promise<Blob | null>( resolve => {
+                canvas.toBlob( resolve, mimeType );
+        });
+        if ( !blob ) {
+            throw new Error("failed to capture image");
+        }
+        return blob;
     }
 
 

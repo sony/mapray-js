@@ -26,7 +26,6 @@ import { registerLayerTypes } from "./vectile/style_layers/_register";
 import EasyBindingBlock from "./animation/EasyBindingBlock";
 import BindingBlock from "./animation/BindingBlock";
 import Util from "./util/Util";
-import Dom from "./util/Dom";
 import Sun from "./Sun";
 import Atmosphere from "./Atmosphere";
 import SunVisualizer from "./SunVisualizer";
@@ -40,6 +39,7 @@ import SurfaceMaterial from "./SurfaceMaterial";
 import LogoController from "./LogoController";
 import AttributionController from "./AttributionController";
 import ContainerController from "./ContainerController";
+import Capture from "./Capture";
 
 
 /**
@@ -895,58 +895,26 @@ class Viewer {
 
 
     /**
+     * _postProcessesに実行する処理を追加
+     *
+     * @internal
+     */
+    addPostProcess( process: Viewer.PostProcess )
+    {
+        this._postProcesses.push( process );
+    }
+
+
+    /**
      * Canvas画面のキャプチャ
      *
      * @param  {object}  options  オプション
-     * @return {blob}             データ
+     * @return {blob}             キャプチャ画像Blob
      */
-    async capture( options: Viewer.CaptureOption = { type: 'jpeg' } ): Promise<Blob>
+    async capture( options: Capture.Option ): Promise<Blob>
     {
-       if ( !this._canvas_element ) {
-         throw new Error('Canvas is null.');
-       }
-
-       const mime_type = options.type === 'png' ? 'image/png' : 'image/jpeg';
-
-       let context: CanvasRenderingContext2D;
-       if ( options.sync ) {
-         let counter = 0; // フレーム安定カウンタ
-         context = await new Promise<CanvasRenderingContext2D>( resolve => {
-             this._postProcesses.push( () => {
-                 if ( this.load_status.total_loading > 0 ) {
-                   counter = 0;
-                   return true;
-                 }
-                 if ( counter++ < 4 ) {
-                   return true;
-                 }
-                 OFFSCREEN_CONTEXT = Dom.copyTo2dCanvasContext( this._canvas_element, OFFSCREEN_CONTEXT );
-                 resolve( OFFSCREEN_CONTEXT );
-                 return false;
-             });
-         });
-       }
-       else {
-         context = await new Promise<CanvasRenderingContext2D>( resolve => {
-             this._postProcesses.push( () => {
-                 OFFSCREEN_CONTEXT = Dom.copyTo2dCanvasContext( this._canvas_element, OFFSCREEN_CONTEXT );
-                 resolve( OFFSCREEN_CONTEXT );
-                 return false;
-             });
-         });
-       }
-
-       await this._post_render_for_capture( context, options );
-
-       const blob = await new Promise<Blob | null>( resolve => {
-               context.canvas.toBlob( resolve, mime_type );
-       });
-
-       if ( !blob ) {
-         throw new Error("failed to capture image");
-       }
-
-       return blob;
+        const capture = new Capture( this, options );
+        return await capture.shoot();
     }
 
 
@@ -986,57 +954,6 @@ class Viewer {
 
         if ( !prev_pole_info.demEquals( this._pole_info ) ) {
             this._globe.setPole( this._pole_info );
-        }
-    }
-
-
-   /**
-    * キャプチャ画像にロゴやアノテーションを描画する
-    * @param context 書き込む2Dキャンバスコンテキスト
-    * @param options オプション
-    */
-    private async _post_render_for_capture( context: CanvasRenderingContext2D, options: Viewer.CaptureOption ): Promise<void>
-    {
-        const width = context.canvas.width;
-        const height = context.canvas.height;
-
-        const h_margin = 20;
-        const v_margin = 16;
-        let text_width = 0;
-        let text_height = 0;
-
-        if ( options.attribution_text ) {
-            context.font = '12px Noto Sans JP,sans-serif';
-            context.textBaseline = 'bottom';
-            context.textAlign = 'left';
-
-            const metrics = context.measureText( options.attribution_text );
-            text_width = metrics.width;
-            text_height = metrics.actualBoundingBoxDescent + metrics.actualBoundingBoxAscent;
-
-            // fill bg-rect
-            context.fillStyle = 'rgba(255,255,255,0.5)';
-            context.fillRect(
-                width  - text_width  - h_margin,
-                height - text_height - v_margin,
-                text_width  + h_margin,
-                text_height + v_margin
-            );
-
-            // text
-            context.fillStyle = 'rgba(0,0,0,1)';
-            context.fillText(
-                options.attribution_text,
-                width - text_width - h_margin/2,
-                height - v_margin/2
-            );
-        }
-
-        {
-            const img = await this.logo_controller.getLogoImage({
-                    mini: width - text_width - h_margin < 180
-            });
-            context.drawImage( img, 6, height - img.height - 4, img.width, img.height );
         }
     }
 
@@ -1212,11 +1129,6 @@ class Viewer {
         this._scene.animation.unbindAllRecursively();
     }
 }
-
-
-
-// hidden properties
-let OFFSCREEN_CONTEXT: CanvasRenderingContext2D | undefined = undefined;
 
 
 
@@ -1420,14 +1332,6 @@ export interface LoadStatus {
     b3d_loading: number;
     pc_loading: number;
     total_loading: number;
-}
-
-
-
-export interface CaptureOption {
-    type: "jpeg" | "png",
-    sync?: boolean,
-    attribution_text?: string | string[],
 }
 
 
