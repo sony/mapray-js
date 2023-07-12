@@ -87,8 +87,14 @@ abstract class SpriteProvider {
                 throw new SyntaxError( "invalid layout item data" );
             }
 
+            const sdf = item['sdf'] ?? false;
+            if ( typeof sdf !== 'boolean' ) {
+                // 予期しないデータ形式
+                throw new SyntaxError( "invalid layout item data" );
+            }
+
             // アイテム追加
-            item_list.push( { id, x, y, width, height } );
+            item_list.push( { id, x, y, width, height, sdf } );
         }
 
         return item_list;
@@ -139,6 +145,11 @@ export interface LayoutItem {
      */
     height: number;
 
+
+    /**
+     * SDFアイコンフラグ
+     */
+    sdf: boolean;
 }
 
 

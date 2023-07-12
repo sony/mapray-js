@@ -56,12 +56,21 @@ export class ImageManager {
         this.sdf_image_cache = new IconImageCache( glenv, this );
         this._already_rendered = false;
 
-        // スプライトのアイコンを追加
-        const sheet_texture = create_sheet_from_image( glenv, sheet );
+        let sheet_texture: WebGLTexture | undefined;
 
         for ( const [id, item] of create_layout_dictionary( layout ) ) {
-            const icon_image = new IconImage( id, item, sheet_texture, [sheet.width, sheet.height] );
-            this._image_map.set( id, icon_image );
+            if ( item.sdf && !( sheet instanceof ImageData ) ) {
+                const option = { dx: -item.x, dy: -item.y, dw: item.width, dh: item.height };
+                const icon_image = new SdfImage( id, sheet, option );
+                this._image_map.set( id, icon_image );
+            }
+            else {
+                // SDFではないスプライトがある場合のみアイコン画像を作成
+                sheet_texture ??= create_sheet_from_image( glenv, sheet );
+
+                const icon_image = new IconImage( id, item, sheet_texture, [sheet.width, sheet.height] );
+                this._image_map.set( id, icon_image );
+            }
         }
     }
 
@@ -316,13 +325,14 @@ export class SdfImage extends ImageBase {
     readonly image: HTMLCanvasElement;
 
     constructor( id: string,
-                 image: ImageSource )
+                 image: ImageSource,
+                 option?: SdfImage.Option  )
     {
         super( id );
 
         const canvas = document.createElement( "canvas" );
-        canvas.width  = image.width;
-        canvas.height = image.height;
+        canvas.width  = option?.dw ?? image.width;
+        canvas.height = option?.dh ?? image.height;
 
         this.image = canvas;
 
@@ -333,10 +343,43 @@ export class SdfImage extends ImageBase {
         }
 
         context.drawImage( image,
-                           0, 0, image.width, image.height );
+                           option?.dx ?? 0, option?.dy ?? 0, image.width, image.height );
     }
 
 }
+
+
+namespace SdfImage {
+
+
+export interface Option {
+
+    /**
+     * アイコン左上の x 座標
+     */
+    dx: number;
+
+
+    /**
+     * アイコン左上の y 座標
+     */
+    dy: number;
+
+
+    /**
+     * アイコンの水平画素数
+     */
+    dw: number;
+
+
+    /**
+     * アイコンの垂直画素数
+     */
+    dh: number;
+}
+
+
+} // namespace SdfImage
 
 
 /**
