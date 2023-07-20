@@ -356,7 +356,7 @@ class Globe {
     endFrame(): void
     {
         for ( const belt of this._belts ) {
-            return belt.endFrame();
+            belt.endFrame();
         }
     }
 
