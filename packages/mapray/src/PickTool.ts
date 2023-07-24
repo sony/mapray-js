@@ -153,32 +153,15 @@ class PickTool {
     {
         const glenv = this._glenv;
         const gl  = glenv.context;
-        const gl2 = glenv.context2;
-        if ( gl2 ) {
-            return {
-                type: FrameBuffer.ContainerType.TEXTURE,
-                attach_type: gl2.DEPTH_ATTACHMENT,
-                option: {
-                    internal_format: gl2.DEPTH_COMPONENT24,
-                    format: gl2.DEPTH_COMPONENT,
-                    type: gl2.UNSIGNED_INT,
-                },
-            };
-        }
-        else {
-            if ( !glenv.WEBGL_depth_texture ) {
-                throw new Error("Depth Texture not supported");
-            }
-            return {
-                type: FrameBuffer.ContainerType.TEXTURE,
-                attach_type: gl.DEPTH_STENCIL_ATTACHMENT,
-                option: {
-                    internal_format: gl.DEPTH_STENCIL,
-                    format: gl.DEPTH_STENCIL,
-                    type: glenv.WEBGL_depth_texture.UNSIGNED_INT_24_8_WEBGL,
-                },
-            };
-        }
+        return {
+            type: FrameBuffer.ContainerType.TEXTURE,
+            attach_type: gl.DEPTH_ATTACHMENT,
+            option: {
+                internal_format: gl.DEPTH_COMPONENT24,
+                format: gl.DEPTH_COMPONENT,
+                type: gl.UNSIGNED_INT,
+            },
+        };
     }
 
 

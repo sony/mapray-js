@@ -114,7 +114,7 @@ class Texture {
      * @param gl   - WebGL コンテキスト
      * @param opts - オプション集合
      */
-    private static _getParameters( gl:   WebGLRenderingContext,
+    private static _getParameters( gl:   WebGL2RenderingContext,
                                    opts: Option ): TexGenParam
     {
         const params: TexGenParam = {
@@ -189,7 +189,7 @@ class Texture {
      *
      * @return ミップマップを生成するとき true, それ以外のとき false
      */
-    private static _generateMipmapQ( gl: WebGLRenderingContext,
+    private static _generateMipmapQ( gl: WebGL2RenderingContext,
                                      params: TexGenParam ): boolean
     {
         const filter = params.min_filter;

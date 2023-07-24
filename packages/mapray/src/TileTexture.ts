@@ -53,7 +53,7 @@ class TileTexture implements Area {
      *
      * @param gl - WebGL レンダリングコンテキスト
      */
-    dispose( gl: WebGLRenderingContext ): void
+    dispose( gl: WebGL2RenderingContext ): void
     {
         gl.deleteTexture( this.texture );
         // @ts-ignore - これ以降は参照されないので OK

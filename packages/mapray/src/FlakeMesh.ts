@@ -69,7 +69,7 @@ class FlakeMesh {
     /**
      *  頂点データとその情報を作成
      */
-    private _createVertices( gl: WebGLRenderingContext,
+    private _createVertices( gl: WebGL2RenderingContext,
                              area: Area,
                              dpows: [number, number],
                              dem: DemBinary ) /* auto-type */
@@ -190,7 +190,7 @@ class FlakeMesh {
     /**
      * 頂点属性の辞書を取得
      */
-    private _getVertexAttribs( gl: WebGLRenderingContext ): AttributeBindInfoDict
+    private _getVertexAttribs( gl: WebGL2RenderingContext ): AttributeBindInfoDict
     {
         const   type = gl.FLOAT;
         const stride = FlakeMesh.VERTEX_BYTES;
@@ -503,7 +503,7 @@ class FlakeMesh {
     private _num_wire_indices: number;
 
     /** WebGL コンテキスト */
-    private readonly _gl: WebGLRenderingContext;
+    private readonly _gl: WebGL2RenderingContext;
 
 
     /**

@@ -56,7 +56,7 @@ class MeshBuffer {
     }
 
 
-    private static _getBindingPoint( gl:     WebGLRenderingContext,
+    private static _getBindingPoint( gl:     WebGL2RenderingContext,
                                      target: MeshBuffer.Target = MeshBuffer.Target.ATTRIBUTE ): GLenum
     {
         switch ( target ) {

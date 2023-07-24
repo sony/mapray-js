@@ -5,15 +5,7 @@
  * 情報を提供する。
  *
  * `glenv` が `GLEnv` インスタンスのとき、`glenv.context` により
- * `WebGLRenderingContext` インタフェースを得ることができ、対応してい
- * れば `glenv.context2` により `WebGL2RenderingContext` インタフェー
- * スを得ることができる。
-
- * また、以下の式は互いに同値である。
- *
- * - `glenv.context instanceof WebGL2RenderingContext`
- * - `glenv.is_webgl2()`
- * - `glenv.context2 !== null`
+ * `WebGL2RenderingContext` インタフェースを得ることができる。
  *
  * @internal
  */
@@ -22,22 +14,9 @@ class GLEnv {
     private _canvas: HTMLCanvasElement;
 
     /**
-     * `WebGLRenderingContext` インタフェースを取得
-     *
-     * @see [[context2]], [[is_webgl2]]
-     */
-    readonly context: WebGLRenderingContext;
-
-
-    /**
      * `WebGL2RenderingContext` インタフェースを取得
-     *
-     * ただし、コンテキストが `WebGL2RenderingContext` インタフェースに対応し
-     * ていなければ `null` を得る。
-     *
-     * @see [[context]], [[is_webgl2]]
      */
-    readonly context2: WebGL2RenderingContext | null;
+    readonly context: WebGL2RenderingContext;
 
 
     readonly OES_element_index_uint: OES_element_index_uint | null;
@@ -57,12 +36,11 @@ class GLEnv {
         const context = this._getContextWebGL( canvas, ctx_attribs );
 
         if ( !context ) {
-            throw new Error( "It doesn't appear your computer can support WebGL." );
+            throw new Error( "It doesn't appear your computer can support WebGL2." );
         }
 
         this._canvas  = canvas;
         this.context  = context;
-        this.context2 = (context instanceof WebGL2RenderingContext) ? context : null;
 
         const exts = this._getExtensions( context );
         this.OES_element_index_uint = exts.OES_element_index_uint;
@@ -79,13 +57,12 @@ class GLEnv {
      *
      * @see https://www.khronos.org/registry/webgl/specs/latest/1.0/#5.2
      */
-    private _getContextWebGL( canvas: HTMLCanvasElement, ctx_attribs: WebGLContextAttributes ): WebGLRenderingContext | null
+    private _getContextWebGL( canvas: HTMLCanvasElement, ctx_attribs: WebGLContextAttributes ): WebGL2RenderingContext | null
     {
-        const contextTypes = ["webgl2", "webgl", "experimental-webgl"];
+        const contextTypes = ["webgl2"];
         for ( let i = 0; i < contextTypes.length; ++i ) {
             const context = canvas.getContext( contextTypes[i], ctx_attribs );
-            if ( context instanceof WebGLRenderingContext ||
-                 context instanceof WebGL2RenderingContext ) {
+            if ( context instanceof WebGL2RenderingContext ) {
                 return context;
             }
         }
@@ -98,7 +75,7 @@ class GLEnv {
      * @param gl  WebGL コンテキスト
      * @see https://www.khronos.org/registry/webgl/specs/latest/1.0/#5.14.14
      */
-    private _getExtensions( gl: WebGLRenderingContext ) /* auto-type */
+    private _getExtensions( gl: WebGL2RenderingContext ) /* auto-type */
     {
         // OES_element_index_uint
         const OES_element_index_uint = gl.getExtension( "OES_element_index_uint" );
@@ -127,18 +104,6 @@ class GLEnv {
      * レンダリングターゲットとするキャンバス
      */
     get canvas(): HTMLCanvasElement { return this._canvas; }
-
-
-    /**
-     * WebGL2 レンダリングコンテキストか?
-     *
-     * [[context]] と [[context2]] が `WebGL2RenderingContext` インタフェース
-     * を持つかどうかを返す。
-     *
-     * @see [[context]], [[context2]]
-     */
-    get is_webgl2(): boolean { return this.context2 !== null; }
-
 }
 
 export default GLEnv;
