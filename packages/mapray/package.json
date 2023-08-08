@@ -39,7 +39,8 @@
     "doc-devel": "typedoc --tsconfig tsconfig-devel.json",
     "tests-devel": "cross-env webpack --watch --mode=development --env.NODE_ENV=tests",
     "test": "jest",
-    "lint": "eslint ./src"
+    "lint": "eslint ./src",
+    "lint-file": "eslint"
   },
   "contributors": [
     {

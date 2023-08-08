@@ -39,7 +39,9 @@
     "build-watch": "rollup -c --environment BUILD:dev -w",
     "css": "postcss -o dist/mapray.css src/css/mapray.css",
     "css-dev": "postcss --watch -o dist/mapray.css src/css/mapray.css",
-    "doc": "typedoc --tsconfig tsconfig.json"
+    "doc": "typedoc --tsconfig tsconfig.json",
+    "lint": "eslint ./src",
+    "lint-file": "eslint"
   },
   "contributors": [
     {
@@ -83,9 +85,13 @@
     "@rollup/plugin-node-resolve": "^15.0.1",
     "@rollup/plugin-terser": "^0.4.0",
     "@types/node": "^20.2.3",
+    "@typescript-eslint/eslint-plugin": "^5.3.0",
+    "@typescript-eslint/parser": "^5.3.0",
     "babel-loader": "^9.1.2",
     "core-js": "^3.6.4",
     "cross-env": "^7.0.0",
+    "eslint": "^8.1.0",
+    "eslint-config-eslint": "^7.0.0",
     "cssnano": "^6.0.1",
     "postcss": "^8.4.21",
     "postcss-cli": "^10.1.0",
