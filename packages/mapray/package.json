@@ -31,10 +31,10 @@
     "src"
   ],
   "scripts": {
-    "build": "rollup -c --environment BUILD:production",
-    "build-min": "rollup -c --environment BUILD:production,MINIFY:true",
-    "build-devel": "rollup -c --environment BUILD:dev",
-    "build-watch": "rollup -c --environment BUILD:dev -w",
+    "build": "node build.js",
+    "build-min": "node build.js min",
+    "build-devel": "node build.js devel",
+    "build-watch": "node build.js watch",
     "doc": "typedoc --tsconfig tsconfig.json",
     "doc-devel": "typedoc --tsconfig tsconfig-devel.json",
     "tests-devel": "cross-env webpack --watch --mode=development --env.NODE_ENV=tests",
@@ -102,7 +102,8 @@
     "rollup-plugin-string": "^3.0.0",
     "rollup-plugin-typescript2": "^0.34.1",
     "typescript": "^5.0.4",
-    "whatwg-fetch": "^3.6.2"
+    "whatwg-fetch": "^3.6.2",
+    "chokidar": "^3.5.3"
   },
   "dependencies": {
     "mapbox-gl": "1.13.3",

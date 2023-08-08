@@ -33,10 +33,10 @@
     "src"
   ],
   "scripts": {
-    "build": "rollup -c --environment BUILD:production",
-    "build-min": "rollup -c --environment BUILD:production,MINIFY:true",
-    "build-devel": "rollup -c --environment BUILD:dev",
-    "build-watch": "rollup -c --environment BUILD:dev -w",
+    "build": "node build.js",
+    "build-min": "node build.js min",
+    "build-devel": "node build.js devel",
+    "build-watch": "node build.js watch",
     "css": "postcss -o dist/mapray.css src/css/mapray.css",
     "css-dev": "postcss --watch -o dist/mapray.css src/css/mapray.css",
     "doc": "typedoc --tsconfig tsconfig.json",
@@ -99,7 +99,8 @@
     "postcss-svgo": "^6.0.0",
     "rollup": "^3.15.0",
     "rollup-plugin-typescript2": "^0.34.1",
-    "typescript": "^5.0.4"
+    "typescript": "^5.0.4",
+    "chokidar": "^3.5.3"
   },
   "dependencies": {
     "tslib": "^2.2.0"
