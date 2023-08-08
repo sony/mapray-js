@@ -1709,11 +1709,7 @@ class StandardUIViewer extends mapray.RenderCallback
     /**
      * ２点間のカメラアニメーション
      *
-     * - 指定した位置間でカメラアニメーションを行う
-     * iscs_startで指定した位置、もしくは現在のカメラの位置から、
-     * iscs_endで指定した位置から20km南側、上方向に+20kmの高度の位置からiscs_endを注視点とした位置と方向に
-     * timeで指定された秒数でカメラアニメーションを行う。
-     * 途中、高度200kmまでカメラが上昇する。
+     * 指定した位置間でカメラアニメーションを行う。
      *
      * @param  options 引数オブジェクト
      * @returns Promise
@@ -1805,8 +1801,8 @@ class StandardUIViewer extends mapray.RenderCallback
         const target_iscs_end = options.iscs_end;
 
         const MAX_HEIGHT = 1200000; // meter
-        const end_from_lookat = options.end_from_lookat !== undefined ? options.end_from_lookat : 20000;
-        const end_altitude = options.end_altitude !== undefined ? options.end_altitude : 20000;
+        const end_from_lookat = options.end_from_lookat ?? 20000;
+        const end_altitude = options.end_altitude ?? 20000;
 
         // [アニメーションに利用する途中と最終の位置情報]
         // カメラの最終地点を計算
@@ -1870,10 +1866,10 @@ class StandardUIViewer extends mapray.RenderCallback
         const end = fly_param.fly_iscs_end;
         const interval = this._flycamera_target_time/3.0;
 
-        let up_flag = true;
-        if ( start.altitude > fly_param.start_top.altitude ) {
-            up_flag = false;
-        }
+        const up_flag = (
+            options.climb === false ? false:
+            start.altitude <= fly_param.start_top.altitude
+        );
 
         // @ts-ignore
         keyframes_m.push( mapray.animation.Time.fromNumber( 0 ) );
@@ -2108,23 +2104,58 @@ export interface Option extends mapray.Viewer.Option {
 
 
 export interface FlyParam {
-    /** 移動までにかかる時間（秒） */
+    /**
+     * 時間（秒）
+     *
+     * カメラアニメーションの開始から終了までの時間（秒）
+     */
     time: number;
 
-    /** スタート位置. 省略時は現在のカメラ位置 */
+    /**
+     * カメラ開始位置
+     *
+     * カメラアニメーションスタート時点でのカメラ位置。
+     * 省略時は現在のカメラ位置からアニメーションを開始する。
+     */
     iscs_start?: mapray.GeoPoint;
 
-    /** 終了位置でのカメラの注視点. `target_clamp` が `true` の場合は高度を自動計算 */
+    /**
+     * 終了時の注視点
+     *
+     * カメラアニメーション終了時点でのカメラの注視点。
+     * `target_clamp` が `true` の場合は高度を自動計算
+     */
     iscs_end: mapray.GeoPoint;
 
-    /** 終了位置でカメラの注視点を `iscs_end` の緯度経度位置直下の標高にするなら `true` 省略時は `true` */
+    /**
+     * 終了時注視点のクランプモード
+     *
+     * カメラアニメーション終了時点でのカメラの注視点の高度を0（`iscs_end` の高度を0にした位置）にするか。
+     * 省略時は `true`
+     */
     target_clamp?: boolean;
 
-    /** 最終カメラ位置の高さ(m) 省略時は20000m */
+    /**
+     * 終了時のカメラの高度(m)
+     *
+     * カメラアニメーション終了時点でのカメラ位置の高度(m)。省略時は20km。
+     */
     end_altitude?: number;
 
-    /** 最終カメラ位置を南方向に注視点からどの位置に配置するか(m) 省略時は20000m */
+    /**
+     * 終了時のカメラの相対水平距離(m)
+     *
+     * カメラアニメーション終了時点での相対水平カメラ位置。
+     * 注視点を基準として南方向に指定した距離(m)だけ移動した位置にカメラを配置する。省略時は20km。
+     */
     end_from_lookat?: number;
+
+    /**
+     * カメラ上昇モード
+     *
+     * カメラアニメーションの移動中にカメラが一度上昇するか。省略時は `true`。
+     */
+    climb?: boolean;
 }
 
 
