@@ -485,7 +485,7 @@ export class PrimitiveProducer extends Entity.PrimitiveProducer {
         let abs_buffer = null;
 
         switch ( entity.altitude_mode ) {
-        case AltitudeMode.RELATIVE:
+        case AltitudeMode.RELATIVE: {
             abs_buffer = new Float64Array( num_points * 3 );
             // abs_buffer[] の高度要素に現在の標高を設定
             entity.scene.viewer.getExistingElevations( num_points, point_array, 0, 3, abs_buffer, 2, 3 );
@@ -497,6 +497,7 @@ export class PrimitiveProducer extends Entity.PrimitiveProducer {
                 abs_buffer[p] += point_array[p++];  // 絶対高度
             }
             break;
+        }
 
         default: // AltitudeMode.ABSOLUTE
             abs_buffer = point_array;

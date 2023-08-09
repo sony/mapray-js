@@ -89,7 +89,7 @@ class Shader {
             if ( !gl.getShaderParameter( shader, gl.COMPILE_STATUS ) ) {
                 // コンパイルエラー
                 const log = gl.getShaderInfoLog( shader );
-                throw new Error( `${type} compilation failed: ${log}` );
+                throw new Error( `${type} compilation failed: ${log ?? "unknown error"}` );
             }
         }
         catch ( e ) {
