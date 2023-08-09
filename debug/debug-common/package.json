@@ -7,12 +7,17 @@
   "types": "./dist/es/@types/index.d.ts",
   "scripts": {
     "start": "run-p build-watch",
-    "build": "rollup -c",
-    "build-prod": "rollup -c --environment BUILD:production",
-    "build-watch": "rollup -c -w"
+    "build": "node build.js",
+    "build-prod": "node build.js prod",
+    "build-watch": "node build.js watch",
+    "build-watch:hide": "node build.js watch --hide-nested",
+    "build-core:mapray": "cd ../../packages/mapray/ && yarn && node build.js watch",
+    "build-core:ui": "cd ../../packages/ui/ && yarn && node build.js watch",
+    "build-watch-all": "run-p build-watch:hide build-core:mapray build-core:ui"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^15.0.2",
+    "chokidar": "^3.5.3",
     "npm-run-all": "^4.1.5",
     "rollup": "^3.23.0",
     "rollup-plugin-typescript2": "0.34.1",

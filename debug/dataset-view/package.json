@@ -5,11 +5,14 @@
   "type": "module",
   "scripts": {
     "start": "run-p server build-watch build-common-watch",
-    "build": "rollup -c",
-    "build-prod": "rollup -c --environment BUILD:production",
-    "build-watch": "rollup -c -w",
-    "build-common": "cd ../debug-common/ && rollup -c",
-    "build-common-watch": "cd ../debug-common/ && rollup -c -w",
+    "build": "node build.js",
+    "build-prod": "node build.js prod",
+    "build-watch": "node build.js watch",
+    "build-watch:hide": "node build.js watch --hide-nested",
+    "build-common": "cd ../debug-common/ && yarn && yarn run build",
+    "build-common-watch": "cd ../debug-common/ && yarn && yarn run build-watch",
+    "build-common-watch-all": "cd ../debug-common/ && yarn && yarn run build-watch-all",
+    "build-watch-all": "run-p build-watch:hide build-common-watch-all",
     "server": "node server.js"
   },
   "devDependencies": {
