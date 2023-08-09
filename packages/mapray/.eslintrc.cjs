@@ -22,41 +22,53 @@ module.exports = {
     rules: {
         // 0: 無効 1:warning 2:error
 
-        // 潜在的不具合検出など(warning)
-        'no-var': 1, // varを使わずletかconstにすべき
-        'prefer-const': 1, // 再代入しない変数はconstにすべき
-        'no-dupe-class-members': 1, // class member名の重複 static memberで `static` で改行していると誤検知する
-        'no-prototype-builtins': 1, // Object.hasOwnPropertiesなどを使うべきでない
-        'no-cond-assign': 1, // if内部での代入
-        'no-unused-labels': 1, // 未使用のラベル
-        '@typescript-eslint/unbound-method': 1, // bindせずにmethodを変数へ代入禁止
-        '@typescript-eslint/no-unsafe-argument': 1, // anyや型違いの使用禁止
-        '@typescript-eslint/no-unsafe-return': 1, // anyや型違いの使用禁止
-        '@typescript-eslint/no-unsafe-assignment': 1, // anyや型違いの使用禁止
-        '@typescript-eslint/no-unsafe-member-access': 1, // anyや型違いの使用禁止
-        '@typescript-eslint/no-unsafe-call': 1, // anyや型違いの使用禁止
+        // 潜在的不具合検出など(error)
+        'no-var': 1, // varを使わずletかconstにすべき // @ToDo: 2
+        'prefer-const': 1, // 再代入しない変数はconstにすべき // @ToDo: 2
+        'no-dupe-class-members': 1, // class member名の重複 static memberで `static` で改行していると誤検知する // @ToDo: 2
+        'no-prototype-builtins': 1, // Object.hasOwnPropertiesなどを使うべきでない // @ToDo: 2
+        'no-cond-assign': 1, // if内部での代入 // @ToDo: 2
+        'no-unused-labels': 1, // 未使用のラベル // @ToDo: 2
+
+        '@typescript-eslint/unbound-method': 1, // bindせずにmethodを変数へ代入禁止 // @ToDo: 2
+        '@typescript-eslint/no-unsafe-argument': 1, // anyや型違いの使用禁止 // @ToDo: 2
+        '@typescript-eslint/no-unsafe-return': 1, // anyや型違いの使用禁止 // @ToDo: 2
+        '@typescript-eslint/no-unsafe-assignment': 1, // anyや型違いの使用禁止 // @ToDo: 2
+        '@typescript-eslint/no-unsafe-member-access': 1, // anyや型違いの使用禁止 // @ToDo: 2
+        '@typescript-eslint/no-unsafe-call': 1, // anyや型違いの使用禁止 // @ToDo: 2
         '@typescript-eslint/ban-types': 1, // Booleanなど使用すべきでない型禁止
-        '@typescript-eslint/require-await': 1, // promiseは待て
+        '@typescript-eslint/require-await': 1, // promiseは待つ
         '@typescript-eslint/no-floating-promises': 1, // 処理されないpromise禁止
-        '@typescript-eslint/await-thenable': 1, // promise以外をawait禁止
+        '@typescript-eslint/await-thenable': 1, // promise以外をawait禁止 // @ToDo: 2
         '@typescript-eslint/no-unnecessary-type-assertion': 1, // 不要な型Assertion禁止
         '@typescript-eslint/no-loss-of-precision': 1, // 精度の低下する代入等禁止
 
-        // 無効
         'no-inner-declarations': 0, // namespace内部のみでの宣言禁止
-        'no-empty': 0, // 空block
-        'no-constant-condition': 0, // while (true) などの禁止
+        'no-empty': 1, // 空block
+        'no-constant-condition': 1, // while (true) などの禁止
+        'no-lonely-if': 1, // else 内に 単独の if文 は書いてはいけない // @ToDo: 2
+        'no-negated-condition': 1, // else句を持つ if文 は 否定構文 で記述しないこと
+        'consistent-this': [1, "self"], // this を代入できるのは self だけ // @ToDo: 2
         '@typescript-eslint/ban-ts-comment': 0, // @ts-ignore等の禁止
         '@typescript-eslint/no-namespace': 0, // namespace禁止
         '@typescript-eslint/restrict-plus-operands': 0, // 数値以外の`+`使用の禁止
         '@typescript-eslint/no-empty-function': 0, //空関数禁止
         '@typescript-eslint/no-inferrable-types': 0, // 初期値代入などで確定する型の型定義禁止
-        '@typescript-eslint/no-array-constructor': 0, // `Array()` でなく `[]` を使うべき
-        '@typescript-eslint/no-extra-semi': 0, // 不要なセミコロン禁止
+        '@typescript-eslint/no-array-constructor': 1, // `Array()` でなく `[]` を使うべき
         '@typescript-eslint/no-this-alias': 0, // this を変数に代入禁止
         '@typescript-eslint/no-empty-interface': 0, // 空Interface禁止
 
+        // format指定(error)
+        'eol-last': 2, // ファイルの末尾は必ず改行とする
+        'no-tabs': 2, // tab禁止
+        'linebreak-style': [2, "unix"], // 改行文字を \n とする
+        'no-irregular-whitespace': 1, // @ToDo: 2
+
         // format指定(warning)
+        'indent': [1, 4], // インデント
+        'semi': [1, "always"], // セミコロンを強制する
+        '@typescript-eslint/no-extra-semi': 1, // 不要なセミコロン禁止
+        "quotes": [1, "double"], // ダブルクオートとする
         '@typescript-eslint/naming-convention': [ // private member を `_` で始める
             1,
             {
@@ -67,8 +79,12 @@ module.exports = {
             }
         ],
         'comma-spacing': 1, // コンマの後ろにスペース
+        'comma-style': 1, // コンマスタイル
+        'brace-style': 0, // ブレーススタイル (if,forなどの構文は適用したいが、関数名は適用したくないため有効にできない)
         'space-in-parens': [1, 'always'], // () 内にスペース
         'space-before-blocks': [1, 'always'], // {} 前後にスペース
+        'computed-property-spacing': [1, "never"], // [] 前後にスペースを入れない
+        'block-spacing': 1, // ブロックの内側にスペースを入れる
         'space-before-function-paren': [1, 'never'], // 関数名と()の間にスペース禁止
         'func-call-spacing': [1, 'never'], // 関数呼び出し時の関数名と()の間にスペース禁止
         'keyword-spacing': [ // キーワード(`if` `switch` など)前後にスペース
