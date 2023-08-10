@@ -29,6 +29,7 @@ module.exports = {
         'no-prototype-builtins': 1, // Object.hasOwnPropertiesなどを使うべきでない // @ToDo: 2
         'no-cond-assign': 1, // if内部での代入 // @ToDo: 2
         'no-unused-labels': 1, // 未使用のラベル // @ToDo: 2
+        '@typescript-eslint/prefer-nullish-coalescing': 1, // || ではなく ?? を使う // @ToDo: 2
 
         '@typescript-eslint/unbound-method': 1, // bindせずにmethodを変数へ代入禁止 // @ToDo: 2
         '@typescript-eslint/no-unsafe-argument': 1, // anyや型違いの使用禁止 // @ToDo: 2
