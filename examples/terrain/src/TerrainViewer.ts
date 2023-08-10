@@ -85,8 +85,6 @@ class TerrainViewer extends maprayui.StandardUIViewer {
 
         this._updateSunAnimation = defaultUpdateCallback;
 
-        this.selectLocation( initvalue.location );
-
         // setting for camera
         this.setCameraParameter( this._init_camera_parameter );
 
@@ -283,38 +281,18 @@ class TerrainViewer extends maprayui.StandardUIViewer {
         this._updateSunAnimation( this._current_date.year, this._current_date.month, this._current_date.day, this._current_date.hour, this._current_date.minute );
     }
 
-    _getAttribution( surface: string ) : mapray.AttributionController.Attribution[] {
-        let attr : mapray.AttributionController.Attribution[] = [];
-        switch( surface ) {
-            case "satellite":
-                attr = [{
-                    display: "国土地理院",
-                    link: "http://maps.gsi.go.jp/development/ichiran.html"
-                }];
-                break;
-            case "bingmaps":
-                attr = [{
-                    display: "© 2018 Microsoft Corporation",
-                    link: ""
-                },{
-                    display: "©CNES (2018) Distribution Airbus DS",
-                    link: ""
-                },{
-                    display: "© 2018 SK telecom/NGII",
-                    link: ""
-                },{
-                    display: "Earthstar Geographics SIO",
-                    link: ""
-                }];
-                break;
-            case "standard":
-                attr = [{
-                    display: "国土地理院",
-                    link: "http://maps.gsi.go.jp/development/ichiran.html"
-                }];
-                break;
-        }
-        return attr;
+    _getAttribution( surface: string ) : string[] {
+        return (
+            surface === "satellite" ? [`<a href="http://maps.gsi.go.jp/development/ichiran.html">国土地理院</a>`] :
+            surface === "standard"  ? [`<a href="http://maps.gsi.go.jp/development/ichiran.html">国土地理院</a>`] :
+            surface === "bingmaps"  ? [
+                "© 2018 Microsoft Corporation",
+                "©CNES (2018) Distribution Airbus DS",
+                "© 2018 SK telecom/NGII",
+                "Earthstar Geographics SIO",
+            ] :
+            ["Unknown data source"]
+        );
     }
 
     override onKeyDown( event: KeyboardEvent )
