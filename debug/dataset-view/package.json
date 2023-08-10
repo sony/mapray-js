@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "run-p server build-watch build-common-watch",
+    "start-all": "run-p server build-watch-all",
     "build": "node build.js",
     "build-prod": "node build.js prod",
     "build-watch": "node build.js watch",
