@@ -9,7 +9,7 @@
     "allowJs": true,
     "importHelpers": true,
     "stripInternal": true,
-    "removeComments": true,
+    "removeComments": false,
 
     "sourceMap": true,
     "declaration": true,
