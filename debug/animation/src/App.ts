@@ -102,7 +102,11 @@ export default class App extends maprayui.StandardUIViewer {
             } break;
             case "7": {
                 console.log( 'camera animation' );
-                this._startCameraAnimation();
+                this._startCameraAnimation( true );
+            } break;
+            case "8": {
+                console.log( 'camera animation' );
+                this._startCameraAnimation( false );
             } break;
             default: {
                 super.onKeyDown( event );
@@ -218,7 +222,7 @@ export default class App extends maprayui.StandardUIViewer {
      }
 
 
-      /**
+    /**
      * Animation Example 3
      */
      _startAnimation3() {
@@ -402,12 +406,13 @@ export default class App extends maprayui.StandardUIViewer {
     /**
      * Camera Animation Example
      */
-     async _startCameraAnimation() {
+     async _startCameraAnimation( climb: boolean ) {
          await this.startFlyCamera({
                  end_altitude: 800,
                  end_from_lookat: 300,
                  iscs_end: new mapray.GeoPoint( 139.7527, 35.6835 ),
                  time: 3,
+                 climb,
          });
          console.log( "done" );
     }
