@@ -1,4 +1,4 @@
-import '@mapray/ui/dist/mapray.css';
+import '@mapray/ui/mapray.css';
 import App from './app';
 import { default_config, getCameraInfoFromLocation } from "./config";
 import app from "./app";

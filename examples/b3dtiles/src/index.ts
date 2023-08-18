@@ -1,4 +1,4 @@
-import '@mapray/ui/dist/mapray.css';
+import '@mapray/ui/mapray.css';
 import App from './app';
 
 // 現在のアプリインスタンス

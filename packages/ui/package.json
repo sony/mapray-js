@@ -26,7 +26,8 @@
       "types": "./dist/es/@types/index.d.ts",
       "import": "./dist/es/maprayui.js",
       "require": "./dist/umd/maprayui.js"
-    }
+    },
+    "./mapray.css": "./dist/mapray.css"
   },
   "files": [
     "dist",
