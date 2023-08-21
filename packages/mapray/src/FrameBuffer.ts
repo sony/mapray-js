@@ -14,13 +14,15 @@ class FrameBuffer {
 
     private _height: number;
 
-    private _option: FrameBuffer.Option;
+    private _color_container_options: FrameBuffer.ColorContainerOption[];
+    private _depth_container_option?: FrameBuffer.DepthContainerOption;
 
-    private _frame_buffer: WebGLFramebuffer;
+    private _frame_buffer?: WebGLFramebuffer;
 
     private _color_containers: (WebGLRenderbuffer | WebGLTexture)[];
-
     private _depth_container?: (WebGLRenderbuffer | WebGLTexture);
+
+    private _initialized: boolean;
 
 
     /**
@@ -33,19 +35,22 @@ class FrameBuffer {
         this._glenv = glenv;
         this._width = width;
         this._height = height;
-        this._option = option;
-        const { frame_buffer, color_containers, depth_container } = this._buildBuffers( option );
-        this._frame_buffer = frame_buffer;
-        this._color_containers = color_containers;
-        this._depth_container = depth_container;
+        this._color_container_options = option.color_containers ?? [];
+        this._depth_container_option = option.depth_container;
+        this._color_containers = [];
+        this._initialized = false;
     }
 
 
     /**
      * バッファの生成
      */
-    private _buildBuffers( option: FrameBuffer.Option ): { frame_buffer: WebGLFramebuffer, color_containers: (WebGLRenderbuffer | WebGLTexture)[], depth_container?: (WebGLRenderbuffer | WebGLTexture) }
+    private _initialize(): void
     {
+        if ( this._initialized ) {
+            return;
+        }
+
         const width = this._width;
         const height = this._height;
         const gl = this._glenv.context;
@@ -55,8 +60,9 @@ class FrameBuffer {
             throw new Error( "couldn't create Framebuffer" );
         }
         gl.bindFramebuffer( gl.FRAMEBUFFER, frame_buffer );
+        this._frame_buffer = frame_buffer;
 
-        const color_containers = option.color_containers.map((color_container, index) => {
+        const color_containers = ( this._color_container_options ?? [] ).map((color_container, index) => {
                 const type = color_container.type || FrameBuffer.ContainerType.RENDER_BUFFER;
                 const c_option = color_container.option || {};
                 if ( type === FrameBuffer.ContainerType.RENDER_BUFFER ) {
@@ -76,11 +82,12 @@ class FrameBuffer {
                     return texture as WebGLTexture;
                 }
         });
+        this._color_containers = color_containers;
 
         let depth_container = undefined;
-        if ( option.depth_container ) {
-            const type = option.depth_container.type || FrameBuffer.ContainerType.RENDER_BUFFER;
-            const d_option = option.depth_container.option || {};
+        if ( this._depth_container_option ) {
+            const type = this._depth_container_option.type || FrameBuffer.ContainerType.RENDER_BUFFER;
+            const d_option = this._depth_container_option.option || {};
             if ( type === FrameBuffer.ContainerType.RENDER_BUFFER ) {
                 const buffer = gl.createRenderbuffer();
                 if ( !buffer ) throw new Error( "couldn't create render buffer" );
@@ -99,9 +106,10 @@ class FrameBuffer {
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-                gl.framebufferTexture2D(gl.FRAMEBUFFER, option.depth_container.attach_type, gl.TEXTURE_2D, depth_container, 0);
+                gl.framebufferTexture2D(gl.FRAMEBUFFER, this._depth_container_option.attach_type, gl.TEXTURE_2D, depth_container, 0);
             }
         }
+        this._depth_container = depth_container;
 
         if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
             throw new Error("ERROR: " + gl.checkFramebufferStatus(gl.FRAMEBUFFER));
@@ -109,7 +117,8 @@ class FrameBuffer {
 
         gl.bindTexture(gl.TEXTURE_2D, null);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        return { frame_buffer, color_containers, depth_container };
+
+        this._initialized = true;
     }
 
 
@@ -118,17 +127,26 @@ class FrameBuffer {
      */
     dispose(): void
     {
+        if ( !this._initialized ) return;
+        if ( active_frame_buffer === this ) {
+            throw new Error("Invalid status: cannot dispose active frame buffer");
+        }
         const gl = this._glenv.context;
-        gl.deleteFramebuffer( this._frame_buffer );
-        // @ts-ignore
-        this._frame_buffer = undefined;
-        this._color_containers.forEach(container => {
-                this._delete_container(container);
-        });
-        this._color_containers = [];
-        this._delete_container( this._depth_container );
-        // @ts-ignore
-        this._depth_container = undefined;
+        if ( this._frame_buffer ) {
+            gl.deleteFramebuffer( this._frame_buffer );
+            this._frame_buffer = undefined;
+        }
+        if ( this._color_containers.length > 0 ) {
+            this._color_containers.forEach( container => {
+                this._delete_container( container );
+            } );
+            this._color_containers = [];
+        }
+        if ( this._depth_container ) {
+            this._delete_container( this._depth_container );
+            this._depth_container = undefined;
+        }
+        this._initialized = false;
     }
 
 
@@ -152,15 +170,17 @@ class FrameBuffer {
      */
     get frame_buffer(): WebGLFramebuffer
     {
-        return this._frame_buffer;
+        this._initialize();
+        return this._frame_buffer as WebGLFramebuffer;
     }
 
 
     /**
      * カラーデータを取得（0番目を取得）
      */
-    get color_container(): WebGLTexture | WebGLRenderbuffer
+    get color_container(): WebGLTexture | WebGLRenderbuffer | undefined
     {
+        this._initialize();
         return this._color_containers[ 0 ];
     }
 
@@ -171,6 +191,7 @@ class FrameBuffer {
      */
     getColorContainer( index: number ): WebGLTexture | WebGLRenderbuffer
     {
+        this._initialize();
         return this._color_containers[ index ];
     }
 
@@ -180,7 +201,7 @@ class FrameBuffer {
      */
     get color_container_length(): number
     {
-        return this._color_containers.length;
+        return this._color_container_options.length;
     }
 
 
@@ -189,6 +210,7 @@ class FrameBuffer {
      */
     get depth_container(): WebGLTexture | WebGLRenderbuffer | undefined
     {
+        this._initialize();
         return this._depth_container;
     }
 
@@ -199,11 +221,12 @@ class FrameBuffer {
      */
     bind(): void
     {
+        this._initialize();
         if ( active_frame_buffer ) {
             throw new Error("Invalid status: already bound");
         }
         const gl = this._glenv.context;
-        gl.bindFramebuffer( gl.FRAMEBUFFER, this._frame_buffer );
+        gl.bindFramebuffer( gl.FRAMEBUFFER, this._frame_buffer as WebGLFramebuffer );
         active_frame_buffer = this;
     }
 
@@ -221,6 +244,48 @@ class FrameBuffer {
         gl.bindFramebuffer( gl.FRAMEBUFFER, null );
         active_frame_buffer = undefined;
     }
+
+
+    /**
+     * フレームバッファのサイズを変更します
+     * 
+     * この関数がバインド中に呼ばれると例外がスローされます。
+     * この関数が呼ばれた時点で現在のリソースは破棄され、次回リソースが取得される時点で再生成されます。
+     */
+    setSize( width: number, height: number ): void
+    {
+        this.dispose();
+
+        this._width = width;
+        this._height = height;
+    }
+
+
+    /**
+     * カラーコンテナオプションを変更します
+     * 
+     * この関数がバインド中に呼ばれると例外がスローされます。
+     * この関数が呼ばれた時点で現在のリソースは破棄され、次回リソースが取得される時点で再生成されます。
+     */
+    setColorContainerOption( options: FrameBuffer.ColorContainerOption[] ): void
+    {
+        this.dispose();
+
+        this._color_container_options = options;
+    }
+
+    /**
+     * 深度コンテナオプションを変更します
+     * 
+     * この関数がバインド中に呼ばれると例外がスローされます。
+     * この関数が呼ばれた時点で現在のリソースは破棄され、次回リソースが取得される時点で再生成されます。
+     */
+    setDepthContainerOption( option: FrameBuffer.DepthContainerOption ): void
+    {
+        this.dispose();
+
+        this._depth_container_option = option;
+    }
 }
 
 
@@ -228,29 +293,34 @@ class FrameBuffer {
 namespace FrameBuffer {
 
 
+export interface ColorContainerOption {
+    type: FrameBuffer.ContainerType;
+    option: {
+        internal_format: GLenum;
+        format: GLenum;
+        type: GLenum;
+    };
+}
+
+
+export interface DepthContainerOption {
+    type: FrameBuffer.ContainerType;
+    attach_type: GLenum;
+    option: {
+        internal_format: GLenum;
+        format: GLenum;
+        type: GLenum;
+    }
+}
+
 
 export interface Option {
 
     /** テクスチャオプションの配列 */
-    color_containers: {
-        type: FrameBuffer.ContainerType;
-        option: {
-            internal_format: GLenum;
-            format: GLenum;
-            type: GLenum;
-        };
-    }[];
+    color_containers?: ColorContainerOption[];
 
     /** 深度テクスチャオプション */
-    depth_container?: {
-        type: FrameBuffer.ContainerType;
-        attach_type: GLenum;
-        option: {
-            internal_format: GLenum;
-            format: GLenum;
-            type: GLenum;
-        }
-    };
+    depth_container?: DepthContainerOption;
 }
 
 
