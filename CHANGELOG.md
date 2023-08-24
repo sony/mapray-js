@@ -1,4 +1,22 @@
 # Change Log
+
+## 0.9.4
+### Features and improvements
+- Add Quaternion to GeoMath [#288](https://github.com/sony/mapray-js/issues/288)
+- Issue regarding gaps at tile image boundaries [#298](https://github.com/sony/mapray-js/issues/298)
+- Addition of ImageProvider switching functionality [#295](https://github.com/sony/mapray-js/issues/295)
+- Bug report: Incorrect endFrame processing [#293](https://github.com/sony/mapray-js/issues/293)
+- Support loading sprite images as SDF-enabled images [#290](https://github.com/sony/mapray-js/issues/290)
+- Issue with target_clamp parameter evaluation in startFlyCamera function [#297](https://github.com/sony/mapray-js/issues/297)
+- Issue regarding slow watch processing [#292](https://github.com/sony/mapray-js/issues/292)
+- Proposal to implement Linter for code quality enhancement [#291](https://github.com/sony/mapray-js/issues/291)
+
+### Breaking Changes
+- Upgrade to rollup 3 and update typescript version [#273](https://github.com/sony/mapray-js/issues/273)
+- Improvement of AttributionController [#274](https://github.com/sony/mapray-js/issues/274)
+- Changed WebGL version to WebGL2 and supported float buffer [#289](https://github.com/sony/mapray-js/issues/289)
+- Issue regarding clouds image origin location modification. [#296](https://github.com/sony/mapray-js/issues/296)
+
 ## 0.9.3
 ### Features and improvements
 - add operation text and fix mouse control in example [#284](https://github.com/sony/mapray-js/issues/284)
