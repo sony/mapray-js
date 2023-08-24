@@ -78,6 +78,11 @@ class FrameBuffer {
                     gl.texImage2D( gl.TEXTURE_2D, 0, c_option.internal_format, width, height, 0, c_option.format, c_option.type, null );
                     gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR );
                     gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR );
+                    if ( c_option.clamp_to_edge ) {
+                        gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE );
+                        gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE );
+                    }
+                    
                     gl.framebufferTexture2D( gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + index, gl.TEXTURE_2D, texture, 0 );
                     return texture as WebGLTexture;
                 }
@@ -299,6 +304,7 @@ export interface ColorContainerOption {
         internal_format: GLenum;
         format: GLenum;
         type: GLenum;
+        clamp_to_edge?: boolean;
     };
 }
 
