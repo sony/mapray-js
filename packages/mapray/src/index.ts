@@ -56,6 +56,7 @@ export { default as Material } from "./Material";
 export { default as EntityMaterial } from "./EntityMaterial";
 
 // Loader
+export { default as Loader } from "./Loader";
 export { default as SceneLoader } from "./SceneLoader";
 export { default as GeoJSONLoader } from "./GeoJSONLoader";
 export { default as GeoJSON } from "./GeoJSON";
