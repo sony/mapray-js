@@ -8,6 +8,7 @@ module.exports = {
     ["jest-html-reporter", {
       "includeConsoleLog": true,
       "includeFailureMsg": true,
+      "outputPath": "./tests/report.html"
     }],
     // "jest-stare",
   ],
