@@ -64,7 +64,7 @@ export default class App extends maprayui.StandardUIViewer {
 
         // Atmosphere
         this.viewer.sun.setSunDirection( [ 1, 0, 0 ] );
-        this.addLayer( { image_provider: new mapray.StandardImageProvider("https://opentiles.mapray.com/xyz/night-satellite/", ".png", 256, 0, 8), opacity: 1.0, type: mapray.Layer.LayerType.NIGHT } );
+        this.addLayer( { image_provider: new mapray.StandardImageProvider("https://opentiles.mapray.com/xyz/night-satellite/", ".png", 256, 0, 8), opacity: 1.0, type: mapray.Layer.Type.IMAGE, draw_type: mapray.ImageLayer.DrawType.NIGHT } );
         this.setAtmosphereVisibility( false );
 
         // // 文字のエンティティを作成
