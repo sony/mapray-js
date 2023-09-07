@@ -1523,7 +1523,6 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     getLayer( index: number ): mapray.Layer
     {
-        // @ts-ignore
         return this.viewer.layers.getLayer( index );
     }
 
@@ -1543,7 +1542,7 @@ class StandardUIViewer extends mapray.RenderCallback
      *
      * @param layer                  作成するレイヤのプロパティ
      */
-    addLayer( layer: mapray.Layer.Option ): void
+    addLayer( layer: mapray.ImageLayer.Option | mapray.ContourLayer.Option | mapray.ImageProvider ): void
     {
         this.viewer.layers.add( layer );
     }
@@ -1555,7 +1554,7 @@ class StandardUIViewer extends mapray.RenderCallback
      * @param index                  挿入場所
      * @param layer                  作成するレイヤのプロパティ
      */
-    insertLayer( index: number, layer: any ): void
+    insertLayer( index: number, layer: mapray.ImageLayer.Option | mapray.ContourLayer.Option | mapray.ImageProvider ): void
     {
         this.viewer.layers.insert( index, layer );
     }
