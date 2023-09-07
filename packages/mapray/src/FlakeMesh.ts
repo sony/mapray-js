@@ -175,6 +175,7 @@ class FlakeMesh {
                 array[index++] = iv < 1 ? 0.0:
                                  iv > v_step_count - 1 ? 1.0:
                                  ( iv - 1 ) * v_step; // mv
+                array[index++] = demSampler.sample( mx, my );   // height
             }
         }
 
@@ -216,6 +217,14 @@ class FlakeMesh {
                 byte_offset:    FlakeMesh.OFFSET_UV
             },
 
+            "a_height": {
+                buffer:         this._vertices,
+                num_components: 1,
+                component_type: type,
+                normalized:     false,
+                byte_stride:    stride,
+                byte_offset:    FlakeMesh.OFFSET_HEIGHT
+            },
         };
     }
 
@@ -509,7 +518,7 @@ class FlakeMesh {
     /**
      * 1 頂点の float 数
      */
-    private static readonly VERTEX_SIZE = 5;
+    private static readonly VERTEX_SIZE = 6;
 
     /**
      * 1 頂点のバイト数
@@ -525,6 +534,11 @@ class FlakeMesh {
      * UV 座標のオフセット
      */
     private static readonly OFFSET_UV = 12;
+
+    /**
+     * 高さ座標のオフセット
+     */
+    private static readonly OFFSET_HEIGHT = 20;
 
 }
 

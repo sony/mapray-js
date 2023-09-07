@@ -11,7 +11,7 @@ import type TileTexture from "./TileTexture";
 import surface_vs_code from "./shader/surface.vert";
 import surface_fs_code from "./shader/surface.frag";
 import rid_fs_code from "./shader/rid.frag";
-import Layer from "./Layer";
+import ImageLayer from "./ImageLayer";
 
 
 /**
@@ -98,7 +98,7 @@ class SurfaceMaterial extends FlakeMaterial {
         const param = this._getMaterialParameter( rflake, index );
 
         if ( param ) {
-            const layer = this._viewer.layers.getDrawingLayer( index - 1 );
+            const layer = this._viewer.layers.getDrawingLayer( index - 1 ) as ImageLayer;
 
             this.setVector4( "u_corner_lod", param.corner_lod );
 
@@ -109,9 +109,9 @@ class SurfaceMaterial extends FlakeMaterial {
                                                ( param.image_hi.lod === param.image_lo.lod ) ?
                                                0 : 1 / ( param.image_hi.lod - param.image_lo.lod )] );
 
-            this.setFloat( "u_opacity", (index == 0) ? 1.0 : layer.opacity );
+            this.setFloat( "u_opacity", ( index === 0 ) ? 1.0 : layer.getOpacity() );
 
-            if ( index > 0 && layer.type === Layer.LayerType.NIGHT ) {
+            if ( index > 0 && layer.getDrawType() === ImageLayer.DrawType.NIGHT ) {
                 this.setVector3( "u_sun_direction", this._viewer.sun.sun_direction );
                 mesh.mul_flake_to_gocs( identity_matrix, this._flake_to_gocs );
                 this.setMatrix( "u_obj_to_gocs", this._flake_to_gocs );
@@ -159,7 +159,7 @@ class SurfaceMaterial extends FlakeMaterial {
     private _getMaterialParameter( rflake: RenderFlake,
                                    index:  number ): MaterialParameter | null
     {
-        const tex_cache = (index == 0) ? this._tile_texture_cache : this._viewer.layers.getDrawingLayer( index - 1 ).tile_cache;
+        const tex_cache = ( index === 0 ) ? this._tile_texture_cache : ( this._viewer.layers.getDrawingLayer( index - 1 ) as ImageLayer ).getTileCache();
         this._image_zbias = tex_cache.getImageZBias();
 
         const flake = rflake.flake;

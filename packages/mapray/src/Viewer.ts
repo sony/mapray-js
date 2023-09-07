@@ -9,6 +9,8 @@ import RenderStage from "./RenderStage";
 import StandardImageProvider from "./StandardImageProvider";
 import StandardDemProvider from "./StandardDemProvider";
 import Layer from "./Layer";
+import ImageLayer from "./ImageLayer";
+import ContourLayer from "./ContourLayer";
 import LayerCollection from "./LayerCollection";
 import Globe from "./Globe";
 import DemProvider from "./DemProvider";
@@ -1144,7 +1146,7 @@ export interface Option {
     image_provider?: ImageProvider;
 
     /** 地図レイヤー情報の配列 */
-    layers?: (Layer.Option | ImageProvider)[];
+    layers?: ( ImageLayer.Option | ContourLayer.Option | ImageProvider )[];
 
     /** 地表の可視性 */
     ground_visibility?: boolean;

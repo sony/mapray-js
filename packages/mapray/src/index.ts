@@ -26,6 +26,8 @@ export { default as AreaUtil } from "./AreaUtil";
 export { default as ConvexPolygon } from "./ConvexPolygon";
 
 export { default as Layer } from "./Layer";
+export { default as ImageLayer } from "./ImageLayer";
+export { default as ContourLayer } from "./ContourLayer";
 export { default as LayerCollection } from "./LayerCollection";
 
 // Dem Provider

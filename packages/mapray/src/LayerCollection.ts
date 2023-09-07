@@ -1,6 +1,8 @@
 import GLEnv from "./GLEnv";
 import Viewer from "./Viewer";
 import Layer from "./Layer";
+import ImageLayer from "./ImageLayer";
+import ContourLayer from "./ContourLayer";
 import ImageProvider from "./ImageProvider";
 
 
@@ -27,7 +29,7 @@ class LayerCollection {
      * @param viewer  Viewer
      * @param layers  初期化プロパティ配列
      */
-    constructor( viewer: Viewer, layers?: (Layer.Option | ImageProvider)[] )
+    constructor( viewer: Viewer, layers?: ( ImageLayer.Option | ContourLayer.Option | ImageProvider )[] )
     {
         this._viewer      = viewer;
         this._glenv       = viewer.glenv;
@@ -89,7 +91,7 @@ class LayerCollection {
      *
      * @param layer          レイヤーのプロパティ
      */
-    add( layer: Layer.Option | ImageProvider )
+    add( layer: ImageLayer.Option | ContourLayer.Option | ImageProvider )
     {
         this.insert( this.num_layers, layer );
     }
@@ -101,9 +103,14 @@ class LayerCollection {
      * @param index          挿入場所
      * @param layer  レイヤーのプロパティ
      */
-    insert( index: number, layer: Layer.Option | ImageProvider )
+    insert( index: number, layer: ImageLayer.Option | ContourLayer.Option | ImageProvider )
     {
-        this._layers.splice( index, 0, new Layer( this, layer ) );
+        const new_layer = (
+            layer instanceof ImageProvider  ? new ImageLayer( this, layer ):
+            layer.type === Layer.Type.IMAGE ? new ImageLayer( this, layer ):
+            new ContourLayer( this, layer )
+        );
+        this._layers.splice( index, 0, new_layer );
         this.dirtyDrawingLayers();
     }
 
@@ -157,8 +164,8 @@ class LayerCollection {
     {
         const layers = this._layers;
 
-        for ( let i = 0; i < layers.length; ++i ) {
-            layers[i].tile_cache.endFrame();
+        for ( const layer of layers ) {
+            layer.endFrame();
         }
     }
 
@@ -171,8 +178,8 @@ class LayerCollection {
     {
         const layers = this._layers;
 
-        for ( let i = 0; i < layers.length; ++i ) {
-            layers[i].tile_cache.dispose();
+        for ( const layer of layers ) {
+            layer.endFrame();
         }
     }
 
@@ -193,12 +200,11 @@ class LayerCollection {
      */
     private _updateDrawingLayers(): Layer[]
     {
-        const num_layers = this.num_layers;
+        const layers = this._layers;
 
         const draw_layers = [];
-        for ( let i = 0; i < num_layers; ++i ) {
-            const layer = this._layers[i];
-            if ( layer.image_provider.status() === ImageProvider.Status.READY && layer.visibility === true ) {
+        for ( const layer of layers ) {
+            if ( layer.getVisibility() && layer.isReady() ) {
                 draw_layers.push( layer );
             }
         }
