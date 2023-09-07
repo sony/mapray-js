@@ -13,3 +13,4 @@ export { default as Dataset2dModule } from "./module/Dataset2dModule";
 export { default as Dataset3dModule } from "./module/Dataset3dModule";
 export { default as ImageProviderModule } from "./module/ImageProviderModule";
 export { default as AttributionModule } from "./module/AttributionModule";
+export { default as LayerModule } from "./module/LayerModule";

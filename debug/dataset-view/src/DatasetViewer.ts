@@ -10,6 +10,7 @@ import debugCommon, {
     Dataset3dModule,
     ImageProviderModule,
     AttributionModule,
+    LayerModule,
 } from "debug-common";
 
 
@@ -40,10 +41,11 @@ class DatasetViewer extends DebugViewer {
         }));
 
         // Night Layer
-        this.addLayer( { 
+        this.addLayer( {
+            type: mapray.Layer.Type.IMAGE,
             image_provider: new mapray.StandardImageProvider("https://opentiles.mapray.com/xyz/night-satellite/", ".png", 256, 0, 8),
             opacity: 1.0,
-            type: mapray.Layer.LayerType.NIGHT,
+            draw_type: mapray.ImageLayer.DrawType.NIGHT,
             pole: {
                 north_color : [0.004, 0.008, 0.059],
                 south_color : [0.171, 0.201, 0.335],
@@ -79,6 +81,7 @@ class DatasetViewer extends DebugViewer {
         modules.push( new AtmosphereModule() );
         modules.push( new ImageProviderModule() );
         modules.push( new AttributionModule() );
+        modules.push( new LayerModule() );
     }
 
 

@@ -385,7 +385,7 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
 
         this._cloudImageArray = [];
 
-        this.addLayer( { image_provider: this._createLayerImageProvider(), opacity: 1.0, type: mapray.Layer.LayerType.NIGHT } );
+        this.addLayer( { image_provider: this._createLayerImageProvider(), opacity: 1.0, type: mapray.Layer.Type.IMAGE, draw_type: mapray.ImageLayer.DrawType.NIGHT } );
         this._commander = new Commander( this.viewer );
         this._statusbar = new StatusBar( this.viewer, DEM_ATTRIBUTE + ", " + GSI_ATTRIBUTE );
         this._container = container;
@@ -744,7 +744,7 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
                         debug_stats: new mapray.DebugStats()
                     }
                 );
-                this.addLayer( { image_provider: this._createLayerImageProvider(), opacity: 1.0, type: mapray.Layer.LayerType.NIGHT } );
+                this.addLayer( { image_provider: this._createLayerImageProvider(), opacity: 1.0, type: mapray.Layer.Type.IMAGE, draw_type: mapray.ImageLayer.DrawType.NIGHT } );
                 this._commander = new Commander( this.viewer );
                 this._statusbar = new StatusBar( this.viewer, DEM_ATTRIBUTE + ", " + GSI_ATTRIBUTE);
             } else {
@@ -757,7 +757,7 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
                         image_provider: this._createBingImageProvider()
                     }
                 );
-                this.addLayer( { image_provider: this._createLayerImageProvider(), opacity: 1.0, type: mapray.Layer.LayerType.NIGHT } );
+                this.addLayer( { image_provider: this._createLayerImageProvider(), opacity: 1.0, type: mapray.Layer.Type.IMAGE, draw_type: mapray.ImageLayer.DrawType.NIGHT } );
                 this._commander = new Commander( this.viewer );
                 this._statusbar = new StatusBar( this.viewer, DEM_ATTRIBUTE + ", " + BING_ATTRIBUTE);
             }
