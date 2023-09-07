@@ -171,10 +171,10 @@ class FlakeMesh {
                 array[index++] = gz - center[2];  // z
                 array[index++] = iu < 1 ? 0.0:
                                  iu > u_step_count - 1 ? 1.0:
-                                 (iu - 1) * u_step; // mu
+                                 ( iu - 1 ) * u_step; // mu
                 array[index++] = iv < 1 ? 0.0:
                                  iv > v_step_count - 1 ? 1.0:
-                                 (iv - 1) * v_step; // mv
+                                 ( iv - 1 ) * v_step; // mv
             }
         }
 

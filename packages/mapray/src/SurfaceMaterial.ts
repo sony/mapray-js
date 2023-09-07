@@ -97,7 +97,7 @@ class SurfaceMaterial extends FlakeMaterial {
 
         const param = this._getMaterialParameter( rflake, index );
 
-        if ( param !== null ) {
+        if ( param ) {
             const layer = this._viewer.layers.getDrawingLayer( index - 1 );
 
             this.setVector4( "u_corner_lod", param.corner_lod );
@@ -106,8 +106,8 @@ class SurfaceMaterial extends FlakeMaterial {
             this.setVector4( "u_texcoord_rect_lo", param.image_lo.texcoord_rect );
 
             this.setVector2( "u_image_param", [param.image_lo.lod,
-                                               (param.image_hi.lod == param.image_lo.lod) ?
-                                               0 : 1 / (param.image_hi.lod - param.image_lo.lod)] );
+                                               ( param.image_hi.lod === param.image_lo.lod ) ?
+                                               0 : 1 / ( param.image_hi.lod - param.image_lo.lod )] );
 
             this.setFloat( "u_opacity", (index == 0) ? 1.0 : layer.opacity );
 
@@ -199,12 +199,12 @@ class SurfaceMaterial extends FlakeMaterial {
                                 y:  number,
                                 zi: number ): ImageParameter
     {
-        if ( tile !== null ) {
+        if ( tile ) {
             const pow = Math.pow( 2, tile.z - zg );
             return {
                 lod:           tile.z - this._image_zbias,
                 texture:       tile.texture,
-                texcoord_rect: [x*pow - tile.x, 1 - (y + 1)*pow + tile.y, pow, pow]
+                texcoord_rect: [x*pow - tile.x, 1 - ( y + 1 )*pow + tile.y, pow, pow]
             };
         }
         else {
@@ -212,7 +212,7 @@ class SurfaceMaterial extends FlakeMaterial {
             return {
                 lod:           -this._image_zbias,
                 texture:       this._dummy_tile_texture,
-                texcoord_rect: [x*pow - Math.floor( pow * (x + 0.5) ), 1 - (y + 1)*pow + Math.floor( pow * (y + 0.5) ), pow, pow]
+                texcoord_rect: [x*pow - Math.floor( pow * ( x + 0.5 ) ), 1 - ( y + 1 )*pow + Math.floor( pow * ( y + 0.5 ) ), pow, pow]
             };
         }
     }

@@ -49,7 +49,7 @@ export { default as TextEntity } from "./TextEntity";
 export { default as ModelEntity } from "./ModelEntity";
 export { default as PolygonEntity } from "./PolygonEntity";
 export { default as PinEntity } from "./PinEntity";
-export { default as ImageIconEntity } from "./ImageIconEntity"
+export { default as ImageIconEntity } from "./ImageIconEntity";
 
 // Material
 export { default as Material } from "./Material";
