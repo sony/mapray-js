@@ -19,12 +19,25 @@ export function isFeatureCollectionJson( node: NodeJson ): node is FeatureCollec
 export interface FeatureJson extends NodeJson {
     type: FeatureType.Feature;
     geometry: GeometryJson;
+    properties?: PropertiesJson;
+    /** @internal **/
+    mapray?: MaprayJson;
 }
 
 export function isFeatureJson( node: NodeJson ): node is FeatureJson {
     return node.type === FeatureType.Feature;
 }
 
+
+export interface PropertiesJson {
+    [key: string]: any;
+}
+export interface MaprayJson {
+    version: string,
+    id: string,
+    visibility?: boolean;
+    altitudeMode?: "CLAMP" | "RELATIVE" | "ABSOLUTE";
+}
 
 export interface GeometryJson extends NodeJson {
     type: string;
