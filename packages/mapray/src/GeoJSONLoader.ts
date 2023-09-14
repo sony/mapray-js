@@ -39,12 +39,6 @@ class GeoJSONLoader extends Loader {
 
     private _getVisibility: (geojson: GeoJSON.FeatureJson) => boolean;
 
-    private _glenv: GLEnv;
-
-    private _cancelled: boolean;
-
-    private _finished: boolean;
-
 
     /**
      * url で指定したシーンデータの読み込みを開始し、scene にエンティティを構築する。
@@ -94,10 +88,6 @@ class GeoJSONLoader extends Loader {
         this._getAltitude = options.getAltitude || defaultGetAltitudeCallback;
         this._getVisibility = options.getVisibility || defaultGetVisibilityCallback;
 
-        this._glenv      = scene.glenv;
-        // this._references = {};
-        this._cancelled  = false;
-        this._finished   = false;
     }
 
 
@@ -127,9 +117,7 @@ class GeoJSONLoader extends Loader {
             success = false;
             for ( var i = 0, len = geojson.features.length; i < len; i++ ) {
                 var feature = geojson.features[i];
-                // @ts-ignore
-                var s = this._load_geojson_object( feature.featureId ? feature.feature : feature ); // @ToDo: Unknown
-                // var s = this._load_geojson_object( feature );
+                var s = this._load_geojson_object( feature );
                 if (s && !success) success = s;
             }
         }
@@ -139,8 +127,6 @@ class GeoJSONLoader extends Loader {
         else {
             success = this._load_geometry_object( geojson, undefined );
         }
-
-        if ( this._cancelled ) return false;
 
         return success;
     }
@@ -223,7 +209,7 @@ class GeoJSONLoader extends Loader {
      */
     private _generateLine( points: GeoJSON.CoordinatesJson[], width: number, color: Vector3, opacity: number, altitude_mode: AltitudeMode, altitude: number | undefined, visibility: boolean, geojson: GeoJSON.FeatureJson ): boolean
     {
-        if ( !points ) {
+        if ( !points.length ) {
             return false;
         }
 
@@ -349,7 +335,7 @@ class GeoJSONLoader extends Loader {
      */
     private _generatePolygon( pointsList: GeoJSON.CoordinatesJson[][], color: Vector3, opacity: number, altitude_mode: AltitudeMode, altitude: number | undefined, extruded_height: number, visibility: boolean, geojson: GeoJSON.FeatureJson ): boolean
     {
-        if ( !pointsList ) {
+        if ( !pointsList.length ) {
             return false;
         }
 
