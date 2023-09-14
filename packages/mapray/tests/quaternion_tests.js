@@ -4,6 +4,10 @@
  */
 import GeoMath, {GeoPoint, Orientation} from "../dist/es/GeoMath";
 
+function isNormalizedQuaternion( quaternion ) {
+    const length = GeoMath.length4(quaternion);
+    return Math.abs(length - 1) <= Number.EPSILON;
+}
 
 test('convert_matrix_test', () => {
     const matrix = new Float64Array( [
@@ -98,14 +102,14 @@ test('mul_test', () => {
         0.8077750230203598,
         -0.6801066357826091
     ]);
-    let quaternion = GeoMath.rotation_quat(axis, angle, GeoMath.createVector4());
+    let quaternion1 = GeoMath.rotation_quat(axis, angle, GeoMath.createVector4());
     let quaternion2 = GeoMath.rotation_quat(axis2, angle2, GeoMath.createVector4());
-    let result = GeoMath.mul_quat(quaternion, quaternion2, GeoMath.createVector4());
+    let result = GeoMath.mul_quat(quaternion1, quaternion2, GeoMath.createVector4());
 
     expect(result[0]).toBeCloseTo(-0.4044779015036345, 5);
-    expect(result[1]).toBeCloseTo(0.766952156638097, 5);
+    expect(result[1]).toBeCloseTo( 0.7669521566380970, 5);
     expect(result[2]).toBeCloseTo(-0.08668921765741092, 5);
-    expect(result[3]).toBeCloseTo(0.49057822634655723, 5);
+    expect(result[3]).toBeCloseTo( 0.49057822634655723, 5);
 
     angle = -44.29644462360008;
     angle2 = 102.81309520682544;
@@ -120,9 +124,9 @@ test('mul_test', () => {
         0.05693538269342602,
         -0.857668538114686
     ]);
-    quaternion = GeoMath.rotation_quat(axis, angle, GeoMath.createVector4());
+    quaternion1 = GeoMath.rotation_quat(axis, angle, GeoMath.createVector4());
     quaternion2 = GeoMath.rotation_quat(axis2, angle2, GeoMath.createVector4());
-    result = GeoMath.mul_quat(quaternion, quaternion2, GeoMath.createVector4());
+    result = GeoMath.mul_quat(quaternion1, quaternion2, GeoMath.createVector4());
 
     expect(result[0]).toBeCloseTo(0.636560586761528, 5);
     expect(result[1]).toBeCloseTo(0.21007493357392537, 5);
@@ -137,9 +141,9 @@ test('mul_test', () => {
         -0.7387528708512803,
         0.9677955970888537
     ]);
-    quaternion = GeoMath.rotation_quat(axis, angle, GeoMath.createVector4());
+    quaternion1 = GeoMath.rotation_quat(axis, angle, GeoMath.createVector4());
     quaternion2 = GeoMath.rotation_quat(axis, angle2, GeoMath.createVector4());
-    result = GeoMath.mul_quat(quaternion, quaternion2, GeoMath.createVector4());
+    result = GeoMath.mul_quat(quaternion1, quaternion2, GeoMath.createVector4());
 
     const result2 = GeoMath.rotation_quat(axis, angle + angle2, GeoMath.createVector4());
     expect(result[0]).toBeCloseTo(result2[0], 5);
@@ -150,15 +154,194 @@ test('mul_test', () => {
 
 
 test('slerp_test', () => {
-    const quaternion = GeoMath.createVector4([1, 0, 0, 0]);
-    const quaternion2 = GeoMath.createVector4([0, 1, 0, 0]);
-    const slerp_value = 0.5;
+    let quaternion1 = GeoMath.createVector4([1, 0, 0, 0]);
+    let quaternion2 = GeoMath.createVector4([0, 1, 0, 0]);
+    let slerp_value = 0.5;
 
-    const result = GeoMath.slerp_quat(quaternion, quaternion2, slerp_value, GeoMath.createVector4());
-    expect(result[0]).toBeCloseTo(1/Math.sqrt(2), 5);
-    expect(result[1]).toBeCloseTo(1/Math.sqrt(2), 5);
+    const sqrt1_2 = Math.SQRT1_2;
+    let result = GeoMath.slerp_quat(quaternion1, quaternion2, slerp_value, GeoMath.createVector4());
+    expect(result[0]).toBeCloseTo(sqrt1_2, 5);
+    expect(result[1]).toBeCloseTo(sqrt1_2, 5);
     expect(result[2]).toBeCloseTo(0, 5);
     expect(result[3]).toBeCloseTo(0, 5);
+    expect(isNormalizedQuaternion(result)).toBe(true);
+
+    quaternion1 = GeoMath.createVector4([0,  sqrt1_2, 0, sqrt1_2]);
+    quaternion2 = GeoMath.createVector4([0, -sqrt1_2, 0, sqrt1_2]);
+    result = GeoMath.slerp_quat(quaternion1, quaternion2, slerp_value, GeoMath.createVector4());
+    expect(result[0]).toBeCloseTo(0, 5);
+    expect(result[1]).toBeCloseTo(0, 5);
+    expect(result[2]).toBeCloseTo(0, 5);
+    expect(result[3]).toBeCloseTo(1, 5);
+    expect(isNormalizedQuaternion(result)).toBe(true);
+
+
+    let axis = GeoMath.createVector3([0, 1, 0]);
+    let angleA = 0;
+    let angleB = 20;
+    quaternion1 = GeoMath.rotation_quat(axis, angleA, GeoMath.createVector4());
+    quaternion2 = GeoMath.rotation_quat(axis, angleB, GeoMath.createVector4());
+
+    slerp_value = 0.5;
+
+    result = GeoMath.slerp_quat(quaternion1, quaternion2, slerp_value, GeoMath.createVector4());
+    expect(result[0]).toBeCloseTo(0, 5);
+    expect(result[1]).toBeCloseTo(0.08715574274765817, 5);
+    expect(result[2]).toBeCloseTo(0, 5);
+    expect(result[3]).toBeCloseTo( 0.9961946980917455, 5);
+    expect(isNormalizedQuaternion(result)).toBe(true);
+
+    axis = GeoMath.createVector3([0, 0, 1]);
+    angleA = 90;
+    angleB = 359;
+
+    slerp_value = 0.5;
+    quaternion1 = GeoMath.rotation_quat(axis, angleA, GeoMath.createVector4());
+    quaternion2 = GeoMath.rotation_quat(axis, angleB, GeoMath.createVector4());
+    result = GeoMath.slerp_quat(quaternion1, quaternion2, slerp_value, GeoMath.createVector4());
+
+    expect(result[0]).toBeCloseTo(0, 5);
+    expect(result[1]).toBeCloseTo(0, 5);
+    expect(result[2]).toBeCloseTo(0.37864861735243294, 5);
+    expect(result[3]).toBeCloseTo(0.92554050401756640, 5);
+    expect(isNormalizedQuaternion(result)).toBe(true);
+
+    angleA = 359;
+    angleB = 0;
+
+    slerp_value = 0.5;
+    quaternion1 = GeoMath.rotation_quat(axis, angleA, GeoMath.createVector4());
+    quaternion2 = GeoMath.rotation_quat(axis, angleB, GeoMath.createVector4());
+    result = GeoMath.slerp_quat(quaternion1, quaternion2, slerp_value, GeoMath.createVector4());
+    expect(result[0]).toBeCloseTo( 0, 5);
+    expect(result[1]).toBeCloseTo(0, 5);
+    expect(result[2]).toBeCloseTo(0.004363309284746584, 5);
+    expect(result[3]).toBeCloseTo( -0.9999904807207347, 5);
+    expect(isNormalizedQuaternion(result)).toBe(true);
+
+    axis = GeoMath.createVector3([0, 1, 0]);
+    angleA = 90;
+    angleB = 359;
+
+    slerp_value = 0.5;
+    quaternion1 = GeoMath.rotation_quat(axis, angleA, GeoMath.createVector4());
+    quaternion2 = GeoMath.rotation_quat(axis, angleB, GeoMath.createVector4());
+    result = GeoMath.slerp_quat(quaternion1, quaternion2, slerp_value, GeoMath.createVector4());
+
+    expect(result[0]).toBeCloseTo(0, 5);
+    expect(result[1]).toBeCloseTo(0.37864861735243294, 5);
+    expect(result[2]).toBeCloseTo(0, 5);
+    expect(result[3]).toBeCloseTo(0.92554050401756640, 5);
+    expect(isNormalizedQuaternion(result)).toBe(true);
+
+    angleA = 359;
+    angleB = 0;
+
+    slerp_value = 0.5;
+    quaternion1 = GeoMath.rotation_quat(axis, angleA, GeoMath.createVector4());
+    quaternion2 = GeoMath.rotation_quat(axis, angleB, GeoMath.createVector4());
+    result = GeoMath.slerp_quat(quaternion1, quaternion2, slerp_value, GeoMath.createVector4());
+    expect(result[0]).toBeCloseTo( 0, 5);
+    expect(result[1]).toBeCloseTo(0.004363309284746584, 5);
+    expect(result[2]).toBeCloseTo(0, 5);
+    expect(result[3]).toBeCloseTo( -0.9999904807207347, 5);
+    expect(isNormalizedQuaternion(result)).toBe(true);
+
+    axis = GeoMath.createVector3([1, 0, 0]);
+    angleA = 90;
+    angleB = 359;
+
+    slerp_value = 0.5;
+    quaternion1 = GeoMath.rotation_quat(axis, angleA, GeoMath.createVector4());
+    quaternion2 = GeoMath.rotation_quat(axis, angleB, GeoMath.createVector4());
+    result = GeoMath.slerp_quat(quaternion1, quaternion2, slerp_value, GeoMath.createVector4());
+
+    expect(result[0]).toBeCloseTo(0.37864861735243294, 5);
+    expect(result[1]).toBeCloseTo(0, 5);
+    expect(result[2]).toBeCloseTo(0, 5);
+    expect(result[3]).toBeCloseTo(0.9255405040175664, 5);
+    expect(isNormalizedQuaternion(result)).toBe(true);
+
+    angleA = 359;
+    angleB = 0;
+
+    slerp_value = 0.5;
+    quaternion1 = GeoMath.rotation_quat(axis, angleA, GeoMath.createVector4());
+    quaternion2 = GeoMath.rotation_quat(axis, angleB, GeoMath.createVector4());
+    result = GeoMath.slerp_quat(quaternion1, quaternion2, slerp_value, GeoMath.createVector4());
+    expect(result[0]).toBeCloseTo(0.004363309284746584, 5);
+    expect(result[1]).toBeCloseTo(0, 5);
+    expect(result[2]).toBeCloseTo(0, 5);
+    expect(result[3]).toBeCloseTo(-0.9999904807207347, 5);
+    expect(isNormalizedQuaternion(result)).toBe(true);
+
+    axis = GeoMath.createVector3([1, 0, 0]);
+    angleA = 90;
+    angleB = 359;
+
+    slerp_value = 0.1;
+    quaternion1 = GeoMath.rotation_quat(axis, angleA, GeoMath.createVector4());
+    quaternion2 = GeoMath.rotation_quat(axis, angleB, GeoMath.createVector4());
+    result = GeoMath.slerp_quat(quaternion1, quaternion2, slerp_value, GeoMath.createVector4());
+
+    expect(result[0]).toBeCloseTo(0.6487842217353611, 5);
+    expect(result[1]).toBeCloseTo(0, 5);
+    expect(result[2]).toBeCloseTo(0, 5);
+    expect(result[3]).toBeCloseTo(0.7609724263251868, 5);
+    expect(isNormalizedQuaternion(result)).toBe(true);
+
+    // Edge test
+    axis = GeoMath.createVector3([1, 0, 0]);
+    angleA = 180;
+    angleB = 270;
+
+    quaternion1 = GeoMath.rotation_quat(axis, angleA, GeoMath.createVector4());
+    quaternion2 = GeoMath.rotation_quat(axis, angleB, GeoMath.createVector4());
+
+    slerp_value = 0;
+    result = GeoMath.slerp_quat(quaternion1, quaternion2, slerp_value, GeoMath.createVector4());
+
+    expect(result[0]).toBeCloseTo(quaternion1[0], 5);
+    expect(result[1]).toBeCloseTo(quaternion1[1], 5);
+    expect(result[2]).toBeCloseTo(quaternion1[2], 5);
+    expect(result[3]).toBeCloseTo(quaternion1[3], 5);
+    expect(isNormalizedQuaternion(result)).toBe(true);
+
+    slerp_value = 1;
+    result = GeoMath.slerp_quat(quaternion1, quaternion2, slerp_value, GeoMath.createVector4());
+
+    expect(result[0]).toBeCloseTo(quaternion2[0], 5);
+    expect(result[1]).toBeCloseTo(quaternion2[1], 5);
+    expect(result[2]).toBeCloseTo(quaternion2[2], 5);
+    expect(result[3]).toBeCloseTo(quaternion2[3], 5);
+    expect(isNormalizedQuaternion(result)).toBe(true);
+
+
+    angleA = 289;
+    slerp_value = 0.2;
+
+    quaternion1 = GeoMath.rotation_quat(axis, angleA, GeoMath.createVector4());
+    quaternion2 = quaternion1;
+    result = GeoMath.slerp_quat(quaternion1, quaternion2, slerp_value, GeoMath.createVector4());
+
+    expect(result[0]).toBeCloseTo(quaternion1[0], 5);
+    expect(result[1]).toBeCloseTo(quaternion1[1], 5);
+    expect(result[2]).toBeCloseTo(quaternion1[2], 5);
+    expect(result[3]).toBeCloseTo(quaternion1[3], 5);
+    expect(isNormalizedQuaternion(result)).toBe(true);
+
+
+    quaternion1 = GeoMath.createVector4([1,0,0,1]);
+    quaternion2 = GeoMath.createVector4([0.99999999, 0, 0, 0.99999998]);
+    GeoMath.normalize4(quaternion1, quaternion1);
+    GeoMath.normalize4(quaternion2, quaternion2);
+
+    result = GeoMath.slerp_quat(quaternion1, quaternion2, slerp_value, GeoMath.createVector4());
+    expect(result[0]).toBeCloseTo(0.7071067811865476 , 5);
+    expect(result[1]).toBeCloseTo(0, 5);
+    expect(result[2]).toBeCloseTo(0, 5);
+    expect(result[3]).toBeCloseTo(0.7071067811865476, 5);
+    expect(isNormalizedQuaternion(result)).toBe(true);
 });
 
 

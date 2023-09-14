@@ -1366,35 +1366,47 @@ class GeoMath {
      */
     static slerp_quat( q1: Vector4, q2: Vector4, alpha: number, dst: Vector4 ): Vector4
     {
-        let dot = GeoMath.dot4(q1, q2);
-        const longerFlag = dot < 0;
-        let flip = 1;
+        if ( alpha === 0 ) {
+            return GeoMath.copyVector4( q1, dst );
+        }
+        else if ( alpha === 1 ) {
+            return GeoMath.copyVector4( q2, dst );
+        }
+        else if ( q1[0] === q2[0] && q1[1] === q2[1] && q1[2] === q2[2] && q1[3] === q2[3] ) {
+            return GeoMath.copyVector4( q1, dst );
+        }
 
-        if ( longerFlag ) {
+        let dot = GeoMath.dot4( q1, q2 );
+        if ( dot < 0 ) {
             dot = -dot;
-            flip = -1;
+            q2[0] = -q2[0];
+            q2[1] = -q2[1];
+            q2[2] = -q2[2];
+            q2[3] = -q2[3];
         }
 
         const sq_tdot = 1.0 - dot * dot;
         let s1, s2;
-        if ( sq_tdot <= 0.0 ) {
+        const linearFlag = sq_tdot < Number.EPSILON;
+        if ( linearFlag ) {
             s1 = 1.0 - alpha;
             s2 = alpha;
         }
         else {
-            const om = Math.acos( dot );
-            const sin_om = Math.sqrt(sq_tdot); 
-            s1 = Math.sin((1.0 - alpha) * om) / sin_om;
-            s2 = Math.sin(alpha * om) / sin_om;
-            if ( longerFlag ) {
-                s2 = -s2;
-            }
+            const sin_om = Math.sqrt( sq_tdot );
+            const om = Math.atan2( sin_om, dot );
+            s1 = Math.sin( ( 1.0 - alpha ) * om ) / sin_om;
+            s2 = Math.sin( alpha * om ) / sin_om;
         }
 
-        dst[0] = s1 * q1[0] + s2 * q2[0] * flip;
-        dst[1] = s1 * q1[1] + s2 * q2[1] * flip;
-        dst[2] = s1 * q1[2] + s2 * q2[2] * flip;
-        dst[3] = s1 * q1[3] + s2 * q2[3] * flip;
+        dst[0] = s1 * q1[0] + s2 * q2[0];
+        dst[1] = s1 * q1[1] + s2 * q2[1];
+        dst[2] = s1 * q1[2] + s2 * q2[2];
+        dst[3] = s1 * q1[3] + s2 * q2[3];
+
+        if ( linearFlag ) {
+            GeoMath.normalize4( dst, dst );
+        }
 
         return dst;
     }
