@@ -10,25 +10,26 @@ import PinEntity from "./PinEntity";
 import Resource, { URLResource } from "./Resource";
 import AltitudeMode from "./AltitudeMode";
 import GeoJSON from "./GeoJSON";
+import Color from "./util/Color";
 
 /**
  * GeoJSON形式（[rfc7946](https://tools.ietf.org/html/rfc7946)）のデータをシーンに読み込みます。
  */
 class GeoJSONLoader extends Loader {
 
-    private _getPointFGColor: (geojson: GeoJSON.FeatureJson) => Vector3 | number[];
+    private _getPointFGColor: (geojson: GeoJSON.FeatureJson) => Vector3;
 
-    private _getPointBGColor: (geojson: GeoJSON.FeatureJson) => Vector3 | number[];
+    private _getPointBGColor: (geojson: GeoJSON.FeatureJson) => Vector3;
 
     private _getPointSize: (geojson: GeoJSON.FeatureJson) => number;
 
     private _getPointIconId: (geojson: GeoJSON.FeatureJson) => string | undefined;
 
-    private _getLineColor: (geojson: GeoJSON.FeatureJson) => Vector3 | Vector4 | number[];
+    private _getLineColor: (geojson: GeoJSON.FeatureJson) => Vector3 | Vector4;
 
     private _getLineWidth: (geojson: GeoJSON.FeatureJson) => number;
 
-    private _getFillColor: (geojson: GeoJSON.FeatureJson) => Vector4 | number[];
+    private _getFillColor: (geojson: GeoJSON.FeatureJson) => Vector3 | Vector4;
 
     private _getExtrudedHeight: (geojson: GeoJSON.FeatureJson) => number;
 
@@ -183,18 +184,18 @@ class GeoJSONLoader extends Loader {
      */
     private _loadLines( geometry: GeoJSON.LineStringGeometryJson | GeoJSON.MultiLineStringGeometryJson, geojson: GeoJSON.FeatureJson ): boolean
     {
-        const color4 = this._getLineColor( geojson );
+        const color4 = Color.createColor( this._getLineColor( geojson ) );
         const width = this._getLineWidth( geojson );
         const altitude = this._getAltitude( geojson );
         const altitude_mode = this._getAltitudeMode( geojson );
         const visibility = this._getVisibility( geojson );
-        
-        if ( !geometry || color4.length !== 4 ) {
+
+        if ( !geometry ) {
             return false;
         }
         var type = geometry.type;
         var coords = geometry.coordinates;
-        var rgb = color4.slice(0, 3) as Vector3;
+        var rgb = Color.copyOpaqueColor( color4, GeoMath.createVector3() );
         var alpha = color4[3];
 
         // If multiline, split entity
@@ -264,8 +265,8 @@ class GeoJSONLoader extends Loader {
 
 
         var props = {
-            "fg_color": fgColor.slice( 0, 3 ) as Vector3,
-            "bg_color": bgColor.slice( 0, 3 ) as Vector3,
+            "fg_color": fgColor,
+            "bg_color": bgColor,
             "size": size,
         };
 
@@ -309,18 +310,18 @@ class GeoJSONLoader extends Loader {
      */
     private _loadPolygons( geometry: GeoJSON.PolygonGeometryJson | GeoJSON.MultiPolygonGeometryJson, geojson: GeoJSON.FeatureJson ): boolean
     {
-        const color4 = this._getFillColor( geojson );
+        const color4 = Color.createColor( this._getFillColor( geojson ) );
         const altitude_mode = this._getAltitudeMode( geojson );
         const altitude = this._getAltitude( geojson );
         const extruded_height = this._getExtrudedHeight( geojson );
         const visibility = this._getVisibility( geojson );
 
-        if ( !geometry || color4.length !== 4 ) {
+        if ( !geometry ) {
             return false;
         }
         var type = geometry.type;
         var coords = geometry.coordinates;
-        var rgb = color4.slice(0, 3) as Vector3;
+        var rgb = Color.copyOpaqueColor( color4, GeoMath.createVector3() );
         var alpha = color4[3];
 
         // If multiline, split entity
@@ -421,7 +422,7 @@ export interface Option {
 
     getLineWidth?: (geojson: GeoJSON.FeatureJson) => number;
 
-    getFillColor?: (geojson: GeoJSON.FeatureJson) => Vector4;
+    getFillColor?: (geojson: GeoJSON.FeatureJson) => Vector3 | Vector4;
 
     getExtrudedHeight?: (geojson: GeoJSON.FeatureJson) => number;
 
@@ -435,11 +436,11 @@ export interface Option {
 
 
 export const _defaultHeaders = {};
-export const defaultLineColor = [0, 0, 0, 1];
-export const defaultFillColor = [0, 0, 0, 1];
+export const defaultLineColor = GeoMath.createVector4( [0, 0, 0, 1] );
+export const defaultFillColor = GeoMath.createVector4( [0, 0, 0, 1] );
 export const defaultLineWidth = 1;
-export const defaultPointFGColor = [1.0, 1.0, 1.0];
-export const defaultPointBGColor = [0.35, 0.61, 0.81];
+export const defaultPointFGColor = GeoMath.createVector3( [1.0, 1.0, 1.0] );
+export const defaultPointBGColor = GeoMath.createVector3( [0.35, 0.61, 0.81] );
 export const defaultPointSize = 30;
 export const defaultPointIconId = undefined;
 export const defaultAltitude = 0.0;
