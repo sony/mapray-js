@@ -17,27 +17,27 @@ import Color from "./util/Color";
  */
 class GeoJSONLoader extends Loader {
 
-    private _getPointFGColor: ( geojson: GeoJSON.FeatureJson ) => Vector3;
+    private _getPointFGColor: ( geojson: GeoJSON.FeatureJson ) => Vector3 | undefined;
 
-    private _getPointBGColor: ( geojson: GeoJSON.FeatureJson ) => Vector3;
+    private _getPointBGColor: ( geojson: GeoJSON.FeatureJson ) => Vector3 | undefined;
 
-    private _getPointSize: ( geojson: GeoJSON.FeatureJson ) => number;
+    private _getPointSize: ( geojson: GeoJSON.FeatureJson ) => number | undefined;
 
     private _getPointIconId: ( geojson: GeoJSON.FeatureJson ) => string | undefined;
 
-    private _getLineColor: ( geojson: GeoJSON.FeatureJson ) => Vector3 | Vector4;
+    private _getLineColor: ( geojson: GeoJSON.FeatureJson ) => Vector3 | Vector4 | undefined;
 
-    private _getLineWidth: ( geojson: GeoJSON.FeatureJson ) => number;
+    private _getLineWidth: ( geojson: GeoJSON.FeatureJson ) => number | undefined;
 
-    private _getFillColor: ( geojson: GeoJSON.FeatureJson ) => Vector3 | Vector4;
+    private _getFillColor: ( geojson: GeoJSON.FeatureJson ) => Vector3 | Vector4 | undefined;
 
-    private _getExtrudedHeight: ( geojson: GeoJSON.FeatureJson ) => number;
+    private _getExtrudedHeight: ( geojson: GeoJSON.FeatureJson ) => number | undefined;
 
-    private _getAltitudeMode: ( geojson: GeoJSON.FeatureJson ) => AltitudeMode;
+    private _getAltitudeMode: ( geojson: GeoJSON.FeatureJson ) => AltitudeMode | undefined;
 
     private _getAltitude: ( geojson: GeoJSON.FeatureJson ) => number | undefined;
 
-    private _getVisibility: ( geojson: GeoJSON.FeatureJson ) => boolean;
+    private _getVisibility: ( geojson: GeoJSON.FeatureJson ) => boolean | undefined;
 
 
     /**
@@ -66,23 +66,23 @@ class GeoJSONLoader extends Loader {
         } );
 
         // PinEntity
-        this._getPointFGColor = options.getPointFGColor ?? defaultGetPointFGColorCallback;
-        this._getPointBGColor = options.getPointBGColor ?? defaultGetPointBGColorCallback;
-        this._getPointSize    = options.getPointSize    ?? defaultGetPointSizeCallback;
-        this._getPointIconId  = options.getPointIconId  ?? defaultGetPointIconIdCallback;
+        this._getPointFGColor = options.getPointFGColor ?? emptyCallback;
+        this._getPointBGColor = options.getPointBGColor ?? emptyCallback;
+        this._getPointSize    = options.getPointSize    ?? emptyCallback;
+        this._getPointIconId  = options.getPointIconId  ?? emptyCallback;
 
         // MarkerLineEntity
-        this._getLineColor = options.getLineColor ?? defaultGetLineColorCallback;
-        this._getLineWidth = options.getLineWidth ?? defaultGetLineWidthCallback;
+        this._getLineColor = options.getLineColor ?? emptyCallback;
+        this._getLineWidth = options.getLineWidth ?? emptyCallback;
 
         // PolygonEntity
-        this._getFillColor      = options.getFillColor      ?? defaultGetFillColorCallback;
-        this._getExtrudedHeight = options.getExtrudedHeight ?? defaultGetExtrudedHeightCallback;
+        this._getFillColor      = options.getFillColor      ?? emptyCallback;
+        this._getExtrudedHeight = options.getExtrudedHeight ?? emptyCallback;
 
         // Common
-        this._getAltitudeMode = options.getAltitudeMode ?? defaultGetAltitudeModeCallback;
-        this._getAltitude     = options.getAltitude     ?? defaultGetAltitudeCallback;
-        this._getVisibility   = options.getVisibility   ?? defaultGetVisibilityCallback;
+        this._getAltitudeMode = options.getAltitudeMode ?? emptyCallback;
+        this._getAltitude     = options.getAltitude     ?? emptyCallback;
+        this._getVisibility   = options.getVisibility   ?? emptyCallback;
 
     }
 
@@ -164,12 +164,12 @@ class GeoJSONLoader extends Loader {
      */
     private _loadLines( geometry: GeoJSON.LineStringGeometryJson | GeoJSON.MultiLineStringGeometryJson, geojson: GeoJSON.FeatureJson ): boolean
     {
-        const color4 = Color.createColor( this._getLineColor( geojson ) );
-        const width = this._getLineWidth( geojson );
+        const color4 = Color.createColor( this._getLineColor( geojson ) ?? GeoJSONLoader.defaultLineColor );
+        const width = this._getLineWidth( geojson ) ?? GeoJSONLoader.defaultLineWidth;
 
-        const altitude_mode = this._getAltitudeMode( geojson );
+        const altitude_mode = this._getAltitudeMode( geojson ) ?? getMaprayAltitudeMode( geojson ) ?? GeoJSONLoader.defaultAltitudeMode;
         const altitude = this._getAltitude( geojson );
-        const visibility = this._getVisibility( geojson );
+        const visibility = this._getVisibility( geojson ) ?? getMaprayVisibility( geojson ) ?? GeoJSONLoader.defaultVisibility;
 
         if ( !geometry ) {
             return false;
@@ -226,14 +226,14 @@ class GeoJSONLoader extends Loader {
      */
     private _loadPoint( geometry: GeoJSON.PointGeometryJson | GeoJSON.MultiPointGeometryJson, geojson: GeoJSON.FeatureJson ): boolean
     {
-        const fgColor = this._getPointFGColor( geojson );
-        const bgColor = this._getPointBGColor( geojson );
-        const iconId = this._getPointIconId( geojson );
-        const size = this._getPointSize( geojson );
+        const fgColor = this._getPointFGColor( geojson ) ?? GeoJSONLoader.defaultPointFGColor;
+        const bgColor = this._getPointBGColor( geojson ) ?? GeoJSONLoader.defaultPointBGColor;
+        const iconId = this._getPointIconId( geojson ) ?? GeoJSONLoader.defaultPointIconId;
+        const size = this._getPointSize( geojson ) ?? GeoJSONLoader.defaultPointSize;
 
-        const altitude_mode = this._getAltitudeMode( geojson );
+        const altitude_mode = this._getAltitudeMode( geojson ) ?? getMaprayAltitudeMode( geojson ) ?? GeoJSONLoader.defaultAltitudeMode;
         const altitude = this._getAltitude( geojson );
-        const visibility = this._getVisibility( geojson );
+        const visibility = this._getVisibility( geojson ) ?? getMaprayVisibility( geojson ) ?? GeoJSONLoader.defaultVisibility;
 
         if ( !geometry ) {
             return false;
@@ -283,12 +283,12 @@ class GeoJSONLoader extends Loader {
      */
     private _loadPolygons( geometry: GeoJSON.PolygonGeometryJson | GeoJSON.MultiPolygonGeometryJson, geojson: GeoJSON.FeatureJson ): boolean
     {
-        const color4 = Color.createColor( this._getFillColor( geojson ) );
-        const extruded_height = this._getExtrudedHeight( geojson );
+        const color4 = Color.createColor( this._getFillColor( geojson ) ?? GeoJSONLoader.defaultFillColor );
+        const extruded_height = this._getExtrudedHeight( geojson ) ?? GeoJSONLoader.defaultExtrudedHeight;
 
-        const altitude_mode = this._getAltitudeMode( geojson );
+        const altitude_mode = this._getAltitudeMode( geojson ) ?? getMaprayAltitudeMode( geojson ) ?? GeoJSONLoader.defaultAltitudeMode;
         const altitude = this._getAltitude( geojson );
-        const visibility = this._getVisibility( geojson );
+        const visibility = this._getVisibility( geojson ) ?? getMaprayVisibility( geojson ) ?? GeoJSONLoader.defaultVisibility;
 
         if ( !geometry ) {
             return false;
@@ -373,39 +373,31 @@ export interface Option {
     /** エンティティコールバック関数 */
     onEntity?: Loader.EntityCallback;
 
-    getPointFGColor?: ( geojson: GeoJSON.FeatureJson ) => Vector3;
+    getPointFGColor?: ( geojson: GeoJSON.FeatureJson ) => Vector3 | undefined;
 
-    getPointBGColor?: ( geojson: GeoJSON.FeatureJson ) => Vector3;
+    getPointBGColor?: ( geojson: GeoJSON.FeatureJson ) => Vector3 | undefined;
 
-    getPointSize?: ( geojson: GeoJSON.FeatureJson ) => number;
+    getPointSize?: ( geojson: GeoJSON.FeatureJson ) => number | undefined;
 
     getPointIconId?: ( geojson: GeoJSON.FeatureJson ) => string | undefined;
 
-    getLineColor?: ( geojson: GeoJSON.FeatureJson ) => Vector3 | Vector4;
+    getLineColor?: ( geojson: GeoJSON.FeatureJson ) => Vector3 | Vector4 | undefined;
 
-    getLineWidth?: ( geojson: GeoJSON.FeatureJson ) => number;
+    getLineWidth?: ( geojson: GeoJSON.FeatureJson ) => number | undefined;
 
-    getFillColor?: ( geojson: GeoJSON.FeatureJson ) => Vector3 | Vector4;
+    getFillColor?: ( geojson: GeoJSON.FeatureJson ) => Vector3 | Vector4 | undefined;
 
-    getExtrudedHeight?: ( geojson: GeoJSON.FeatureJson ) => number;
+    getExtrudedHeight?: ( geojson: GeoJSON.FeatureJson ) => number | undefined;
 
-    getAltitudeMode?: ( geojson: GeoJSON.FeatureJson ) => AltitudeMode;
+    getAltitudeMode?: ( geojson: GeoJSON.FeatureJson ) => AltitudeMode | undefined;
 
     getAltitude?: ( geojson: GeoJSON.FeatureJson ) => number | undefined;
 
-    getVisibility?: ( geojson: GeoJSON.FeatureJson ) => boolean;
+    getVisibility?: ( geojson: GeoJSON.FeatureJson ) => boolean | undefined;
 
 }
 
 
-
-export const _defaultHeaders = {};
-
-export const defaultLineColor = GeoMath.createVector4( [0, 0, 0, 1] );
-
-export const defaultFillColor = GeoMath.createVector4( [0, 0, 0, 1] );
-
-export const defaultLineWidth = 1;
 
 export const defaultPointFGColor = GeoMath.createVector3( [1.0, 1.0, 1.0] );
 
@@ -415,88 +407,44 @@ export const defaultPointSize = 30;
 
 export const defaultPointIconId = undefined;
 
-export const defaultAltitude = 0.0;
+export const defaultLineColor = GeoMath.createVector4( [0, 0, 0, 1] );
+
+export const defaultLineWidth = 1;
+
+export const defaultFillColor = GeoMath.createVector4( [0, 0, 0, 1] );
 
 export const defaultExtrudedHeight = 0.0;
 
-export const defaultVisibility = true;
+export const defaultAltitudeMode = AltitudeMode.ABSOLUTE;
 
+export const defaultAltitude = 0.0;
+
+export const defaultVisibility = true;
 
 
 } // namespace GeoJSONLoader
 
 
 
-function defaultGetLineColorCallback( _geojson: GeoJSON.FeatureJson ): Vector4
-{
-    return GeoJSONLoader.defaultLineColor;
-}
+const emptyCallback = () => undefined;
 
 
-function defaultGetLineWidthCallback( _geojson: GeoJSON.FeatureJson ): number
-{
-    return GeoJSONLoader.defaultLineWidth;
-}
 
-
-function defaultGetFillColorCallback( _geojson: GeoJSON.FeatureJson ): Vector4
-{
-    return GeoJSONLoader.defaultFillColor;
-}
-
-
-function defaultGetPointFGColorCallback( _geojson: GeoJSON.FeatureJson ): Vector3
-{
-    return GeoJSONLoader.defaultPointFGColor;
-}
-
-
-function defaultGetPointBGColorCallback( _geojson: GeoJSON.FeatureJson ): Vector3
-{
-    return GeoJSONLoader.defaultPointBGColor;
-}
-
-
-function defaultGetPointSizeCallback( _geojson: GeoJSON.FeatureJson ): number
-{
-    return GeoJSONLoader.defaultPointSize;
-}
-
-
-function defaultGetPointIconIdCallback( _geojson: GeoJSON.FeatureJson ): undefined
-{
-    return GeoJSONLoader.defaultPointIconId;
-}
-
-
-function defaultGetAltitudeModeCallback( geojson: GeoJSON.FeatureJson ): AltitudeMode
+function getMaprayAltitudeMode( geojson: GeoJSON.FeatureJson ): AltitudeMode | undefined
 {
     const altitude_mode = geojson.mapray?.altitudeMode;
-    if ( !altitude_mode ) return AltitudeMode.ABSOLUTE;
     return (
         altitude_mode === "CLAMP"    ? AltitudeMode.CLAMP:
         altitude_mode === "RELATIVE" ? AltitudeMode.RELATIVE:
         altitude_mode === "ABSOLUTE" ? AltitudeMode.ABSOLUTE:
-        AltitudeMode.ABSOLUTE
+        undefined
     );
 }
 
 
-function defaultGetAltitudeCallback( _geojson: GeoJSON.FeatureJson ): undefined
+function getMaprayVisibility( geojson: GeoJSON.FeatureJson ): boolean | undefined
 {
-    return undefined;
-}
-
-
-function defaultGetExtrudedHeightCallback( _geojson: GeoJSON.FeatureJson ): number
-{
-    return GeoJSONLoader.defaultExtrudedHeight;
-}
-
-
-function defaultGetVisibilityCallback( geojson: GeoJSON.FeatureJson ): boolean
-{
-    return geojson.mapray?.visibility ?? GeoJSONLoader.defaultVisibility;
+    return geojson.mapray?.visibility ?? undefined;
 }
 
 
