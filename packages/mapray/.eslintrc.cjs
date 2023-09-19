@@ -29,6 +29,7 @@ module.exports = {
         'no-prototype-builtins': 1, // Object.hasOwnPropertiesなどを使うべきでない // @ToDo: 2
         'no-cond-assign': 1, // if内部での代入 // @ToDo: 2
         'no-unused-labels': 1, // 未使用のラベル // @ToDo: 2
+        'no-this-before-super': 2, // super() を呼び出す前に this または super を使わないこと
         '@typescript-eslint/prefer-nullish-coalescing': 1, // || ではなく ?? を使う // @ToDo: 2
 
         '@typescript-eslint/unbound-method': 1, // bindせずにmethodを変数へ代入禁止 // @ToDo: 2
@@ -43,6 +44,9 @@ module.exports = {
         '@typescript-eslint/await-thenable': 1, // promise以外をawait禁止 // @ToDo: 2
         '@typescript-eslint/no-unnecessary-type-assertion': 1, // 不要な型Assertion禁止
         '@typescript-eslint/no-loss-of-precision': 1, // 精度の低下する代入等禁止
+        'no-duplicate-imports': 1, // ひとつのモジュールにはひとつのimport文を使用する
+        'no-extra-boolean-cast': 1, // 不要なbooleanのキャストをしない
+        'no-floating-decimal': 1, // 浮動小数点数のゼロ省略は禁止
 
         'no-inner-declarations': 0, // namespace内部のみでの宣言禁止
         'no-empty': 1, // 空block
@@ -61,12 +65,22 @@ module.exports = {
 
         // format指定(error)
         'eol-last': 2, // ファイルの末尾は必ず改行とする
+        'no-trailing-spaces': 1, // 行末に不要な空白を残さない
+        'no-irregular-whitespace': 1, // イレギュラーな空白は禁止
         'no-tabs': 2, // tab禁止
         'linebreak-style': [2, "unix"], // 改行文字を \n とする
         'no-irregular-whitespace': 1, // @ToDo: 2
 
         // format指定(warning)
-        'indent': [1, 4], // インデント
+        'indent': [1, 4, // インデント
+            {
+                'SwitchCase': 1,
+                'MemberExpression': 'off', // メソッドチェインのインデント設定 "off"は指定なし
+                "flatTernaryExpressions": true, // 入れ子の3項演算子でインデントを入れない
+                "ignoredNodes": [ // インデントチェックしない項目
+                ],
+            }
+        ],
         'semi': [1, "always"], // セミコロンを強制する
         '@typescript-eslint/no-extra-semi': 1, // 不要なセミコロン禁止
         "quotes": [1, "double"], // ダブルクオートとする
@@ -85,6 +99,7 @@ module.exports = {
         'space-in-parens': [1, 'always'], // () 内にスペース
         'space-before-blocks': [1, 'always'], // {} 前後にスペース
         'computed-property-spacing': [1, "never"], // [] 前後にスペースを入れない
+        'semi-spacing': 1, // セミコロンの後にはスペースが必要。また、セミコロン前のスペースは不要
         'block-spacing': 1, // ブロックの内側にスペースを入れる
         'space-before-function-paren': [1, 'never'], // 関数名と()の間にスペース禁止
         'func-call-spacing': [1, 'never'], // 関数呼び出し時の関数名と()の間にスペース禁止
@@ -94,7 +109,8 @@ module.exports = {
                 before: true,
                 after: true,
             }
-        ]
+        ],
+        '@typescript-eslint/no-unused-vars': [ 1, { 'argsIgnorePattern': '^_' } ] // 未使用引数は `_` で始まるものは許容
 
     }
 };
