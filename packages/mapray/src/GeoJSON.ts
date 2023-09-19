@@ -1,10 +1,12 @@
 namespace GeoJSON {
 
 
+
 export interface NodeJson {
     id: string;
     type: string;
 }
+
 
 
 export interface FeatureCollectionJson extends NodeJson {
@@ -12,9 +14,13 @@ export interface FeatureCollectionJson extends NodeJson {
     features: FeatureJson[];
 }
 
+
+
 export function isFeatureCollectionJson( node: NodeJson ): node is FeatureCollectionJson {
     return node.type === FeatureType.FeatureCollection;
 }
+
+
 
 export interface FeatureJson extends NodeJson {
     type: FeatureType.Feature;
@@ -24,20 +30,29 @@ export interface FeatureJson extends NodeJson {
     mapray?: MaprayJson;
 }
 
+
+
 export function isFeatureJson( node: NodeJson ): node is FeatureJson {
     return node.type === FeatureType.Feature;
 }
 
 
+
 export interface PropertiesJson {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [key: string]: any;
 }
+
+
+
 export interface MaprayJson {
     version: string,
     id: string,
     visibility?: boolean;
     altitudeMode?: "CLAMP" | "RELATIVE" | "ABSOLUTE";
 }
+
+
 
 export interface GeometryJson extends NodeJson {
     type: string;
@@ -64,10 +79,13 @@ export interface PolygonGeometryJson extends GeometryJson {
     coordinates: CoordinatesJson[][];
 }
 
+
+
 export interface MultiPolygonGeometryJson extends GeometryJson {
     type: "MultiPolygon";
     coordinates: CoordinatesJson[][][];
 }
+
 
 
 export interface PointGeometryJson extends GeometryJson {
@@ -75,10 +93,11 @@ export interface PointGeometryJson extends GeometryJson {
     coordinates: CoordinatesJson;
 }
 
+
+
 export function isPointGeometryJson( node: NodeJson ): node is PointGeometryJson {
     return node.type === GeometryType.Point;
 }
-
 
 
 
@@ -93,6 +112,8 @@ export enum FeatureType {
     Feature = "Feature",
     FeatureCollection = "FeatureCollection",
 }
+
+
 
 export enum GeometryType {
     Point = "Point",
@@ -109,6 +130,7 @@ export type Coordinates3DJson = [ lng: number, lat: number, alt: number ];
 
 
 } // namespace GeoJSON
+
 
 
 export default GeoJSON;
