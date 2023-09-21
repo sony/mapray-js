@@ -101,26 +101,12 @@ void
 main()
 {
     // <atmosphere
-    vec3  sun_pos    = -u_sun_vector * sun_length;
+    vec3  sun_pos    = u_sun_vector * sun_length;
     vec3  ray        = sun_pos - u_camera_position;
-    float far_length = length( ray );
-    ray /= far_length;
+    float depth      = exp( scale_over_scale_depth * ( inner_radius - u_camera_height ) );
 
-    vec3  start_position = u_camera_position;
-
-    float start_height   = length( start_position );
-    float depth          = exp( scale_over_scale_depth * ( inner_radius - u_camera_height ) );
-
-    vec4 cam_vec      = u_camera_direction_matrix * vec4( 0.0, 0.0, 1.0, 1.0 );
-    float start_angle = dot( normalize( ray ), cam_vec.xyz );
-    start_angle       = clamp( start_angle, 0.0, 1.0 );
-    start_angle       = 1.0 - start_angle;
-
-    float up_angle = dot( normalize( start_position ), cam_vec.xyz );
-    up_angle       = clamp( up_angle, 0.0, 1.0 );
-    up_angle       = 1.0 - up_angle;
-
-    float scatter = depth * ( scale( start_angle ) - scale( up_angle ) );
+    float angle = dot( normalize( ray ),  u_camera_position ) / u_camera_height;
+    float scatter = depth * ( scale( angle ) );
     vec3  FrontSecondaryColor = exp( -scatter * ( inv_wave_length * Kr_4PI + Km_4PI ) );
     // atmosphere>
 
