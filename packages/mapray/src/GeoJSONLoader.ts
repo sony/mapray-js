@@ -39,6 +39,10 @@ class GeoJSONLoader extends Loader {
 
     private _getVisibility: ( geojson: GeoJSON.FeatureJson ) => boolean | undefined;
 
+    private _ignoreFeatureError: boolean;
+
+    private _featuresLoadSuccess: boolean;
+
 
     /**
      * url で指定したシーンデータの読み込みを開始し、scene にエンティティを構築する。
@@ -84,7 +88,13 @@ class GeoJSONLoader extends Loader {
         this._getAltitude     = options.getAltitude     ?? emptyCallback;
         this._getVisibility   = options.getVisibility   ?? emptyCallback;
 
+        this._ignoreFeatureError = GeoJSONLoader.defaultIgnoreFeatureError;
+        this._featuresLoadSuccess = true;
+
     }
+
+
+    getFeaturesLoadSuccess(): boolean { return this._featuresLoadSuccess; }
 
 
     /**
@@ -97,7 +107,7 @@ class GeoJSONLoader extends Loader {
             .then( geoJson => {
                 // JSON データの取得に成功
                 this._check_cancel();
-                this._load_geojson_object( geoJson as ( GeoJSON.FeatureCollectionJson | GeoJSON.FeatureJson | GeoJSON.GeometryJson ) );
+                this._featuresLoadSuccess = this._load_geojson_object( geoJson as ( GeoJSON.FeatureCollectionJson | GeoJSON.FeatureJson | GeoJSON.GeometryJson ) );
             } )
         );
     }
@@ -109,6 +119,10 @@ class GeoJSONLoader extends Loader {
     private _load_geojson_object( geojson: GeoJSON.FeatureCollectionJson | GeoJSON.FeatureJson | GeoJSON.GeometryJson ): boolean
     {
         if ( GeoJSON.isFeatureCollectionJson( geojson ) ) {
+            if ( !Array.isArray( geojson.features ) ) { // The 'features' member MUST be an array of GeoJSON Feature objects.
+                return this._handleException( "Invalid FeatureCollection: The 'features' member MUST be an array of GeoJSON Feature objects." );
+            }
+
             let success = true;
             for ( let i = 0; i < geojson.features.length; i++ ) {
                 const feature = geojson.features[i];
@@ -131,6 +145,10 @@ class GeoJSONLoader extends Loader {
      */
     private _load_geometry_object( geometry: GeoJSON.GeometryJson, geojson?: GeoJSON.FeatureJson ): boolean
     {
+        if ( !geometry ) {
+            return this._handleException( "Geometry not Found" );
+        }
+
         const vGeojson = geojson ?? {
             id: "",
             type: "Feature",
@@ -150,11 +168,13 @@ class GeoJSONLoader extends Loader {
             case GEOMETRY_TYPES.MULTI_POLYGON:
                 return this._loadPolygons( geometry as ( GeoJSON.PolygonGeometryJson | GeoJSON.MultiPolygonGeometryJson ), vGeojson );
 
-            case GEOMETRY_TYPES.GEOMETRY_COLLECTION:
-                return true;
+            case GEOMETRY_TYPES.GEOMETRY_COLLECTION: {
+                console.warn( "Unsupported GeoJSON type: " + geometry.type );
+                return false;
+            }
 
-            default:
-                throw new Error( "Invalid GeoJSON type: " + geometry.type );
+            default:  // The "type" member of a geometry object MUST be one of the seven geometry types listed above.
+                return this._handleException( "Invalid GeoJSON type: " + geometry.type );
         }
     }
 
@@ -164,6 +184,10 @@ class GeoJSONLoader extends Loader {
      */
     private _loadLines( geometry: GeoJSON.LineStringGeometryJson | GeoJSON.MultiLineStringGeometryJson, geojson: GeoJSON.FeatureJson ): boolean
     {
+        if ( !geometry.coordinates ) {
+            return this._handleException( "Coordinates not Found" );
+        }
+
         const color4 = Color.createColor( this._getLineColor( geojson ) ?? GeoJSONLoader.defaultLineColor );
         const width = this._getLineWidth( geojson ) ?? GeoJSONLoader.defaultLineWidth;
 
@@ -171,9 +195,6 @@ class GeoJSONLoader extends Loader {
         const altitude = this._getAltitude( geojson );
         const visibility = this._getVisibility( geojson ) ?? getMaprayVisibility( geojson ) ?? GeoJSONLoader.defaultVisibility;
 
-        if ( !geometry ) {
-            return false;
-        }
         const type = geometry.type;
         const rgb = Color.copyOpaqueColor( color4, GeoMath.createVector3() );
         const alpha = color4[3];
@@ -181,13 +202,13 @@ class GeoJSONLoader extends Loader {
         // If multiline, split entity
         if ( type === GEOMETRY_TYPES.MULTI_LINE_STRING ) {
             const multiLineStringGeometry = geometry as GeoJSON.MultiLineStringGeometryJson;
+            if ( !Array.isArray( geometry.coordinates ) || !geometry.coordinates.length ) { // For type 'MultiLineString', the 'coordinates' member must be an array of LineString coordinate arrays.
+                return this._handleException( "Invalid coordinates: For type 'MultiLineString', the 'coordinates' member MUST be an array of LineString coordinate arrays." );
+            }
             let noError = true;
             multiLineStringGeometry.coordinates.forEach( points => {
                 const flag = this._generateLine( points, width, rgb, alpha, altitude_mode, altitude, visibility, geojson );
-                if ( !flag ) {
-                    noError = false;
-                }
-                return flag;
+                if ( !flag ) noError = false;
             } );
             return noError;
         }
@@ -203,14 +224,16 @@ class GeoJSONLoader extends Loader {
      */
     private _generateLine( points: GeoJSON.CoordinatesJson[], width: number, color: Vector3, opacity: number, altitude_mode: AltitudeMode, altitude: number | undefined, visibility: boolean, geojson: GeoJSON.FeatureJson ): boolean
     {
-        if ( !points.length ) {
-            return false;
+        if ( !GeoJSON.isCoordinatesArrayJson( points ) ) { // A position is an array of numbers. There MUST be two or more elements.
+            return this._handleException( "Invalid coordinates: A position is an array of numbers. There MUST be two or more elements." );
+        }
+        if ( points.length < 2 ) { // For type 'LineString', the 'Coordinates' member must be an array of two or more positions
+            return this._handleException( "Invalid coordinates: For type 'LineString', the 'coordinates' member MUST be an array of two or more positions." );
         }
 
         const entity = new MarkerLineEntity( this._scene );
         entity.altitude_mode = altitude_mode;
-        const fp = this._flatten( points, altitude );
-        entity.addPoints( fp );
+        entity.addPoints( this._flatten( points, altitude ) );
         entity.setLineWidth( width );
         entity.setColor( color );
         entity.setOpacity( opacity );
@@ -226,18 +249,15 @@ class GeoJSONLoader extends Loader {
      */
     private _loadPoint( geometry: GeoJSON.PointGeometryJson | GeoJSON.MultiPointGeometryJson, geojson: GeoJSON.FeatureJson ): boolean
     {
+        if ( !geometry.coordinates ) {
+            return this._handleException( "Coordinates not Found" );
+        }
+
         const fgColor = this._getPointFGColor( geojson ) ?? GeoJSONLoader.defaultPointFGColor;
         const bgColor = this._getPointBGColor( geojson ) ?? GeoJSONLoader.defaultPointBGColor;
         const iconId = this._getPointIconId( geojson ) ?? GeoJSONLoader.defaultPointIconId;
         const size = this._getPointSize( geojson ) ?? GeoJSONLoader.defaultPointSize;
-
-        const altitude_mode = this._getAltitudeMode( geojson ) ?? getMaprayAltitudeMode( geojson ) ?? GeoJSONLoader.defaultAltitudeMode;
         const altitude = this._getAltitude( geojson );
-        const visibility = this._getVisibility( geojson ) ?? getMaprayVisibility( geojson ) ?? GeoJSONLoader.defaultVisibility;
-
-        if ( !geometry ) {
-            return false;
-        }
 
         const props = {
             "fg_color": fgColor,
@@ -245,35 +265,43 @@ class GeoJSONLoader extends Loader {
             "size": size,
         };
 
-        // If multiline, split entity
         const entity = new PinEntity( this._scene );
-        entity.altitude_mode = altitude_mode;
-        entity.setVisibility( visibility );
+        entity.altitude_mode = this._getAltitudeMode( geojson ) ?? getMaprayAltitudeMode( geojson ) ?? GeoJSONLoader.defaultAltitudeMode;
+        entity.setVisibility( this._getVisibility( geojson ) ?? getMaprayVisibility( geojson ) ?? GeoJSONLoader.defaultVisibility );
+
+        let noError = true;
         if ( GeoJSON.isPointGeometryJson( geometry ) ) {
-            const alt = altitude ?? geometry.coordinates[2] ?? GeoJSONLoader.defaultAltitude;
-            const coords = new GeoPoint( geometry.coordinates[0], geometry.coordinates[1], alt );
-            if ( iconId ) {
-                entity.addMakiIconPin( iconId, coords, props );
-            }
-            else {
-                entity.addPin( coords, props );
-            }
+            noError = this._addPin( entity, geometry.coordinates, iconId, altitude, props );
         }
         else { // type === GEOMETRY_TYPES.MULTI_POINT
-            for ( let i = 0; i < geometry.coordinates.length; i++ ) {
-                const targetCoordinates = geometry.coordinates[i];
-                const alt = altitude ?? targetCoordinates[2] ?? GeoJSONLoader.defaultAltitude;
-                const coords = new GeoPoint( targetCoordinates[0], targetCoordinates[1], alt );
-                if ( iconId ) {
-                    entity.addMakiIconPin( iconId, coords, props );
-                }
-                else {
-                    entity.addPin( coords, props );
-                }
+            if ( !Array.isArray( geometry.coordinates ) || !geometry.coordinates.length ) { // For type "MultiPoint", the "coordinates" member must be an array of positions.
+                return this._handleException( "Invalid coordinates: For type 'MultiPoint', the 'coordinates' member MUST be an array of positions." );
             }
+            geometry.coordinates.forEach( points => {
+                const flag = this._addPin( entity, points, iconId, altitude, props );
+                if ( noError ) noError = flag;
+            } );
         }
-        this._onEntity( this, entity, geojson );
+        if ( noError ) this._onEntity( this, entity, geojson );
+        return noError;
+    }
 
+
+    /**
+     * Create PinEntity
+     */
+    private _addPin( entity: PinEntity, point: GeoJSON.CoordinatesJson, iconId: string | undefined, altitude: number | undefined, props: PinEntity.MakiIconPinEntryOption ): boolean
+    {
+        if ( !GeoJSON.isCoordinatesJson( point ) ) { // A position is an array of numbers. There MUST be two or more elements.
+            return this._handleException( "Invalid coordinates: A position is an array of numbers. There MUST be two or more elements." );
+        }
+        const coords = new GeoPoint( point[0], point[1], altitude ?? point[2] ?? GeoJSONLoader.defaultAltitude );
+        if ( iconId ) {
+            entity.addMakiIconPin( iconId, coords, props );
+        }
+        else {
+            entity.addPin( coords, props );
+        }
         return true;
     }
 
@@ -283,6 +311,10 @@ class GeoJSONLoader extends Loader {
      */
     private _loadPolygons( geometry: GeoJSON.PolygonGeometryJson | GeoJSON.MultiPolygonGeometryJson, geojson: GeoJSON.FeatureJson ): boolean
     {
+        if ( !geometry.coordinates ) {
+            return this._handleException( "Coordinates not Found" );
+        }
+
         const color4 = Color.createColor( this._getFillColor( geojson ) ?? GeoJSONLoader.defaultFillColor );
         const extruded_height = this._getExtrudedHeight( geojson ) ?? GeoJSONLoader.defaultExtrudedHeight;
 
@@ -290,9 +322,6 @@ class GeoJSONLoader extends Loader {
         const altitude = this._getAltitude( geojson );
         const visibility = this._getVisibility( geojson ) ?? getMaprayVisibility( geojson ) ?? GeoJSONLoader.defaultVisibility;
 
-        if ( !geometry ) {
-            return false;
-        }
         const type = geometry.type;
         const rgb = Color.copyOpaqueColor( color4, GeoMath.createVector3() );
         const alpha = color4[3];
@@ -300,13 +329,13 @@ class GeoJSONLoader extends Loader {
         // If multiline, split entity
         if ( type === GEOMETRY_TYPES.MULTI_POLYGON ) {
             const multiPolygonGeometry = geometry as GeoJSON.MultiPolygonGeometryJson;
+            if ( !Array.isArray( geometry.coordinates ) || !geometry.coordinates.length ) { // For type "MultiPolygon", the "coordinates" member must be an array of Polygon coordinate arrays.
+                return this._handleException( "Invalid coordinates: For type 'MultiPolygon', the 'coordinates' member MUST be an array of Polygon coordinate arrays." );
+            }
             let noError = true;
             multiPolygonGeometry.coordinates.forEach( points => {
                 const flag = this._generatePolygon( points, rgb, alpha, altitude_mode, altitude, extruded_height, visibility, geojson );
-                if ( !flag ) {
-                    noError = false;
-                }
-                return flag;
+                if ( !flag ) noError = false;
             } );
             return noError;
         }
@@ -322,10 +351,6 @@ class GeoJSONLoader extends Loader {
      */
     private _generatePolygon( pointsList: GeoJSON.CoordinatesJson[][], color: Vector3, opacity: number, altitude_mode: AltitudeMode, altitude: number | undefined, extruded_height: number, visibility: boolean, geojson: GeoJSON.FeatureJson ): boolean
     {
-        if ( !pointsList.length ) {
-            return false;
-        }
-
         const entity = new PolygonEntity( this._scene );
         entity.altitude_mode = altitude_mode;
         entity.extruded_height = extruded_height;
@@ -333,8 +358,13 @@ class GeoJSONLoader extends Loader {
         entity.setOpacity( opacity );
         entity.setVisibility( visibility );
         for ( let i = 0; i < pointsList.length; i++ ) {
+            if ( !GeoJSON.isCoordinatesArrayJson( pointsList[i] ) ) { // A position is an array of numbers. There MUST be two or more elements.
+                return this._handleException( "Invalid coordinates: A position is an array of numbers. There MUST be two or more elements." );
+            }
+            if ( pointsList[i].length < 4 ) { // For type "Polygon", the "coordinates" member MUST be an array of linear ring coordinate arrays. A linear ring is a closed LineString with four or more positions.
+                return this._handleException( "Invalid coordinates: For type 'Polygon', the 'coordinates' member MUST be an array of linear ring coordinate arrays. A linear ring is a closed LineString with four or more positions." );
+            }
             const fp = this._flatten( pointsList[i], altitude, pointsList[i].length-1 );
-            if ( !fp ) return false;
             if ( i === 0 ) entity.addOuterBoundary( fp );
             else entity.addInnerBoundary( fp );
         }
@@ -344,12 +374,20 @@ class GeoJSONLoader extends Loader {
     }
 
 
-    private _flatten( array: number[][], altitude: number | undefined, len: number = array.length ): number[]
+    private _flatten( array: GeoJSON.CoordinatesJson[], altitude: number | undefined, len: number = array.length ): number[]
     {
-        return array.reduce( ( arr: number[], v: number[], index: number ) => (
+        return array.reduce( ( arr: number[], v: GeoJSON.CoordinatesJson, index: number ) => (
             index >= len ? arr :
             arr.concat( v.slice( 0, 2 ), ( altitude ?? v[2] ?? GeoJSONLoader.defaultAltitude ) )
         ), [] );
+    }
+
+
+    private _handleException( message: string ): false
+    {
+        if ( !this._ignoreFeatureError ) throw new Error( message );
+        console.warn( message );
+        return false;
     }
 }
 
@@ -420,6 +458,8 @@ export const defaultAltitudeMode = AltitudeMode.ABSOLUTE;
 export const defaultAltitude = 0.0;
 
 export const defaultVisibility = true;
+
+export const defaultIgnoreFeatureError = false;
 
 
 } // namespace GeoJSONLoader

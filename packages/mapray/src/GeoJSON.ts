@@ -128,6 +128,28 @@ export type Coordinates2DJson = [ lng: number, lat: number ];
 export type Coordinates3DJson = [ lng: number, lat: number, alt: number ];
 
 
+export function isCoordinatesJson( point: number[] ): point is CoordinatesJson
+{
+    // A position is an array of numbers. There MUST be two or more elements.
+    if ( !Array.isArray( point ) ) return false;
+    if ( point.length < 2 ) return false;
+    for ( const coord of point ) {
+        if ( typeof coord !== "number" ) return false;
+    }
+    return true;
+}
+
+
+export function isCoordinatesArrayJson( points: number[][] ): points is CoordinatesJson[]
+{
+    if ( !Array.isArray( points ) ) return false;
+    for ( const point of points ) {
+        if ( !Array.isArray( point ) ) return false;
+    }
+    return true;
+}
+
+
 
 } // namespace GeoJSON
 
