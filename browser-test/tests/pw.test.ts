@@ -28,27 +28,27 @@ test( 'flat', async ( { page } ) => {
 
     // jp
     await gotoPage( page, app_url );
-    await waitAndShapshot( page, 'flat-surface-jp.png', pixel_diff );
+    await waitAndSnapshot( page, 'flat-surface-jp.png', pixel_diff );
 
     await changeRenderMode( page, "wireframe" );
-    await waitAndShapshot( page, 'flat-wire-jp.png', pixel_diff );
+    await waitAndSnapshot( page, 'flat-wire-jp.png', pixel_diff );
 
     await changeRenderMode( page, "surface" );
 
     // us
     await gotoPage( page, app_url + '#36.1518162343/-112.0098504417/1960.91791a/73.12717t/57911.60625r/-20.46415h' );
-    await waitAndShapshot( page, 'flat-surface-us.png', pixel_diff );
+    await waitAndSnapshot( page, 'flat-surface-us.png', pixel_diff );
 
     await changeRenderMode( page, "wireframe" );
-    await waitAndShapshot( page, 'flat-wire-us.png', pixel_diff );
+    await waitAndSnapshot( page, 'flat-wire-us.png', pixel_diff );
 
     await changeRenderMode( page, "surface" );
 
     // sa
     await gotoPage( page, app_url + '#-33.6467295048/21.3060654199/480.49364a/66.87765t/268793.20919r/9.25171h' );
-    await waitAndShapshot( page, 'flat-surface-sa.png', pixel_diff );
+    await waitAndSnapshot( page, 'flat-surface-sa.png', pixel_diff );
     await changeRenderMode( page, "wireframe" );
-    await waitAndShapshot( page, 'flat-wire-sa.png', pixel_diff );
+    await waitAndSnapshot( page, 'flat-wire-sa.png', pixel_diff );
 
     // fov
     await changeRenderMode( page, "surface" );
@@ -56,7 +56,7 @@ test( 'flat', async ( { page } ) => {
         const { app } = window as unknown as FlatTesterGlobal;
         app.setCameraParameter( { fov: 100.0 } );
     });
-    await waitAndShapshot( page, 'flat-surface-sa-fov.png', pixel_diff );
+    await waitAndSnapshot( page, 'flat-surface-sa-fov.png', pixel_diff );
 
 });
 
@@ -80,11 +80,11 @@ test( 'entity', async ( { page } ) => {
         app.add2DEntity();
         app.add3DEntity();
     });
-    await waitAndShapshot( page, 'entity-line.png', pixel_diff );
+    await waitAndSnapshot( page, 'entity-line.png', pixel_diff );
 
     // 2D (Pin/Path/Polygon) & 3D (Model)
     await gotoPage( page, app_url + '#35.2892866244/138.8453707909/742.61400a/75.04498t/53667.33246r/73.07741h');
-    await waitAndShapshot( page, 'entity-2d3d.png', pixel_diff );
+    await waitAndSnapshot( page, 'entity-2d3d.png', pixel_diff );
 
     // PointCloud
     await gotoPage( page, app_url + '#35.5663825590/139.4034165561/114.60596a/74.51198t/432.99670r/12.80000h');
@@ -101,7 +101,7 @@ test( 'entity', async ( { page } ) => {
         const { app } = window as unknown as BasicTesterGlobal;
         app.addPointCloud();
     });
-    await waitAndShapshot( page, 'entity-pc.png', pixel_diff );
+    await waitAndSnapshot( page, 'entity-pc.png', pixel_diff );
 
     // B3d
     await gotoPage( page, app_url + '#35.6420029924/139.7488512803/3.16785a/62.68040t/1662.34885r/5.59657h');
@@ -110,7 +110,7 @@ test( 'entity', async ( { page } ) => {
         const { app } = window as unknown as BasicTesterGlobal;
         app.addB3d();
     });
-    await waitAndShapshot( page, 'entity-b3d.png', pixel_diff );
+    await waitAndSnapshot( page, 'entity-b3d.png', pixel_diff );
 });
 
 
@@ -121,7 +121,7 @@ test( 'basic', async ( { page } ) => {
 
     // jp (Markerline & ImageIcon)
     await gotoPage( page, app_url );
-    await waitAndShapshot( page, 'basic-jp.png', pixel_diff );
+    await waitAndSnapshot( page, 'basic-jp.png', pixel_diff );
 
 /*  pin test is disable now
     // click to set pin
@@ -142,11 +142,11 @@ test( 'basic', async ( { page } ) => {
 */
     // us
     await gotoPage( page, app_url + '#36.1518162343/-112.0098504417/1960.91791a/73.12717t/57911.60625r/-20.46415h');
-    await waitAndShapshot( page, 'basic-us.png', pixel_diff );
+    await waitAndSnapshot( page, 'basic-us.png', pixel_diff );
 
     // sa
     await gotoPage( page, app_url + '#-33.6467295048/21.3060654199/480.49364a/66.87765t/268793.20919r/9.25171h');
-    await waitAndShapshot( page, 'basic-sa.png', pixel_diff );
+    await waitAndSnapshot( page, 'basic-sa.png', pixel_diff );
 
     // Atmosphere
     await gotoPage( page, app_url + '#7.3062860512/169.5243914103/0.00000a/0.00000t/25433394.66931r/20.08803h');
@@ -163,7 +163,7 @@ test( 'basic', async ( { page } ) => {
         const { app } = window as unknown as BasicTesterGlobal;
         app.setAtmosphereVisibility( true );
     });
-    await waitAndShapshot( page, 'basic-atmosphere.png', pixel_diff );
+    await waitAndSnapshot( page, 'basic-atmosphere.png', pixel_diff );
 });
 
 
@@ -177,8 +177,8 @@ async function gotoPage( page, url ) {
 
 
 
-// wait for loaded and take shapshot
-async function waitAndShapshot( page, image_name, diff_pixels = 0 ) {
+// wait for loaded and take snapshot
+async function waitAndSnapshot( page, image_name, diff_pixels = 0 ) {
     await page.evaluate( async () => {
         return await new Promise( resolve => {
             const { app } = window as unknown as BasicTesterGlobal | FlatTesterGlobal;
