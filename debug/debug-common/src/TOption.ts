@@ -207,7 +207,7 @@ interface TextParam {
 
 interface SelectParam<T> {
     class?: string;
-    initialValue?: string;
+    initialValue?: T;
     onchange?: (value: T, domEvent: Event) => void;
     onui?: (ui: HTMLSelectElement) => void;
     description?: string;
@@ -376,7 +376,7 @@ export class TDomTool {
     static createSelectOption<T>( property: TOption.SelectProperty<T> ): HTMLDivElement
     {
         return this.createSelect(property.options, {
-                initialValue: property.valueToOptionMap.get(property.get())!.key,
+                initialValue: property.valueToOptionMap.get(property.get())!.value,
                 description: property.key + (property.description ? "\n" + property.description : ""),
                 onui: ui => {
                     property.onChange(event => {

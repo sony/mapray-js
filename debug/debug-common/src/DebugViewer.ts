@@ -4,6 +4,8 @@ import StatusBar from "./StatusBar";
 import Commander from "./Commander";
 import BingMapsImageProvider from "./BingMapsImageProvider";
 
+import TOption, { TDomTool } from "./TOption";
+
 import Module from "./module/Module";
 import PointCloudModule from "./module/PointCloudModule";
 import B3dTileModule from "./module/B3dTileModule";
@@ -32,6 +34,8 @@ class DebugViewer extends maprayui.StandardUIViewer {
 
     private _is_gis: boolean;
 
+    private _is_initialized: boolean;
+
     private _layer_transparency: number;
 
     private _pin_entity_list: mapray.PinEntity[];
@@ -55,9 +59,15 @@ class DebugViewer extends maprayui.StandardUIViewer {
 
     private _active_module?: Module;
 
-    private _tools_container: HTMLElement;
-
     private _cloudApi?: mapray.cloud.CloudApi;
+
+    private _ui_cache: {
+        tools: HTMLElement,
+        tools_header: HTMLElement,
+        tools_body: HTMLElement,
+        load_button: HTMLButtonElement,
+        unload_button: HTMLButtonElement,
+    };
 
 
     /**
@@ -122,15 +132,45 @@ class DebugViewer extends maprayui.StandardUIViewer {
         this._layer_transparency = 10; //layer
 
         // make tools div
-        this._tools_container = document.getElementById("tools") || (()=>{
+        const tools = document.getElementById("tools") || (()=>{
             const maprayContainer = document.getElementById( "mapray-container" );
             const tools = document.createElement( "div" );
             tools.setAttribute( "id", "tools" );
+            tools.setAttribute( "class", "tool-item" );
             if ( maprayContainer ) {
                 maprayContainer.appendChild(tools);
             }
             return tools;
         })();
+
+        const tools_header = tools.firstChild as (HTMLElement | undefined) ?? (() => {
+            const header = document.createElement( "div" );
+            tools.appendChild( header );
+            return header;
+        })();
+
+        const tools_body = tools_header.nextSibling as (HTMLElement | undefined) ?? (() => {
+            const body = document.createElement( "div" );
+            tools.appendChild( body );
+            return body;
+        })();
+
+        const load_button = TDomTool.createButton("Load", {
+            onclick: async event => {
+                await this._active_module?.loadData();
+            },
+        });
+
+        const unload_button = TDomTool.createButton("Unload", {
+            onclick: async event => {
+                await this._active_module?.unloadData();
+            },
+        });
+
+        this._ui_cache = {
+            tools, tools_header, tools_body,
+            load_button, unload_button
+        };
 
         this._pin_entity_list = [];
         this._text_entity_list = [];
@@ -144,6 +184,8 @@ class DebugViewer extends maprayui.StandardUIViewer {
         for ( let i=0; i<this._fps_count; i++ ) {
             this._fps.push(0);
         }
+
+        this._is_initialized = false;
     }
 
 
@@ -199,6 +241,11 @@ class DebugViewer extends maprayui.StandardUIViewer {
         for ( const module of modules ) {
             await this.installModule( module );
         }
+        if ( !this._active_module ) {
+            this._active_module = modules[0];
+        }
+        this._is_initialized = true;
+        this._updateHeader();
     }
 
 
@@ -226,6 +273,7 @@ class DebugViewer extends maprayui.StandardUIViewer {
     {
         this._modules.push( module );
         await module.init( this );
+        this._updateHeader();
     }
 
 
@@ -592,6 +640,30 @@ class DebugViewer extends maprayui.StandardUIViewer {
         super.setControllable( flag );
     }
 
+    private _updateHeader(): void
+    {
+        if ( !this._is_initialized ) return;
+        const { tools_header, load_button, unload_button } = this._ui_cache;
+        while ( tools_header.firstChild ) tools_header.firstChild.remove();
+        if ( this._modules.length === 0 ) return;
+        const toption = TOption.create({
+            "module": {
+                type: "select",
+                description: "Module",
+                keyValues: this._modules.map( module => TOption.keyValue( module.name, module ) ),
+                value: this._active_module ?? this._modules[0],
+            },
+        });
+        tools_header.appendChild( TDomTool.createSelectOption( toption.getProperty( "module" ) ));
+        toption.onChange( "module", event => {
+            this.setActiveModule( event.value );
+        } );
+
+        if ( this._active_module ) {
+            const tool_bar = this._active_module.getToolBar()
+            tools_header.appendChild(tool_bar);
+        }
+    }
 
     /**
      * DegugUIをセット
@@ -599,8 +671,9 @@ class DebugViewer extends maprayui.StandardUIViewer {
      */
     setDebugUI( target: HTMLElement | Module ): HTMLElement
     {
-        const tools = this._tools_container;
-        while ( tools.firstChild ) tools.firstChild.remove();
+        this._updateHeader();
+        const { tools_body } = this._ui_cache;
+        while ( tools_body.firstChild ) tools_body.firstChild.remove();
         let ui: HTMLElement;
         if ( target instanceof HTMLElement ) {
             ui = target;
@@ -609,7 +682,7 @@ class DebugViewer extends maprayui.StandardUIViewer {
             ui = target.createUI();
         }
         this._debug_ui = ui;
-        tools.appendChild( ui );
+        tools_body.appendChild( ui );
         return ui;
     }
 

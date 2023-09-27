@@ -56,9 +56,11 @@ class DatasetViewer extends DebugViewer {
 
     protected override populateModules( modules: Module[] ): void
     {
+        let activeModule: Module;
+
         // GeoJson
         if ( process.env.DATASET_2D_ID ) {
-            modules.push( new Dataset2dModule({
+            modules.push( activeModule = new Dataset2dModule({
                         datasets: [ process.env.DATASET_2D_ID ],
             }) );
         }
@@ -66,7 +68,7 @@ class DatasetViewer extends DebugViewer {
         // 3D
         if ( process.env.DATASET_3D_ID ) {
             modules.push( new Dataset3dModule({
-                        datasets: [ process.env.DATASET_3D_ID ],
+                datasets: [ process.env.DATASET_3D_ID ],
             }) );
         }
 
@@ -82,6 +84,10 @@ class DatasetViewer extends DebugViewer {
         modules.push( new ImageProviderModule() );
         modules.push( new AttributionModule() );
         modules.push( new LayerModule() );
+
+        if ( activeModule ) {
+            this.setActiveModule( activeModule );
+        }
     }
 
 

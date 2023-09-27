@@ -11,7 +11,6 @@ class Module {
     private _debugViewer!: DebugViewer;
 
     private _ui_cache: {
-        title: HTMLElement,
         tool: HTMLElement,
         loadButton: HTMLButtonElement,
         unloadButton: HTMLButtonElement,
@@ -22,11 +21,8 @@ class Module {
         this._status = Module.Status.NOT_LOADED;
         this._loadable = loadable;
 
-        const title = document.createElement( "div" );
         const tool  = document.createElement( "span" );
         tool.style.marginLeft = "10px";
-        title.appendChild( document.createTextNode( this.name ) );
-        title.appendChild( tool );
 
         const loadButton = DomTool.createButton("Load", {
                 onclick: async event => {
@@ -42,7 +38,7 @@ class Module {
             tool.appendChild( loadButton );
         }
 
-        this._ui_cache = { title, tool, loadButton, unloadButton };
+        this._ui_cache = { tool, loadButton, unloadButton };
     }
 
 
@@ -55,6 +51,10 @@ class Module {
     isLoaded(): boolean
     {
         return this._status === Module.Status.LOADED;
+    }
+
+    getToolBar(): HTMLElement {
+        return this._ui_cache.tool;
     }
 
 
@@ -154,8 +154,6 @@ class Module {
     createUI(): HTMLElement
     {
         const ui = document.createElement( "div" );
-        ui.setAttribute( "class", "tool-item" );
-        ui.appendChild( this._ui_cache.title );
         if ( !this._loadable || this._status === Module.Status.LOADED ) {
             ui.appendChild( this.getDebugUI() );
         }
