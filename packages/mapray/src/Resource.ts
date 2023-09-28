@@ -75,6 +75,34 @@ abstract class Resource {
     }
 
     /**
+     * Jsonリソースを読み込みます。
+     */
+    async loadSubResourceAsJson( url: string, options: Resource.Option = {} ): Promise<object> {
+        return await this.loadSubResource( url, { ...options, type: Resource.Type.JSON } ) as object;
+    }
+
+    /**
+     * バイナリリソースを読み込みます。
+     */
+    async loadSubResourceAsBinary( url: string, options: Resource.Option = {} ): Promise<ArrayBuffer> {
+        return await this.loadSubResource( url, { ...options, type: Resource.Type.BINARY } ) as ArrayBuffer;
+    }
+
+    /**
+     * イメージリソースを読み込みます。
+     */
+    async loadSubResourceAsImage( url: string, options: Resource.Option = {} ): Promise<HTMLImageElement> {
+        return await this.loadSubResource( url, { ...options, type: Resource.Type.IMAGE } ) as HTMLImageElement;
+    }
+
+    /**
+     * テキストリソースを読み込みます。
+     */
+    async loadSubResourceAsText( url: string, options: Resource.Option = {} ): Promise<string> {
+        return await this.loadSubResource( url, { ...options, type: Resource.Type.TEXT } ) as string;
+    }
+
+    /**
      * 関連リソースをサポートするかを返します。
      */
     resolveResourceSupported(): boolean {
