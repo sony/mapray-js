@@ -132,6 +132,10 @@ class PathEntity extends AbstractLineEntity {
     {
         const add_size = points.length;
         const add_length_size = length_array.length;
+        if ( add_size / 3 !== add_length_size ) {
+            throw new Error(`The number of points and the size of length_array are different.\n points: ${Math.floor(add_size / 3)}\n length: ${add_length_size} ` );
+        }
+
         if ( add_size == 0 || add_length_size == 0) {
             // 追加頂点が無いので変化なし
             return;
