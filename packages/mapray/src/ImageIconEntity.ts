@@ -12,6 +12,7 @@ import AltitudeMode from "./AltitudeMode";
 import EntityRegion from "./EntityRegion";
 import { ImageIconLoader, IconLoaderItem } from "./IconLoader";
 import Dom from "./util/Dom";
+import Color from "./util/Color";
 import BindingBlock from "./animation/BindingBlock";
 import EasyBindingBlock from "./animation/EasyBindingBlock";
 import Curve from "./animation/Curve";
@@ -30,6 +31,12 @@ class ImageIconEntity extends AbstractPointEntity<ImageIconEntity.ImageEntry> {
 
     private _parent_props: ImageIconEntity.Props;
 
+    private _alpha_clipping: boolean;
+
+    private _alpha_clip_threshold: number;
+
+    private _mask_color?: Vector3;
+
 
     /**
      * @param scene 所属可能シーン
@@ -44,6 +51,19 @@ class ImageIconEntity extends AbstractPointEntity<ImageIconEntity.ImageEntry> {
             size: undefined,
             origin: undefined,
         };
+
+        this._alpha_clipping = opts.alpha_clipping ?? true;
+        this._alpha_clip_threshold = opts.alpha_clip_threshold ?? ImageIconEntity.DEFAULT_ALPHA_CLIP_THRESHOLD;
+
+        if ( opts.mask_color ) {
+            this._mask_color = Color.createOpaqueColorFromBytes( opts.mask_color );
+        }
+        else if ( opts.mask_color_normalized ) {
+            this._mask_color = opts.mask_color_normalized;
+        }
+        else {
+            this._mask_color = undefined;
+        }
 
         // Entity.PrimitiveProducer インスタンス
         this._primitive_producer = new ImageIconEntity.PrimitiveProducer( this );
@@ -229,6 +249,34 @@ class ImageIconEntity extends AbstractPointEntity<ImageIconEntity.ImageEntry> {
     {
         return this._entries.find((entry) => entry.id === id);
     }
+
+
+    /**
+     * @internal
+     */
+    getAlphaClipping(): boolean
+    {
+        return this._alpha_clipping;
+    }
+
+
+    /**
+     * @internal
+     */
+    getAlphaClipThreshold(): number
+    {
+        return this._alpha_clip_threshold;
+    }
+
+
+    /**
+     * @internal
+     */
+    getMaskColor(): Vector3 | undefined
+    {
+        return this._mask_color;
+    }
+
 }
 
 
@@ -243,11 +291,37 @@ export const MAX_IMAGE_WIDTH     = 4096;
 export const CIRCLE_SEP_LENGTH   = 32;
 export const DEFAULT_ICON_SIZE   = GeoMath.createVector2f( [30, 30] );
 export const DEFAULT_ORIGIN      = GeoMath.createVector2f( [ 0.5, 0.5 ] );
+export const DEFAULT_ALPHA_CLIP_THRESHOLD = 0.5;
 
 
 
 export interface Option extends Entity.Option {
     json?: ImageIconEntity.Json;
+   
+    /**
+     * アルファクリップ有効フラグ
+     * 追加した画像全てに適応されます
+     * 省略時はtrue
+     */
+    alpha_clipping?: boolean;
+
+    /**
+     * アルファクリッピングの閾値
+     * 省略時は0.5
+     */
+    alpha_clip_threshold?: number;
+
+    /**
+     * マスク色(0 ~ 255)
+     * 追加した画像全てに適応されます
+     */
+    mask_color?: Vector3;
+
+    /**
+     * マスク色(0.0 ~ 1.0)
+     * 追加した画像全てに適応されます
+     */
+    mask_color_normalized?: Vector3;
 }
 
 
@@ -336,6 +410,9 @@ export class PrimitiveProducer extends Entity.PrimitiveProducer {
 
     private _properties: {
         image: null | Texture,
+        alpha_clipping: boolean,
+        alpha_clip_threshold: number,
+        mask_color: Vector3 | undefined,
     };
 
     private _primitive: Primitive;
@@ -363,6 +440,9 @@ export class PrimitiveProducer extends Entity.PrimitiveProducer {
         this._transform  = GeoMath.setIdentity( GeoMath.createMatrix() );
         this._properties = {
             image: null,       // アイコン画像
+            alpha_clipping: entity.getAlphaClipping(),
+            alpha_clip_threshold: entity.getAlphaClipThreshold(),
+            mask_color: entity.getMaskColor(),
         };
 
         // プリミティブ

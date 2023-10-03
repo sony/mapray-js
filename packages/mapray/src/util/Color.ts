@@ -19,6 +19,23 @@ export function createOpaqueColor( rgb?: Vector3 ): Vector3 {
 
 
 /**
+ * 0~255 の色値から不透明色を生成。
+ *
+ * 4番目以降の要素は無視される。要素数が 3 に満たない場合は 0.0 と解釈する。
+ */
+export function createOpaqueColorFromBytes( rgb?: Vector3 ): Vector3 {
+    return GeoMath.createVector3(
+        !rgb ? undefined :
+        [
+            Color.byteToFloat( rgb[0] ),
+            Color.byteToFloat( rgb[1] ),
+            Color.byteToFloat( rgb[2] )
+        ]
+    );
+}
+
+
+/**
  * 色を生成
  */
 export function createColor( rgb?: Vector3 | Vector4 ): Vector4 {
@@ -26,6 +43,22 @@ export function createColor( rgb?: Vector3 | Vector4 ): Vector4 {
         !rgb ? undefined :
         GeoMath.isVector4( rgb ) ? rgb :
         [ rgb[0], rgb[1], rgb[2], 1.0 ]
+    );
+}
+
+
+/**
+ * 色を生成
+ */
+export function createColorFromBytes( rgb?: Vector3 | Vector4 ): Vector4 {
+    return GeoMath.createVector4(
+        !rgb ? undefined :
+        [
+            Color.byteToFloat( rgb[0] ),
+            Color.byteToFloat( rgb[1] ),
+            Color.byteToFloat( rgb[2] ),
+            GeoMath.isVector4( rgb ) ? Color.byteToFloat( rgb[3] ) : 1.0
+        ]
     );
 }
 
@@ -116,11 +149,20 @@ export function toRGBString( rgb: Vector3 | Vector4 ): string
 }
 
 /**
- * 0~1.0 の色値を 255 までの値に正規化
+ * 0~255 の色値を 0~1.0 の値に正規化
+ */
+export function byteToFloat( value: number ): number
+{
+    return value / 255.0;
+}
+
+
+/**
+ * 0~1.0 の色値を 0~255 までの値に正規化
  */
 export function floatToByte( value: number ): number
 {
-    return value === 1.0 ? 255.0 : (value * 256.0) | 0;
+    return value === 1.0 ? 255.0 : ( value * 256.0 ) | 0;
 }
 
 
