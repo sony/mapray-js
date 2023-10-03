@@ -52,7 +52,7 @@ module.exports = {
         'no-empty': 1, // 空block
         'no-constant-condition': 1, // while (true) などの禁止
         'no-lonely-if': 1, // else 内に 単独の if文 は書いてはいけない // @ToDo: 2
-        'no-negated-condition': 1, // else句を持つ if文 は 否定構文 で記述しないこと
+        'no-negated-condition': 0, // else句を持つ if文 は 否定構文 で記述しないこと
         'consistent-this': [1, "self"], // this を代入できるのは self だけ // @ToDo: 2
         '@typescript-eslint/ban-ts-comment': 0, // @ts-ignore等の禁止
         '@typescript-eslint/no-namespace': 0, // namespace禁止
