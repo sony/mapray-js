@@ -263,9 +263,24 @@ class App extends maprayui.StandardUIViewer {
 
         {// Icon
             const entity = new mapray.ImageIconEntity( this.viewer.scene );
-            const url = ICON_URL;
-            entity.addImageIcon( url, new mapray.GeoPoint(142.619, 43.017), { origin: [ 0.5, 1.0 ] });
+            entity.addImageIcon( ICON_URL, new mapray.GeoPoint(141.6, 43.017), { origin: [ 0.5, 1.0 ] });
             entity.altitude_mode = mapray.AltitudeMode.CLAMP;
+            entity.setSize( [200, 120] );
+            this.addEntity( entity );
+        }
+        {
+            const entity = new mapray.ImageIconEntity( this.viewer.scene, { alpha_clipping: false } );
+            entity.addImageIcon( ICON_URL, new mapray.GeoPoint(142.6, 43.017), { origin: [ 0.5, 1.0 ] });
+            entity.altitude_mode = mapray.AltitudeMode.CLAMP;
+            entity.setSize( [200, 120] );
+            this.addEntity( entity );
+        }
+        {
+            const entity = new mapray.ImageIconEntity( this.viewer.scene, { mask_color: [200, 200, 200] } );
+            const url = "./data/mapray-gray.png";
+            entity.addImageIcon( url, new mapray.GeoPoint(143.6, 43.017), { origin: [ 0.5, 1.0 ] });
+            entity.altitude_mode = mapray.AltitudeMode.CLAMP;
+            entity.setSize( [200, 120] );
             this.addEntity( entity );
         }
 
