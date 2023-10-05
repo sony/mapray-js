@@ -261,21 +261,21 @@ class App extends maprayui.StandardUIViewer {
             this.addEntity( entity );
         }
 
-        {// Icon
+        { // Icon: transparent image
             const entity = new mapray.ImageIconEntity( this.viewer.scene );
             entity.addImageIcon( ICON_URL, new mapray.GeoPoint(141.6, 43.017), { origin: [ 0.5, 1.0 ] });
             entity.altitude_mode = mapray.AltitudeMode.CLAMP;
             entity.setSize( [200, 120] );
             this.addEntity( entity );
         }
-        {
+        { // Icon: transparent image but disable alpha clipping
             const entity = new mapray.ImageIconEntity( this.viewer.scene, { alpha_clipping: false } );
             entity.addImageIcon( ICON_URL, new mapray.GeoPoint(142.6, 43.017), { origin: [ 0.5, 1.0 ] });
             entity.altitude_mode = mapray.AltitudeMode.CLAMP;
             entity.setSize( [200, 120] );
             this.addEntity( entity );
         }
-        {
+        { // Icon: opaque image and mask
             const entity = new mapray.ImageIconEntity( this.viewer.scene, { mask_color: [200, 200, 200] } );
             const url = "./data/mapray-gray.png";
             entity.addImageIcon( url, new mapray.GeoPoint(143.6, 43.017), { origin: [ 0.5, 1.0 ] });
@@ -284,37 +284,12 @@ class App extends maprayui.StandardUIViewer {
             this.addEntity( entity );
         }
 
-        const sceneResource = new mapray.URLResource( SCENE_3D_URL, {
-                transform: ( url, type ) => {
-                    if (type.id === "IMAGE" ) {
-                        return { url, init: { crossOrigin: mapray.CredentialMode.SAME_ORIGIN } };
-                    }
-                    else return { url }
-                }
-        });
+        await this.loadPointTests( new mapray.GeoPoint( 137.8, 34.703 ) );
 
-        await new mapray.SceneLoader( this.viewer.scene, sceneResource, {
-                onEntity: (loader, entity, props) => {
-                    const position = new mapray.GeoPoint(137.724919, 34.711773, 100);
-                    if ( entity instanceof mapray.ModelEntity ) {
-                        entity.setPosition(position);
-                    }
-                    loader.scene.addEntity(entity);
-                }
-        } ).load();
-
-        new mapray.SceneLoader( this.viewer.scene, sceneResource, {
-                onEntity: (loader, entity, props) => {
-                    const position = new mapray.GeoPoint(137.724, 34.711, 200);
-                    if ( entity instanceof mapray.ModelEntity ) {
-                        // @ts-ignore
-                        entity.setAnchorMode(true);
-                        entity.setPosition(position);
-                    }
-                    loader.scene.addEntity(entity);
-                }
-        } ).load();
-
+        const box1 = await this.loadBox( new mapray.GeoPoint( 137.724919, 34.711773, 100 ) );
+        const box2 = await this.loadBox( new mapray.GeoPoint( 137.724, 34.711, 200 ) );
+        // @ts-ignore
+        box2.setAnchorMode( true );
 
         // line
         const line_points = [
@@ -475,6 +450,74 @@ class App extends maprayui.StandardUIViewer {
 
         this._gis.loaded = true;
         this._gis.loading = false;
+    }
+
+
+    private async loadPointTests( basePosition: mapray.GeoPoint ): Promise<mapray.Entity[]>
+    {
+        const entities: mapray.Entity[] = [];
+
+        const altitudes = [100, -500];
+        const types = ["icon", "text", "simple-text", "pin"];
+        const anchorModes = [true, false];
+
+        for ( let k=0; k<altitudes.length; k++ ) {
+            const altitude = altitudes[k];
+            for ( let i=0; i<types.length; i++ ) {
+                const type = types[i];
+                for ( let j=0; j<anchorModes.length; j++ ) {
+                    const anchorMode = anchorModes[j];
+                    const position = new mapray.GeoPoint(
+                        basePosition.longitude + i * 0.02,
+                        basePosition.latitude  + k * 0.05 + j * 0.02,
+                        altitude
+                    );
+                    let pointEntity: mapray.ImageIconEntity | mapray.TextEntity | mapray.PinEntity;
+                    if ( type === "icon" ) {
+                        const entity = pointEntity = new mapray.ImageIconEntity( this.viewer.scene );
+                        entity.addImageIcon( ICON_URL, position, { origin: [ 0.5, 1.0 ] });
+                        entity.setSize( [200, 120] );
+                    }
+                    else if ( type === "text" || type === "simple-text" ) {
+                        const entity = pointEntity = new mapray.TextEntity( this.viewer.scene );
+                        entity.addText( " test ", position, { origin: [ 0.5, 1.0 ] });
+                        entity.setFontSize( 20 );
+                        entity.setColor( [0, 0, 1] );
+                        if ( type === "text" ) {
+                            entity.setEnableBackground( true );
+                            entity.setBackgroundColor([ 1, 0, 0 ]);
+                        }
+                    }
+                    else { // type === "pin"
+                        const entity = pointEntity = new mapray.PinEntity( this.viewer.scene );
+                        entity.addPin( position );
+                    }
+                    this.addEntity( pointEntity );
+                    // @ts-ignore
+                    pointEntity.setAnchorMode( anchorMode );
+                    entities.push( pointEntity );
+                }
+            }
+        }
+
+        this.loadBox( new mapray.GeoPoint( basePosition.longitude + 0.02, basePosition.latitude - 0.01, 5000 ), [5, 5, 5] );
+        return entities;
+    }
+
+
+    async loadBox( position: mapray.GeoPoint, scale: mapray.Vector3 = [1, 1, 1] ) {
+        return await new Promise( onSuccess => {
+            new mapray.SceneLoader( this.viewer.scene, new mapray.URLResource( SCENE_3D_URL ), {
+                    onEntity: (loader, entity, props) => {
+                        if ( entity instanceof mapray.ModelEntity ) {
+                            entity.setPosition( position );
+                            entity.setScale( scale );
+                        }
+                        loader.scene.addEntity( entity );
+                        onSuccess( entity );
+                    }
+            } ).load();
+        });
     }
 
 
