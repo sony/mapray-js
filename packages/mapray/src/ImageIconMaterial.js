@@ -79,6 +79,9 @@ class ImageIconMaterial extends EntityMaterial {
         const mask_color = props["mask_color"];
         this.setVector3( "u_mask_color", mask_color ?? INVALID_MASK_COLOR );
 
+        // 透明度
+        this.setFloat( "u_trans_factor", stage.getTranslucentMode() ? 0.5 : 1.0 );
+
         // テクスチャのバインド
         // sampler2D u_image
         const image = props["image"];

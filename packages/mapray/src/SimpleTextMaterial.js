@@ -58,6 +58,9 @@ class SimpleTextMaterial extends EntityMaterial {
         this.setVector2( "u_sparam", sparam );
 
         if (stage.getRenderTarget() === RenderStage.RenderTarget.SCENE) {
+            // 透明度
+            this.setFloat( "u_trans_factor", stage.getTranslucentMode() ? 0.5 : 1.0 );
+
             // テクスチャのバインド
             // sampler2D u_image
             var image_tex = props["image"];
