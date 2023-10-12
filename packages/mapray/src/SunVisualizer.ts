@@ -30,9 +30,9 @@ class SunVisualizer {
      *
      * @param divide 円分割数 (3以上)
      */
-    constructor( divide: number )
+    constructor( divide: number = 32 )
     {
-        if ( divide < 3 ) { divide = 3; }
+        if ( divide < 3 ) throw new Error( "divide must be greater than 2" );
         this._divide = divide;
     }
 
@@ -161,66 +161,64 @@ class SunVisualizer {
     _createMesh() {
 
         const SPHERE_DIV = this._divide;
-        let ai, si, ci;
-        let layer_radius;
-        let layer_color;
-
-        const radius = 1.0;
         const circle_layer = 15;
 
         // Vertices
-        let vertices = [], indices = [];
+        const vertices = [], indices = [];
 
         // center
-        vertices.push(0.0);
-        vertices.push(0.0);
-        vertices.push(0.0);
-        vertices.push(1.0);
+        vertices.push( 0.0, 0.0, 0.0 );
+        vertices.push( 1.0 );
 
         for ( let j = 0; j < circle_layer; j++ ) {
-          layer_radius = LAYER_RADIUS_TABLE[j];
-          layer_color = LAYER_COLOR_TABLE[j];
+          const layer_radius = LAYER_RADIUS_TABLE[j];
+          const layer_color = LAYER_COLOR_TABLE[j];
           for ( let i = 0; i < SPHERE_DIV; i++ ) {
-            ai = i * 2 * Math.PI / SPHERE_DIV;
-            si = Math.sin( ai );
-            ci = Math.cos( ai );
-
-            vertices.push( si * layer_radius );
-            vertices.push( ci * layer_radius );
-            vertices.push( 0.0 );
-
-            vertices.push(layer_color/255);
+            const th = i * 2.0 * Math.PI / SPHERE_DIV;
+            vertices.push(
+              Math.sin( th ) * layer_radius,
+              Math.cos( th ) * layer_radius,
+              0.0
+            );
+            vertices.push( layer_color / 255.0 );
           }
         }
 
-        for ( let i = 1; i < SPHERE_DIV; i++ ) {
-            indices.push(0);
-            indices.push(i+1);
-            indices.push(i);
+        for ( let i = 0; i < SPHERE_DIV; i++ ) {
+            indices.push(
+              0,
+              1 + (i + 1) % SPHERE_DIV,
+              1 + i
+            );
         }
-        indices.push(0);
-        indices.push(1);
-        indices.push(SPHERE_DIV);
 
-        for ( let j = 1; j < circle_layer; j++ ) {
-          let i;
-          for ( i = SPHERE_DIV * j; i < SPHERE_DIV*(j+1)-1; i++ ) {
-            indices.push(i - SPHERE_DIV + 1);
-            indices.push(i + 2);
-            indices.push(i + 1);
+        //    |                //
+        //  -21---____     /   //
+        //    |       """-22_  //
+        //    |          /     //
+        //    |         /      //
+        //    |        /       //
+        //  -11--__   /        //
+        //    |    ""12-_      //
+        //    |     /          //
+        //    |    /           //
+        //    |   /            //
 
-            indices.push(i - SPHERE_DIV + 1);
-            indices.push(i - SPHERE_DIV + 2);
-            indices.push(i + 2);
+        let r2 = 1;
+        let th2 = 0;
+        for ( let j = 0; j < circle_layer - 1; j++ ) {
+          const r1 = r2;
+          r2 += SPHERE_DIV;
+          for ( let i = 0; i < SPHERE_DIV; i++ ) {
+            const th1 = th2;
+            th2 = (th2 + 1) % SPHERE_DIV;
+            const idx11 = r1 + th1;
+            const idx12 = r1 + th2;
+            const idx21 = r2 + th1;
+            const idx22 = r2 + th2;
+            indices.push( idx11, idx12, idx22 );
+            indices.push( idx11, idx22, idx21 );
           }
-          i = SPHERE_DIV*(j+1) - 1;
-          indices.push(i - SPHERE_DIV + 1);
-          indices.push(i - SPHERE_DIV + 2);
-          indices.push(i + 1);
-
-          indices.push(i - SPHERE_DIV + 1);
-          indices.push(i + 2 - SPHERE_DIV*2);
-          indices.push(i - SPHERE_DIV + 2);
         }
 
         const mesh_data = {

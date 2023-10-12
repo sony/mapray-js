@@ -58,14 +58,8 @@ class TextureSunMaterial extends Material {
         const cy = camMat[13];
         const cz = camMat[14];
 
-        const array = [ camMat[0], camMat[1], camMat[2],  0,
-                        camMat[4], camMat[5], camMat[6],  0,
-                        camMat[8], camMat[9], camMat[10], 0,
-                                0,         0,          0, 1];
-
         this.setMatrix ( "u_gocs_to_clip", gocs_to_clip );
         this.setFloat  ( "u_intensity", intensity );
-        this.setMatrix ( "u_camera_direction_matrix", array );
         this.setVector3( "u_sun_direction" , sun.sun_direction );
 
         const camera_height = Math.sqrt( cx*cx + cy*cy + cz*cz ) * 0.000001;  // 1/1000000
@@ -73,12 +67,10 @@ class TextureSunMaterial extends Material {
         this.setVector3( "u_camera_position" , [cx * 0.000001, cy * 0.000001, cz * 0.000001] ); // 1/1000000
         this.setVector3( "u_sun_vector" , sun.sun_direction );
         this.setFloat  ( "u_camera_height", camera_height );
-        this.setFloat  ( "u_camera_height2", camera_height * camera_height );
         this.setFloat  ( "u_kr",              parameters.kr );
         this.setFloat  ( "u_km",              parameters.km );
         this.setFloat  ( "u_scale_depth",     parameters.scale_depth );
         this.setFloat  ( "u_esun",            parameters.esun );
-        this.setFloat  ( "u_exposure",        parameters.exposure );
 
         // 平面
         const plane_vector = [ camMat[8], camMat[9], camMat[10] ];

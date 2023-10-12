@@ -59,7 +59,6 @@ class SunMaterial extends Material {
         ]);
 
         this.setFloat  ( "u_intensity", intensity );
-        this.setMatrix ( "u_camera_direction_matrix", array );
         this.setVector3( "u_sun_direction" , sun.sun_direction );
 
         const camera_height = GeoMath.length3( camera_pos ) * 0.000001;  // 1/1000000
