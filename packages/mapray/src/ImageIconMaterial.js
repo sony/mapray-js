@@ -25,20 +25,6 @@ class ImageIconMaterial extends EntityMaterial {
         // 不変パラメータを事前設定
         this.bindProgram();
         this.setInteger( "u_image", ImageIconMaterial.TEXUNIT_IMAGE );
-
-        this._normal_sampler = undefined;
-        this._mask_sampler = undefined;
-    }
-
-
-    dispose() {
-        const gl = this.glenv.context;
-        if ( this._normal_sampler ) {
-            gl.deleteSampler( this._normal_sampler );
-        }
-        if ( this._mask_sampler ) {
-            gl.deleteSampler( this._mask_sampler );
-        }
     }
 
 
@@ -86,25 +72,6 @@ class ImageIconMaterial extends EntityMaterial {
         // sampler2D u_image
         const image = props["image"];
         this.bindTexture2D( ImageIconMaterial.TEXUNIT_IMAGE, image.handle );
-
-        // MaskColorが設定されている場合はSamplerのFilterをNEARESTに設定する
-        const gl = this.glenv.context;
-        if ( mask_color ) {
-            if ( !this._mask_sampler ) {
-                this._mask_sampler = gl.createSampler();
-                gl.samplerParameteri( this._mask_sampler, gl.TEXTURE_MIN_FILTER, gl.NEAREST );
-                gl.samplerParameteri( this._mask_sampler, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
-            }
-            gl.bindSampler( ImageIconMaterial.TEXUNIT_IMAGE, this._mask_sampler );
-        }
-        else {
-            if ( !this._normal_sampler ) {
-                this._normal_sampler = gl.createSampler();
-                gl.samplerParameteri( this._normal_sampler, gl.TEXTURE_MIN_FILTER, gl.LINEAR );
-                gl.samplerParameteri( this._normal_sampler, gl.TEXTURE_MAG_FILTER, gl.LINEAR );
-            }
-            gl.bindSampler( ImageIconMaterial.TEXUNIT_IMAGE, this._normal_sampler );
-        }
     }
 
 }

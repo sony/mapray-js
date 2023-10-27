@@ -3,7 +3,7 @@ import Primitive from "./Primitive";
 import Scene from "./Scene";
 import Mesh from "./Mesh";
 import GLEnv from "./GLEnv";
-import Texture from "./Texture";
+import Texture, { Option as TextureOption } from "./Texture";
 import ImageIconMaterial from "./ImageIconMaterial";
 import GeoMath, { Vector2, Vector3, Matrix } from "./GeoMath";
 import GeoPoint from "./GeoPoint";
@@ -1162,9 +1162,15 @@ class Layout {
             item.draw( context );
         }
 
-        var glenv = this._owner.getEntity().scene.glenv;
-        var opts = {
-            usage: Texture.Usage.ICON
+        const entity = this._owner.getEntity();
+        const maskColor = entity.getMaskColor();
+
+        const glenv = entity.scene.glenv;
+        const gl = glenv.context;
+        const opts: TextureOption = {
+            usage: Texture.Usage.ICON,
+            mag_filter: maskColor ? gl.NEAREST : gl.LINEAR,
+            min_filter: maskColor ? gl.NEAREST : gl.LINEAR,
         };
         return new Texture( glenv, context.canvas, opts );
     }
