@@ -48,6 +48,7 @@ uniform float u_esun;               // Kr
 uniform float u_exposure;           // Exposure
 
 varying vec4 v_color;
+varying float v_is_ground;
 
 const float loop_float = 10.0;         // loop
 const int   loop_int   = 10;           // loop
@@ -155,4 +156,12 @@ main()
 
     vec3 atmosphere_position = a_position * planet_factor;
     gl_Position = u_gocs_to_clip * vec4( atmosphere_position, 1.0 );
+
+    // mask
+    float max_ground_angle = asin( planet_radius / u_camera_height );
+    vec3 camera_vec        = normalize( -u_camera_position );
+    vec3 vert_vec          = normalize( a_position - u_camera_position );
+    float vert_angle       = acos( dot( vert_vec, camera_vec ) );
+    v_is_ground = max_ground_angle > vert_angle ? 1.0 : 0.0;
+
 }
