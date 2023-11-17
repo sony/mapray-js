@@ -486,6 +486,7 @@ class PolygonEntity extends Entity {
     {
         let src_points     = this._getCombinedBoundary2DPoints();
         let num_src_points = this._countNumPointsOnBoundaries();
+        if ( num_src_points < 3 ) return undefined;
 
         // 境界を登録
         let triangulator = new Triangulator( src_points, 0, 2, num_src_points );
