@@ -134,6 +134,8 @@ class Viewer {
 
     private _starVisualizer?: StarVisualizer;
 
+    private _ω_limit: number;
+
     /** @internal */
     _render_cache?: any;
 
@@ -162,6 +164,8 @@ class Viewer {
         else {
             throw new Error( "unsupported type: " + container );
         }
+
+        this._ω_limit = 6;  // default omega limit
 
         var canvas = this._createCanvas( container_element );
 
@@ -1048,6 +1052,25 @@ class Viewer {
         }
 
         return pick_result;
+    }
+
+
+    /**
+     * ω limitの設定
+     * @param val  0 から 6 の値が設定できる
+     */
+    setOmagaLimit( val: number )
+    {
+        this._ω_limit = Math.min( 6, Math.max( 0, Math.floor( val ) ) );
+    }
+
+
+    /**
+     * ω limitの取得
+     */
+    getOmegaLimit(): number
+    {
+        return this._ω_limit;
     }
 
 

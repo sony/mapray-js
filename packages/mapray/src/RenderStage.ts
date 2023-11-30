@@ -20,7 +20,7 @@ import FlakeRenderObject from "./FlakeRenderObject";
 import RenderFlake from "./RenderFlake";
 import DebugStats from "./DebugStats";
 import FlakeMaterial from "./FlakeMaterial";
-
+import DemBinary from "./DemBinary";
 
 
 /**
@@ -371,6 +371,7 @@ abstract class RenderStage {
         // RenderFlake#getRenderObject() の前に必要な処理
         let producers = this._scene.getFlakePrimitiveProducers();
         this._globe.putNextEntityProducers( producers );
+        DemBinary.ω_limit = this._viewer.getOmegaLimit();
     }
 
 

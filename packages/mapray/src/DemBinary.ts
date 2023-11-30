@@ -319,7 +319,7 @@ class DemBinary implements Area {
     private static readonly OFFSET_HMAX      = 8;
     private static readonly OFFSET_ω        = 12;
     private static readonly HEADER_BYTES     = 96;
-    private static readonly ω_limit         = 6;
+    static ω_limit                           = 6;
 
     private static readonly _getHeights_result: [number, number, number, number] = [0, 0, 0, 0];
     private static readonly _getDivisionPowers_result: [number, number] = [0, 0];
