@@ -11,6 +11,7 @@ import debugCommon, {
     ImageProviderModule,
     AttributionModule,
     LayerModule,
+    DemModule,
 } from "debug-common";
 
 
@@ -84,6 +85,7 @@ class DatasetViewer extends DebugViewer {
         modules.push( new ImageProviderModule() );
         modules.push( new AttributionModule() );
         modules.push( new LayerModule() );
+        modules.push( new DemModule() );
 
         if ( activeModule ) {
             this.setActiveModule( activeModule );
