@@ -37,6 +37,9 @@ interface ConstellationCodeMap {
 }
 
 
+const OFFSET_ANGLE: number = 180;  // offset angle at J2000
+
+
 
 /**
  * 星、星座、天の川を表現するクラス
@@ -108,7 +111,7 @@ class StarVisualizer {
 
         this._intensity = 0.0;
 
-        this._longitude = 0.0;
+        this._longitude = OFFSET_ANGLE;
 
         this._line_color = GeoMath.createVector3( [ 0, 0.5, 1 ] );
 
@@ -235,7 +238,7 @@ class StarVisualizer {
      */
     setLongitude( value: number ): void
     {
-        this._longitude = value;
+        this._longitude = value + OFFSET_ANGLE;
     }
 
 
