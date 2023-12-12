@@ -56,7 +56,7 @@ class DatasetViewer extends DebugViewer {
 
     protected override populateModules( modules: Module[] ): void
     {
-        let activeModule: Module;
+        let activeModule: Module | undefined;
 
         // GeoJson
         if ( process.env.DATASET_2D_ID ) {
