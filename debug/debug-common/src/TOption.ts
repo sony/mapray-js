@@ -657,6 +657,31 @@ export class TDomTool {
     }
 
     /**
+     * NumberPropertyオブジェクトを表示、編集するHTML要素を作成
+     *
+     * @param property プロパティ
+     * @returns HTML要素
+     */
+    static createNumberOption( property: TOption.RangeProperty, domOption: DomOption = {} ): HTMLElement
+    {
+        const pane = this.createNumberInput({
+            min: Number(property.min),
+            max: Number(property.max),
+            initialValue: property.value,
+            description: property.key + (property.description ? "\n" + property.description : ""),
+            onui: (ui, apply) => {
+                property.onChange(event => {
+                    apply(event.value)
+                })
+            },
+            onchange: (value, domEvent) => {
+                property.set(value);
+            },
+        });
+        return this.createOuter(pane, property.key, domOption);
+    }
+
+    /**
      * 数字を編集するUIを作成
      * 
      * @param property プロパティ
