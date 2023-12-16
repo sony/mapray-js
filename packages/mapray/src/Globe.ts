@@ -2536,7 +2536,7 @@ export class Flake implements Area {
      */
     private _findQuadRayDistance( ray: Ray, limit: number, dem_flake: Flake ): number
     {
-        var  pts = this._getQuadPositions( dem_flake, Flake._temp_positions );
+        var  pts = this.getQuadPositions( dem_flake, VECTOR3_BUF );
         DEBUG: {
             if ( this.belt.debug_pick_info ) {
                 this.belt.debug_pick_info.quads.push([
@@ -2636,40 +2636,45 @@ export class Flake implements Area {
     /**
      * 四隅の位置を取得
      *
-     * @param dem_flake  DEM の地表断片
+     * @param height_src  高さ情報
      * @param positions  結果の格納先
      *
      * @returns  [左上, 右上, 左下, 右下]
      */
-    private _getQuadPositions( dem_flake: Flake, positions: [Vector3, Vector3, Vector3, Vector3] ): [Vector3, Vector3, Vector3, Vector3]
+    getQuadPositions( height_src: Flake | number[], positions: [Vector3, Vector3, Vector3, Vector3] ): [Vector3, Vector3, Vector3, Vector3]
     {
-        cfa_assert( dem_flake._dem_state === DemState.LOADED );
-        cfa_assert( dem_flake._dem_data instanceof DemBinary );
+        const xg = this.x;
+        const yg = this.y;
 
-        var xg = this.x;
-        var yg = this.y;
-        var xe = dem_flake.x;
-        var ye = dem_flake.y;
+        let heights;
+        if ( height_src instanceof Flake ) {
+            cfa_assert( height_src._dem_state === DemState.LOADED );
+            cfa_assert( height_src._dem_data instanceof DemBinary );
+            const xe = height_src.x;
+            const ye = height_src.y;
+            const size = 1 << this.belt.rho;
+            heights = height_src._dem_data.getHeights( xg - size * xe, yg - size * ye );
+        }
+        else {
+            heights = height_src;
+        }
 
-        var    size = 1 << this.belt.rho;
-        var heights = dem_flake._dem_data.getHeights( xg - size * xe, yg - size * ye );
+        const msize = Math.pow( 2, 1 - this.z ) * Math.PI;
+        const   mx0 = xg * msize - Math.PI;
+        const   my0 = Math.PI - yg * msize;
 
-        var msize = Math.pow( 2, 1 - this.z ) * Math.PI;
-        var   mx0 = xg * msize - Math.PI;
-        var   my0 = Math.PI - yg * msize;
+        for ( let iv = 0, my = my0; iv < 2; ++iv, my -= msize ) {
+            const ey    = Math.exp( my );
+            const ey2   = ey * ey;
+            const sinφ = (ey2 - 1) / (ey2 + 1);
+            const cosφ =   2 * ey  / (ey2 + 1);
+            for ( let iu = 0, mx = mx0; iu < 2; ++iu, mx += msize ) {
+                const  index = iu + 2*iv;
+                const radius = GeoMath.EARTH_RADIUS + heights[index];
+                const  sinλ = Math.sin( mx );
+                const  cosλ = Math.cos( mx );
 
-        for ( var iv = 0, my = my0; iv < 2; ++iv, my -= msize ) {
-            var ey    = Math.exp( my );
-            var ey2   = ey * ey;
-            var sinφ = (ey2 - 1) / (ey2 + 1);
-            var cosφ =   2 * ey  / (ey2 + 1);
-            for ( var iu = 0, mx = mx0; iu < 2; ++iu, mx += msize ) {
-                var  index = iu + 2*iv;
-                var radius = GeoMath.EARTH_RADIUS + heights[index];
-                var  sinλ = Math.sin( mx );
-                var  cosλ = Math.cos( mx );
-
-                var pos = positions[index];
+                const pos = positions[index];
                 pos[0] = radius * cosφ * cosλ;
                 pos[1] = radius * cosφ * sinλ;
                 pos[2] = radius * sinφ;
@@ -2871,14 +2876,6 @@ export class Flake implements Area {
 
 
     private static readonly πr = Math.PI * GeoMath.EARTH_RADIUS;
-
-
-    private static readonly _temp_positions: [ Vector3, Vector3, Vector3, Vector3 ] = [
-        GeoMath.createVector3(),
-        GeoMath.createVector3(),
-        GeoMath.createVector3(),
-        GeoMath.createVector3(),
-    ];
 
 
     private static readonly _temp_ray_1  = GeoMath.createVector3();
@@ -3214,6 +3211,14 @@ export const GLOBE_BELT_LOWER_Y = -3;
  * 0 または 0 以上の整数
  */
 export const GLOBE_BELT_UPPER_Y = +3;
+
+
+const VECTOR3_BUF: [ Vector3, Vector3, Vector3, Vector3 ] = [
+    GeoMath.createVector3(),
+    GeoMath.createVector3(),
+    GeoMath.createVector3(),
+    GeoMath.createVector3(),
+];
 
 
 const Flake = Globe.Flake;
