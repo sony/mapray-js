@@ -1,11 +1,12 @@
 import GLEnv from "./GLEnv";
 import AreaUtil, { Area } from "./AreaUtil";
-import GeoMath, { Matrix } from "./GeoMath";
+import GeoMath, { GeoPoint, Matrix, Vector3 } from "./GeoMath";
 import Primitive from "./Primitive";
 import FlakeMesh from "./FlakeMesh";
 import Mesh from "./Mesh";
 import Entity from "./Entity";
 import RenderStage from "./RenderStage";
+import Globe from "./Globe";
 
 
 /**
@@ -39,6 +40,9 @@ class FlakeRenderObject implements Area {
         this._base_mesh  = base_mesh;
         this._edata_list = [];
         this._transform  = null;
+
+        this._gocs_bbox_mesh = null;
+        this._geo_bbox_mesh = null;
     }
 
 
@@ -100,12 +104,34 @@ class FlakeRenderObject implements Area {
         };
     }
 
+    /**
+     * @summary Flakeの境界箱メッシュを設定
+     *
+     * @param bbox_mesh_info  境界箱メッシュの情報
+     */
+    setDebugMesh( gocs_bbox_mesh: Mesh, geo_bbox_mesh: Mesh )
+    {
+        this._gocs_bbox_mesh = gocs_bbox_mesh;
+        this._geo_bbox_mesh = geo_bbox_mesh;
+    }
+
+
+    get gocs_bbox_mesh(): Mesh | null
+    {
+        return this._gocs_bbox_mesh;
+    }
+
+    get geo_bbox_mesh(): Mesh | null
+    {
+        return this._geo_bbox_mesh;
+    }
 
     private readonly _glenv:      GLEnv;
     private readonly _base_mesh:  FlakeMesh;
     private readonly _edata_list: EntityData[];
     private          _transform:  Matrix | null;
-
+    private          _gocs_bbox_mesh: Mesh | null;
+    private          _geo_bbox_mesh: Mesh | null;
 }
 
 

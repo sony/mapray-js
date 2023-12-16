@@ -8,10 +8,10 @@ import DemBinary from "./DemBinary";
 import FlakeMesh from "./FlakeMesh";
 import FlakeRenderObject from "./FlakeRenderObject";
 import UpdatedTileArea from "./UpdatedTileArea";
-import Mesh from "./Mesh";
+import Mesh, { MeshData } from "./Mesh";
 import Entity from "./Entity";
 import AvgHeightMaps from "./AvgHeightMaps";
-import { Area } from "./AreaUtil";
+import type { Area } from "./AreaUtil";
 import type { PoleInfo } from "./Viewer";
 import { StyleFlake } from "./vectile/style_flake";
 import type { StyleManager } from "./vectile/style_manager";
@@ -70,6 +70,16 @@ class Globe {
      * すべての Belt インスタンス
      */
     private readonly _belts: Belt[];
+
+    // Bbox
+    geo_bbox_visibility: boolean = false;
+    gocs_bbox_visibility: boolean = false;
+
+    private _bbox_target_area_id_max: number = 0;
+    readonly bbox_target_area_map: Map<number, Area> = new Map<number, Area>();
+
+    private _bbox_target_point_id_max: number = 0;
+    readonly bbox_target_point_map: Map<number, Vector2> = new Map<number, Vector2>();
 
 
     /**
@@ -430,6 +440,96 @@ class Globe {
         return this._belt( 0 ).popDebugPickInfo();
     }
 
+
+    /**
+     * 境界箱表示をするflakeかをチェック
+     *
+     * @param flake  Flake インスタンス
+     */
+    isBboxVisible( flake: Globe.Flake ): boolean
+    {
+        for ( const area of this.bbox_target_area_map.values() ) {
+            if ( area.z === flake.z && area.x === flake.x && area.y === flake.y ) {
+                return true;
+            }
+        }
+
+        const size = Math.pow( 2, flake.z );
+        for ( const tile_pos of this.bbox_target_point_map.values() ) {
+            const x = Math.floor( tile_pos[0] * size );
+            const y = Math.floor( tile_pos[1] * size );
+            if ( x === flake.x && y === flake.y ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
+    /**
+     * 指定した位置に該当するFlakeの属する全てのFlakeの境界箱を表示
+     *
+     * @param point 境界箱を表示させる緯度経度またはタイル座標
+     * @internal
+     */
+    addDebugBboxForPoint( point: GeoPoint ): number
+    {
+        const tile_pos = this.getTilePos( point );
+        const id = this._bbox_target_point_id_max++;
+        this.bbox_target_point_map.set( id, tile_pos );
+        return id;
+    }
+
+
+    /**
+     * 指定した位置に該当するFlakeの境界箱を表示
+     *
+     * @param area 境界箱を表示させる緯度経度またはタイル座標
+     * @internal
+     */
+    addDebugBboxForArea( area: Area ): number
+    {
+        const id = this._bbox_target_area_id_max++;
+        this.bbox_target_area_map.set( id, area );
+        return id;
+    }
+
+
+    /**
+     * エリア境界箱を削除する
+     *
+     * @param id 追加時に返却された境界箱id
+     * @internal
+     */
+    removeDebugBboxForArea( id: number )
+    {
+        this.bbox_target_area_map.delete( id );
+    }
+
+    /**
+     * ポイント境界箱を削除する
+     *
+     * @param id 追加時に返却された境界箱id
+     * @internal
+     */
+    removeDebugBboxForPoint( id: number )
+    {
+        this.bbox_target_point_map.delete( id );
+    }
+
+
+
+    /**
+     * 全てのFlakeの境界箱を削除する
+     *
+     * @internal
+     */
+    removeAllDebugBboxes()
+    {
+        this.bbox_target_area_map.clear();
+        this.bbox_target_point_map.clear();
+    }
 }
 
 
@@ -1163,6 +1263,14 @@ export class Flake implements Area {
         return this.belt.globe;
     }
 
+    get bbox_min(): Vector3 {
+        return [ this._gocs_x_min, this._gocs_y_min, this._gocs_z_min ];
+    }
+
+    get bbox_max(): Vector3 {
+        return [ this._gocs_x_max, this._gocs_y_max, this._gocs_z_max ];
+    }
+
 
     /**
      * DemBinary インスタンスを取得する。
@@ -1250,7 +1358,7 @@ export class Flake implements Area {
      *
      * @param lod  地表詳細レベル (LOD)
      */
-    getRenderObject( lod: number ): FlakeRenderObject
+    getRenderObject( lod: number, requireBboxMesh: boolean ): FlakeRenderObject
     {
         var η = Math.pow( 2, -lod ) * Flake.ε;  // 2^-lod ε
 
@@ -1274,7 +1382,7 @@ export class Flake implements Area {
         var node = this._getMeshNode( lod, cu, cv );
         node.touch();
 
-        return node.getRenderObject();
+        return node.getRenderObject( requireBboxMesh );
     }
 
     /**
@@ -3014,6 +3122,8 @@ class MeshNode {
 
     private _base_mesh: FlakeMesh;
 
+    private _flake_bbox_info: Globe.FlakeBboxMeshInfo | null;
+
     private _entity_meshes: Map<Entity.FlakePrimitiveProducer, Mesh | 'CACHED_EMPTY_MESH'>;
 
 
@@ -3033,6 +3143,8 @@ class MeshNode {
         // 地表のメッシュ
         this._base_mesh = new FlakeMesh( flake.globe.glenv, flake, dpows, dem );
 
+        this._flake_bbox_info = null;
+
         // エンティティのメッシュ
         this._entity_meshes = new Map();
 
@@ -3040,13 +3152,25 @@ class MeshNode {
         flake.belt.increment_cache_meshes();
     }
 
+
+    _getBboxMesh(): Globe.FlakeBboxMeshInfo
+    {
+        return this._flake_bbox_info ?? ( this._flake_bbox_info = this.createBboxInfo() );
+    }
+
+
     /**
      * FlakeRenderObject インスタンスを取得
      */
-    getRenderObject(): FlakeRenderObject
+    getRenderObject( requireBboxMesh: boolean ): FlakeRenderObject
     {
         let flake = this._flake;
         let   fro = new FlakeRenderObject( flake, flake.globe.glenv, this._base_mesh );
+
+        if ( requireBboxMesh ) {
+            const { gocs_bbox, geo_bbox} = this._getBboxMesh();
+            fro.setDebugMesh( gocs_bbox, geo_bbox );
+        }
 
         // fro にエンティティ毎のデータを追加
         for ( let producer of flake.getEntityProducers() ) {
@@ -3125,6 +3249,13 @@ class MeshNode {
             }
         }
 
+        // Bboxメッシュを破棄
+        if ( this._flake_bbox_info ) {
+            this._flake_bbox_info.geo_bbox.dispose();
+            this._flake_bbox_info.gocs_bbox.dispose();
+            this._flake_bbox_info = null;
+        }
+
         // メッシュ数をカウントダウン
         flake.belt.decrement_cache_meshes();
     }
@@ -3184,6 +3315,94 @@ class MeshNode {
         this._entity_meshes.set( producer, mesh );
     }
 
+
+    /**
+     * 境界箱メッシュ情報を作成
+     */
+    private createBboxInfo(): Globe.FlakeBboxMeshInfo
+    {
+        return {
+            gocs_bbox: this._createGocsBbox(),
+            geo_bbox: this._createGeoBbox(),
+        }
+    }
+
+
+    /**
+     * GOCS座標系における境界箱メッシュを作成
+     */
+    private _createGocsBbox(): Mesh
+    {
+        const offset = this._base_mesh.center;
+        const min = this._flake.bbox_min;
+        const max = this._flake.bbox_max;
+
+        const vertices = [];
+        for ( const z of [min[2], max[2]] ) {
+            for ( const x of [min[0], max[0]] ) {
+                for ( const y of [min[1], max[1]] ) {
+                    vertices.push( x - offset[0], y - offset[1], z - offset[2] );
+                }
+            }
+        }
+
+        const indices = [
+            0, 1, 1, 3, 3, 2, 2, 0,
+            4, 5, 5, 7, 7, 6, 6, 4,
+            0, 4, 1, 5, 3, 7, 2, 6,
+        ];
+
+        const mesh_data: MeshData = {
+            vtype: [
+                { name: "a_position", size: 3 }
+            ],
+            ptype: "lines",
+            vertices: vertices,
+            indices: indices
+        };
+        return new Mesh( this._flake.globe.glenv, mesh_data );
+    }
+
+
+    /**
+     * 緯度,経度,高度における境界箱メッシュを作成
+     */
+    private _createGeoBbox(): Mesh
+    {
+        const offset = this._base_mesh.center;
+        const flake = this._flake;
+        const positions = flake.getQuadPositions( [0, 0, 0, 0], VECTOR3_BUF );
+
+        const vertices = [];
+        const geo = new GeoPoint();
+        const gp = GeoMath.createVector3();
+        for ( const height of [flake.height_min, flake.base_height, flake.height_max] ) {
+            for ( const pos of positions ) {
+                geo.setFromGocs( pos );
+                geo.altitude = height;
+                geo.getAsGocs( gp );
+                vertices.push( gp[0] - offset[0], gp[1] - offset[1], gp[2] - offset[2]);
+            }
+        }
+
+        const indices  = [
+            0, 1, 1, 3, 3, 2, 2, 0,
+            4, 5, 5, 7, 7, 6, 6, 4,
+            8, 9, 9, 11, 11, 10, 10, 8,
+            0, 8, 1, 9, 3, 11, 2, 10,
+        ];
+
+        const mesh_data: MeshData = {
+            vtype: [
+                { name: "a_position", size: 3 }
+            ],
+            ptype: "lines",
+            vertices: vertices,
+            indices: indices
+        };
+        return new Mesh( flake.globe.glenv, mesh_data );
+    }
+
 }
 
 
@@ -3221,6 +3440,16 @@ export interface DebugPickInfo {
     distance?: number;
     trace: Globe.Flake[];
     quads: [Vector3, Vector3, Vector3, Vector3][];
+}
+
+
+/**
+ * @internal
+ * 境界箱メッシュ情報
+ */
+export interface FlakeBboxMeshInfo {
+    gocs_bbox: Mesh;
+    geo_bbox: Mesh;
 }
 
 

@@ -7,6 +7,7 @@ import Scene from "./Scene";
 import Camera from "./Camera";
 import FlakeCollector from "./FlakeCollector";
 import FlakeMesh from "./FlakeMesh";
+import Mesh from "./Mesh";
 import Material from "./Material";
 import SurfaceMaterial from "./SurfaceMaterial";
 import WireframeMaterial from "./WireframeMaterial";
@@ -21,6 +22,7 @@ import RenderFlake from "./RenderFlake";
 import DebugStats from "./DebugStats";
 import FlakeMaterial from "./FlakeMaterial";
 import DemBinary from "./DemBinary";
+import { cfa_assert } from "./util/assertion";
 
 
 /**
@@ -152,6 +154,9 @@ abstract class RenderStage {
         if ( !render_cache.surface_ground_space_material ) {
           render_cache.surface_ground_space_material = new SurfaceMaterial( viewer, { atmosphereFromSpaceMaterial: true } );
           render_cache.surface_ground_atmosphere_material = new SurfaceMaterial( viewer, { atmosphereMaterial: true } );
+        }
+        if ( !render_cache._flake_bbox_material ) {
+            render_cache._flake_bbox_material = new SurfaceMaterial.FlakeBboxMaterial( viewer );
         }
     }
 
@@ -337,9 +342,16 @@ abstract class RenderStage {
         this._prepare_draw_flake();
 
         for ( let rflake of this._flake_list ) {
-            let fro = rflake.getRenderObject();
+            const vis_bbox = this._globe.isBboxVisible( rflake.flake );
+            const fro = rflake.getRenderObject( vis_bbox );
             if ( vis_ground && this._draw_flake_base_rid_check() ) {
                 this._draw_flake_base( rflake, fro.getBaseMesh() );
+                if ( vis_bbox ) {
+                    const { gocs_bbox_mesh, geo_bbox_mesh } = fro;
+                    cfa_assert( gocs_bbox_mesh );
+                    cfa_assert( geo_bbox_mesh );
+                    this._draw_flake_bbox( fro, rflake, fro.getBaseMesh(), gocs_bbox_mesh, geo_bbox_mesh );
+                }
             }
             if ( vis_entity && this._draw_entities_on_flake_rid_check() ) {
                 this._draw_entities_on_flake( fro );
@@ -442,6 +454,30 @@ abstract class RenderStage {
             // @ts-ignore
             stats.num_drawing_flake_vertices += mesh.num_vertices;
         }
+    }
+
+
+    private _draw_flake_bbox( fro: FlakeRenderObject, rflake: RenderFlake, base_mesh: FlakeMesh, gocs_bbox_mesh: Mesh, geo_bbox_mesh: Mesh ): void
+    {
+        const gl = this._glenv.context;
+        const viewer = this._viewer;
+        const { gocs_bbox_visibility, geo_bbox_visibility } = viewer.globe;
+
+        if ( !gocs_bbox_visibility && !geo_bbox_visibility ) return;
+
+        gl.disable( gl.CULL_FACE );
+
+        const debug_material = viewer._render_cache._flake_bbox_material as SurfaceMaterial.FlakeBboxMaterial;
+        debug_material.bindProgram();
+        debug_material.setFlakeParameter( this, rflake, base_mesh, 0 );
+        if ( gocs_bbox_visibility ) {
+            gocs_bbox_mesh.draw( debug_material );
+        }
+        if ( geo_bbox_visibility ) {
+            geo_bbox_mesh.draw( debug_material );
+        }
+
+        gl.enable( gl.CULL_FACE );
     }
 
 

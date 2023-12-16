@@ -61,9 +61,9 @@ class RenderFlake {
     /**
      * レンダリングオブジェクトを検索
      */
-    getRenderObject(): FlakeRenderObject
+    getRenderObject( requireBboxMesh: boolean ): FlakeRenderObject
     {
-        return this.flake.getRenderObject( this.lod );
+        return this.flake.getRenderObject( this.lod, requireBboxMesh );
     }
 
 }

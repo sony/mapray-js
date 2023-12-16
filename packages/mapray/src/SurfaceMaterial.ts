@@ -10,6 +10,8 @@ import type FlakeMesh from "./FlakeMesh";
 import type TileTexture from "./TileTexture";
 import surface_vs_code from "./shader/surface.vert";
 import surface_fs_code from "./shader/surface.frag";
+import flake_bbox_vs_code from "./shader/flake_bbox.vert";
+import flake_bbox_fs_code from "./shader/flake_bbox.frag";
 import rid_fs_code from "./shader/rid.frag";
 import ImageLayer from "./ImageLayer";
 
@@ -253,6 +255,34 @@ class SurfaceMaterial extends FlakeMaterial {
 
 
 namespace SurfaceMaterial {
+
+
+/**
+ * @internal
+ */
+export class FlakeBboxMaterial extends FlakeMaterial {
+
+    /**
+     * @param viewer  所有者である Viewer
+     */
+    constructor( viewer: Viewer )
+    {
+        super( viewer, flake_bbox_vs_code, flake_bbox_fs_code );
+        this.bindProgram();
+    }
+
+    override setFlakeParameter( stage:  RenderStage,
+        _rflake: RenderFlake,
+        mesh:   FlakeMesh,
+        _index: number ): boolean
+    {
+        this.setCommonParameter( stage, mesh );
+        return true;
+    }
+
+}
+
+
 
 /**
  * 構築オプション

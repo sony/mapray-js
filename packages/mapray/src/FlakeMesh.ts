@@ -66,6 +66,9 @@ class FlakeMesh {
     }
 
 
+    get center() { return this._center; }
+
+
     /**
      *  頂点データとその情報を作成
      */
