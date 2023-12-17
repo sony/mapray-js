@@ -1,4 +1,5 @@
-import GeoMath, { Vector3, Vector4 } from "./GeoMath";
+import GeoMath, { Vector2, Vector3, Vector4 } from "./GeoMath";
+import GeoPoint from "./GeoPoint";
 import GLEnv from "./GLEnv";
 import Ray from "./Ray";
 import DemProvider from "./DemProvider";
@@ -219,6 +220,36 @@ class Globe {
     {
         return { lower: this._belt_lower_y, upper: this._belt_upper_y };
     }
+
+
+    /**
+     * 緯度経度に対応する基底タイル座標を取得する
+     * @param point: GeoPoint
+     * @return 基底タイル座標
+     * @internal
+     */
+    getTilePos( point: GeoPoint ): Vector2
+    {
+        const lon = point.longitude;
+        const lat = point.latitude;
+
+        // 正規化緯経度 (Degrees)
+        const _lon = lon + 180 * Math.floor( (90 - lat) / 360 + Math.floor( (90 + lat) / 360 ) );
+        const nlat = 90 - Math.abs( 90 - lat + 360 * Math.floor( (90 + lat) / 360 ) );  // 正規化緯度 [-90,90]
+        const nlon = _lon - 360 - 360 * Math.floor( (_lon - 180) / 360 );               // 正規化緯度 [-180,180)
+
+        // 単位球メルカトル座標
+        const xm = nlon * GeoMath.DEGREE;
+        const ym = GeoMath.invGudermannian( nlat * GeoMath.DEGREE );
+
+        // 基底タイル座標 (左上(0, 0)、右下(1, 1))
+        const dPI = 2 * Math.PI;
+        return [
+            xm / dPI + 0.5,
+            0.5 - ym / dPI
+        ];
+    }
+
 
     /**
      * 地球全体の標高の範囲を取得

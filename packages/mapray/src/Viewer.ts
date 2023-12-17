@@ -721,22 +721,9 @@ class Viewer {
      */
     getElevation( lat: number, lon: number ): number
     {
-        // 正規化緯経度 (Degrees)
-        var _lon = lon + 180 * Math.floor( (90 - lat) / 360 + Math.floor( (90 + lat) / 360 ) );
-        var nlat = 90 - Math.abs( 90 - lat + 360 * Math.floor( (90 + lat) / 360 ) );  // 正規化緯度 [-90,90]
-        var nlon = _lon - 360 - 360 * Math.floor( (_lon - 180) / 360 );               // 正規化緯度 [-180,180)
-
-        // 単位球メルカトル座標
-        var xm = nlon * GeoMath.DEGREE;
-        var ym = GeoMath.invGudermannian( nlat * GeoMath.DEGREE );
-
-        // 基底タイル座標 (左上(0, 0)、右下(1, 1))
-        var dPI = 2 * Math.PI;
-        var  xt = xm / dPI + 0.5;
-        var  yt = 0.5 - ym / dPI;
-
         // 正確度が最も高い DEM タイルの取得
         var globe = this._globe;
+        const [xt, yt] = globe.getTilePos( new GeoPoint( lon, lat ) );
         var dem   = globe.findHighestAccuracy( xt, yt );
         if ( dem === null ) {
             // まだ標高を取得することができない
