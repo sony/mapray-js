@@ -35,7 +35,7 @@ import Moon from "./Moon";
 import MoonVisualizer from "./MoonVisualizer";
 import CloudVisualizer from "./CloudVisualizer";
 import StarVisualizer from "./StarVisualizer";
-import SurfaceMaterial from "./SurfaceMaterial";
+import WireframeMaterial from "./WireframeMaterial";
 
 // マウス・Attribution開発
 import LogoController from "./LogoController";
@@ -1039,6 +1039,15 @@ class Viewer {
         }
 
         return pick_result;
+    }
+
+
+    /** @internal */
+    get wireframe_inner_grid_visibility() { return WireframeMaterial.inner_grid_visibility; }
+
+    /** @internal */
+    set wireframe_inner_grid_visibility( visibility: boolean ) {
+        WireframeMaterial.inner_grid_visibility = visibility;
     }
 
 

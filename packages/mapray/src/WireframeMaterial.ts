@@ -13,6 +13,11 @@ import wireframe_fs_code from "./shader/wireframe.frag";
 class WireframeMaterial extends FlakeMaterial {
 
     /**
+     * @internal
+     */
+    static inner_grid_visibility: boolean = true;
+
+    /**
      * @param viewer - 所有者 Viewer
      */
     constructor( viewer: Viewer )
@@ -35,7 +40,7 @@ class WireframeMaterial extends FlakeMaterial {
                                 _index: number ): boolean
     {
         this.setCommonParameter( stage, mesh );
-
+        this.setBoolean( "u_inner_grid_visibility", WireframeMaterial.inner_grid_visibility );
         return true;
     }
 
