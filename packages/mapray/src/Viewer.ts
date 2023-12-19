@@ -43,6 +43,9 @@ import AttributionController from "./AttributionController";
 import ContainerController from "./ContainerController";
 import Capture from "./Capture";
 
+import type { Area } from "./AreaUtil";
+import RenderFlake from "./RenderFlake";
+
 
 /**
  * すべての `StyleLayer` の型を登録する。
@@ -135,6 +138,12 @@ class Viewer {
     private _starVisualizer?: StarVisualizer;
 
     private _ω_limit: number;
+
+    /**
+     * 表示中（直前の描画）の Flake リスト。
+     * @experimental
+     */
+    private _flake_list: RenderFlake[] = [];
 
     /** @internal */
     _render_cache?: any;
@@ -979,6 +988,7 @@ class Viewer {
 
         var stage = new RenderStage.SceneRenderStage( this );
         stage.render();
+        this._flake_list = stage.flake_list;
 
         this._postProcess();
 
@@ -1048,6 +1058,44 @@ class Viewer {
     /** @internal */
     set wireframe_inner_grid_visibility( visibility: boolean ) {
         WireframeMaterial.inner_grid_visibility = visibility;
+    }
+
+
+    /**
+     * 指定した緯度経度に該当する、表示中のFlake座標を返す
+     * @param point 緯度経度
+     * @return 画面上にあるflakeのタイル座標 画面外または存在しない場合はnull
+     * @experimental
+     * @internal
+     */
+    getFlakeAreaAt( point: GeoPoint ): Area | null
+    {
+        const flake = this._getFlakeAt( point );
+        return flake ? { z: flake.z, x: flake.x, y: flake.y } : null;
+    }
+
+
+    /**
+     * 指定した緯度経度に該当する、表示中のFlakeを返す
+     * @param point 緯度経度
+     * @experimental
+     * @internal
+     */
+    private _getFlakeAt( point: GeoPoint ): Globe.Flake | null
+    {
+        if ( this._flake_list.length === 0 ) return null;
+
+        const tile_pos = this._globe.getTilePos( point );
+
+        for ( const { flake } of this._flake_list ) {
+            const size = Math.pow( 2, flake.z );
+            const x = Math.floor( tile_pos[0] * size );
+            const y = Math.floor( tile_pos[1] * size );
+            if ( flake.x === x && flake.y === y ) {
+                return flake;
+            }
+        }
+        return null;
     }
 
 

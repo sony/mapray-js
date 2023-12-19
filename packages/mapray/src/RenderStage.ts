@@ -198,6 +198,13 @@ abstract class RenderStage {
     }
 
 
+    /** @internal */
+    get flake_list(): RenderFlake[]
+    {
+        return this._flake_list;
+    }
+
+
     /**
      * 視点座標系から GOCS へ座標変換するための行列
      */
