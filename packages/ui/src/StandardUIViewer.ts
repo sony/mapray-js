@@ -311,9 +311,9 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     private _initCameraParameter( options: StandardUIViewer.Option ): void
     {
-        const camera_position = options.camera_position || StandardUIViewer.DEFAULT_CAMERA_POSITION;
-        const lookat_position = options.lookat_position || StandardUIViewer.DEFAULT_LOOKAT_POSITION;
-        const camera_parameter = options.camera_parameter || StandardUIViewer.DEFAULT_CAMERA_PARAMETER;
+        const camera_position = options.camera_position ?? StandardUIViewer.DEFAULT_CAMERA_POSITION;
+        const lookat_position = options.lookat_position ?? StandardUIViewer.DEFAULT_LOOKAT_POSITION;
+        const camera_parameter = options.camera_parameter ?? StandardUIViewer.DEFAULT_CAMERA_PARAMETER;
 
         // カメラ位置の設定
         this.setCameraPosition( camera_position );
@@ -529,16 +529,24 @@ class StandardUIViewer extends mapray.RenderCallback
         }
         else {
             if ( this._controllable ) {
+                // マウス等の操作量をカメラパラメータへ反映
                 this.updateTranslation( delta_time );   // 平行移動
                 this.updateRotation( delta_time );      // 回転
-                this._freeRotation( delta_time );       // 自由回転
+                this.updateFreeRotation( delta_time );  // 自由回転
                 this.updateTranslationOfHeight();       // 高さ変更
                 this.updateTranslationOfEyeDirection(); // 視線方向移動
+                this.updateFovy();                      // 画角変更
             }
-            this._changeFovy();      // 画角変更
-            this._correctAltitude(); // 高度補正
-            this.updateClipPlane();  // クリップ範囲の更新
-            this.updateCamera();     // カメラ姿勢の確定
+
+            const groundElevation = this.viewer.getElevation( this._camera_parameter.latitude, this._camera_parameter.longitude );
+
+            this._correctAltitude( groundElevation ); // カメラ拘束条件を適用
+
+            // この時点でカメラ位置・方向が確定
+
+            this.updateClipPlane( groundElevation ); // クリップ範囲の更新
+
+            this.updateCamera(); // カメラパラメータを適用
         }
     }
 
@@ -660,13 +668,11 @@ class StandardUIViewer extends mapray.RenderCallback
     /**
      * クリップ範囲の更新
      */
-    protected updateClipPlane(): void
+    protected updateClipPlane( groundElevation: number ): void
     {
-        // 地表面の標高
-        const elevation = this.viewer.getElevation( this._camera_parameter.latitude, this._camera_parameter.longitude );
-        const altitude = GeoMath.clamp( this._camera_parameter.height - elevation, this._altitude_range.min, this._altitude_range.max );
+        const camera_height_from_ground = Math.abs( this._camera_parameter.height - groundElevation );
 
-        this._camera_parameter.near = Math.max( altitude * StandardUIViewer.NEAR_FACTOR, StandardUIViewer.MINIMUM_NEAR );
+        this._camera_parameter.near = Math.max( Math.max( 1.0, camera_height_from_ground ) * StandardUIViewer.NEAR_FACTOR, StandardUIViewer.MINIMUM_NEAR );
         this._camera_parameter.far = Math.max( this._camera_parameter.near * StandardUIViewer.FAR_FACTOR, StandardUIViewer.MINIMUM_FAR );
     }
 
@@ -674,10 +680,9 @@ class StandardUIViewer extends mapray.RenderCallback
     /**
      * 高度の補正（地表面以下にならないようにする）
      */
-    private _correctAltitude(): void
+    private _correctAltitude( groundElevation: number ): void
     {
-        const elevation = this.viewer.getElevation( this._camera_parameter.latitude, this._camera_parameter.longitude );
-        this._camera_parameter.height = GeoMath.clamp( this._camera_parameter.height, elevation + this._altitude_range.min, elevation + this._altitude_range.max );
+        this._camera_parameter.height = GeoMath.clamp( this._camera_parameter.height, groundElevation + this._altitude_range.min, groundElevation + this._altitude_range.max );
     }
 
 
@@ -693,7 +698,9 @@ class StandardUIViewer extends mapray.RenderCallback
         if ( min > max ) throw new Error( "Illegal Argument" );
         this._altitude_range.min = min;
         this._altitude_range.max = max;
-        this._correctAltitude();
+
+        const groundElevation = this.viewer.getElevation( this._camera_parameter.latitude, this._camera_parameter.longitude );
+        this._correctAltitude( groundElevation );
     }
 
 
@@ -1204,7 +1211,7 @@ class StandardUIViewer extends mapray.RenderCallback
     /**
      * カメラの回転（自由回転）
      */
-    private _freeRotation( delta_time: number ): void
+    private updateFreeRotation( delta_time: number ): void
     {
         if ( this._free_rotate_drag[0] === 0 && this._free_rotate_drag[1] === 0 ) {
             return;
@@ -1322,7 +1329,7 @@ class StandardUIViewer extends mapray.RenderCallback
     /**
      * 画角変更
      */
-    private _changeFovy(): void
+    private updateFovy(): void
     {
         const tanθh = Math.tan( 0.5 * this._camera_parameter.fov * GeoMath.DEGREE );
         const θ = 2 * Math.atan( tanθh * Math.pow( StandardUIViewer.FOV_FACTOR, -this._fovy_key ) );
