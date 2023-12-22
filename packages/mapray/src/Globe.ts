@@ -159,7 +159,7 @@ class Globe {
             else {
                 this._belts.push( new Belt( this, y ) );
             }
-        };
+        }
     }
 
 
@@ -928,24 +928,24 @@ class Belt {
 
             if ( yt >= 0 && yt <= 1 ) {
                 // 通常範囲のとき
-                var dem = this._findHighestAccuracy2( xt, yt );
+                const dem = this._findHighestAccuracy2( xt, yt );
                 if ( dem ) {
-                    var pow = Math.pow( 2, dem.z );  // 2^ze
-                    var  uf = demSize * (pow * xt - dem.x);
-                    var  vf = demSize * (pow * yt - dem.y);
-                    var  ui = GeoMath.clamp( Math.floor( uf ), 0, demSize - 1 );
-                    var  vi = GeoMath.clamp( Math.floor( vf ), 0, demSize - 1 );
+                    const pow = Math.pow( 2, dem.z );  // 2^ze
+                    const  uf = demSize * (pow * xt - dem.x);
+                    const  vf = demSize * (pow * yt - dem.y);
+                    const  ui = GeoMath.clamp( Math.floor( uf ), 0, demSize - 1 );
+                    const  vi = GeoMath.clamp( Math.floor( vf ), 0, demSize - 1 );
 
-                    var heights = dem.getHeights( ui, vi );
-                    var h00 = heights[0];
-                    var h10 = heights[1];
-                    var h01 = heights[2];
-                    var h11 = heights[3];
+                    const heights = dem.getHeights( ui, vi );
+                    const h00 = heights[0];
+                    const h10 = heights[1];
+                    const h01 = heights[2];
+                    const h11 = heights[3];
 
                     // 標高を補間
-                    var s = uf - ui;
-                    var t = vf - vi;
-                    dst_array[dst_index] = (h00 * (1 - s) + h10 * s) * (1 - t) + (h01 * (1 - s) + h11 * s) * t;
+                    const s = uf - ui;
+                    const t = vf - vi;
+                    dst_array[dst_index] = ( h00 * ( 1 - s ) + h10 * s ) * ( 1 - t ) + ( h01 * ( 1 - s ) + h11 * s ) * t;
                 }
                 else {
                     // まだ標高を取得することができない
@@ -1266,15 +1266,18 @@ export class Flake implements Area {
     }
 
 
-    get globe(): Globe {
+    get globe(): Globe
+    {
         return this.belt.globe;
     }
 
-    get bbox_min(): Vector3 {
+    get bbox_min(): Vector3
+    {
         return [ this._gocs_x_min, this._gocs_y_min, this._gocs_z_min ];
     }
 
-    get bbox_max(): Vector3 {
+    get bbox_max(): Vector3
+    {
         return [ this._gocs_x_max, this._gocs_y_max, this._gocs_z_max ];
     }
 
@@ -1508,6 +1511,7 @@ export class Flake implements Area {
         this.removeEntityProducer( producer );
         this.addEntityProducer( producer );
     }
+
 
     /**
      * 地表断片とレイの交点までの距離を検索
@@ -1801,17 +1805,15 @@ export class Flake implements Area {
         var dpows = dem.getDivisionPowers( this, lod, cu, cv );
 
         // キャッシュに存在すれば、それを返す
-        var meshes = this._meshes;
-        var length = meshes.length;
-        for ( var i = 0; i < length; ++i ) {
-            var item = meshes[i];
-            if ( item.match( dem, dpows ) ) {
-                return item;
+        const meshes = this._meshes;
+        for ( const mesh of meshes ) {
+            if ( mesh.match( dem, dpows ) ) {
+                return mesh;
             }
         }
 
         // キャッシュに存在しないので新規に生成
-        var node = new MeshNode( this, dem, dpows );
+        const node = new MeshNode( this, dem, dpows );
         meshes.unshift( node );  // 検索効率のため先頭に追加
         return node;
     }
@@ -2682,7 +2684,8 @@ export class Flake implements Area {
      */
     private _findQuadRayDistance( ray: Ray, limit: number, dem_flake: Flake ): number
     {
-        var  pts = this.getQuadPositions( dem_flake, VECTOR3_BUF );
+        const  pts = this.getQuadPositions( dem_flake, VECTOR3_BUF );
+
         DEBUG: {
             if ( this.belt.debug_pick_info ) {
                 this.belt.debug_pick_info.quads.push([
@@ -3012,13 +3015,13 @@ export class Flake implements Area {
     /**
      * 標高下限係数
      */
-    private static readonly Fm = -2.0;
+    static readonly Fm = -2.0;
 
 
     /**
      * 標高上限係数
      */
-    private static readonly Fp = 2.0;
+    static readonly Fp = 2.0;
 
 
     private static readonly πr = Math.PI * GeoMath.EARTH_RADIUS;
@@ -3416,7 +3419,7 @@ class MeshNode {
 /**
  * DEM 状態の列挙型
  */
-const enum DemState {
+export const enum DemState {
     /**
      * DEM タイルが存在しない
      */

@@ -726,33 +726,33 @@ class Viewer {
     getElevation( lat: number, lon: number ): number
     {
         // 正確度が最も高い DEM タイルの取得
-        var globe = this._globe;
+        const globe = this._globe;
         const [xt, yt] = globe.getTilePos( new GeoPoint( lon, lat ) );
-        var dem   = globe.findHighestAccuracy( xt, yt );
+        const dem   = globe.findHighestAccuracy( xt, yt );
         if ( dem === null ) {
             // まだ標高を取得することができない
             return 0;
         }
 
         // 標高をサンプル
-        var   ρ = globe.dem_provider.getResolutionPower();
-        var size = 1 << ρ;               // 2^ρ
-        var  pow = Math.pow( 2, dem.z );  // 2^ze
-        var   uf = size * (pow * xt - dem.x);
-        var   vf = size * (pow * yt - dem.y);
-        var   ui = GeoMath.clamp( Math.floor( uf ), 0, size - 1 );
-        var   vi = GeoMath.clamp( Math.floor( vf ), 0, size - 1 );
+        const ρ = globe.dem_provider.getResolutionPower();
+        const size = 1 << ρ;               // 2^ρ
+        const pow = Math.pow( 2, dem.z );  // 2^ze
+        const uf = size * ( pow * xt - dem.x );
+        const vf = size * ( pow * yt - dem.y );
+        const ui = GeoMath.clamp( Math.floor( uf ), 0, size - 1 );
+        const vi = GeoMath.clamp( Math.floor( vf ), 0, size - 1 );
 
-        var heights = dem.getHeights( ui, vi );
-        var h00 = heights[0];
-        var h10 = heights[1];
-        var h01 = heights[2];
-        var h11 = heights[3];
+        const heights = dem.getHeights( ui, vi );
+        const h00 = heights[0];
+        const h10 = heights[1];
+        const h01 = heights[2];
+        const h11 = heights[3];
 
         // 標高を補間
-        var    s = uf - ui;
-        var    t = vf - vi;
-        return (h00 * (1 - s) + h10 * s) * (1 - t) + (h01 * (1 - s) + h11 * s) * t;
+        const s = uf - ui;
+        const t = vf - vi;
+        return ( h00 * ( 1 - s ) + h10 * s ) * ( 1 - t ) + ( h01 * ( 1 - s ) + h11 * s ) * t;
     }
 
 
