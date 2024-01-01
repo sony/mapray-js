@@ -437,7 +437,7 @@ class Globe {
     /** @internal */
     public setupDebugPickInfo(): void {
         for ( const belt of this._belts ) {
-            return belt.setupDebugPickInfo();
+            belt.setupDebugPickInfo();
         }
     }
 
