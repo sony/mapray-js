@@ -50,7 +50,7 @@ module.exports = {
 
         'no-inner-declarations': 0, // namespace内部のみでの宣言禁止
         'no-empty': 1, // 空block
-        'no-constant-condition': 1, // while (true) などの禁止
+        'no-constant-condition': 0, // while (true) などの禁止
         'no-lonely-if': 1, // else 内に 単独の if文 は書いてはいけない // @ToDo: 2
         'no-negated-condition': 0, // else句を持つ if文 は 否定構文 で記述しないこと
         'consistent-this': [1, "self"], // this を代入できるのは self だけ // @ToDo: 2
