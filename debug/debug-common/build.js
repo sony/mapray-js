@@ -56,6 +56,25 @@ class Project {
     this.buildCount = 0;
   }
 
+  clean() {
+    // Remove Cache
+    const typescript2CacheDir = "node_modules/.cache/rollup-plugin-typescript2";
+    if ( fs.existsSync( typescript2CacheDir ) ) {
+        console.log( "Removed Typescript2 Cache Dir" );
+        fs.rmdirSync( typescript2CacheDir, { recursive: true, force: true } );
+    }
+
+    if ( fs.existsSync( "build-info.json" ) ) {
+        const info = {
+            name: NAME,
+            status: -1,
+            stdout: "Not Started",
+            stderr: "",
+        };
+        fs.writeFileSync( "build-info.json", JSON.stringify( info, null, 4 ) );
+    }
+  }
+
   build() {
     try {
       console.log(`> Building ${NAME} (${this.buildCount})...`);
@@ -106,6 +125,7 @@ class Project {
 const project = new Project();
 
 if ( mode_watch ) {
+  project.clean();
   const buildInfos = {
     "../../packages/mapray/build-info.json": { status: 0 },
     "../../packages/ui/build-info.json": { status: 0 },
@@ -125,13 +145,13 @@ if ( mode_watch ) {
           buildInfos[path] = JSON.parse(fs.readFileSync(path));
         }
         for (let [pkg, info] of Object.entries(buildInfos)) {
-          if (info.status !== 0) {
+            if (info.status !== 0) {
             if (show_nested) {
               console.log(info.stdout);
               console.log(info.stderr);
               console.log(`Error: ${info.name}`);
-              fs.writeFileSync("build-info.json", JSON.stringify(info, null, 4));
             }
+            fs.writeFileSync("build-info.json", JSON.stringify(info, null, 4));
             return;
           }
         }
