@@ -184,13 +184,13 @@ class TOption<TMap extends TMapType> {
 
 
 interface ButtonParam {
-    class?: string;
+    className?: string;
     onclick?: (button: HTMLElement, domEvent: MouseEvent) => void;
     description?: string;
 }
 
 interface CheckboxParam {
-    class?: string;
+    className?: string;
     initialValue?: boolean;
     onchange?: (value: boolean, domEvent: Event) => void;
     onui?: (ui: HTMLInputElement, apply: (value: boolean) => void) => void;
@@ -198,7 +198,7 @@ interface CheckboxParam {
 }
 
 interface TextParam {
-    class?: string;
+    className?: string;
     initialValue?: string;
     onchange?: (value: string, domEvent: Event) => void;
     onui?: (ui: HTMLElement, apply: (value: string) => void) => void;
@@ -206,7 +206,7 @@ interface TextParam {
 }
 
 interface SelectParam<T> {
-    class?: string;
+    className?: string;
     initialValue?: T;
     onchange?: (value: T, domEvent: Event) => void;
     onui?: (ui: HTMLSelectElement) => void;
@@ -242,6 +242,7 @@ interface ColorParam<T extends TOption.ColorType = TOption.RGBType> {
 interface DomOption {
     name?: string;
     mode?: "key-value-table-row";
+    className?: string;
 }
 
 
@@ -284,7 +285,7 @@ export class TDomTool {
     static createButton(name: string, options: ButtonParam = {}): HTMLButtonElement
     {
         const button = document.createElement("button");
-        if (options.class) button.setAttribute("class", options.class);
+        if (options.className) button.setAttribute("class", options.className);
         button.innerHTML = name;
         const onclick = options.onclick;
         if (onclick) {
@@ -338,7 +339,7 @@ export class TDomTool {
                 select.appendChild(option);
                 return select;
         }, document.createElement("select"));
-        if (options.class) select.setAttribute("class", options.class);
+        if (options.className) select.setAttribute("class", options.className);
         const onchange = options.onchange;
         if (onchange) {
             select.onchange = event => {
@@ -373,9 +374,9 @@ export class TDomTool {
      * @param property プロパティ
      * @returns HTML要素
      */
-    static createSelectOption<T>( property: TOption.SelectProperty<T> ): HTMLDivElement
+    static createSelectOption<T>( property: TOption.SelectProperty<T>, domOption: DomOption = {} ): HTMLElement
     {
-        return this.createSelect(property.options, {
+        const select = this.createSelect(property.options, {
                 initialValue: property.valueToOptionMap.get(property.get())!.value,
                 description: property.key + (property.description ? "\n" + property.description : ""),
                 onui: ui => {
@@ -394,6 +395,7 @@ export class TDomTool {
                     property.set( value );
                 }
         });
+        return this.createOuter(select, property.key, domOption);
     }
 
     /**
@@ -413,6 +415,7 @@ export class TDomTool {
                 }
                 .TDomTool_checkbox>input {
                     cursor: pointer;
+                    margin-right: 6px;
                 }
                 .TDomTool_checkbox>div {
                     cursor: pointer;
@@ -435,7 +438,7 @@ export class TDomTool {
         label.innerText = name;
         pane.append(label);
 
-        if (options.class) checkbox.classList.add(options.class);
+        if (options.className) checkbox.classList.add(options.className);
         const onchange = options.onchange;
         if (onchange) checkbox.onchange = (event: Event) => {
             onchange( checkbox.checked, event );
@@ -454,9 +457,10 @@ export class TDomTool {
      * @param property プロパティ
      * @returns HTML要素
      */
-    static createCheckboxOption<TMap extends TMapType, Key extends keyof TMap>( property: TOption.BooleanProperty, options: DomOption = {} ): HTMLDivElement
+    static createCheckboxOption<TMap extends TMapType, Key extends keyof TMap>( property: TOption.BooleanProperty, domOption: DomOption = {} ): HTMLElement
     {
-        const checkbox = this.createCheckbox( options.name ?? property.key, {
+        const name = domOption.name ?? property.key;
+        const checkbox = this.createCheckbox( domOption.mode === "key-value-table-row" ? "" : name, {
             initialValue: property.get(),
             description: property.key + (property.description ? "\n" + property.description : ""),
             onui: (ui, apply) => {
@@ -466,9 +470,10 @@ export class TDomTool {
             },
             onchange: (value, event) => {
                 property.set( value );
-            }
+            },
+            className: domOption.className,
         });
-        return checkbox;
+        return this.createOuter(checkbox, name, domOption);
     }
 
     /**
@@ -507,7 +512,7 @@ export class TDomTool {
         // pane.append(textInput);
         // const setValue = (text: string) => { textInput.innerText = text; }
 
-        if (options.class) textInput.classList.add(options.class);
+        if (options.className) textInput.classList.add(options.className);
         const onchange = options.onchange;
         if (onchange) textInput.onchange = (event: Event) => {
             onchange( textInput.value, event );
@@ -1066,7 +1071,7 @@ export interface SelectPropertyInfo<T> extends AbstractPropertyInfo<T> {
  */
 export interface KVSelectPropertyInfo<T> extends AbstractPropertyInfo<T> {
     type: "select";
-    keyValues: KeyValue<T>[];
+    keyValues: KeyValue<T>[] | { [key: string]: T };
 }
 
 /**
@@ -1085,10 +1090,19 @@ export class SelectProperty<T> extends AbstractProperty<T> {
             return this.valueToOptionMap.get( value ) as TOption.KeyValue<T>;
         };
         if ( isKeyValueInfo( info ) ) {
-            info.keyValues.forEach( (option: KeyValue<T>) => {
-                this.valueToOptionMap.set( option.value, option );
-                this.options.push( option );
-            });
+            if ( Array.isArray( info.keyValues ) ) {
+                info.keyValues.forEach( (option: KeyValue<T>) => {
+                    this.valueToOptionMap.set( option.value, option );
+                    this.options.push( option );
+                });
+            }
+            else {
+                Object.entries(info.keyValues).forEach( ([key, value]) => {
+                    const option = keyValue( key, value );
+                    this.valueToOptionMap.set( value, option );
+                    this.options.push( option );
+                });
+            }
         }
         else {
             info.values.forEach( (option: T) => {
