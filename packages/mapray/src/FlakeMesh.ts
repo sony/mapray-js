@@ -1,6 +1,7 @@
 import GeoMath, { Vector3, Matrix } from "./GeoMath";
 import AreaUtil, { Area } from "./AreaUtil";
 import type GLEnv from "./GLEnv";
+import type Globe from "./Globe";
 import type DemBinary from "./DemBinary";
 import type FlakeMaterial from "./FlakeMaterial";
 import type { AttributeBindInfoDict } from "./Material";
@@ -9,27 +10,30 @@ import { cfa_assert } from "./util/assertion";
 
 /**
  * 地表断片メッシュ
+ * @internal
  */
 class FlakeMesh {
 
     /**
      * @param glenv - WebGL 環境
-     * @param area  - 地表断片の領域
+     * @param flake - 地表断片
      * @param dpows - 地表断片の分割指数
      * @param dem   - DEM バイナリ
      */
     constructor( glenv: GLEnv,
-                 area:  Area,
+                 flake: Globe.Flake,
                  dpows: [number, number],
                  dem:   DemBinary )
     {
         const gl = glenv.context;
 
+        this._flake = flake;
+
         // オブジェクト座標系の中心位置 (GOCS)
-        this._center = this._createCenter( area );
+        this._center = this._createCenter( flake );
 
         // 頂点データを生成
-        const vdata = this._createVertices( gl, area, dpows, dem );
+        const vdata = this._createVertices( gl, flake, dpows, dem );
         this._vertices     = vdata.vertices;
         this._num_vertices = vdata.num_vertices;
         this._num_quads_x  = vdata.num_quads_x;
@@ -232,6 +236,33 @@ class FlakeMesh {
     }
 
 
+    static getCache( globe: Globe, size: number )
+    {
+      const key = "FLAKE_MESH_" + size;
+      // @ts-ignore
+      return globe.cache[key] ?? (globe.cache[key] = {}) as { [key: string] : WebGLBuffer };
+    }
+
+
+    static disposeCache( globe: Globe, glenv: GLEnv ): void
+    {
+      const gl = glenv.context;
+      for ( const size of [16, 32] ) {
+        // @ts-ignore
+        const cache = FlakeMesh.getCache( globe, size );
+        for ( const key of Object.keys( cache ) ) {
+          gl.deleteBuffer( cache[key] );
+          delete cache[key];
+        }
+      }
+    }
+
+
+    /**
+     * 頂点情報が他のFlakeMeshと共有されているかを意味する。
+     */
+    private _indices_shared: boolean = false;
+
     /**
      * `GL_TRIANGLES` 用のインデックス配列を生成
      *
@@ -239,44 +270,63 @@ class FlakeMesh {
      */
     private _createIndices(): void
     {
-        var gl = this._gl;
+        const gl = this._gl;
+        const num_quads = this._num_quads_x * this._num_quads_y;
+        this._num_indices = num_quads * 6;
 
-        var num_quads   = this._num_quads_x * this._num_quads_y;
-        var num_indices = 6 * num_quads;
+        const cache = FlakeMesh.getCache( this._flake.belt.globe, this._index_type === gl.UNSIGNED_INT ? 32 : 16 );
 
-        var typedArray = (this._index_type === gl.UNSIGNED_INT) ? Int32Array : Int16Array;
-
-        var array = new typedArray( num_indices );
-        var index = 0;
-
-        for ( var y = 0; y < this._num_quads_y; ++y ) {
-            for ( var x = 0; x < this._num_quads_x; ++x ) {
-                var i00 = (this._num_quads_x + 1) * y + x;  // 左下頂点
-                var i10 = i00 + 1;                          // 右下頂点
-                var i01 = i00 + this._num_quads_x + 1;      // 左上頂点
-                var i11 = i01 + 1;                          // 右上頂点
-
-                // 左下三角形
-                array[index++] = i00;
-                array[index++] = i10;
-                array[index++] = i01;
-
-                // 右上三角形
-                array[index++] = i01;
-                array[index++] = i10;
-                array[index++] = i11;
+        if ( this._num_quads_x === this._num_quads_y ) {
+            const c = cache[this._num_quads_x];
+            if ( c ) {
+                this._indices = c;
+                this._indices_shared = true;
+                return;
             }
         }
 
-        var target = gl.ELEMENT_ARRAY_BUFFER;
-        var    vbo = gl.createBuffer();
+        const array = (this._index_type === gl.UNSIGNED_INT) ? new Int32Array( this._num_indices ) : new Int16Array( this._num_indices );
+        let index = 0;
+
+        const addQuad = ( x: number, y: number, index: number ) => {
+            const i00 = ( this._num_quads_x + 1 ) * y + x;  // 左下頂点
+            const i10 = i00 + 1;                            // 右下頂点
+            const i01 = i00 + this._num_quads_x + 1;        // 左上頂点
+            const i11 = i01 + 1;                            // 右上頂点
+
+            // 左下三角形
+            array[index++] = i00;
+            array[index++] = i10;
+            array[index++] = i01;
+
+            // 右上三角形
+            array[index++] = i01;
+            array[index++] = i10;
+            array[index++] = i11;
+            return index;
+        };
+
+        const max_x = this._num_quads_x;
+        const max_y = this._num_quads_y;
+
+        for ( let y = 0; y < max_y; ++y ) {
+            for ( let x = 0; x < max_x; ++x ) {
+                index = addQuad( x, y, index );
+            }
+        }
+
+        const target = gl.ELEMENT_ARRAY_BUFFER;
+        const    vbo = gl.createBuffer();
 
         gl.bindBuffer( target, vbo );
         gl.bufferData( target, array, gl.STATIC_DRAW );
         gl.bindBuffer( target, null );
 
         this._indices     = vbo;
-        this._num_indices = num_indices;
+        if ( vbo && ( this._num_quads_x === this._num_quads_y ) ) {
+            cache[this._num_quads_x] = vbo;
+            this._indices_shared = true;
+        }
     }
 
 
@@ -401,7 +451,9 @@ class FlakeMesh {
         this._vertices = null;
 
         if ( this._indices ) {
-            gl.deleteBuffer( this._indices );
+            if ( !this._indices_shared ) {
+                gl.deleteBuffer( this._indices );
+            }
             this._indices = null;
         }
 
@@ -487,6 +539,9 @@ class FlakeMesh {
 
     /** 中心位置 (GOCS) */
     private readonly _center: Vector3;
+
+    /** 地表断片 */
+    private readonly _flake: Globe.Flake;
 
     /** 頂点バッファ */
     private readonly _vertices: WebGLBuffer;

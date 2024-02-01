@@ -81,6 +81,11 @@ class Globe {
     private _bbox_target_point_id_max: number = 0;
     readonly bbox_target_point_map: Map<number, Vector2> = new Map<number, Vector2>();
 
+    /**
+     * @internal
+     */
+    private readonly cache: object = {};
+
 
     /**
      * @param glenv        - WebGL 環境
@@ -179,6 +184,8 @@ class Globe {
         for ( let belt of this._belts ) {
             belt.dispose();
         }
+
+        FlakeMesh.disposeCache( this, this.glenv );
     }
 
     /**
