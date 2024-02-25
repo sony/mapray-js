@@ -38,9 +38,15 @@ class LayerCollection {
         // 初期レイヤーを追加
         if ( layers ) {
             for ( let i = 0; i < layers.length; ++i ) {
-                this.add( layers[i] );
+                this._layers.push( this._createLayer( layers[i] ) );
             }
         }
+    }
+
+
+    async init(): Promise<void>
+    {
+        await Promise.all( this._layers.map( layer => layer.init() ) );
     }
 
 
@@ -91,9 +97,9 @@ class LayerCollection {
      *
      * @param layer          レイヤーのプロパティ
      */
-    add( layer: ImageLayer.Option | ContourLayer.Option | ImageProvider )
+    async add( layer: ImageLayer.Option | ContourLayer.Option | ImageProvider ): Promise<ImageLayer | ContourLayer>
     {
-        this.insert( this.num_layers, layer );
+        return this.insert( this.num_layers, layer );
     }
 
 
@@ -103,15 +109,22 @@ class LayerCollection {
      * @param index          挿入場所
      * @param layer  レイヤーのプロパティ
      */
-    insert( index: number, layer: ImageLayer.Option | ContourLayer.Option | ImageProvider )
+    async insert( index: number, layer: ImageLayer.Option | ContourLayer.Option | ImageProvider ): Promise<ImageLayer | ContourLayer>
     {
-        const new_layer = (
+        const new_layer = this._createLayer( layer );
+        await new_layer.init();
+        this._layers.splice( index, 0, new_layer );
+        this.dirtyDrawingLayers();
+        return new_layer;
+    }
+
+    private _createLayer( layer: ImageLayer.Option | ContourLayer.Option | ImageProvider ): ImageLayer | ContourLayer
+    {
+        return (
             layer instanceof ImageProvider  ? new ImageLayer( this, layer ):
             layer.type === Layer.Type.IMAGE ? new ImageLayer( this, layer ):
             new ContourLayer( this, layer )
         );
-        this._layers.splice( index, 0, new_layer );
-        this.dirtyDrawingLayers();
     }
 
 

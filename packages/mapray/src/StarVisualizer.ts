@@ -53,17 +53,17 @@ class StarVisualizer {
     private _milkyWayMesh!: Mesh;       // 天の川
     private _matrix_cache: Matrix;
 
-    private _visibility!: boolean;
-    private _constellation_visibility!: boolean;
-    private _milkyway_visibility!: boolean;
+    private _visibility: boolean = true;
+    private _constellation_visibility: boolean = false;
+    private _milkyway_visibility: boolean = true;
 
-    private _intensity!: number;
+    private _intensity: number = -2.0;
 
-    private _longitude!: number;
+    private _longitude: number = OFFSET_ANGLE;
 
-    private _line_color!: Vector3;
+    private _line_color: Vector3 = GeoMath.createVector3( [ 0, 0.5, 1 ] );
 
-    private _milkyway_intensity!: number;
+    private _milkyway_intensity: number = 1.0;
 
     private _stars!: Star[];
     private _starHipMap!: HipMap;        // Hip to star
@@ -104,18 +104,6 @@ class StarVisualizer {
     {
         this._viewer = viewer;
         this._glenv = viewer.glenv;
-
-        this._visibility = true;
-        this._constellation_visibility = false;
-        this._milkyway_visibility = true;
-
-        this._intensity = 0.0;
-
-        this._longitude = OFFSET_ANGLE;
-
-        this._line_color = GeoMath.createVector3( [ 0, 0.5, 1 ] );
-
-        this._milkyway_intensity = 1.0;
 
         // load JSON
         const starData = await this._loadJSON( this._json_url );

@@ -18,14 +18,25 @@ class Atmosphere {
     private _glenv!: GLEnv;
     private _mesh!: Mesh;
 
-    private _visibility!: {
-        sky: boolean;
-        ground: boolean;
+    private _visibility = {
+        sky: true,
+        ground: true,
     };
 
-    private _star_mask!: boolean;
+    private _star_mask: boolean = true;
 
-    private _parameters!: Atmosphere.Parameters;
+    private _parameters: Atmosphere.Parameters = {
+        kr: 0.01,
+        km: 0.001,
+        scale_depth: 0.13,
+        esun: 17.5,
+        exposure: -1.4,
+        g_kr: 0.0025,
+        g_km: 0.001,
+        g_scale_depth: 0.25,
+        g_esun: 16.0,
+        g_exposure: -2.0,
+    };
 
 
     /**
@@ -38,15 +49,6 @@ class Atmosphere {
     {
         this._viewer = viewer;
         this._glenv = viewer.glenv;
-
-        this._visibility = { sky: true, ground: true };
-
-        this._star_mask = true;
-
-        this._parameters = {
-            kr: 0.01, km: 0.001, scale_depth: 0.13, esun: 17.5, exposure: -1.4,
-            g_kr: 0.0025, g_km: 0.001, g_scale_depth: 0.25, g_esun: 16.0, g_exposure: -2.0
-        };
 
         this._createMesh();
         this._checkMaterials();

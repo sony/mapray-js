@@ -38,6 +38,13 @@ abstract class Layer {
     }
 
 
+
+    async init(): Promise<void>
+    {
+        return Promise.resolve();
+    }
+
+
     /**
      * 可視性フラグを取得
      */

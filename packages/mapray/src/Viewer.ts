@@ -139,6 +139,8 @@ class Viewer {
 
     private _ω_limit: number;
 
+    private _init_promise; /* auto-type */
+
     /**
      * 表示中（直前の描画）の Flake リスト。
      * @experimental
@@ -214,35 +216,11 @@ class Viewer {
             total_loading: 0,
         };
 
-        const atmosphere = options.atmosphere;
-        if ( atmosphere ) {
-            this._atmosphere = atmosphere;
-            atmosphere.init( this );
-        }
-
-        const sunVisualizer = options.sun_visualizer;
-        if ( sunVisualizer ) {
-            this._sunVisualizer = sunVisualizer;
-            sunVisualizer.init( this );
-        }
-
-        const moonVisualizer = options.moon_visualizer;
-        if ( moonVisualizer ) {
-            this._moonVisualizer = moonVisualizer;
-            moonVisualizer.init( this );
-        }
-
-        const cloudVisualizer = options.cloud_visualizer;
-        if ( cloudVisualizer ) {
-            this._cloudVisualizer = cloudVisualizer;
-            cloudVisualizer.init( this );
-        }
-
-        const starVisualizer = options.star_visualizer;
-        if ( starVisualizer ) {
-            this._starVisualizer = starVisualizer;
-            starVisualizer.init( this );
-        }
+        this._atmosphere = options.atmosphere;
+        this._sunVisualizer = options.sun_visualizer;
+        this._moonVisualizer = options.moon_visualizer;
+        this._cloudVisualizer = options.cloud_visualizer;
+        this._starVisualizer = options.star_visualizer;
 
         // マウス・Attribution開発
         this._logo_controller = options.logo_controller ?? new LogoController();
@@ -252,15 +230,59 @@ class Viewer {
             position: AttributionController.ContainerPosition.BOTTOM_RIGHT
         });
 
-        // ロゴ・著作権表示用コンテナの作成
-        this._createLogoAttributionContainer()
+        this._init_promise = this.init();
+    }
 
+
+    /**
+     * 初期化
+     */
+    protected async init(): Promise<void> {
+        const promises: Promise<void>[] = [];
+
+        await this._layers.init();
+
+        await this._globe.init();
+
+        if ( this._atmosphere ) this._atmosphere.init( this );
+        if ( this._sunVisualizer ) this._sunVisualizer.init( this );
+        if ( this._moonVisualizer ) this._moonVisualizer.init( this );
+        if ( this._cloudVisualizer ) this._cloudVisualizer.init( this );
+        if ( this._starVisualizer ) promises.push( this._starVisualizer.init( this ) );
+
+        // ロゴ・著作権表示用コンテナの作成
+        this._createLogoAttributionContainer();
         this._logo_controller.init( this );
         this._attribution_controller.init( this );
+
+        // 並列実行した処理の完了を待つ
+        await Promise.all( promises );
 
         // 最初のフレームの準備
         this._requestNextFrame();
         this._updateCanvasSize();
+    }
+
+
+    /**
+     * 初期化処理の Promise です。
+     *
+     * 初期化処理の完了を待機する際に利用することができます。
+     *
+     * @example
+     * ```ts
+     * try {
+     *     const viewer = new Viewer( ... );
+     *     await viewer.init_promise;
+     *     // viewer の機能にアクセスします。
+     * }
+     * catch( err ) {
+     *     console.error( err );
+     * }
+     * ```
+     */
+    public get init_promise(): Promise<void> {
+        return this._init_promise;
     }
 
 

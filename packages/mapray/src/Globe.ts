@@ -120,6 +120,11 @@ class Globe {
     }
 
 
+    async init() {
+        await Promise.all( this._belts.map( belt => belt.init() ) );
+    }
+
+
     /**
      * Pole を切り替える
      *
@@ -668,8 +673,13 @@ class Belt {
         // - this._avg_height
 
         this._root_cancel_id = undefined;
-        this._requestRoot();
     }
+
+
+    async init() {
+        await this._requestRoot();
+    }
+
 
     /**
      * すべてのリクエストを取り消す
