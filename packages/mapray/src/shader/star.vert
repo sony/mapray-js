@@ -2,8 +2,6 @@
  * 恒星 (頂点シェーダ)
  */
 
-precision mediump float;
-
 uniform mat4  u_gocs_to_clip;
 uniform mat4  u_longitude_matrix;
 uniform float u_scale;

@@ -2,8 +2,6 @@
  * 月 (頂点シェーダ)
  */
 
-precision mediump float;
-
 uniform vec3  u_sun_direction;
 uniform mat4  u_moon_matrix;
 

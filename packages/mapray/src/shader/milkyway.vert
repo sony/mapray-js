@@ -2,8 +2,6 @@
  * 天の川 (頂点シェーダ)
  */
 
-precision mediump float;
-
 uniform mat4  u_longitude_matrix;
 uniform float u_intensity;
 

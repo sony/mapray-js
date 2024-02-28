@@ -2,8 +2,6 @@
  * 星座 (頂点シェーダ)
  */
 
-precision mediump float;
-
 uniform mat4  u_longitude_matrix;
 uniform vec3  u_line_color;
 

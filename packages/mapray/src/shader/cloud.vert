@@ -2,8 +2,6 @@
  * 雲 (頂点シェーダ)
  */
 
-precision mediump float;
-
 uniform mat4  u_gocs_to_clip;
 uniform vec3  u_sun_direction;
 uniform float u_intensity;

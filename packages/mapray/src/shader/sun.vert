@@ -36,8 +36,6 @@
  * 太陽 (頂点シェーダ)
  */
 
-precision mediump float;
-
 uniform mat4  u_billboard_matrix;
 uniform mat4  u_camera_direction_matrix;
 uniform vec3  u_sun_direction;
