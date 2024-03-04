@@ -1,8 +1,10 @@
+#version 300 es
+
 /**
  * 深度描画用シェーダ (頂点シェーダ)
  */
 
-attribute vec3 a_position;
+in vec3 a_position;
 
 
 void
