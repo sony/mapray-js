@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Mapray Rambler</title>
+    <noscript>
+        <div style="
+            padding: 0.5em 1em;
+            margin: 2em 0;
+            color: black;
+            background: #fcefb7;
+            border: solid 2px #f8d450;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.22);
+        ">
+            <p style="
+                margin: 0;
+                padding: 0;">JavaScriptが無効になっています。MaprayのWebサイトを正しく表示するためにはJavaScriptを有効にして下さい。</p>
+        </div>
+    </noscript>
+    <script type="text/javascript" src="./dist/bundle.js"></script>
+    <script type="text/javascript">
+        let leftApp, rightApp;
+        async function start(node, index) {
+            const container = node.querySelector('.mapray-container');
+            const statusbar = node.querySelector('.statusbar');
+            const app = await window.startApp(container, {
+                statusbar: statusbar,
+            });
+            if      (index === 0) leftApp = app;
+            else if (index === 1) rightApp = app;
+            return app;
+        }
+        window.addEventListener("load", async (event) => {
+            const syncMode = document.getElementById( "sync-mode" );
+            const nodes = [...document.querySelectorAll('#contents>div')];
+            const apps = await nodes.map( start );
+            setInterval(event => {
+                if (!leftApp || !rightApp) return;
+                if ( syncMode.value === "sync-view" ) {
+                    if ( document.activeElement === leftApp.viewer.canvas_element ) {
+                        rightApp.setCameraPosition( leftApp.getCameraPosition() );
+                        rightApp.setCameraAngle( leftApp.getCameraAngle() );
+                    }
+                    else {
+                        leftApp.setCameraPosition( rightApp.getCameraPosition() );
+                        leftApp.setCameraAngle( rightApp.getCameraAngle() );
+                    }
+                }
+                else if ( syncMode.value === "3d-and-2d" ) {
+                    if ( document.activeElement === leftApp.viewer.canvas_element ) {
+                        const angle = leftApp.getCameraAngle();
+                        const position = leftApp.getCameraPosition();
+                        const height = position.height * Math.tan(angle.pitch * Math.PI / 180) * Math.tan(Math.PI / 3) * 10;
+                        position.height = Math.min( Math.max( position.height, height ), 10000000 );
+                        rightApp.setCameraPosition( position );
+                        rightApp.setCameraAngle( {roll: 0, pitch: 0, yaw: 0} );
+                    }
+                    else {
+                        const position = rightApp.getCameraPosition();
+                        position.height /= 10;
+                        leftApp.setCameraPosition( position );
+                        rightApp.setCameraAngle( {roll: 0, pitch: 0, yaw: 0} );
+                    }
+                }
+            }, 100);
+        });
+    </script>
+    <style>
+        html, body {
+            height:  100vh;
+            margin:  0;
+            padding: 0;
+        }
+        #contents {
+            display:        flex;
+            flex-direction: row;
+            flex-wrap:      nowrap;
+            height:         100%;
+        }
+        #contents>div {
+            display:        flex;
+            flex-direction: column;
+            flex-wrap:      nowrap;
+            width:          50%;
+        }
+        div.mapray-container {
+            height:    0;
+            flex-grow: 1;
+            position: relative;
+        }
+        div.statusbar {
+            display:          flex;
+            flex-direction:   row;
+            flex-wrap:        wrap;
+            justify-content:  start;
+            background-color: #ddd;
+            font-family: Noto Sans JP,sans-serif;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        table {
+            border-collapse: collapse;
+        }
+        td, th {
+            font-weight: normal;
+            padding: 0px 5px;
+        }
+
+        div#mapInfo {
+            display: flex;
+            width: 50px;
+            height: 25px;
+            margin-left: auto;
+            margin-right: 10px;
+            align-items: center;
+        }
+
+        .tools {
+            position: absolute;
+            bottom: 29px;
+            right: 5px;
+            width: 400px;
+            margin: 0;
+        }
+
+        .tool-item {
+            position: absolute;
+            bottom: 29px;
+            right: 5px;
+            width: 400px;
+            margin: 0;
+
+            font-family: system-ui, 'Courier New';
+            color: #999;
+            min-width: 300px;
+            max-width: 100%;
+            background: rgba( 0, 0, 0, 0.7 );
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .log-area {
+            bottom: 70px;
+            right:  10px;
+            margin: 0;
+        }
+
+        div#rec-controller {
+            position: absolute;
+            top: 64px;
+            right: 0px;
+            width: 24px;
+            padding: 12px;
+            background-color: rgba(0, 0, 200, 0.6);
+        }
+        #rec-controller-items {
+            display: flex;
+            flex-flow: column;
+            justify-content: space-between;
+        }
+        #rec-controller-items>div>span {
+            color: rgb(214, 214, 214);
+        }
+        #rec-controller-items>div>span:hover {
+            color: rgb(0, 134, 209);
+        }
+
+    </style>
+</head>
+
+<body>
+
+<select id="sync-mode" style="position:absolute;z-index:1;width:200px;height:30px;top:10px;left:calc(50% - 100px);background:rgba(255,255,255,0.3);" tabindex="-1">
+  <option value="independent-view">Independent View</option>
+  <option value="sync-view">Sync View</option>
+  <option value="3d-and-2d">3D and 2D View</option>
+</select>
+
+<div id="contents">
+    <div>
+        <div class="mapray-container"></div>
+
+        <div class="statusbar">
+            <button onclick="start( this.parentElement.parentElement, 0 );">
+              <img src="./data/icons/recreate.svg" alt="recreate"/>
+            </button>
+
+            <table class="left-table" border="1">
+                <tr>
+                    <th width="80">緯度</th>
+                    <th width="80">経度</th>
+                    <th width="80">高度 (カメラ)</th>
+                    <th width="80">標高 (地表面)</th>
+                    <th width="60">方位角</th>
+                    <th width="60">仰俯角</th>
+                    <th width="60">画角</th>
+                    <th width="60">layer</th>
+                    <th width="60">fps</th>
+                </tr>
+                <tr align="center">
+                    <td data-key="latitude">---</td>
+                    <td data-key="longitude">---</td>
+                    <td data-key="cam-height">---</td>
+                    <td data-key="elevation">---</td>
+                    <td data-key="yaw-angle">---</td>
+                    <td data-key="pitch-angle">---</td>
+                    <td data-key="fov-angle">---</td>
+                    <td data-key="layer">---</td>
+                    <td data-key="fps">---</td>
+                </tr>
+            </table>
+
+            <table class="right-table" border="1">
+                <tr>
+                    <th width="60">cnt.mesh</th>
+                    <th width="60">cnt.vert</th>
+                    <th width="60">reqs.dem</th>
+                    <th width="60">reqs.img</th>
+                    <th>データ提供</th>
+                </tr>
+                <tr align="center">
+                    <td data-key="cnt-mesh">---</td>
+                    <td data-key="cnt-vert">---</td>
+                    <td data-key="reqs-dem">---</td>
+                    <td data-key="reqs-img">---</td>
+                    <td data-key="provider">---</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+
+    <div>
+        <div class="mapray-container"></div>
+
+        <div class="statusbar">
+            <button onclick="start( this.parentElement.parentElement, 1 );">
+              <img src="./data/icons/recreate.svg" alt="recreate"/>
+            </button>
+
+            <table class="left-table" border="1">
+                <tr>
+                    <th width="80">緯度</th>
+                    <th width="80">経度</th>
+                    <th width="80">高度 (カメラ)</th>
+                    <th width="80">標高 (地表面)</th>
+                    <th width="60">方位角</th>
+                    <th width="60">仰俯角</th>
+                    <th width="60">画角</th>
+                    <th width="60">layer</th>
+                    <th width="60">fps</th>
+                </tr>
+                <tr align="center">
+                    <td data-key="latitude">---</td>
+                    <td data-key="longitude">---</td>
+                    <td data-key="cam-height">---</td>
+                    <td data-key="elevation">---</td>
+                    <td data-key="yaw-angle">---</td>
+                    <td data-key="pitch-angle">---</td>
+                    <td data-key="fov-angle">---</td>
+                    <td data-key="layer">---</td>
+                    <td data-key="fps">---</td>
+                </tr>
+            </table>
+
+            <table class="right-table" border="1">
+                <tr>
+                    <th width="60">cnt.mesh</th>
+                    <th width="60">cnt.vert</th>
+                    <th width="60">reqs.dem</th>
+                    <th width="60">reqs.img</th>
+                    <th>データ提供</th>
+                </tr>
+                <tr align="center">
+                    <td data-key="cnt-mesh">---</td>
+                    <td data-key="cnt-vert">---</td>
+                    <td data-key="reqs-dem">---</td>
+                    <td data-key="reqs-img">---</td>
+                    <td data-key="provider">---</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+</body>
+</html>

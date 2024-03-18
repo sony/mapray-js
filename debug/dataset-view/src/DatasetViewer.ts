@@ -18,9 +18,10 @@ import debugCommon, {
 
 class DatasetViewer extends DebugViewer {
 
-    constructor( container: string | HTMLElement )
+    constructor( container: string | HTMLElement, options?: DatasetViewer.Option )
     {
         super( container, {
+                ...(options ?? {}),
                 mapray_access_token: process.env.MAPRAY_ACCESS_TOKEN as string,
                 bingmap_token: process.env.BINGMAP_ACCESS_TOKEN as string,
                 atmosphere: new mapray.Atmosphere(),
@@ -140,5 +141,16 @@ class DatasetViewer extends DebugViewer {
     }
 
 }
+
+
+namespace DatasetViewer {
+
+
+export interface Option extends DebugViewer.Option {
+}
+
+
+} // namespace DatasetViewer
+
 
 export default DatasetViewer;

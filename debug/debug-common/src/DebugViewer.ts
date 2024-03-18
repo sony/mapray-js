@@ -74,8 +74,15 @@ class DebugViewer extends maprayui.StandardUIViewer {
      * @param {string|Element} container  コンテナ (ID または要素)
      * @param options
      */
-    constructor( container: string | HTMLElement, options: DebugViewer.Option )
+    constructor( containerOrId: string | HTMLElement, options: DebugViewer.Option )
     {
+        const container = (
+          typeof(containerOrId) === "string" ? document.getElementById( containerOrId ) :
+          containerOrId
+        );
+
+        if ( !container ) throw new Error( "element not found: " + containerOrId );
+
         const super_options = options;
         super_options.debug_stats = new mapray.DebugStats(),
         super_options.image_provider = (
@@ -94,7 +101,12 @@ class DebugViewer extends maprayui.StandardUIViewer {
         this._modules = [];
 
         this._commander = new Commander( this.viewer );
-        this._statusbar = new StatusBar( this.viewer, GSI_ATTRIBUTE );
+        const statusbarNode = (
+          !options.statusbar ? null:
+          typeof( options.statusbar ) === "string" ? document.getElementById( options.statusbar ) :
+          options.statusbar
+        )
+        this._statusbar = new StatusBar( this.viewer, statusbarNode, GSI_ATTRIBUTE );
 
         const targetPos = new mapray.GeoPoint(137.7238014361, 34.7111256306);
 
@@ -133,12 +145,10 @@ class DebugViewer extends maprayui.StandardUIViewer {
 
         // make tools div
         const tools = document.getElementById("tools") || (()=>{
-            const maprayContainer = document.getElementById( "mapray-container" );
             const tools = document.createElement( "div" );
-            tools.setAttribute( "id", "tools" );
             tools.setAttribute( "class", "tool-item" );
-            if ( maprayContainer ) {
-                maprayContainer.appendChild(tools);
+            if ( container ) {
+                container.appendChild(tools);
             }
             return tools;
         })();
@@ -201,15 +211,12 @@ class DebugViewer extends maprayui.StandardUIViewer {
     }
 
 
-    /**
-     * Viewerを閉じる
-     */
-    _closeViewer(): void
-    {
-        this.destroy();
+    override destroy() {
+        super.destroy();
         this._is_gis = false;
         this._layer_transparency = 10;
     }
+
 
     get commander(): Commander { return this._commander; }
 
@@ -889,6 +896,7 @@ namespace DebugViewer {
 export interface Option extends mapray.Viewer.Option {
     mapray_access_token: string,
     bingmap_token?: string,
+    statusbar?: string | HTMLElement,
 }
 
 

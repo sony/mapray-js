@@ -39,7 +39,7 @@ class StatusBar {
      * @param viewer
      * @param provider_name  データプロバイダ名
      */
-    constructor( viewer: mapray.Viewer, provider_name: string )
+    constructor( viewer: mapray.Viewer, node: HTMLElement | null, provider_name: string )
     {
         this._position    = { latitude: 0, longitude: 0, height: 0 }; // カメラ位置
         this._elevation   = 0;  // 地表面の標高
@@ -49,21 +49,29 @@ class StatusBar {
         this._layer_mode  = 0;
         this._fps         = 0;
 
-        this._elem_latitude    = document.getElementById( "latitude" )!;
-        this._elem_longitude   = document.getElementById( "longitude" )!;
-        this._elem_height      = document.getElementById( "cam-height" )!;
-        this._elem_elevation   = document.getElementById( "elevation" )!;
-        this._elem_yaw_angle   = document.getElementById( "yaw-angle" )!;
-        this._elem_pitch_angle = document.getElementById( "pitch-angle" )!;
-        this._elem_fov_angle   = document.getElementById( "fov-angle" )!;
-        this._elem_layer       = document.getElementById( "layer" )!;
-        this._elem_fps         = document.getElementById( "fps" )!;
+        if ( !node ) {
+            node = document.getElementById("statusbar");
+        }
 
-        this._elem_cnt_mesh = document.getElementById( "cnt-mesh" )!;
-        this._elem_cnt_vert = document.getElementById( "cnt-vert" )!;
-        this._elem_reqs_dem = document.getElementById( "reqs-dem" )!;
-        this._elem_reqs_img = document.getElementById( "reqs-img" )!;
-        this._elem_provider = document.getElementById( "provider" )!;
+        const getElement = ( key: string ) => {
+            return (node?.querySelector(`[data-key='${key}']`) ?? document.getElementById( key )!) as HTMLElement;
+        };
+
+        this._elem_latitude    = getElement( "latitude" );
+        this._elem_longitude   = getElement( "longitude" );
+        this._elem_height      = getElement( "cam-height" );
+        this._elem_elevation   = getElement( "elevation" );
+        this._elem_yaw_angle   = getElement( "yaw-angle" );
+        this._elem_pitch_angle = getElement( "pitch-angle" );
+        this._elem_fov_angle   = getElement( "fov-angle" );
+        this._elem_layer       = getElement( "layer" );
+        this._elem_fps         = getElement( "fps" );
+
+        this._elem_cnt_mesh = getElement( "cnt-mesh" );
+        this._elem_cnt_vert = getElement( "cnt-vert" );
+        this._elem_reqs_dem = getElement( "reqs-dem" );
+        this._elem_reqs_img = getElement( "reqs-img" );
+        this._elem_provider = getElement( "provider" );
 
         this._elem_provider.innerHTML = provider_name;
 
