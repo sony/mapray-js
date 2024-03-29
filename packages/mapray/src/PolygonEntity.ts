@@ -1193,7 +1193,7 @@ export class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
      * @param area
      * @param dem
      */
-    private _createVertices( submeshes: Submesh[]|PolygonsSubmesh[], area: Area, dem: any ): Float32Array
+    private _createVertices( submeshes: Submesh[], area: Area, dem: any ): Float32Array
     {
         let  origin = AreaUtil.getCenter( area, GeoMath.createVector3() );
         let sampler = dem.newSampler( area );
@@ -1220,7 +1220,7 @@ export class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
      *
      * @param submeshes
      */
-    private _createIndices( submeshes: (Submesh[]|PolygonsSubmesh[]) ): Uint32Array
+    private _createIndices( submeshes: Submesh[] ): Uint32Array
     {
         // インデックス配列を生成
         let num_triangles = 0;
@@ -1257,7 +1257,7 @@ export class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
      *
      * @return サブメッシュの配列
      */
-    private _createSubmeshes( x_min: number, y_min: number, x_max: number, y_max: number, div_x: number, div_y: number, polygons: ((ConvexPolygon[])|Entity.AreaStatus.FULL) ): (Submesh[]|PolygonsSubmesh[])
+    private _createSubmeshes( x_min: number, y_min: number, x_max: number, y_max: number, div_x: number, div_y: number, polygons: ((ConvexPolygon[])|Entity.AreaStatus.FULL) ): Submesh[]
     {
         if ( polygons === Entity.AreaStatus.FULL ) {
             // 領域内は多角形に覆われている
@@ -1269,32 +1269,30 @@ export class FlakePrimitiveProducer extends Entity.FlakePrimitiveProducer {
         }
         else if ( div_x == 1 && div_y == 1 ) {
             // これ以上分割できないので切り取り多角形を返す
-            let t1 = [x_min, y_min, x_max, y_min, x_min, y_max];  // 左下三角形
-            let t2 = [x_min, y_max, x_max, y_min, x_max, y_max];  // 右上三角形
+            const t1 = [x_min, y_min, x_max, y_min, x_min, y_max];  // 左下三角形
+            const t2 = [x_min, y_max, x_max, y_min, x_max, y_max];  // 右上三角形
 
-            let m1 = this._create_clipped_polygons_submeshes( t1, polygons );
-            let m2 = this._create_clipped_polygons_submeshes( t2, polygons );
+            const m1 = this._create_clipped_polygons_submeshes( t1, polygons );
+            const m2 = this._create_clipped_polygons_submeshes( t2, polygons );
+            return m1.concat( m2 );
+        }
+        else if ( div_x >= div_y ) {
+            // 左右分割
+            const msize = (x_max - x_min) / 2;
+            const div_w = div_x / 2;
+
+            const m1 = this._create_submeshes_sp( x_min,         y_min, x_min + msize, y_max, div_w, div_y, polygons );
+            const m2 = this._create_submeshes_sp( x_min + msize, y_min, x_max,         y_max, div_w, div_y, polygons );
             return m1.concat( m2 );
         }
         else {
-            if ( div_x >= div_y ) {
-                // 左右分割
-                let msize = (x_max - x_min) / 2;
-                let div_w = div_x / 2;
+            // 上下分割
+            const msize = (y_max - y_min) / 2;
+            const div_w = div_y / 2;
 
-                let m1 = this._create_submeshes_sp( x_min,         y_min, x_min + msize, y_max, div_w, div_y, polygons );
-                let m2 = this._create_submeshes_sp( x_min + msize, y_min, x_max,         y_max, div_w, div_y, polygons );
-                return m1.concat( m2 );
-            }
-            else {
-                // 上下分割
-                let msize = (y_max - y_min) / 2;
-                let div_w = div_y / 2;
-
-                let m1 = this._create_submeshes_sp( x_min, y_min,         x_max, y_min + msize, div_x, div_w, polygons );
-                let m2 = this._create_submeshes_sp( x_min, y_min + msize, x_max, y_max,         div_x, div_w, polygons );
-                return m1.concat( m2 );
-            }
+            const m1 = this._create_submeshes_sp( x_min, y_min,         x_max, y_min + msize, div_x, div_w, polygons );
+            const m2 = this._create_submeshes_sp( x_min, y_min + msize, x_max, y_max,         div_x, div_w, polygons );
+            return m1.concat( m2 );
         }
     }
 
@@ -1907,7 +1905,7 @@ class RectSubmesh extends Submesh {
 
     /**
      */
-    override addVertices( origin: [ x: number, y: number, z: number ], sampler: any, vertices: Float32Array, offset: number ): number
+    override addVertices( origin: Vector3, sampler: any, vertices: Float32Array, offset: number ): number
     {
         // 刻み幅
         let mx_step = (this._x_max - this._x_min) / this._div_x;
