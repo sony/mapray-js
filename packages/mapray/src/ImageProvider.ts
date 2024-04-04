@@ -1,7 +1,10 @@
+import { cfa_assert } from "./util/assertion";
+
+
 /**
- * 地図画像プロバイダ
+ * ラスターデータのプロバイダ
  *
- * レンダラーに地図画像を与えるための抽象クラスである。
+ * レンダラーにラスターデータを与えるための抽象クラスである。
  *
  * このインスタンスには状態 ([[Status]] 型) があり、[[status]] メソッ
  * ドにより状態を確認することができる。
@@ -17,10 +20,10 @@
  * 以下の抽象メソッドは既定の動作がないので、利用者はこれらのメソッド
  * をオーバーライドした具象クラスを使用しなければならない。
  *
- * - [[requestTile]]
- * - [[cancelRequest]]
- * - [[getImageSize]]
- * - [[getZoomLevelRange]]
+ * - {@link requestTile}
+ * - {@link cancelRequest}
+ * - {@link getImageSize}
+ * - {@link getZoomLevelRange}
  *
  * @typeParam ID - 要求 ID の型
  *
@@ -36,14 +39,6 @@
  * ば置換可能性が満たさず危険性を伴うが、フレームワークは必ず `this`
  * の [[requestTile]] が返したオブジェクトを `this` の [[cancelRequest]]
  * に与えることを保証しているので問題は起きない。
- *
- * なお、TypeScript では `--strictFunctionTypes` を指定していても、
- * `ImageProvider<unknown>` 型の変数に `ImageProvider<ID>` 型の
- * インスタンスを代入することが許されるのでコンパイルエラーは起きない。
-
- * 詳細は TypeScript 2.6 の
- * [Strict function types](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-6.html#strict-function-types)
- * を参照のこと。
  *
  * @see [[StandardImageProvider]], [[Viewer.constructor]]
  */
@@ -118,22 +113,22 @@ abstract class ImageProvider<ID = unknown> {
 
 
     /**
-     * 地図タイル画像の寸法を取得
+     * タイルの寸法を取得
      *
-     * サーバーが提供する地図タイル画像の寸法をする。
-     * 地図タイル画像は正方形を前提とし、水平方向の画素数を返す。
+     * サーバーが提供するタイルの寸法を取得する。
+     * タイルは正方形を前提とし、水平方向の画素数を返す。
      *
      * 制限: `this` が同じなら常に同じ値を返さなければならない。
      *
-     * @return 地図タイル画像の画素数
+     * @return タイルの画素数
      */
     abstract getImageSize(): number;
 
 
     /**
-     * 地図画像ズームレベルの範囲を取得
+     * ズームレベルの範囲を取得
      *
-     * サーバーが提供する地図タイル画像のズームレベルの範囲を取得する。
+     * サーバーが提供するタイルのズームレベルの範囲を取得する。
      *
      * 制限: `this` が同じなら常に同じ範囲を返さなければならない。
      */
@@ -147,42 +142,44 @@ namespace ImageProvider {
 
 
 /**
- * 地図画像ズームレベル範囲
+ * 範囲
  *
  * @see [[ImageProvider.getZoomLevelRange]]
  */
 export class Range {
 
     /**
-     * 最小ズームレベル (0 または 0 より大きい整数)
+     * 最小値
      */
     private _min: number;
 
     /**
-     * 最大ズームレベル (min または min より大きい整数)
+     * 最大値
      */
     private _max: number;
 
 
     /**
-     * @param min  最小ズームレベル (0 または 0 より大きい整数)
-     * @param max  最大ズームレベル (`min` または `min` より大きい整数)
+     * @param min  最小値
+     * @param max  最大値
      */
     constructor( min: number, max: number )
     {
+        cfa_assert( !isNaN( min ) && !isNaN( max ) );
+        cfa_assert( min <= max );
         this._min = min;
         this._max = max;
     }
 
 
     /**
-     * 最小ズームレベル
+     * 最小値
      */
     get min(): number { return this._min; }
 
 
     /**
-     * 最大ズームレベル
+     * 最大値
      */
     get max(): number { return this._max; }
 
