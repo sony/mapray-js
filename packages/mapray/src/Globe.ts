@@ -31,11 +31,20 @@ class Globe {
     public readonly dem_provider: DemProvider;
 
     /**
+     * @internal
+     */
+    public rho!: number;
+
+    private _north_height: number;
+
+    private _south_height: number;
+
+    /**
      * 北側極地の DEM プロバイダ
      *
      * @internal
      */
-    public _npole_provider: DemProvider;
+    public _npole_provider!: DemProvider;
     get npole_provider() { return this._npole_provider; }
 
     /**
@@ -43,7 +52,7 @@ class Globe {
      *
      * @internal
      */
-    public _spole_provider: DemProvider;
+    public _spole_provider!: DemProvider;
     get spole_provider() { return this._spole_provider; }
 
     /**
@@ -96,16 +105,13 @@ class Globe {
                  dem_provider: DemProvider,
                  options?: Option )
     {
-        // すべての DEM の ρ を合わせる
-        const rho = dem_provider.getResolutionPower();
-
         // 極地オプション
         const pole_opts = options?.pole_info;
 
         this.glenv        = glenv;
         this.dem_provider = dem_provider;
-        this._npole_provider = new FlatDemProvider( { rho, height: pole_opts?.north_height ?? 0.0 } );
-        this._spole_provider = new FlatDemProvider( { rho, height: pole_opts?.south_height ?? 0.0 } );
+        this._north_height = pole_opts?.north_height ?? 0.0;
+        this._south_height = pole_opts?.south_height ?? 0.0;
         this._status      = Globe.Status.NOT_READY;
         this._num_ready_belts = 0;
 
@@ -121,6 +127,13 @@ class Globe {
 
 
     async init() {
+        const info = await this.dem_provider.init();
+        this.rho = info.resolution_power;
+
+        // すべての DEM の ρ を合わせる
+        this._npole_provider = new FlatDemProvider( { rho: this.rho, height: this._north_height } );
+        this._spole_provider = new FlatDemProvider( { rho: this.rho, height: this._south_height } );
+
         await Promise.all( this._belts.map( belt => belt.init() ) );
     }
 
@@ -130,10 +143,10 @@ class Globe {
      *
      * @param pole_info Pole情報
      */
-    setPole( pole_info: PoleInfo ): void
+    async setPole( pole_info: PoleInfo ): Promise<void>
     {
         // すべての DEM の ρ を合わせる
-        const rho = this.dem_provider.getResolutionPower();
+        const rho = this.rho;
 
         // 極地オプション
         const pole_opts = pole_info;
@@ -145,24 +158,29 @@ class Globe {
         this._belt_lower_y = pole_enabled ? GLOBE_BELT_LOWER_Y : 0;
         this._belt_upper_y = pole_enabled ? GLOBE_BELT_UPPER_Y : 0;
 
-        // update belts
-        let dem_belt: Belt | undefined = undefined;
-        for ( const belt of this._belts ) {
-            if ( belt.belt_y === 0 ) {
-                dem_belt = belt; // keep the main belt
-            }
-            else {
-                belt.dispose();
-            }
+        // delete unnecessarily belts
+        for ( let i = 0; this._belts[i].belt_y < this._belt_lower_y; ) {
+            this._belts[i].dispose();
+            this._belts.splice( i, 1 );
         }
-        cfa_assert( dem_belt !== undefined );
-        this._belts.splice( 0, this._belts.length );
+        for ( let i = this._belts.length - 1; this._belt_upper_y < this._belts[i].belt_y; --i ) {
+            this._belts[i].dispose();
+            this._belts.splice( i, 1 );
+        }
+
+        // insert or replace belts
         for ( let y = this._belt_lower_y; y <= this._belt_upper_y; ++y ) {
-            if ( y === 0 ) {
-                this._belts.push( dem_belt );
+            if ( y === 0 ) continue; // keep the main belt
+            const belt = new Belt( this, y );
+            await belt.init();
+            // switch after initialization is complete
+            const index = y - this._belt_lower_y;
+            if ( this._belts[index] && this._belts[index].belt_y === y ) { // replace old belt
+                if ( this._belts[index] ) this._belts[index].dispose();
+                this._belts[index] = belt;
             }
             else {
-                this._belts.push( new Belt( this, y ) );
+                this._belts.splice( index, 0, belt ); // insert
             }
         }
     }
@@ -573,7 +591,7 @@ class Belt {
 
     public readonly glenv: GLEnv;
 
-    public readonly dem_provider: DemProvider;
+    public dem_provider!: DemProvider; // init 後に確定する
 
     public readonly belt_y: number;
 
@@ -583,9 +601,9 @@ class Belt {
 
     private _prev_producers: Set<Entity.FlakePrimitiveProducer>;
 
-    public readonly rho: number;
+    public rho!: number; // init 後に確定する
 
-    public readonly dem_zbias: number;
+    public dem_zbias!: number; // init 後に確定する
 
     private _hist_stats: HistStats;
 
@@ -617,7 +635,7 @@ class Belt {
 
     private _avg_height!: AvgHeightMaps;
 
-    private _root_cancel_id: unknown;
+    private _root_cancel_id: AbortController | undefined;
 
     /** @internal */
     private _debug_pick_info?: Globe.DebugPickInfo;
@@ -634,19 +652,9 @@ class Belt {
         this.glenv  = globe.glenv;
         this.belt_y = belt_y;
 
-        if ( belt_y > 0 )
-            this.dem_provider = globe.spole_provider;
-        else if ( belt_y < 0 )
-            this.dem_provider = globe.npole_provider;
-        else
-            this.dem_provider = globe.dem_provider;
-
         this._status = Globe.Status.NOT_READY;
         this._dem_area_updated = new UpdatedTileArea();
         this._prev_producers = new Set();
-
-        this.rho = this.dem_provider.getResolutionPower();
-        this.dem_zbias = GeoMath.LOG2PI - this.rho + 1;  // b = log2(π) - ρ + 1
 
         this._hist_stats = new HistStats();
 
@@ -666,17 +674,23 @@ class Belt {
 
         this._frame_counter = 0;  // 現行フレーム番号
 
-        // 以下は _requestRoot() により最上位 DEM タイルを入手した
-        // タイミングで初期化される
-        //
-        // - this._root_flake
-        // - this._avg_height
-
         this._root_cancel_id = undefined;
     }
 
 
     async init() {
+
+        if ( this.belt_y > 0 )
+            this.dem_provider = this.globe.spole_provider;
+        else if ( this.belt_y < 0 )
+            this.dem_provider = this.globe.npole_provider;
+        else
+            this.dem_provider = this.globe.dem_provider;
+
+        await this.dem_provider.init();
+        this.rho = this.dem_provider.getInfo().resolution_power;
+        this.dem_zbias = GeoMath.LOG2PI - this.rho + 1;  // b = log2(π) - ρ + 1
+
         await this._requestRoot();
     }
 
@@ -703,7 +717,10 @@ class Belt {
         }
         else if ( this._status === Globe.Status.NOT_READY ) {
             // リクエスト中の root をキャンセル
-            this.dem_provider.cancelRequest( this._root_cancel_id );
+            const request = this._root_cancel_id;
+            if ( request ) {
+                request.abort( "Globe disposed" );
+            }
             this._root_cancel_id = undefined;
         }
 
@@ -1046,29 +1063,32 @@ class Belt {
     /**
      * _root_flake, _avg_height, _status を設定するためのリクエスト
      */
-    private _requestRoot(): void
+    private async _requestRoot(): Promise<void>
     {
         const z = 0;
         const x = 0;
         const y = this.belt_y;
 
-        this._root_cancel_id = this.dem_provider.requestTile( z, x, y, data => {
-            if ( data ) {
-                var dem = new DemBinary( z, x, y, this.rho, data );
-                this._avg_height = dem.newAvgHeightMaps();
-                this._root_flake = new Flake( null, z, x, y );
-                this._root_flake.setupRoot( this, dem );
-                this._status = Globe.Status.READY;
-                this._dem_area_updated.addTileArea( dem );
-            }
-            else { // データ取得に失敗
-                this._status = Globe.Status.FAILED;
-            }
-            this.globe.updateStatus( this._status );
-            this._root_cancel_id = undefined;
-            --this._num_dem_requesteds;
-        } );
+        const abortController = new AbortController();
+        this._root_cancel_id = abortController;
+
         ++this._num_dem_requesteds;
+        try {
+            const data = await this.dem_provider.requestTile( z, x, y, { signal: abortController.signal } );
+            const dem = new DemBinary( z, x, y, this.rho, data );
+            this._avg_height = dem.newAvgHeightMaps();
+            this._root_flake = new Flake( null, z, x, y );
+            this._root_flake.setupRoot( this, dem );
+            this._status = Globe.Status.READY;
+            this._dem_area_updated.addTileArea( dem );
+            this.globe.updateStatus( this._status );
+        }
+        catch ( err ) {
+            this._status = Globe.Status.FAILED;
+        }
+
+        this._root_cancel_id = undefined;
+        --this._num_dem_requesteds;
     }
 
 
@@ -1171,7 +1191,7 @@ export class Flake implements Area {
      * - `_dem_state === DemState.REQUESTED` のとき:  取り消しオブジェクト (`unknown` 型)
      * - それ以外のとき:                              `null`
      */
-    private _dem_data: DemBinary | unknown | null;
+    private _dem_data: DemBinary | AbortController | null;
 
     private _dem_state: DemState;
 
@@ -1698,7 +1718,10 @@ export class Flake implements Area {
 
         // DEM リクエストの取り消し
         if ( this._dem_state === DemState.REQUESTED ) {
-            belt.dem_provider.cancelRequest( this._dem_data );
+            const abortController = this._dem_data;
+            if ( abortController instanceof AbortController ) {
+                abortController.abort( "Flake disposed" );
+            }
             belt.decrement_dem_requesteds();
         }
 
@@ -1947,26 +1970,33 @@ export class Flake implements Area {
                 // DEM タイルデータを要求
                 // assert: state === DemState.NONE
                 var provider = belt.dem_provider;
+                const abortController = new AbortController();
+                flake._dem_data = abortController;
 
-                flake._dem_data = provider.requestTile( flake.z, flake.x, flake.y, data => {
-                    if ( !flake._parent ) {
-                        // すでに破棄済みなので無視
-                        return;
-                    }
-                    if ( data ) {
+                const request = provider.requestTile( flake.z, flake.x, flake.y, { signal: abortController.signal } );
+
+                flake._dem_state = DemState.REQUESTED;
+                belt.increment_dem_requesteds();
+
+                void ( async() => {
+                    try {
+                        const data = await request;
+                        if ( !flake._parent ) {
+                            // すでに破棄済みなので無視
+                            belt.decrement_dem_requesteds();
+                            return;
+                        }
                         flake._dem_data  = new DemBinary( flake.z, flake.x, flake.y, belt.rho, data );
                         flake._dem_state = DemState.LOADED;
                         belt.dem_area_updated.addTileArea( flake );
                     }
-                    else { // データ取得に失敗
+                    catch(err) {
                         flake._dem_data  = null;
                         flake._dem_state = DemState.FAILED;
                     }
                     belt.decrement_dem_requesteds();
-                } );
+                } )();
 
-                flake._dem_state = DemState.REQUESTED;
-                belt.increment_dem_requesteds();
                 break;
             }
         }

@@ -1,162 +1,249 @@
 import { cfa_assert } from "./util/assertion";
+import Util from "./util/Util";
 
 
 /**
- * ラスターデータのプロバイダ
+ * 画像プロバイダ
  *
- * レンダラーにラスターデータを与えるための抽象クラスである。
+ * レンダラーにラスターデータを与えるためのクラスです。
+ * コンストラクタの引数によって実際の処理が決定されます。
+ * 独自の画像プロバイダを作成する際は、通常このクラスを直接継承するのではなく {@link ImageProvider.Hook} を用いる方法で行います。
  *
- * このインスタンスには状態 ([[Status]] 型) があり、[[status]] メソッ
- * ドにより状態を確認することができる。
+ * @example
+ * ```ts
+ * viewer.setImageProvider(new ImageProvider({
+ *     init: () => {
+ *         ...
+ *     },
+ *     requestTile: () => {
+ *         ...
+ *     },
+ * }));
+ * ```
  *
- * 初期状態は [[READY]] または [[NOT_READY]] でなければならず、状態の
- * 変化は [[NOT_READY]] から [[READY]] または [[NOT_READY]] から
- * [[FAILED]] しか存在しない。READY 以外の状態では [[status]] を除くメ
- * ソッドを呼び出すことはできない。
- *
- * 初期状態が [[NOT_READY]] になる可能性があるプロバイダは、[[status]]
- * メソッドをオーバーライドする必要がある。
- *
- * 以下の抽象メソッドは既定の動作がないので、利用者はこれらのメソッド
- * をオーバーライドした具象クラスを使用しなければならない。
- *
- * - {@link requestTile}
- * - {@link cancelRequest}
- * - {@link getImageSize}
- * - {@link getZoomLevelRange}
- *
- * @typeParam ID - 要求 ID の型
- *
- * この型パラメータは、[[requestTile]] の戻り値と [[cancelRequest]] の
- * パラメータの型が一致した定義になるようにするための便宜的なものである。
- *
- * `ID` がどのような型であっても `ImageProvider<ID>` のインスタンスは、
- * `ImageProvider = ImageProvider<unknown>` 型の変数
- * ([[Viewer.Option.dem_provider]]) を通してフレームワークに渡される。
- *
- * 一般的にこのような場合、[[cancelRequest]] の `id` パラメータ は
- * `unknown` 型または `unknown` のスーパークラス (存在しない) でなけれ
- * ば置換可能性が満たさず危険性を伴うが、フレームワークは必ず `this`
- * の [[requestTile]] が返したオブジェクトを `this` の [[cancelRequest]]
- * に与えることを保証しているので問題は起きない。
- *
- * @see [[StandardImageProvider]], [[Viewer.constructor]]
+ * Hookの定義方法の詳細は {@link ImageProvider.Hook} を参照してください。
+ * @see {@link mapray.Viewer.setImageProvider}
+ * @see {@link mapray.LayerCollection.add}
  */
-abstract class ImageProvider<ID = unknown> {
+class ImageProvider {
 
+    private _status = ImageProvider.Status.NOT_INITIALIZED;
 
-    protected constructor() {
+    private readonly _init_resolvers = Util.withResolvers<Required<ImageProvider.Info>>();
+
+    private readonly _hook: ImageProvider.Hook;
+
+    // init 後に確定する値
+    private _info!: Required<ImageProvider.Info>;
+
+    /**
+     * 引数により与えるフックにより、このプロバイダの動作（初期化処理や読み込み処理）が決定する。
+     * @param hook 画像プロバイダの動作を決定するフック
+     */
+    constructor( hook: ImageProvider.Hook ) {
+        this._hook = hook;
     }
 
 
     /**
-     * 状態の取得
+     * 初期化を行う
      *
-     * 現在の [[ImageProvider]] インスタンスの状態を返す。
-     *
-     * `callback` を与えたとき、状態が [[NOT_READY]] から [[READY]] ま
-     * たは [[FAILED]] に変化したときに `callback` が呼び出される。
-     * [[NOT_READY]] 以外の状態で `callback` 与えても、それは無視され
-     * コールバック関数は登録されない。
-     *
-     * デフォルトの実装は、常に [[READY]] を返却し状態は変化しない。
-     *
-     * 継承クラスで必要に応じて実装される。
-     *
-     * @param callback - 状態変化コールバック関数
-     *
-     * @return 現在の [[ImageProvider]] インスタンスの状態
-     *
-     * @virtual
+     * @see {@link ImageProvider.Hook.init}
      */
-    status( callback?: ImageProvider.StatusCallback ): ImageProvider.Status
+    async init(): Promise<Required<ImageProvider.Info>>
     {
-        return ImageProvider.Status.READY;
+        if ( this._status !== ImageProvider.Status.NOT_INITIALIZED ) {
+            return await this._init_resolvers.promise;
+        }
+        this._status = ImageProvider.Status.INITIALIZING;
+        try {
+            const info = await this._hook.init();
+            this._info = ImageProvider.applyInfoWithDefaults( info );
+            this._status = ImageProvider.Status.INITIALIZED;
+            this._init_resolvers.resolve( this._info );
+            return this._info;
+        }
+        catch ( err ) {
+            this._status = ImageProvider.Status.ERROR;
+            this._init_resolvers.reject( err );
+            throw err;
+        }
     }
 
+    /**
+     * タイル画像をリクエストする
+     *
+     * 2回以上呼ばれた場合は、処理をスキップし初回と同様の値を返却する。
+     * @param z タイルのZ
+     * @param x タイルのX
+     * @param y タイルのY
+     * @param options.signal リクエストキャンセル用のシグナル
+     * @see {@link ImageProvider.Hook.requestTile}
+     */
+    async requestTile( z: number, x: number, y: number, options?: { signal?: AbortSignal } ): Promise<ImageProvider.SupportedImageTypes> {
+        return await this._hook.requestTile( z, x, y, options );
+    }
 
     /**
-     * 地図タイル画像を要求
-     *
-     * 座標が (`z`, `x`, `y`) の地図タイル画像を要求する。
-     *
-     * 指定したタイル画像の取得が成功または失敗したときに `callback`
-     * が非同期に呼び出されなければならない。だたし [[cancelRequest]]
-     * により要求が取り消されたとき、`callback` は呼び出しても呼び出さ
-     * なくてもよい。また非同期呼び出しである必要もない。
-     *
-     * `callback` が返す [[TileImage]] インスタンスの画像は不変が想定
-     * されるので、違う呼び出しの間で同じ画像インスタンスを返すことも
-     * 可能である。
-     *
-     * @param z - ズームレベル
-     * @param x - X タイル座標
-     * @param y - Y タイル座標
-     * @param callback - 要求コールバック関数
-     *
-     * @return 要求 ID ([[cancelRequest]] に与えるオブジェクト)
+     * タイル画像をリクエストできる状態である場合は `true` を返す。
      */
-    abstract requestTile( z: number,
-                          x: number,
-                          y: number,
-                          callback: ImageProvider.RequestCallback ): ID;
+    isReady(): boolean
+    {
+        return this._status === ImageProvider.Status.INITIALIZED;
+    }
+
+    getInfo(): Required<ImageProvider.Info>
+    {
+        switch ( this._status ) {
+            case ImageProvider.Status.NOT_INITIALIZED:
+            case ImageProvider.Status.INITIALIZING:    throw new Error( "info is missing: provider not loaded" );
+            case ImageProvider.Status.ERROR:           throw new Error( "info is missing: provider failed to initialize" );
+            default:                                   return this._info;
+        }
+    }
+}
+
+
+
+/**
+ * 画像プロバイダに関連する型や値が含まれます。
+ */
+namespace ImageProvider {
+
+
+
+/**
+ * 画像プロバイダフック
+ *
+ * 独自の画像プロバイダを作成する際に利用します。
+ *
+ * オブジェクトによる実装
+ * 単純な動作の場合は下記のように簡易的に実装することができます。
+ * @example
+ * ```ts
+ * viewer.setImageProvider(new ImageProvider({
+ *     init: () => {
+ *         // 必要に応じて初期化します。
+ *     },
+ *     requestTile: ( z, x, y ) => {
+ *         // タイルを取得します。
+ *     },
+ * }));
+ * ```
+ *
+ * クラスによる実装
+ * 下記のように実装することで、複雑なプロバイダを記述することができます。
+ * @example
+ * ```ts
+ * // クラスとして定義
+ * class ProviderHook implements mapray.ImageProvider.Hook {
+ *     constructor( id, option ) {
+ *         // タイルへのアクセスに必要な情報などを受け取る
+ *     }
+ *     async init() {
+ *         // 認証やログインなどを行い、アクセスできるようにする
+ *     }
+ *     async requestTile( z, x, y ) {
+ *         // 実際にデータにアクセスする
+ *     }
+ * }
+ *
+ * // インスタンス化して実装
+ * viewer.setImageProvider( new ProviderHook( "id", { token: "xxxxxx" } ) );
+ * ```
+ *
+ */
+export interface Hook {
+
+    /**
+     * タイルプロバイダを初期化しリクエストできる状態にします。
+     *
+     * - リクエストできる状態に遷移できなかった場合は必ず例外をスローします
+     * - この関数は2回以上呼ばれることはありません
+     *
+     * @param signal 中断信号（可能であれば処理を中断する）
+     * @returns タイルプロバイダの情報
+     */
+    init( options?: { signal?: AbortSignal } ): Promise<ImageProvider.Info>;
 
 
     /**
-     * 地図タイル画像の要求を取り消す
+     * タイルをリクエストします。
      *
-     * [[requestTile]] メソッドによる要求を可能であれば取り消す。
+     * 座標が (z, x, y) のタイルデータを要求します。
+     * {@link Hook.init} の呼び出しに成功した場合に、レンダラが必要なタイミングで何度も呼び出します。
      *
-     * @param id - 要求 ID ([[requestTile]] から得たオブジェクト)
+     * @param  z  ズームレベル
+     * @param  x  X タイル座標
+     * @param  y  Y タイル座標
+     * @param  signal  中断信号（可能であれば処理を中断する）
+     *
+     * @return リクエスト結果
      */
-    abstract cancelRequest( id: ID ): void;
-
-
-    /**
-     * タイルの寸法を取得
-     *
-     * サーバーが提供するタイルの寸法を取得する。
-     * タイルは正方形を前提とし、水平方向の画素数を返す。
-     *
-     * 制限: `this` が同じなら常に同じ値を返さなければならない。
-     *
-     * @return タイルの画素数
-     */
-    abstract getImageSize(): number;
-
-
-    /**
-     * ズームレベルの範囲を取得
-     *
-     * サーバーが提供するタイルのズームレベルの範囲を取得する。
-     *
-     * 制限: `this` が同じなら常に同じ範囲を返さなければならない。
-     */
-    abstract getZoomLevelRange(): ImageProvider.Range;
+    requestTile( z: number, x: number, y: number, options?: { signal?: AbortSignal } ): Promise<ImageProvider.SupportedImageTypes>;
 
 }
 
 
 
-namespace ImageProvider {
+/**
+ * ImageProvider の情報です。
+ * {@link Hook.init} の戻り値型です。
+ */
+export interface Info {
+
+    /**
+     * タイルの幅及び高さの画素数
+     *
+     * @default 256
+     */
+    image_size?: number;
+
+    /**
+     * タイルのズームレベルの範囲
+     */
+    zoom_level_range: ImageProvider.Range;
+
+    /**
+     * タイルのピクセルフォーマット
+     *
+     * @default ImageProvider.ColorPixelFormat
+     */
+    pixel_format?: ImageProvider.ColorPixelFormat;
+
+}
+
+
+/**
+ * 省略された値を default値 で埋めます。
+ * @internal
+ */
+export function applyInfoWithDefaults( info: Info ): Required<Info>
+{
+    return {
+        image_size: info.image_size ?? DEFAULT_IMAGE_SIZE,
+        zoom_level_range: info.zoom_level_range,
+        pixel_format: info.pixel_format ?? DEFAULT_PIXEL_FORMAT,
+    };
+}
 
 
 /**
  * 範囲
  *
- * @see [[ImageProvider.getZoomLevelRange]]
+ * @see {@link ImageProvider.getZoomLevelRange}
  */
 export class Range {
 
     /**
      * 最小値
      */
-    private _min: number;
+    readonly min: number;
 
     /**
      * 最大値
      */
-    private _max: number;
+    readonly max: number;
 
 
     /**
@@ -167,98 +254,61 @@ export class Range {
     {
         cfa_assert( !isNaN( min ) && !isNaN( max ) );
         cfa_assert( min <= max );
-        this._min = min;
-        this._max = max;
+        this.min = min;
+        this.max = max;
     }
 
-
-    /**
-     * 最小値
-     */
-    get min(): number { return this._min; }
-
-
-    /**
-     * 最大値
-     */
-    get max(): number { return this._max; }
-
 }
 
 
-/**
- * 地図タイル画像の型
- *
- * @see [[RequestCallback]], [[ImageProvider.requestTile]]
- */
-export type TileImage = ImageBitmap | ImageData | HTMLImageElement | HTMLCanvasElement | HTMLVideoElement;
+export type SupportedImageTypes = TexImageSource | null;
 
 
 /**
- * 地図タイル画像要求コールバック関数型
- *
- * 地図タイル画像の取得に成功または失敗したときに呼び出される関数の型
- * である。
- *
- * この関数は [[ImageProvider.requestTile]] の `callback` 引数に与える。
- *
- * 画像の取得に成功したときは、`image` に [[TileImage]] のインスタンス、
- * 失敗したときは `null` を与える。
- *
- * ただし [[ImageProvider.cancelRequest]] により要求が取り消されたとき、
- * コールバック関数の呼び出しは無視されるので `image` は任意の値でよい。
+ * ピクセル値が色であることを意味します。
+ * 通常はこちらのフォーマットです。
  */
-export interface RequestCallback {
-
-     /**
-      * @param image - 地図タイル画像
-      */
-     ( image: TileImage | null ): void;
-
+export interface ColorPixelFormat {
+    type: "color";
 }
 
 
-/**
- * [[ImageProvider]] 状態の列挙型
- *
- * @see [[ImageProvider.status]]
- */
+
+/** @internal */
 export const enum Status {
 
     /**
-     * 準備中
+     * 初期状態であり、読み込みが開始されていない状態。
      */
-    NOT_READY = "@@_ImageProvider.Status.NOT_READY",
+    NOT_INITIALIZED = "@@_ImageProvider.Status.NOT_INITIALIZED",
 
     /**
-     * 準備完了
+     * 読み込みが開始されたが、まだ完了していない状態。
+     * 正常に処理が完了すると INITIALIZED 、何らかのエラーが発生した場合は ERROR となる。
      */
-    READY = "@@_ImageProvider.Status.READY",
+    INITIALIZING = "@@_ImageProvider.Status.INITIALIZING",
 
     /**
-     * 失敗状態
+     * 読み込みが完了し、リクエストを処理できる状態。
      */
-    FAILED = "@@_ImageProvider.Status.FAILED",
-
-};
-
-
-/**
- * 状態変化コールバック関数型
- *
- * @see [[ImageProvider.status]]
- */
-export interface StatusCallback {
+    INITIALIZED = "@@_ImageProvider.Status.INITIALIZED",
 
     /**
-     * @param status - [[READY]] または [[FAILED]] ([[NOT_READY]] から遷移した状態)
+     * エラーが発生し、リクエストを処理できない状態。
      */
-    ( status: Status ): void;
-
+    ERROR = "@@_ImageProvider.Status.ERROR",
 }
 
 
+
 } // namespace ImageProvider
+
+
+
+export const DEFAULT_IMAGE_SIZE = 256;
+export const DEFAULT_PIXEL_FORMAT: ImageProvider.ColorPixelFormat = {
+    type: "color",
+};
 
 
 

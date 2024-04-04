@@ -167,7 +167,7 @@ class SurfaceMaterial extends FlakeMaterial {
         const flake = rflake.flake;
         const zg = flake.z;
 
-        if ( zg < tex_cache.getImageZMin() ) {
+        if ( zg < tex_cache.getZoomLevelRange().min ) {
             return null;
         }
 

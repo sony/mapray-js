@@ -287,7 +287,7 @@ class StandardUIViewer extends mapray.RenderCallback
      * @param options      生成オプション
      * @returns            DEMプロバイダ
      */
-    protected createDemProvider( access_token: string, options: StandardUIViewer.Option ): mapray.DemProvider<any>
+    protected createDemProvider( access_token: string, options: StandardUIViewer.Option ): mapray.DemProvider
     {
         // @ts-ignore
         return options.dem_provider || new mapray.CloudDemProvider( access_token );
@@ -302,8 +302,12 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     protected createImageProvider( options: StandardUIViewer.Option ): mapray.ImageProvider
     {
-        // @ts-ignore
-        return options.image_provider || new mapray.StandardImageProvider( "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", ".jpg", 256, 2, 18 );
+        return options.image_provider ?? new mapray.StandardImageProvider( {
+            url: "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/",
+            format: "jpg",
+            min_level: 2,
+            max_level: 18,
+        } );
     }
 
 
@@ -1581,9 +1585,9 @@ class StandardUIViewer extends mapray.RenderCallback
      *
      * @param layer                  作成するレイヤのプロパティ
      */
-    addLayer( layer: mapray.ImageLayer.Option | mapray.ContourLayer.Option | mapray.ImageProvider ): void
+    async addLayer( layer: mapray.ImageLayer.Option | mapray.ContourLayer.Option | mapray.ImageProvider ) /* auto-type */
     {
-        this.viewer.layers.add( layer );
+        return await this.viewer.layers.add( layer );
     }
 
 
@@ -1593,9 +1597,9 @@ class StandardUIViewer extends mapray.RenderCallback
      * @param index                  挿入場所
      * @param layer                  作成するレイヤのプロパティ
      */
-    insertLayer( index: number, layer: mapray.ImageLayer.Option | mapray.ContourLayer.Option | mapray.ImageProvider ): void
+    async insertLayer( index: number, layer: mapray.ImageLayer.Option | mapray.ContourLayer.Option | mapray.ImageProvider ) /* auto-type */
     {
-        this.viewer.layers.insert( index, layer );
+        return await this.viewer.layers.insert( index, layer );
     }
 
 

@@ -4,48 +4,46 @@ import ImageProvider from "./ImageProvider";
 /**
  * ダミー画像プロバイダ
  *
- * 状態は常に READY、レベル 0 のみの巨大画像、ただし画像は永遠に返さない。
+ * 動作は {@link EmptyImageProvider.Hook } によって規定される
  */
-class EmptyImageProvider extends ImageProvider<void> {
+class EmptyImageProvider extends ImageProvider {
 
-    /**
-     */
-    constructor()
-    {
-        super();
-    }
-
-
-    /**
-     */
-    override requestTile( _z: number, _x: number, _y: number, _callback: ImageProvider.RequestCallback ): void
-    {
-    }
-
-
-    /**
-     */
-    override cancelRequest(): void
-    {
-    }
-
-
-    /**
-     */
-    override getImageSize(): number
-    {
-        return 4096;
-    }
-
-
-    /**
-     */
-    override getZoomLevelRange(): ImageProvider.Range
-    {
-        return new ImageProvider.Range( 0, 0 );
+    constructor() {
+        super( new EmptyImageProvider.Hook() );
     }
 
 }
+
+
+
+namespace EmptyImageProvider {
+
+
+
+/**
+ * 状態は常に レベル 0 のみの巨大画像、ただし画像は永遠に返さない。
+ */
+export class Hook implements ImageProvider.Hook {
+
+    /** {@link ImageProvider.init} */
+    init()
+    {
+        return Promise.resolve( ImageProvider.applyInfoWithDefaults( {
+            zoom_level_range: new ImageProvider.Range( 0, 0 ),
+        } ) );
+    }
+
+    /** {@link ImageProvider.requestTile} */
+    requestTile( _z: number, _x: number, _y: number ) {
+        return Promise.resolve( null );
+    }
+
+}
+
+
+
+} // namespace EmptyImageProvider
+
 
 
 export default EmptyImageProvider;

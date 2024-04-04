@@ -10,7 +10,23 @@ import { cfa_assert } from "./util/assertion";
  *
  * 標高は [[constructor]] の `options` で [[Option.height]] を指定する。
  */
-class FlatDemProvider extends DemProvider<void> {
+class FlatDemProvider extends DemProvider {
+
+    constructor( option?: FlatDemProvider.Option ) {
+        super( new FlatDemProvider.Hook( option ) );
+    }
+
+}
+
+
+const FLT_BYTES = 4;
+
+
+namespace FlatDemProvider {
+
+
+
+export class Hook implements DemProvider.Hook {
 
     private readonly _buffers: ArrayBuffer[];
 
@@ -45,8 +61,6 @@ class FlatDemProvider extends DemProvider<void> {
 
     constructor( max_level_or_options?: number | FlatDemProvider.Option )
     {
-        super();
-
         let options: FlatDemProvider.Option;
 
         if ( max_level_or_options === undefined ) {
@@ -64,7 +78,7 @@ class FlatDemProvider extends DemProvider<void> {
         this._rho = options.rho ?? 8;
 
         // タイルデータのバイト数
-        const tile_bytes = FlatDemProvider.HEADER_BYTES + FLT_BYTES * this._num_samples();
+        const tile_bytes = Hook.HEADER_BYTES + FLT_BYTES * this._num_samples();
 
         const height = options.height ?? 0.0;
 
@@ -76,24 +90,17 @@ class FlatDemProvider extends DemProvider<void> {
     }
 
 
-    override requestTile( z: number, _x: number, _y: number, callback: DemProvider.RequestCallback ): void
+    init( _options?: { signal?: AbortSignal } ): Promise<DemProvider.Info>
     {
-        Promise.resolve()
-        .then(() => {
-                callback( this._buffers[z] );
-        });
+        return Promise.resolve( {
+            resolution_power: this._rho,
+        } );
     }
 
 
-    override cancelRequest(): void
+    requestTile( z: number, _x: number, _y: number, _options?: { signal?: AbortSignal } ): Promise<ArrayBuffer>
     {
-    }
-
-
-    // from DemProvider
-    override getResolutionPower(): number
-    {
-        return this._rho;
+        return Promise.resolve( this._buffers[z] );
     }
 
 
@@ -101,12 +108,12 @@ class FlatDemProvider extends DemProvider<void> {
     {
         const view = new DataView( buffer );
 
-        view.setUint8( FlatDemProvider.OFFSET_QLEVEL_00, this._max_level - z );
-        view.setUint8( FlatDemProvider.OFFSET_QLEVEL_10, this._max_level - z );
-        view.setUint8( FlatDemProvider.OFFSET_QLEVEL_01, this._max_level - z );
-        view.setUint8( FlatDemProvider.OFFSET_QLEVEL_11, this._max_level - z );
-        view.setFloat32( FlatDemProvider.OFFSET_HMIN, height, true );
-        view.setFloat32( FlatDemProvider.OFFSET_HMAX, height, true );
+        view.setUint8( Hook.OFFSET_QLEVEL_00, this._max_level - z );
+        view.setUint8( Hook.OFFSET_QLEVEL_10, this._max_level - z );
+        view.setUint8( Hook.OFFSET_QLEVEL_01, this._max_level - z );
+        view.setUint8( Hook.OFFSET_QLEVEL_11, this._max_level - z );
+        view.setFloat32( Hook.OFFSET_HMIN, height, true );
+        view.setFloat32( Hook.OFFSET_HMAX, height, true );
 
         const offset = this._setOmegaArray( view );
 
@@ -118,11 +125,11 @@ class FlatDemProvider extends DemProvider<void> {
     {
         const FLT_BYTES = 4;
 
-        let offset = FlatDemProvider.OFFSET_ω;
+        let offset = Hook.OFFSET_ω;
         for ( let down = 0; down < 3; ++down ) {
             let count = 1 << (2 * down);
             for ( var i = 0; i < count; ++i ) {
-                view.setFloat32( offset, FlatDemProvider.OMEGA_VALUE, true );
+                view.setFloat32( offset, Hook.OMEGA_VALUE, true );
                 offset += FLT_BYTES;
             }
         }
@@ -132,7 +139,7 @@ class FlatDemProvider extends DemProvider<void> {
 
     private _setHeight( view: DataView, current: number, height: number ): void
     {
-        cfa_assert( current === FlatDemProvider.HEADER_BYTES );
+        cfa_assert( current === Hook.HEADER_BYTES );
 
         let offset = current
 
@@ -171,10 +178,6 @@ class FlatDemProvider extends DemProvider<void> {
 }
 
 
-const FLT_BYTES = 4;
-
-
-namespace FlatDemProvider {
 
 /**
  * 生成オプション

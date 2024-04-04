@@ -40,8 +40,9 @@ class TileTextureCache {
      *
      * @internal
      */
-    private _npole_provider: ImageProvider
     get npole_provider() { return this._npole_provider; }
+    private _npole_provider!: ImageProvider;
+    private _npole_color: Vector3;
 
     /**
      * 南側極地の画像プロバイダ
@@ -52,8 +53,9 @@ class TileTextureCache {
      *
      * @internal
      */
-    private _spole_provider: ImageProvider
     get spole_provider() { return this._spole_provider; }
+    private _spole_provider!: ImageProvider;
+    private _spole_color: Vector3;
 
     /**
      * Belt の Y 座標の下限
@@ -84,9 +86,9 @@ class TileTextureCache {
         const pole_opts = options?.pole_info;
 
         this.glenv = glenv;
-        this._main_provider  = provider;
-        this._npole_provider = new PoleImageProvider( provider, pole_opts?.north_color ?? DEFAULT_NPOLE_COLOR );
-        this._spole_provider = new PoleImageProvider( provider, pole_opts?.south_color ?? DEFAULT_SPOLE_COLOR );
+        this._main_provider = provider;
+        this._npole_color = pole_opts?.north_color ?? DEFAULT_NPOLE_COLOR;
+        this._spole_color = pole_opts?.south_color ?? DEFAULT_SPOLE_COLOR;
 
         const pole_enabled = pole_opts?.enabled ?? false;
         this._belt_lower_y = pole_enabled ? GLOBE_BELT_LOWER_Y : 0;
@@ -100,23 +102,33 @@ class TileTextureCache {
     }
 
 
+    async init(): Promise<void>
+    {
+        this._npole_provider = new ImageProvider( new PoleImageProviderHook( this._main_provider, this._npole_color ) );
+        this._spole_provider = new ImageProvider( new PoleImageProviderHook( this._main_provider, this._spole_color ) );
+
+        await Promise.all( this._belts.map( belt => belt.init() ) );
+    }
+
+
     /**
      * ImageProviderを切り替える
      *
      * @param provider  地図画像プロバイダ
      * @param pole_info Pole情報
      */
-    setProvider( provider: ImageProvider ): void
+    async setProvider( provider: ImageProvider ): Promise<void>
     {
-        if ( this._main_provider !== provider ) {
-            this._main_provider = provider;
+        if ( this._main_provider === provider ) {
+            return;
+        }
+        this._main_provider = provider;
 
-            // update belts
-            for ( let i=0; i<this._belts.length; i++ ) {
-                const belt = this._belts[i];
-                if ( belt._belt_y === 0 ) {
-                    belt.setProvider( this, provider );
-                }
+        // update belts
+        for ( let i=0; i<this._belts.length; i++ ) {
+            const belt = this._belts[i];
+            if ( belt._belt_y === 0 ) {
+                await belt.setProvider( this, provider );
             }
         }
     }
@@ -127,34 +139,41 @@ class TileTextureCache {
      *
      * @param pole_info Pole情報
      */
-    setPole( pole_info: PoleInfo ): void
+    async setPole( pole_info: PoleInfo ): Promise<void>
     {
-        this._npole_provider = new PoleImageProvider( this._main_provider, pole_info.north_color ?? DEFAULT_NPOLE_COLOR );
-        this._spole_provider = new PoleImageProvider( this._main_provider, pole_info.south_color ?? DEFAULT_SPOLE_COLOR );
+        this._npole_color = pole_info.north_color ?? DEFAULT_NPOLE_COLOR;
+        this._spole_color = pole_info.south_color ?? DEFAULT_SPOLE_COLOR;
+        this._npole_provider = new ImageProvider( new PoleImageProviderHook( this._main_provider, this._npole_color ) );
+        this._spole_provider = new ImageProvider( new PoleImageProviderHook( this._main_provider, this._spole_color ) );
         const pole_enabled = pole_info.enabled;
         this._belt_lower_y = pole_enabled ? GLOBE_BELT_LOWER_Y : 0;
         this._belt_upper_y = pole_enabled ? GLOBE_BELT_UPPER_Y : 0;
 
-        // update belts
-        let main_belt: Belt | undefined = undefined;
-        for ( const belt of this._belts ) {
-            if ( belt._belt_y === 0 ) {
-                main_belt = belt; // keep the main belt
+        // delete unnecessarily belts
+        for ( let i = 0; this._belts[i]._belt_y < this._belt_lower_y; ) {
+            this._belts[i].dispose();
+            this._belts.splice( i, 1 );
+        }
+        for ( let i = this._belts.length - 1; this._belt_upper_y < this._belts[i]._belt_y; --i ) {
+            this._belts[i].dispose();
+            this._belts.splice( i, 1 );
+        }
+
+        // insert or replace belts
+        for ( let y = this._belt_lower_y; y <= this._belt_upper_y; ++y ) {
+            if ( y === 0 ) continue; // keep the main belt
+            const belt = new Belt( this, y );
+            await belt.init();
+            // switch after initialization is complete
+            const index = y - this._belt_lower_y;
+            if ( this._belts[index] && this._belts[index]._belt_y === y ) { // replace old belt
+                if ( this._belts[index] ) this._belts[index].dispose();
+                this._belts[index] = belt;
             }
             else {
-                belt.dispose();
+                this._belts.splice( index, 0, belt ); // insert
             }
         }
-        cfa_assert( main_belt !== undefined );
-        this._belts.splice( 0, this._belts.length );
-        for ( let y = this._belt_lower_y; y <= this._belt_upper_y; ++y ) {
-            if ( y === 0 ) {
-                this._belts.push( main_belt );
-            }
-            else {
-                this._belts.push( new Belt( this, y ) );
-            }
-        };
     }
 
 
@@ -194,11 +213,11 @@ class TileTextureCache {
 
 
     /**
-     * @return タイルの Z レベルの最小値
+     * タイルのズームレベルの範囲
      */
-    getImageZMin(): number
+    getZoomLevelRange(): ImageProvider.Range
     {
-        return this._belt( 0 ).getImageZMin();
+        return this._belt( 0 ).getZoomLevelRange();
     }
 
 
@@ -311,11 +330,11 @@ class Belt {
     constructor( owner: TileTextureCache,
                  belt_y: number )
     {
+        this._owner = owner;
         const  glenv = owner.glenv;
 
         this._belt_y      = belt_y;
         this._glenv       = glenv;
-        this._provider    = new EmptyImageProvider();
         this._min_image_z = 0;
         this._max_image_z = 0;
         this._image_zbias = 0;
@@ -348,12 +367,17 @@ class Belt {
             this._max_aniso = 0;
         }
         this._use_mipmap = false;
+    }
 
-        this.setProvider( owner, (
-                belt_y < 0 ? owner.npole_provider:
-                belt_y > 0 ? owner.spole_provider:
-                owner.main_provider
-        ));
+
+    async init(): Promise<void>
+    {
+        const owner = this._owner;
+        await this.setProvider( owner, (
+            this._belt_y < 0 ? owner.npole_provider:
+            this._belt_y > 0 ? owner.spole_provider:
+            owner.main_provider
+        ) );
     }
 
 
@@ -365,15 +389,15 @@ class Belt {
      * - `_max_image_z`
      * - `_image_zbias`
      */
-    private _setProviderInner( provider: ImageProvider ): void
+    private async _setProviderInner( provider: ImageProvider ): Promise<void>
     {
+        const info = await provider.init();
         this._provider = provider;
 
-        const range = provider.getZoomLevelRange();
+        const range = info.zoom_level_range;
         this._min_image_z = range.min;
         this._max_image_z = range.max;
-
-        this._image_zbias = GeoMath.maprayLog2( 2 * Math.PI / provider.getImageSize() );
+        this._image_zbias = GeoMath.maprayLog2( 2 * Math.PI / info.image_size );
 
         if ( !( this._provider instanceof EmptyImageProvider ) ) {
             if ( range.min === 0 ) {
@@ -406,22 +430,19 @@ class Belt {
      * @param owner    TileTextureCache
      * @param provider ImageProvider
      */
-    setProvider( owner: TileTextureCache, provider: ImageProvider ): void
+    async setProvider( owner: TileTextureCache, provider: ImageProvider ): Promise<void>
     {
-        const status_callback: ImageProvider.StatusCallback = ( status ) => {
-            if ( status === ImageProvider.Status.READY ) {
-                // EmptyImageProvider から本来の provider に切り替える
-                this._setProviderInner( provider );
-            }
-            else if ( status === ImageProvider.Status.FAILED ) {
-                // provider が READY 状態にならなかった
-                console.error( "ImageProvider.Status.FAILED in TileTextureCache" );
-            }
-        };
-
         new NodeReplacer( this, this._croot );
-        const is_provider_ready = (provider.status( status_callback ) === ImageProvider.Status.READY);
-        this._setProviderInner( is_provider_ready ? provider : new EmptyImageProvider() );
+
+        try {
+            await this._setProviderInner( new EmptyImageProvider() );
+
+            await this._setProviderInner( provider );
+        }
+        catch ( error ) {
+            // provider が READY 状態にならなかった
+            console.error( "ImageProvider.Status.ERROR in TileTextureCache" );
+        }
     }
 
 
@@ -437,11 +458,11 @@ class Belt {
 
 
     /**
-     * @return タイルの Z レベルの最小値
+     * タイルのズームレベルの範囲
      */
-    getImageZMin(): number
+    getZoomLevelRange(): ImageProvider.Range
     {
-        return this._min_image_z;
+        return this._provider.getInfo().zoom_level_range;
     }
 
 
@@ -697,39 +718,40 @@ class Belt {
      * @param y - Y タイル座標
      * @param node - 対象ノード
      */
-    private _requestTileTexture( z: number,
+    private async _requestTileTexture( z: number,
                                  x: number,
                                  y: number,
-                                 node: CacheNode ): void
+                                 node: CacheNode ): Promise<void>
     {
-        const request_id = this._provider.requestTile( z, x, y, image => {
+        const abortController = new AbortController();
+        const request = this._provider.requestTile( z, x, y, { signal: abortController.signal } );
 
-            if ( node.state !== NodeState.REQUESTED ) {
-                return;
-            }
-
-            if ( request_id !== node.request_id ) {
-                return;
-            }
-
-            if ( image ) {
-                if ( node.data ) {
-                    node.data.dispose( this._glenv.context );
-                }
-                node.data  = new TileTexture( z, x, y, this._createTexture( image ) );
-                node.state = NodeState.LOADED;
-            }
-            else {
-                node.data  = null;
-                node.state = NodeState.FAILED;
-            }
-            --this._num_requesteds;
-
-        } );
-
-        node.request_id = request_id;
+        node.abort_ctl = abortController;
 
         ++this._num_requesteds;
+
+        try {
+            const image = await request;
+
+            const error = (
+                node.state !== NodeState.REQUESTED ||
+                abortController !== node.abort_ctl ||
+                !image
+            );
+
+            if ( error ) throw null;
+
+            if ( node.data ) {
+                node.data.dispose( this._glenv.context );
+            }
+            node.data  = new TileTexture( z, x, y, this._createTexture( image ) );
+            node.state = NodeState.LOADED;
+        }
+        catch ( error ) {
+            node.data  = null;
+            node.state = NodeState.FAILED;
+        }
+        --this._num_requesteds;
     }
 
 
@@ -738,9 +760,9 @@ class Belt {
      *
      * @internal
      */
-    cancelTileTexture( id: unknown ): void
+    cancelTileTexture( node: CacheNode ): void
     {
-        this._provider.cancelRequest( id );
+        if ( node.abort_ctl ) node.abort_ctl.abort();
         --this._num_requesteds;
     }
 
@@ -820,8 +842,7 @@ class Belt {
         // 後半のノードを削除
         const gl = this._glenv.context;
 
-        const min_level = this._provider.getZoomLevelRange().min;
-        const force_keep_level = (min_level <= 1) ? min_level : -1;
+        const force_keep_level = ( this._min_image_z <= 1 ) ? this._min_image_z : -1;
 
         collector.nodes.slice( num_nodes ).forEach( node => {
             if ( node.data ) {
@@ -839,11 +860,12 @@ class Belt {
     }
 
 
+    private readonly _owner: TileTextureCache;
     public readonly _glenv: GLEnv;
 
     public readonly _belt_y: number;
 
-    private _provider: ImageProvider;
+    private _provider!: ImageProvider;
     private _min_image_z: number;
     private _max_image_z: number;
     private _image_zbias: number;
@@ -904,8 +926,8 @@ class CacheNode {
     data: TileTexture | null;
 
 
-    /** リクエストID */
-    request_id: unknown;
+    /** リクエストオブジェクト */
+    abort_ctl: AbortController | null;
 
 
     /** 要求度 */
@@ -928,7 +950,7 @@ class CacheNode {
         this.data      = null;  // TileTexture オブジェクト、または取り消しオブジェクト
         this.req_power = -1;    // 要求度
         this.aframe    = -1;    // 最終アクセスフレーム
-        this.request_id = null;
+        this.abort_ctl = null;
     }
 
     /**
@@ -1121,7 +1143,7 @@ class NodeCanceller {
         }
         if ( this._dispose ) {
             if ( node.state === NodeState.REQUESTED ) {
-                this._belt.cancelTileTexture( node.request_id );
+                this._belt.cancelTileTexture( node );
             }
             if ( node.data ) {
                 node.data.dispose( this._belt._glenv.context );
@@ -1132,7 +1154,7 @@ class NodeCanceller {
         else {
             if ( node.state === NodeState.REQUESTED ) {
                 node.state = NodeState.NEED_REQUEST;
-                this._belt.cancelTileTexture( node.request_id );
+                this._belt.cancelTileTexture( node );
             }
         }
     }
@@ -1170,7 +1192,7 @@ class NodeReplacer {
         }
 
         if ( node.state === NodeState.REQUESTED ) {
-            this._belt.cancelTileTexture( node.request_id );
+            this._belt.cancelTileTexture( node );
         }
 
         node.state = NodeState.NEED_REQUEST;
@@ -1224,100 +1246,33 @@ const enum NodeState {
  * - `getZoomLevelRange` が返す値の `min` プロパティは `center` と同じ
  * - `requestTile` の `y` 引数に、そのベルトの範囲の座標を受け入れる
  */
-class PoleImageProvider extends ImageProvider<void> {
+class PoleImageProviderHook implements ImageProvider.Hook {
 
     /**
      * @param center - 参照する画像プロバイダ
      * @param color  - 地表の色
      */
-    constructor( center: ImageProvider,
-                 color:  Vector3 )
+    constructor( center: ImageProvider, color: Vector3 )
     {
-        super();
-
-        const ccolor = GeoMath.copyVector3( color, GeoMath.createVector3() );
-
-        // ステータス管理
-        this._status = ImageProvider.Status.NOT_READY;
-        this._status_callbacks = [];
-
-        // 準備ができるまでのダミー値で初期化
-        this._size  = 0;
-        this._level = -1;
-        this._image = PoleImageProvider._createImage( 1, ccolor );
-
-        // center の準備ができたときに実行する処理
-        const status_callback: ImageProvider.StatusCallback = ( status ) => {
-            if ( status === ImageProvider.Status.READY ) {
-                this._size  = center.getImageSize();
-                this._level = center.getZoomLevelRange().min;
-                this._image = PoleImageProvider._createImage( this._size, ccolor );
-            }
-            else if ( status === ImageProvider.Status.FAILED ) {
-                // this が READY 状態にならなかった
-                console.error( "ImageProvider.Status.FAILED in PoleImageProvider" );
-            }
-            this._status = status;
-            // this に登録されたコールバックの処理
-            for ( const callback of this._status_callbacks ) {
-                callback( status );
-            }
-            this._status_callbacks.length = 0;  // すべて実行したのでクリア
-        };
-
-        if  ( center.status( status_callback ) === ImageProvider.Status.READY ) {
-            // center はすでに READY だったので自分でコールバックを処理を呼び出す
-            Promise.resolve()
-                .then( () => {
-                    status_callback( ImageProvider.Status.READY );
-                } );
-        }
+        this._center = center;
+        this._color = GeoMath.copyVector3( color, GeoMath.createVector3() );
     }
 
-    // from ImageProvider
-    override status( callback?: ImageProvider.StatusCallback ): ImageProvider.Status
+    async init(): Promise<ImageProvider.Info>
     {
-        if ( (this._status === ImageProvider.Status.NOT_READY) && (callback !== undefined) ) {
-            // 後で実行するコールバックを登録
-            this._status_callbacks.push( callback );
-        }
+        const centerInfo = await this._center.init();
 
-        return this._status;
+        const image_size = centerInfo.image_size;
+        const min_level = centerInfo.zoom_level_range.min;
+        this._image = PoleImageProviderHook._createImage( image_size, this._color );
+        const zoom_level_range = new ImageProvider.Range( min_level, min_level );
+
+        return { image_size, zoom_level_range };
     }
 
-    // from ImageProvider
-    override requestTile( _z: number,
-                          _x: number,
-                          _y: number,
-                          callback: ImageProvider.RequestCallback ): void
+    requestTile( _z: number, _x: number, _y: number )
     {
-        cfa_assert( this._status === ImageProvider.Status.READY );
-
-        // callback を非同期呼び出し
-        Promise.resolve()
-            .then( () => {
-                callback( this._image );
-            } );
-    }
-
-    // from ImageProvider
-    override cancelRequest(): void
-    {
-        // 取り消し処理はない
-    }
-
-    // from ImageProvider
-    override getImageSize(): number
-    {
-        cfa_assert( this._status === ImageProvider.Status.READY );
-        return this._size;
-    }
-
-    // from ImageProvider
-    override getZoomLevelRange(): ImageProvider.Range
-    {
-        cfa_assert( this._status === ImageProvider.Status.READY );
-        return new ImageProvider.Range( this._level, this._level );
+        return Promise.resolve( this._image );
     }
 
     /**
@@ -1326,7 +1281,7 @@ class PoleImageProvider extends ImageProvider<void> {
     private static _createImage( size: number,
                                  color: Vector3 ): HTMLCanvasElement
     {
-        const conv = PoleImageProvider._convertColorToRGB;
+        const conv = PoleImageProviderHook._convertColorToRGB;
 
         const ctx = Dom.createCanvasContext( size, size );
 
@@ -1342,12 +1297,10 @@ class PoleImageProvider extends ImageProvider<void> {
     }
 
 
-    private _status: ImageProvider.Status;
-    private readonly _status_callbacks: ImageProvider.StatusCallback[];
+    private _color: Vector3;
+    private _center: ImageProvider;
 
-    private _size: number;
-    private _level: number;
-    private _image: HTMLCanvasElement;
+    private _image!: HTMLCanvasElement;
 
 }
 

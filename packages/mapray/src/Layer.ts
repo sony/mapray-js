@@ -162,6 +162,45 @@ export enum Type {
 
 
 
+/**
+ * レイヤの状態。
+ *
+ * 下記のように状態遷移する。これ以外の状態遷移は起こらない。
+ *
+ * ```text
+ *              init()
+ * NOT_LOADED ---------> LOADING ---------> LOADED
+ *                          |
+ *                          `-------------> ERROR
+  * ```
+ */
+export const enum Status {
+
+    /**
+     * 初期状態であり、読み込みが開始されていない状態。
+     */
+    NOT_LOADED = "@@_TileProvider.Status.NOT_LOADED",
+
+    /**
+     * 読み込みが開始されたが、まだ完了していない状態。
+     * 正常に処理が完了すると LOADED 、何らかのエラーが発生した場合は DESTROYED となる。
+     * また、LOADING 中に dispose() が呼ばれた場合、即座に DESTROYED に遷移する。
+     */
+    LOADING = "@@_TileProvider.Status.LOADING",
+
+    /**
+     * 読み込みが完了し、リクエストを処理できる状態。
+     */
+    LOADED = "@@_TileProvider.Status.LOADED",
+
+    /**
+     * エラーが発生し、リクエストを処理できない状態。
+     */
+    ERROR = "@@_TileProvider.Status.ERROR",
+}
+
+
+
 } // namespace Layer
 
 

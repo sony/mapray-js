@@ -1,5 +1,26 @@
 import ImageProvider from "./ImageProvider";
+import Resource, { URLResource } from "./Resource";
 import CredentialMode from "./CredentialMode";
+
+
+
+class StandardImageProvider extends ImageProvider {
+
+    constructor( data: StandardImageProvider.ResourceInfo | Resource ) {
+        if ( data instanceof Resource ) {
+            super( new StandardImageProvider.Hook( data ) );
+        }
+        else {
+            super( new StandardImageProvider.Hook( data ) );
+        }
+    }
+
+}
+
+
+
+namespace StandardImageProvider {
+
 
 
 /**
@@ -15,157 +36,215 @@ import CredentialMode from "./CredentialMode";
  *   getZoomLevelRange()    -> new ImageProvider.Range( zmin, zmax ) を返す
  * ```
  */
-class StandardImageProvider extends ImageProvider<HTMLImageElement> {
+export class Hook implements ImageProvider.Hook {
 
-    private _prefix: string;
-
-    private _suffix: string;
-
-    private _size: number;
-
-    private _min_level: number;
-
-    private _max_level: number;
-
-    private _coords_part: OrderCoords;
-
-    private _crossOrigin: string | null;
-
-    private _http_header: HeadersInit | null;
+    private _resource: Resource;
 
 
-    /**
-     * @param prefix  URL の先頭文字列
-     * @param suffix  URL の末尾文字列
-     * @param size    地図タイル画像の寸法
-     * @param zmin    最小ズームレベル
-     * @param zmax    最大ズームレベル
-     * @param opts    オプション集合
-     */
-    constructor( prefix: string, suffix: string, size: number, zmin: number, zmax: number, opts?: StandardImageProvider.Option )
-    {
-        super();
-        this._prefix    = prefix;
-        this._suffix    = suffix;
-        this._size      = size;
-        this._min_level = zmin;
-        this._max_level = zmax;
+    private _format!: string;
 
-        // タイル座標を並び替える関数
-        let orderCoords: OrderCoords | null = null;
-        if ( opts && opts.coord_order ) {
-            if ( opts.coord_order === StandardImageProvider.CoordOrder.ZYX ) {
-                orderCoords = function( z, x, y ) { return z + "/" + y + "/" + x; };
-            }
-            else if ( opts.coord_order === StandardImageProvider.CoordOrder.XYZ ) {
-                orderCoords = function( z, x, y ) { return x + "/" + y + "/" + z; };
-            }
-        }
-        const orderCoordsFixed = (
-            orderCoords ||
-            function( z, x, y ) { return z + "/" + x + "/" + y; } // その他の場合は既定値 COORD_ORDER_ZXY を使う
-        );
+    private _size!: number;
 
-        // XY 座標を変換する関数
-        let convCoords: OrderCoords | null = null;
-        if ( opts && opts.coord_system ) {
-            if ( opts.coord_system === StandardImageProvider.CoordSystem.LOWER_LEFT ) {
-                convCoords = function( z, x, y ) {
-                    var size = Math.round( Math.pow( 2, z ) );
-                    return orderCoordsFixed( z, x, size - y - 1 );
-                };
-            }
-        }
-        if ( !convCoords ) {
-            // その他の場合は既定値 UPPER_LEFT (無変換) を使う
-            convCoords = orderCoordsFixed;
-        }
+    private _min_level!: number;
 
-        // 座標部分の URL を取得する関数
-        this._coords_part = convCoords;
+    private _max_level!: number;
 
-        // crossorigin 属性の値
-        this._crossOrigin = "anonymous";
-        if ( opts && opts.credentials ) {
-            if ( opts.credentials === CredentialMode.OMIT ) {
-                this._crossOrigin = null;
-            }
-            else if ( opts.credentials === CredentialMode.INCLUDE ) {
-                this._crossOrigin = "use-credentials";
-            }
-        }
+    private _coords_part!: OrderCoords;
 
-        this._http_header = opts?.http_header ?? null;
-    }
+    private _pixel_format!: ImageProvider.ColorPixelFormat;
+
+    private _initialized: boolean;
 
 
     /**
+     * @param resourceInfo リソースオプション
      */
-    override requestTile( z: number, x: number, y: number, callback: ImageProvider.RequestCallback ): HTMLImageElement
+    constructor( resourceInfo: StandardImageProvider.ResourceInfo );
+
+
+    /**
+     * @param resource リソースオブジェクト
+     */
+    constructor( resource: Resource );
+
+    constructor( data: StandardImageProvider.ResourceInfo | Resource )
     {
-        var image = new Image();
-
-        image.onload  = function() { callback( image ); };
-        image.onerror = function() { callback( null );  };
-
-        if ( this._crossOrigin !== null ) {
-            image.crossOrigin = this._crossOrigin;
-        }
-
-        if ( this._http_header ) {
-            fetch( this._makeURL( z, x, y ), { headers: this._http_header } )
-            .then(res => res.blob())
-            .then(data => image.src = URL.createObjectURL( data ) );
+        if ( data instanceof Resource ) {
+            this._resource = data;
+            this._initialized = false;
         }
         else {
-            image.src = this._makeURL( z, x, y );
+            this._resource  = new URLResource( data.url, {
+                transform: ( url: string, _type: any ) => ( {
+                    url,
+                    credentials: data.credentials,
+                    headers: data.http_header,
+                } ),
+            } );
+
+            this._format    = ( data.format ?? "png" ).replace( new RegExp( "^\\." ), "" );
+            this._size      = data.size ?? 256;
+            this._min_level = data.min_level;
+            this._max_level = data.max_level;
+
+            // タイル座標を並び替える関数
+            let orderCoords: OrderCoords | null = null;
+            if ( data && data.coord_order ) {
+                if ( data.coord_order === StandardImageProvider.CoordOrder.ZYX ) {
+                    orderCoords = function( z, x, y ) { return z + "/" + y + "/" + x; };
+                }
+                else if ( data.coord_order === StandardImageProvider.CoordOrder.XYZ ) {
+                    orderCoords = function( z, x, y ) { return x + "/" + y + "/" + z; };
+                }
+            }
+            const orderCoordsFixed = (
+                orderCoords ||
+                function( z, x, y ) { return z + "/" + x + "/" + y; } // その他の場合は既定値 COORD_ORDER_ZXY を使う
+            );
+
+            // XY 座標を変換する関数
+            let convCoords: OrderCoords | null = null;
+            if ( data && data.coord_system ) {
+                if ( data.coord_system === StandardImageProvider.CoordSystem.LOWER_LEFT ) {
+                    convCoords = function( z, x, y ) {
+                        var size = Math.round( Math.pow( 2, z ) );
+                        return orderCoordsFixed( z, x, size - y - 1 );
+                    };
+                }
+            }
+            if ( !convCoords ) {
+                // その他の場合は既定値 UPPER_LEFT (無変換) を使う
+                convCoords = orderCoordsFixed;
+            }
+
+            // 座標部分の URL を取得する関数
+            this._coords_part = convCoords;
+
+            this._pixel_format = data?.pixel_format ?? { type: "color" };
+            this._initialized = true;
         }
-
-        return image;  // 要求 ID (実態は Image)
     }
 
 
-    /**
-     */
-    override cancelRequest( _id: HTMLImageElement ): void
+    async init(): Promise<ImageProvider.Info> {
+        if ( !this._initialized ) {
+            const info = await this._resource.loadAsJson() as CloudInfoJson | ImageInfoJson;
+            if ( isCloudInfoJson( info ) ) {
+                const availableTypes = info.statuses.reduce( ( flags, item ) => {
+                    if ( item.status === "ready" ) {
+                        flags[item.type] = true;
+                    }
+                    return flags;
+                }, {} as {[key: string]: boolean } );
+                if ( availableTypes.image ) {
+                    this._resource = this._resource.resolveResource( info.url + ( info.url.endsWith( "/" ) ? "" : "/" ) + "image/" );
+                    this._loadAsImage( info.image as ImageInfoJson );
+                }
+                else {
+                    console.log( "couldn't find available type", info.statuses );
+                }
+            }
+            else {
+                this._loadAsImage( info );
+            }
+        }
+        return {
+            image_size: this._size,
+            zoom_level_range: new ImageProvider.Range( this._min_level, this._max_level ),
+            pixel_format: this._pixel_format,
+        };
+    }
+
+
+    private _loadAsImage( info: ImageInfoJson ) {
+        this._coords_part = ( z: number, x: number, y: number ) => { return z + "/" + x + "/" + y; };
+        this._format = info.format;
+        this._min_level = info.minzoom;
+        this._max_level = info.maxzoom;
+        this._size = 256;
+        this._pixel_format = { type: "color" };
+    }
+
+
+    /** @inheritDoc */
+    async requestTile( z: number, x: number, y: number ): Promise<ImageProvider.SupportedImageTypes>
     {
-        // TODO: Image 読み込みの取り消し方法は不明
+        const path = this._makePath( z, x, y );
+        return await this._resource.loadSubResourceAsImage( path );
     }
 
 
-    /**
-     */
-    override getImageSize(): number
+    /** @inheritDoc */
+    getImageSize(): number
     {
         return this._size;
     }
 
 
-    /**
-     */
-    override getZoomLevelRange(): ImageProvider.Range
+    /** @inheritDoc */
+    getZoomLevelRange(): ImageProvider.Range
     {
         return new ImageProvider.Range( this._min_level, this._max_level );
+    }
+
+
+    /** @inheritDoc */
+    getPixelFormat(): ImageProvider.ColorPixelFormat
+    {
+        return this._pixel_format;
     }
 
 
     /**
      * URL を作成
      */
-    private _makeURL( z: number, x: number, y: number ): string
+    private _makePath( z: number, x: number, y: number ): string
     {
-        return this._prefix + this._coords_part( z, x, y ) + this._suffix;
+        return this._coords_part( z, x, y ) + "." + this._format;
     }
 
 }
 
 
 
-namespace StandardImageProvider {
+export interface ResourceInfo {
 
+    /**
+     * URL（先頭文字列）
+     */
+    url: string;
 
+    /**
+     * クレデンシャルモード
+     */
+    credentials?: CredentialMode;
 
-export interface Option {
+    /**
+     * HTTPヘッダ
+     */
+    http_header?: HeadersInit;
+
+    /**
+     * フォーマット（拡張子として利用されます）
+     * @default "png"
+     */
+    format?: string;
+
+    /**
+     * 地図タイル画像の寸法
+     * @default 256
+     */
+    size?: number;
+
+    /*
+     * 最小ズームレベル
+     */
+    min_level: number;
+
+    /**
+     * 最大ズームレベル
+    */
+    max_level: number;
 
     /**
      * URL の座標順序
@@ -177,12 +256,12 @@ export interface Option {
      */
     coord_system?: StandardImageProvider.CoordSystem;
 
-    /**
-     * クレデンシャルモード
-     */
-    credentials?: CredentialMode;
 
-    http_header?: HeadersInit;
+    /**
+     * ピクセルフォーマット
+     * @default ImageProvider.ColorPixelFormat
+     */
+    pixel_format?: ImageProvider.ColorPixelFormat;
 }
 
 
@@ -210,7 +289,7 @@ export enum CoordOrder {
      * 座標順序 Z/X/Y
      */
     XYZ,
-};
+}
 
 
 
@@ -232,7 +311,7 @@ export enum CoordSystem {
      * 原点:左下, X軸:右方向, Y軸:上方向
      */
     LOWER_LEFT,
-};
+}
 
 
 
@@ -243,5 +322,29 @@ export enum CoordSystem {
 type OrderCoords = ( a: number, b: number, c: number ) => string;
 
 
+
+interface ImageInfoJson {
+    bounds: [ west: number, south: number, east: number, north: number ];
+    minzoom: number;
+    maxzoom: number;
+    format: "png" | "webp";
+}
+
+interface StatusJson {
+    type: "tiles" | "contour" | "info" | "heightmap" | "image";
+    status: "before_queued" | "queued" | "processing" | "ready" | "error";
+    error: string;
+}
+
+interface CloudInfoJson {
+    url: string;
+    statuses: StatusJson[];
+    image?: ImageInfoJson;
+}
+
+function isCloudInfoJson( info: CloudInfoJson | ImageInfoJson ): info is CloudInfoJson
+{
+    return "url" in info;
+}
 
 export default StandardImageProvider;

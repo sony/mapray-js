@@ -2,11 +2,25 @@ import DemProvider from "./DemProvider";
 
 
 /**
- * @summary クラウド DEM プロバイダ
- * @memberof mapray
- * @extends mapray.DemProvider
+ * クラウド DEM プロバイダ
  */
-class CloudDemProvider extends DemProvider<AbortController> {
+class CloudDemProvider extends DemProvider {
+
+    constructor( api_key: string ) {
+        super( new CloudDemProvider.Hook( api_key ) );
+    }
+
+}
+
+
+
+/**
+ */
+namespace CloudDemProvider {
+
+
+
+export class Hook implements DemProvider.Hook {
 
     private _headers: {
         'X-Api-Key': string;
@@ -17,41 +31,25 @@ class CloudDemProvider extends DemProvider<AbortController> {
      */
     constructor( api_key: string )
     {
-        super();
-
         this._headers = {
             'X-Api-Key': api_key
         };
     }
 
 
-    override requestTile( z: number, x: number, y: number, callback: DemProvider.RequestCallback ): AbortController
-    {
-        var actrl = new AbortController();
-
-        fetch( this._makeURL( z, x, y ), { headers: this._headers,
-                                           signal:  actrl.signal } )
-            .then( response => {
-                return response.ok ?
-                    response.arrayBuffer() : Promise.reject( Error( response.statusText ) );
-            } )
-            .then( buffer => {
-                // データ取得に成功
-                callback( buffer );
-            } )
-            .catch( () => {
-                // データ取得に失敗または取り消し
-                callback( null );
-            } );
-
-        return actrl;
+    init(): Promise<DemProvider.Info> {
+        return Promise.resolve( {} );
     }
 
 
-    override cancelRequest( id: AbortController )
+    async requestTile( z: number, x: number, y: number, options?: { signal?: AbortSignal } ): Promise<ArrayBuffer>
     {
-        var actrl = id;
-        actrl.abort();
+        const response = await fetch( this._makeURL( z, x, y ), {
+            headers: this._headers,
+            signal:  options?.signal,
+        } );
+        if ( !response.ok ) throw new Error( response.statusText );
+        return await response.arrayBuffer();
     }
 
 
@@ -67,6 +65,10 @@ class CloudDemProvider extends DemProvider<AbortController> {
     }
 
 }
+
+
+
+} // namespace CloudDemProvider
 
 
 

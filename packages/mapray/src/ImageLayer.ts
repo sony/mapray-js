@@ -18,7 +18,11 @@ import { Vector3 } from "./GeoMath";
  */
 class ImageLayer extends Layer {
 
-    private _image_provider: ImageProvider;
+    private _provider: ImageProvider;
+
+    private _info!: Required<ImageProvider.Info>;
+
+    private _status: Layer.Status = Layer.Status.NOT_LOADED;
 
     private _draw_type: ImageLayer.DrawType;
 
@@ -32,13 +36,13 @@ class ImageLayer extends Layer {
      */
     constructor( owner: LayerCollection, init: ImageLayer.Option | ImageProvider )
     {
-        const props: ImageLayer.Option = ( init instanceof ImageProvider ) ? { type: Layer.Type.IMAGE, image_provider: init } : init;
+        const props: ImageLayer.Option = ImageLayer.isOption( init ) ? init : { type: Layer.Type.IMAGE, image_provider: init };
         super( owner, props );
 
-        this._image_provider = props.image_provider;
+        this._provider = props.image_provider;
         this._draw_type = props.draw_type ?? ImageLayer.DrawType.NORMAL;
 
-        this._tile_cache = new TileTextureCache( this._glenv, this._image_provider, { pole_info: new Viewer.PoleInfo( props.pole ) } );
+        this._tile_cache = new TileTextureCache( this._glenv, this._provider, { pole_info: new Viewer.PoleInfo( props.pole ) } );
 
         const render_cache = this._viewer._render_cache || (this._viewer._render_cache = {});
         if ( this._draw_type === ImageLayer.DrawType.NIGHT ) {
@@ -54,16 +58,14 @@ class ImageLayer extends Layer {
             }
             this._material = render_cache.surface_material;
         }
-
-        // プロバイダの状態が変化したら描画レイヤーを更新
-        this._image_provider.status( () => { owner.dirtyDrawingLayers(); } );
     }
 
 
-    /**
-     * 画像プロバイダを取得
-     */
-    getImageProvider(): ImageProvider { return this._image_provider; }
+    override async init(): Promise<void>
+    {
+        await this._loadProvider();
+        await this._tile_cache.init();
+    }
 
 
     /**
@@ -79,25 +81,63 @@ class ImageLayer extends Layer {
     getTileCache(): TileTextureCache { return this._tile_cache; }
 
 
+    getZoomLevelRange(): ImageProvider.Range
+    {
+        return this._info.zoom_level_range;
+    }
+
+
+    /**
+     * 画像プロバイダを取得
+     */
+    get provider(): ImageProvider
+    {
+        return this._provider;
+    }
+
     /**
      * 画像プロバイダを設定
      *
      * @param provider  画像プロバイダ
      */
-    setImageProvider( provider: ImageProvider )
+    async setProvider( provider: ImageProvider )
     {
-        if ( this._image_provider !== provider ) {
-            // プロバイダを変更またはプロバイダの状態が変化したら描画レイヤーを更新
-            this._owner.dirtyDrawingLayers();
-            provider.status( () => { this._owner.dirtyDrawingLayers(); } );
+        if ( this._provider === provider ) {
+            return;
         }
 
-        this._image_provider = provider;
+        const tile_cache = new TileTextureCache( this._glenv, provider );
+        try {
+            await tile_cache.init();
 
-        // タイルキャッシュを再構築
-        this._tile_cache.dispose();
-        this._tile_cache = new TileTextureCache( this._glenv, provider );
+            this._tile_cache.dispose();
+            this._provider = provider;
+            this._tile_cache = tile_cache;
+
+            // プロバイダを変更またはプロバイダの状態が変化したら描画レイヤーを更新
+            this._owner.dirtyDrawingLayers();
+        }
+        catch ( err ) {
+            tile_cache.dispose();
+        }
     }
+
+
+    private async _loadProvider(): Promise<void>
+    {
+        try {
+            this._status = Layer.Status.LOADING;
+            this._info = await this._provider.init();
+            this._status = Layer.Status.LOADED;
+            // プロバイダの状態が変化したら描画レイヤーを更新
+            this._owner.dirtyDrawingLayers();
+        }
+        catch ( err ) {
+            this._status = Layer.Status.ERROR;
+            throw err;
+        }
+    }
+
 
 
     /**
@@ -118,7 +158,7 @@ class ImageLayer extends Layer {
      */
     override isReady(): boolean
     {
-        return this._image_provider.status() === ImageProvider.Status.READY;
+        return this._status === Layer.Status.LOADED;
     }
 
 
@@ -166,6 +206,11 @@ export interface Option extends Layer.Option {
     */
     pole?: PoleOption;
 
+}
+
+export function isOption( value: Option | ImageProvider ): value is Option
+{
+    return "image_provider" in value;
 }
 
 

@@ -80,12 +80,11 @@ class FlakeCollector {
         this._clip_planes = FlakeCollector._createClipPlanes( stage, this._globe );
 
         var             viewer = stage.viewer;
-        var       dem_provider = viewer.dem_provider;
         var tile_texture_cache = viewer.tile_texture_cache;
 
-        this._min_image_z = tile_texture_cache.getImageZMin();
+        this._min_image_z = tile_texture_cache.getZoomLevelRange().min;
 
-        var   dem_zbias = GeoMath.LOG2PI - dem_provider.getResolutionPower() + 1;  // b = log2π - ρ + 1
+        var   dem_zbias = GeoMath.LOG2PI - viewer.globe.rho + 1;  // b = log2π - ρ + 1
         this._max_zbias = Math.max( tile_texture_cache.getImageZBias(), dem_zbias );
 
         this._rflake_list = [];

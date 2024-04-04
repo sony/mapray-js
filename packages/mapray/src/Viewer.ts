@@ -242,6 +242,7 @@ class Viewer {
 
         await this._layers.init();
 
+        await this._tile_texture_cache.init();
         await this._globe.init();
 
         if ( this._atmosphere ) this._atmosphere.init( this );
@@ -375,7 +376,7 @@ class Viewer {
         if ( options.dem_provider )
             return options.dem_provider;
         else
-            return new StandardDemProvider( "/dem/", ".bin" );
+            return new StandardDemProvider( { prefix: "/dem/" } );
     }
 
 
@@ -398,7 +399,7 @@ class Viewer {
         if ( options.image_provider )
             return options.image_provider;
         else {
-            return new StandardImageProvider( "http://cyberjapandata.gsi.go.jp/xyz/std/", ".png", 256, 0, 18 );
+            return new StandardImageProvider( { url: "http://cyberjapandata.gsi.go.jp/xyz/std/", min_level: 0, max_level: 18 } );
         }
     }
 
@@ -757,7 +758,7 @@ class Viewer {
         }
 
         // 標高をサンプル
-        const ρ = globe.dem_provider.getResolutionPower();
+        const ρ = globe.rho;
         const size = 1 << ρ;               // 2^ρ
         const pow = Math.pow( 2, dem.z );  // 2^ze
         const uf = size * ( pow * xt - dem.x );
@@ -947,13 +948,20 @@ class Viewer {
      * @param provider          画像プロバイダ
      * @param clear_cache       切り替え時にキャッシュをクリアするか
      */
-    setImageProvider( provider: ImageProvider, clear_cache: boolean = true ): void
+    async setImageProvider( provider: ImageProvider, clear_cache: boolean = true ): Promise<void>
     {
+        if ( this._image_provider === provider ) {
+            return;
+        }
+
+        await provider.init();
+
         this._image_provider = provider;
         if ( clear_cache ) {
             this._tile_texture_cache.dispose();
         }
-        this.tile_texture_cache.setProvider( provider );
+        await this.tile_texture_cache.setProvider( provider );
+        this.layers.dirtyDrawingLayers();
     }
 
 

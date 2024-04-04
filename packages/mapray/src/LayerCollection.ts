@@ -120,11 +120,8 @@ class LayerCollection {
 
     private _createLayer( layer: ImageLayer.Option | ContourLayer.Option | ImageProvider ): ImageLayer | ContourLayer
     {
-        return (
-            layer instanceof ImageProvider  ? new ImageLayer( this, layer ):
-            layer.type === Layer.Type.IMAGE ? new ImageLayer( this, layer ):
-            new ContourLayer( this, layer )
-        );
+        const isContour = "type" in layer && layer.type === Layer.Type.CONTOUR;
+        return isContour ? new ContourLayer( this, layer ): new ImageLayer( this, layer as ImageLayer.Option | ImageProvider );
     }
 
 
