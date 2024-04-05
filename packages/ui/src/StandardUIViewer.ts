@@ -115,6 +115,8 @@ class StandardUIViewer extends mapray.RenderCallback
 
     private _altitude_range: { min: number, max: number };
 
+    private _min_zoom_limit: number;
+
     private _buf_matrix1: mapray.Matrix;
     private _buf_matrix2: mapray.Matrix;
 
@@ -192,6 +194,7 @@ class StandardUIViewer extends mapray.RenderCallback
             min: StandardUIViewer.ALTITUDE_RANGE.min,
             max: StandardUIViewer.ALTITUDE_RANGE.max || Number.MAX_VALUE,
         };
+        this._min_zoom_limit = StandardUIViewer.DEFAULT_MIN_ZOOM_LIMIT;
 
         this._buf_matrix1 = GeoMath.createMatrix();
         this._buf_matrix2 = GeoMath.createMatrix();
@@ -625,8 +628,7 @@ class StandardUIViewer extends mapray.RenderCallback
         const center_position = GeoMath.createVector2( [canvas.width / 2, canvas.height / 2] );
 
         // レイと地表の交点を求める
-        const ray = viewer.camera.getCanvasRay( center_position, new mapray.Ray() );
-        const pickResult = viewer.pickWithRay( ray );
+        const pickResult = viewer.pick( center_position );
         if ( !pickResult ) {
             return undefined;
         }
@@ -705,6 +707,19 @@ class StandardUIViewer extends mapray.RenderCallback
 
 
     /**
+     * カメラズームイン操作で近づくことのできる最小距離[m]を設定します。
+     * 設定後のズームイン操作で有効になります。
+     *
+     * @param min_zoom_limit 最小距離
+     * @experimental
+     */
+    setCameraZoomLimit( min_zoom_limit: number ): void
+    {
+        this._min_zoom_limit = min_zoom_limit;
+    }
+
+
+    /**
      * 操作系のイベントをリセットする
      */
     resetOpEvent(): void
@@ -753,8 +768,7 @@ class StandardUIViewer extends mapray.RenderCallback
             if ( event.shiftKey ) {
                 this._operation_mode = StandardUIViewer.OperationMode.ROTATE;
 
-                const ray = viewer.camera.getCanvasRay( this._mouse_down_position );
-                const pickResult = viewer.pickWithRay( ray );
+                const pickResult = viewer.pick( this._mouse_down_position );
                 this._rotate_center = pickResult ? pickResult.position : undefined;
             }
             else if ( event.ctrlKey ) {
@@ -768,8 +782,7 @@ class StandardUIViewer extends mapray.RenderCallback
         else if ( event.button === 1 ) {
             this._operation_mode = StandardUIViewer.OperationMode.ROTATE;
 
-            const ray = viewer.camera.getCanvasRay( this._mouse_down_position );
-            const pickResult = viewer.pickWithRay( ray );
+            const pickResult = viewer.pick( this._mouse_down_position );
             this._rotate_center = pickResult ? pickResult.position : undefined;
         }
         // 右ボタン
@@ -1083,15 +1096,14 @@ class StandardUIViewer extends mapray.RenderCallback
             }
 
             const camera = viewer.camera;
-            let ray = camera.getCanvasRay( this._mouse_down_position );
-            const pickResult_start = viewer.pickWithRay( ray );
+            const pickResult_start = viewer.pick( this._mouse_down_position );
 
             const end_mouse_position = GeoMath.createVector2([
                     this._mouse_down_position[0] + this._translate_drag[0],
                     this._mouse_down_position[1] + this._translate_drag[1]
             ]);
-            ray = camera.getCanvasRay( end_mouse_position );
-            const pickResult_end = viewer.pickWithRay( ray );
+            const ray = camera.getCanvasRay( end_mouse_position );
+            const pickResult_end = viewer.pick( end_mouse_position );
 
             if ( !pickResult_start || !pickResult_end ) {
                 return;
@@ -1280,21 +1292,41 @@ class StandardUIViewer extends mapray.RenderCallback
         const camera = viewer.camera;
 
         // 移動中心
-        const ray = camera.getCanvasRay( this._mouse_down_position );
-        const pickResult = viewer.pickWithRay( ray );
+        const pickResult = viewer.pick( this._mouse_down_position );
 
-        if ( !pickResult ) {
-            return;
+        let translation_center: mapray.Vector3;
+        if ( pickResult ) {
+            translation_center = pickResult.position;
         }
-        const translation_center =  pickResult.position;
+        else {
+            if ( zoom < 1.0 ) {
+                return;
+            }
+            const pivot_distance = this._min_zoom_limit;
+            const ray = camera.getCanvasRay( this._mouse_down_position );
+
+            translation_center = GeoMath.createVector3( [
+                ray.position[0] + ray.direction[0] * pivot_distance,
+                ray.position[1] + ray.direction[1] * pivot_distance,
+                ray.position[2] + ray.direction[2] * pivot_distance,
+            ] );
+        }
 
         const center_spherical_position = new mapray.GeoPoint();
         center_spherical_position.setFromGocs( translation_center );
 
         const translation_vector = GeoMath.createVector3();
-        translation_vector[0] = (translation_center[0] - camera.view_to_gocs[12]) * zoom;
-        translation_vector[1] = (translation_center[1] - camera.view_to_gocs[13]) * zoom;
-        translation_vector[2] = (translation_center[2] - camera.view_to_gocs[14]) * zoom;
+        translation_vector[0] = translation_center[0] - camera.view_to_gocs[12];
+        translation_vector[1] = translation_center[1] - camera.view_to_gocs[13];
+        translation_vector[2] = translation_center[2] - camera.view_to_gocs[14];
+
+        const dist = GeoMath.length3( translation_vector );
+        const actual_zoom = (
+            1.0 <= zoom ? zoom:                        // ズームアウト時は制限なし（以下ズームイン）
+            this._min_zoom_limit < dist * zoom ? zoom: // 通常のズーム操作をして制限を超えないなら制限なし
+            this._min_zoom_limit / dist                // 距離が this._min_distance となるようにズーム
+        );
+        GeoMath.scale3( actual_zoom, translation_vector, translation_vector );
 
         const new_camera_gocs_position = GeoMath.sub3( translation_center, translation_vector, GeoMath.createVector3() );
         const new_camera_spherical_position = new mapray.GeoPoint();
@@ -2297,7 +2329,10 @@ export const DEFAULT_LOOKAT_POSITION = { latitude: 35.360626, longitude: 138.727
 export const DEFAULT_CAMERA_PARAMETER = { fov: 60, near: 30, far: 500000, speed_factor: 2000 };
 
 // カメラと地表面までの最低距離
-export const ALTITUDE_RANGE = { min: 2.0, max: undefined };
+export const ALTITUDE_RANGE: { min: number, max?: number } = { min: 2.0, max: undefined };
+
+// ズームインで近寄れる最小距離[m]
+export const DEFAULT_MIN_ZOOM_LIMIT = 0.1;
 
 // 最小近接平面距離 (この値は ALTITUDE_RANGE.min * 0.5 より小さい値を指定します)
 export const MINIMUM_NEAR = 1.0;
