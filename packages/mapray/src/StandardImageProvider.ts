@@ -31,6 +31,8 @@ class StandardImageProvider extends ImageProvider<HTMLImageElement> {
 
     private _crossOrigin: string | null;
 
+    private _http_header: HeadersInit | null;
+
 
     /**
      * @param prefix  URL の先頭文字列
@@ -92,6 +94,8 @@ class StandardImageProvider extends ImageProvider<HTMLImageElement> {
                 this._crossOrigin = "use-credentials";
             }
         }
+
+        this._http_header = opts?.http_header ?? null;
     }
 
 
@@ -108,7 +112,14 @@ class StandardImageProvider extends ImageProvider<HTMLImageElement> {
             image.crossOrigin = this._crossOrigin;
         }
 
-        image.src = this._makeURL( z, x, y );
+        if ( this._http_header ) {
+            fetch( this._makeURL( z, x, y ), { headers: this._http_header } )
+            .then(res => res.blob())
+            .then(data => image.src = URL.createObjectURL( data ) );
+        }
+        else {
+            image.src = this._makeURL( z, x, y );
+        }
 
         return image;  // 要求 ID (実態は Image)
     }
@@ -159,17 +170,19 @@ export interface Option {
     /**
      * URL の座標順序
      */
-    coord_order: StandardImageProvider.CoordOrder;
+    coord_order?: StandardImageProvider.CoordOrder;
 
     /**
      * タイル XY 座標系
      */
-    coord_system: StandardImageProvider.CoordSystem;
+    coord_system?: StandardImageProvider.CoordSystem;
 
     /**
      * クレデンシャルモード
      */
-    credentials: CredentialMode;
+    credentials?: CredentialMode;
+
+    http_header?: HeadersInit;
 }
 
 
