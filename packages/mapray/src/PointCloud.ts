@@ -1316,9 +1316,9 @@ export class Box {
         if ( statistics ) statistics.created_boxes++;
         return this._children[ index ] = new Box( this,
             this.level + 1,
-            this.x << 1 | u,
-            this.y << 1 | v,
-            this.z << 1 | w
+            (this.x * 2) + u,
+            (this.y * 2) + v,
+            (this.z * 2) + w
         );
     }
 
