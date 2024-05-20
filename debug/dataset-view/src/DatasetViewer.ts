@@ -45,7 +45,7 @@ class DatasetViewer extends DebugViewer {
         // Night Layer
         this.addLayer( {
             type: mapray.Layer.Type.IMAGE,
-            image_provider: new mapray.StandardImageProvider("https://opentiles.mapray.com/xyz/night-satellite/", ".png", 256, 0, 8),
+            image_provider: new mapray.StandardImageProvider({ url: "https://opentiles.mapray.com/xyz/night-satellite/", min_level: 0, max_level: 8 }),
             opacity: 1.0,
             draw_type: mapray.ImageLayer.DrawType.NIGHT,
             pole: {

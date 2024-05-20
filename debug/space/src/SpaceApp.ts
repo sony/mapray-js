@@ -481,7 +481,7 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
      private _createLayerImageProvider()
     {
         // night image
-        return new mapray.StandardImageProvider("https://opentiles.mapray.com/xyz/night-satellite/", ".png", 256, 0, 8);
+        return new mapray.StandardImageProvider({ url: "https://opentiles.mapray.com/xyz/night-satellite/", format: ".png", min_level: 0, max_level: 8 });
     }
 
     /**
@@ -570,7 +570,7 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
             const bbox_geoms: mapray.MarkerLineEntity[] = [];
             if ( mode === "raw" ) {
                 const resource = maprayApi.getPointCloudDatasetAsResource( process.env.DATASET_POINT_CLOUD_ID as string );
-                const point_cloud = point_cloud_collection.add( new mapray.RawPointCloudProvider( resource ) );
+                const point_cloud = point_cloud_collection.add( new mapray.StandardPointCloudProvider( resource ) );
                 pointCloudList.push( point_cloud );
 
                 const datasets = await maprayApi.loadPointCloudDatasets();

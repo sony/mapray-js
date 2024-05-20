@@ -6,9 +6,9 @@ import TOption, { TDomTool } from "../TOption";
 
 
 const DEFAULT_IMAGE_PROVIDERS = TOption.keyValues<ImageProvider>([
-    [ 'Standard',      new mapray.StandardImageProvider( "http://cyberjapandata.gsi.go.jp/xyz/std/", ".png", 256, 0, 18 )],
-    [ 'Seamlessphoto', new mapray.StandardImageProvider( "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", ".jpg", 256, 2, 18 )],
-    [ 'Night',         new mapray.StandardImageProvider( "https://opentiles.mapray.com/xyz/night-satellite/", ".png", 256, 0, 8)],
+    [ 'Standard',      new mapray.StandardImageProvider( { url: "http://cyberjapandata.gsi.go.jp/xyz/std/", min_level: 0, max_level: 18 } )],
+    [ 'Seamlessphoto', new mapray.StandardImageProvider( { url: "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", format: "jpg", min_level: 2, max_level: 18 } )],
+    [ 'Night',         new mapray.StandardImageProvider( { url: "https://opentiles.mapray.com/xyz/night-satellite/", min_level: 0, max_level: 8 } )],
 ]);
 
 if ( process.env.BINGMAP_ACCESS_TOKEN ) {
@@ -52,21 +52,15 @@ export default class LayerModule extends Module {
 
     protected override async doLoadData(): Promise<void>
     {
-        this._layer_table.appendChild( this.addLayer(mapray.Layer.Type.CONTOUR) );
     }
 
 
     protected async doUnloadData(): Promise<void>
     {
-        this._counter = 0;
-        while ( this._layer_table.firstChild ) {
-            this.debugViewer.removeLayer( this.debugViewer.getLayerNum() - 1 );
-            this._layer_table.removeChild( this._layer_table.firstChild );
-        }
     }
 
 
-    addLayer( type: mapray.Layer.Type ) {
+    async addLayer( type: mapray.Layer.Type ) {
 
         const toption = TOption.create({
             "visibility": {
@@ -137,7 +131,7 @@ export default class LayerModule extends Module {
 
         const isMap = type === mapray.Layer.Type.IMAGE;
         // レイヤーを末尾に追加
-        this.debugViewer.addLayer( isMap ? {
+        const layer = await this.debugViewer.addLayer( isMap ? {
             type: type,
             visibility: toption.get("visibility"),
             opacity: toption.get("opacity"),
@@ -157,8 +151,6 @@ export default class LayerModule extends Module {
             color: toption.get("color"),
         });
 
-        const layer = this.debugViewer.getLayer( this.debugViewer.getLayerNum() - 1 );
-
         const heading = document.createElement("div");
         heading.appendChild(TDomTool.createCheckboxOption(toption.getProperty( "visibility" ), { name: `Layer ${++this._counter}` }));
 
@@ -167,7 +159,7 @@ export default class LayerModule extends Module {
         paramPane.style.margin = "0 0 10px 20px";
         if ( layer instanceof mapray.ImageLayer ) {
             paramPane.appendChild(TDomTool.createSelectOption(toption.getProperty( "provider" )));
-            toption.onChange("provider", event => { layer.setImageProvider( event.value ) });
+            toption.onChange("provider", event => { layer.setProvider( event.value ) });
         }
         else if ( layer instanceof mapray.ContourLayer ) {
             paramPane.appendChild(TDomTool.createSliderOption(toption.getProperty( "interval" ), { mode: "key-value-table-row" }));
@@ -226,7 +218,7 @@ export default class LayerModule extends Module {
         bottom_table.appendChild(TDomTool.createButton( "Add", {
             onclick: async () => {
                 if ( this.debugViewer.getLayerNum() < 6 ) {
-                    layer_table.appendChild( this.addLayer( toption.get( "layer type" ) ) );
+                    layer_table.appendChild( await this.addLayer( toption.get( "layer type" ) ) );
                 }
             }
         }));

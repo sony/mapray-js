@@ -590,7 +590,7 @@ class DebugViewer extends maprayui.StandardUIViewer {
         const cloudApi = this.cloudApi as mapray.cloud.CloudApi;
         const point_cloud_collection = this.viewer.point_cloud_collection;
         const resource = cloudApi.getPointCloudDatasetAsResource( dataset_id );
-        const point_cloud = point_cloud_collection.add( new mapray.RawPointCloudProvider( resource ) );
+        const point_cloud = point_cloud_collection.add( new mapray.StandardPointCloudProvider( resource ) );
 
         const datasets = await cloudApi.loadPointCloudDatasets();
         console.log( datasets );

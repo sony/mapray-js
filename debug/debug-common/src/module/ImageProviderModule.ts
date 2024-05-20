@@ -6,9 +6,9 @@ import TOption, { TDomTool } from "../TOption";
 
 
 const DEFAULT_IMAGE_PROVIDERS = TOption.keyValues<ImageProvider>([
-    [ 'Standard',      new mapray.StandardImageProvider( "http://cyberjapandata.gsi.go.jp/xyz/std/", ".png", 256, 0, 18 )],
-    [ 'Seamlessphoto', new mapray.StandardImageProvider( "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", ".jpg", 256, 2, 18 )],
-    [ 'Night',         new mapray.StandardImageProvider( "https://opentiles.mapray.com/xyz/night-satellite/", ".png", 256, 0, 8)],
+    [ 'Standard',      new mapray.StandardImageProvider( { url: "http://cyberjapandata.gsi.go.jp/xyz/std/", min_level: 0, max_level: 18 } )],
+    [ 'Seamlessphoto', new mapray.StandardImageProvider( { url: "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", format: "jpg", min_level: 2, max_level: 18 } )],
+    [ 'Night',         new mapray.StandardImageProvider( { url: "https://opentiles.mapray.com/xyz/night-satellite/", min_level: 0, max_level: 8 } )],
 ]);
 
 if ( process.env.BINGMAP_ACCESS_TOKEN ) {

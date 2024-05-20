@@ -430,7 +430,7 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
             const time_info_handler = this._time_info_enabled ? pushTimeInfo : undefined;
             if ( mode === "raw-cloud" ) {
                 const resource = maprayApi.getPointCloudDatasetAsResource( process.env.DATASET_POINT_CLOUD_ID as string );
-                const point_cloud = point_cloud_collection.add( new mapray.RawPointCloudProvider( resource ) );
+                const point_cloud = point_cloud_collection.add( new mapray.StandardPointCloudProvider( resource ) );
                 pointCloudList.push( point_cloud );
 
                 const datasets = await maprayApi.loadPointCloudDatasets();
@@ -456,7 +456,7 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
                     "https://storage.googleapis.com/inou-dev-mapray-additional-resources/pc/hamamatsu-castle/raw/info.json",
                 ];
                 urls.forEach(url => {
-                        pointCloudList.push(point_cloud_collection.add(new mapray.RawPointCloudProvider( { url }, { time_info_handler } )));
+                        pointCloudList.push(point_cloud_collection.add(new mapray.StandardPointCloudProvider( { url }, { time_info_handler } )));
                 });
             }
 
@@ -465,7 +465,7 @@ class PointCloudViewer extends maprayui.StandardUIViewer {
                     "http://localhost:8888/point-cloud/hamamatsu-castle/output/raw/info.json",
                 ];
                 urls.forEach(url => {
-                        pointCloudList.push(point_cloud_collection.add(new mapray.RawPointCloudProvider( { url }, { time_info_handler } )));
+                        pointCloudList.push(point_cloud_collection.add(new mapray.StandardPointCloudProvider( { url }, { time_info_handler } )));
                 });
             }
 

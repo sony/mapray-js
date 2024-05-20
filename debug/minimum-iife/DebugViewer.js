@@ -2,7 +2,7 @@
 class DebugViewer extends maprayui.StandardUIViewer {
     constructor(container, Option = {}) {
         // Set Access Token
-        var accessToken = "<your access token here>";
+        var accessToken = "MTY2NTA1NDQwMTUxMWJmMzdjMTRmMDk0YjU2ZGI4";
 
         super(container, accessToken, {
             debug_stats: new mapray.DebugStats(),

@@ -1,25 +1,42 @@
 import mapray from "@mapray/mapray-js";
 
-const ImageProvider = mapray.ImageProvider;
 
 type Callback = (status: any) => void;
 
+
+
 /**
  * Bing Maps 画像プロバイダ
- * @memberof mapray
- * @extends mapray.ImageProvider
+ *
+ * Bing Maps で配信されている画像タイルを読み込む画像プロバイダです。
+ * 利用するには BingMaps のキーが必要です。
  */
-class BingMapsImageProvider extends ImageProvider {
+class BingMapsImageProvider extends mapray.ImageProvider {
 
-    private _status: any;
+    constructor( options: BingMapsImageProvider.Option = {} ) {
+        super( new BingMapsImageProvider.Hooks( options ) );
+    }
+
+}
+
+
+
+namespace BingMapsImageProvider {
+
+
+
+/**
+ * Bing Maps 画像プロバイダフック
+ */
+export class Hooks implements mapray.ImageProvider.Hook {
+
+    private _options: BingMapsImageProvider.Option;
 
     private _size?: number;
 
     private _min_level?: number;
 
     private _max_level?: number;
-
-    private _callbacks: Callback[];
 
     /* サブドメインとカルチャを置き換えた URL テンプレート */
     private _templ_urls!: string[];
@@ -36,19 +53,12 @@ class BingMapsImageProvider extends ImageProvider {
      */
     constructor( options: BingMapsImageProvider.Option = {} )
     {
-        super();
-
-        const opts = options;
-
-        this._status    = mapray.ImageProvider.Status.NOT_READY;
-        this._callbacks = [];
+        this._options = options;
 
         this._size       = undefined;
         this._min_level  = undefined;
         this._max_level  = options.maxLevel;
         this._counter    = 0;
-
-        this._load_matadata( opts );
     }
 
 
@@ -56,31 +66,20 @@ class BingMapsImageProvider extends ImageProvider {
      * メターデータの読み込み
      * @see https://msdn.microsoft.com/en-us/library/mt823633.aspx
      */
-     private _load_matadata( opts: BingMapsImageProvider.Option )
+    async init( options?: { signal?: AbortSignal } )
     {
+        const opts = this._options;
         let url = BingMapsImageProvider.TemplMetadataURL;
         url = url.replace( '{key}', opts.key || '' );
         url = url.replace( '{imagerySet}', opts.imagerySet || BingMapsImageProvider.DefaultImagerySet );
         url = url.replace( /\{uriScheme\}/g, opts.uriScheme || BingMapsImageProvider.DefaultUriScheme );
 
-        fetch( url )
-            .then( response => {
-                return response.ok ?
-                    response.json() : Promise.reject( Error( response.statusText ) );
-            } )
-            .then( json => {
-                this._analyze_matadata( json, opts );
-                this._status = mapray.ImageProvider.Status.READY;
-            } )
-            .catch( err => {
-                console.error( "BingMapsImageProvider: " + err.message );
-                this._status = mapray.ImageProvider.Status.FAILED;
-            } ).then( () => {
-                // 状態変化を通知
-                for ( let i = 0; i < this._callbacks.length; ++i ) {
-                    this._callbacks[i]( this._status );
-                }
-            } );
+        const response = await fetch( url, { signal: options?.signal });
+        if ( !response.ok ) {
+            throw new Error( response.statusText );
+        }
+        const json = await response.json();
+        return this._analyze_matadata( json, opts );
     }
 
 
@@ -88,7 +87,7 @@ class BingMapsImageProvider extends ImageProvider {
      * メターデータの解析
      * @see https://msdn.microsoft.com/en-us/library/ff701716.aspx
      */
-    private _analyze_matadata( json: any, opts: BingMapsImageProvider.Option )
+    private _analyze_matadata( json: any, opts: BingMapsImageProvider.Option ): mapray.ImageProvider.Info
     {
         const resource = json.resourceSets[0].resources[0];
 
@@ -103,65 +102,23 @@ class BingMapsImageProvider extends ImageProvider {
         this._min_level  = resource.zoomMin;
         this._max_level  = this._max_level || resource.zoomMax;
         this._templ_urls = resource.imageUrlSubdomains.map( (subdomain: string) => templ.replace( '{subdomain}', subdomain ) );
-    }
 
-    /**
-     * @override
-     */
-    status( callback: Callback )
-    {
-        if ( this._status === mapray.ImageProvider.Status.NOT_READY ) {
-            if ( callback ) {
-                this._callbacks.push( callback );
-            }
-        }
-        return this._status;
+        return {
+            image_size: this._size,
+            zoom_level_range: new mapray.ImageProvider.Range( resource.zoomMin, this._max_level || resource.zoomMax ),
+        };
     }
 
 
-    /**
-     * @override
-     */
-    requestTile( z: number, x: number, y:number, callback: Callback )
+    requestTile( z: number, x: number, y:number )
     {
-        const image = new Image();
-
-        image.onload  = function() { callback( image ); };
-        image.onerror = function() { callback( null );  };
-
-        image.crossOrigin = "anonymous";
-        image.src         = this._makeURL( z, x, y );
-
-        return image;  // 要求 ID (実態は Image)
-    }
-
-
-    /**
-     * @override
-     */
-    cancelRequest( id: object )
-    {
-    }
-
-
-    /**
-     * @override
-     */
-    getImageSize(): number
-    {
-        return this._size !== undefined ? this._size : 0;
-    }
-
-
-    /**
-     * @override
-     */
-    getZoomLevelRange()
-    {
-        if ( this._min_level === undefined || this._max_level === undefined ) {
-            throw new Error("min_level or max_level is not defined");
-        }
-        return new ImageProvider.Range( this._min_level, this._max_level );
+        return new Promise<HTMLImageElement>( ( resolve, reject ) => {
+            const image = new Image();
+            image.onload      = () => resolve( image );
+            image.onerror     = () => reject( new Error( "Failed to load image: " + z + "/" + x + "/" + y ) );
+            image.crossOrigin = "anonymous";
+            image.src         = this._makeURL( z, x, y );
+        } );
     }
 
 
@@ -186,10 +143,6 @@ class BingMapsImageProvider extends ImageProvider {
     }
 
 }
-
-
-
-namespace BingMapsImageProvider {
 
 
 
