@@ -5,7 +5,6 @@
 precision mediump float;
 
 uniform sampler2D u_image;      // contour画像
-uniform float u_margin;
 
 varying float v_light;
 varying float v_level;
