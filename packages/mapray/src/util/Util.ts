@@ -48,6 +48,28 @@ const cancelAnimationFrame = (
 
 
 
+/* Promise.withResolvers 互換関数
+ * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/withResolvers
+ */
+export function withResolvers<T>(): WithResolversResult<T> {
+    const result: Partial<WithResolversResult<T>> = {};
+    result.promise = new Promise<T>( ( resolve_, reject_ ) => {
+        result.resolve = resolve_;
+        result.reject = reject_;
+    } );
+    return result as WithResolversResult<T>;
+}
+
+
+interface WithResolversResult<T> {
+    promise: Promise<T>;
+    resolve: ( value: T | PromiseLike<T> ) => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    reject: ( reason?: any ) => void;
+}
+
+
+
 /* Performance.now 互換関数
  * @see https://developer.mozilla.org/en-US/docs/Web/API/Performance/now
  * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now
