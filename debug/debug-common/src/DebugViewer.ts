@@ -243,6 +243,7 @@ class DebugViewer extends maprayui.StandardUIViewer {
 
     public async init(): Promise<void>
     {
+        await this.viewer.init_promise;
         const modules: Module[] = [];
         this.populateModules( modules );
         for ( const module of modules ) {
