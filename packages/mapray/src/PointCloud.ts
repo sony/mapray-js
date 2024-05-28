@@ -1393,11 +1393,16 @@ export class Box {
             if ( !target_cells ) {
                 // draw whole points
                 const ppp = points_per_pixels[ 0 ];
-                material.setPointSize(
-                    point_size_type === PointCloud.PointSizeType.PIXEL       ? point_size:
-                    point_size_type === PointCloud.PointSizeType.MILLIMETERS ? -0.001 * point_size / render_stage.pixel_step:
-                    Math.min( point_size_limit, Math.max( 1.0, overlap_scale / ppp ) )
-                );
+                if ( render_stage.getRenderTarget() === RenderStage.RenderTarget.SCENE ) {
+                    material.setPointSize(
+                        point_size_type === PointCloud.PointSizeType.PIXEL       ? point_size:
+                        point_size_type === PointCloud.PointSizeType.MILLIMETERS ? -0.001 * point_size / render_stage.pixel_step:
+                        Math.min( point_size_limit, Math.max( 1.0, overlap_scale / ppp ) )
+                    );
+                }
+                else {
+                    material.setPointSize( Math.min( 10000, Math.max( 1.0, overlap_scale / ppp ) ) );
+                }
                 material.setDebug( debug_shader ? 0.5 / ppp : -1.0 );
                 gl.drawArrays( gl.POINTS, 0, this._vertex_length );
             }
@@ -1405,11 +1410,16 @@ export class Box {
                 // draw only target regions
                 for ( let i=0; i<target_cells.length; i++ ) {
                     const ppp = points_per_pixels[ i ];
-                    material.setPointSize(
-                        point_size_type === PointCloud.PointSizeType.PIXEL       ? point_size:
-                        point_size_type === PointCloud.PointSizeType.MILLIMETERS ? -0.001 * point_size / render_stage.pixel_step:
-                        Math.min( point_size_limit, Math.max( 1.0, overlap_scale / ppp ) )
-                    );
+                    if ( render_stage.getRenderTarget() === RenderStage.RenderTarget.SCENE ) {
+                        material.setPointSize(
+                            point_size_type === PointCloud.PointSizeType.PIXEL       ? point_size:
+                            point_size_type === PointCloud.PointSizeType.MILLIMETERS ? -0.001 * point_size / render_stage.pixel_step:
+                            Math.min( point_size_limit, Math.max( 1.0, overlap_scale / ppp ) )
+                        );
+                    }
+                    else {
+                        material.setPointSize( Math.min( 10000, Math.max( 1.0, overlap_scale / ppp ) ) );
+                    }
                     material.setDebug( debug_shader ? 0.5 / ppp : -1.0 );
                     const childIndex = target_cells[ i ];
                     const offset = childIndex > 0 ? this._metaInfo.indices[childIndex - 1] : 0;
