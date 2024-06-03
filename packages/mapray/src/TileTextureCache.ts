@@ -115,7 +115,7 @@ class TileTextureCache {
             for ( let i=0; i<this._belts.length; i++ ) {
                 const belt = this._belts[i];
                 if ( belt._belt_y === 0 ) {
-                    belt.setImageProvider( this, provider );
+                    belt.setProvider( this, provider );
                 }
             }
         }
@@ -349,7 +349,7 @@ class Belt {
         }
         this._use_mipmap = false;
 
-        this.setImageProvider( owner, (
+        this.setProvider( owner, (
                 belt_y < 0 ? owner.npole_provider:
                 belt_y > 0 ? owner.spole_provider:
                 owner.main_provider
@@ -365,7 +365,7 @@ class Belt {
      * - `_max_image_z`
      * - `_image_zbias`
      */
-    private _setImageProviderInner( provider: ImageProvider ): void
+    private _setProviderInner( provider: ImageProvider ): void
     {
         this._provider = provider;
 
@@ -406,12 +406,12 @@ class Belt {
      * @param owner    TileTextureCache
      * @param provider ImageProvider
      */
-    setImageProvider( owner: TileTextureCache, provider: ImageProvider ): void
+    setProvider( owner: TileTextureCache, provider: ImageProvider ): void
     {
         const status_callback: ImageProvider.StatusCallback = ( status ) => {
             if ( status === ImageProvider.Status.READY ) {
                 // EmptyImageProvider から本来の provider に切り替える
-                this._setImageProviderInner( provider );
+                this._setProviderInner( provider );
             }
             else if ( status === ImageProvider.Status.FAILED ) {
                 // provider が READY 状態にならなかった
@@ -421,7 +421,7 @@ class Belt {
 
         new NodeReplacer( this, this._croot );
         const is_provider_ready = (provider.status( status_callback ) === ImageProvider.Status.READY);
-        this._setImageProviderInner( is_provider_ready ? provider : new EmptyImageProvider() );
+        this._setProviderInner( is_provider_ready ? provider : new EmptyImageProvider() );
     }
 
 
