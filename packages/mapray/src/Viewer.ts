@@ -953,7 +953,7 @@ class Viewer {
         if ( clear_cache ) {
             this._tile_texture_cache.dispose();
         }
-        this.tile_texture_cache.setImageProvider( provider );
+        this.tile_texture_cache.setProvider( provider );
     }
 
 

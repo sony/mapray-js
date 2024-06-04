@@ -106,7 +106,7 @@ class TileTextureCache {
      * @param provider  地図画像プロバイダ
      * @param pole_info Pole情報
      */
-    setImageProvider( provider: ImageProvider ): void
+    setProvider( provider: ImageProvider ): void
     {
         if ( this._main_provider !== provider ) {
             this._main_provider = provider;
