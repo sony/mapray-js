@@ -719,9 +719,7 @@ export class Box {
     /**
      * @internal
      */
-    private _loadId?: number;
-
-    private _abort_controller!: AbortController; // @ToDo: 必要性を確認
+    private _abort_controller?: AbortController;
 
     private _debugMesh?: Mesh[];
 
@@ -1174,102 +1172,112 @@ export class Box {
      * 点群の読み込み処理
      */
     async load(): Promise<void> {
-        if ( this._status !== PointCloud.Status.NOT_LOADED ) throw new Error( "illegal status: " + this._status );
         if ( !this._owner.provider.isReady() ) return;
         this._status = Box.Status.LOADING;
 
-        const task = this._owner.provider.load( this.level, this.x, this.y, this.z );
-        this._loadId = task.id;
-        return task.done.then(event => {
-                if ( this._status === PointCloud.Status.DESTROYED ) {
-                    return;
+        try {
+            this._abort_controller = new AbortController();
+            const event = await this._owner.provider.requestTile( this.level, this.x, this.y, this.z, {
+                signal: this._abort_controller.signal,
+            } );
+
+            // @ts-ignore
+            if ( this._status === PointCloud.Status.DESTROYED ) {
+                return;
+            }
+            const children = [];
+            {
+                let childFlags = event.header.childFlags;
+                for ( let i=7; i>=0; --i ) {
+                    if (childFlags & 1) {
+                        children[i] = {};
+                    }
+                    childFlags = childFlags >> 1;
                 }
-                const children = [];
-                {
-                    let childFlags = event.header.childFlags;
-                    for ( let i=7; i>=0; --i ) {
-                        if (childFlags & 1) {
-                            children[i] = {};
-                        }
-                        childFlags = childFlags >> 1;
+            }
+            this._metaInfo = {
+                children: children,
+                indices: event.header.indices,
+            };
+
+            this.average = event.header.average;
+            this.eigenVector = event.header.eigenVector;
+            this.eigenVectorLength = event.header.eigenVectorLength;
+            this.debug1 = event.header.debug1;
+
+            const values = event.body;
+            // console.assert( values.length > 0 );
+            // console.assert( values.length / 6 === this._metaInfo.indices[7] );
+
+            ASSERT: {
+                const number_of_points = values.length / 6;
+                for ( let i=0; i<8; ++i ) {
+                    if (this._metaInfo.indices[i] > number_of_points) {
+                        console.log("warning fix indices");
+                        this._metaInfo.indices[i] = number_of_points;
                     }
                 }
-                this._metaInfo = {
-                    children: children,
-                    indices: event.header.indices,
-                };
+            }
 
-                this.average = event.header.average;
-                this.eigenVector = event.header.eigenVector;
-                this.eigenVectorLength = event.header.eigenVectorLength;
-                this.debug1 = event.header.debug1;
+            const gl = this._owner.glenv.context;
 
-                const values = event.body;
-                // console.assert( values.length > 0 );
-                // console.assert( values.length / 6 === this._metaInfo.indices[7] );
+            const buffer = gl.createBuffer();
+            if ( !buffer ) throw new Error("failed to create buffer");
+            this._vertex_buffer = buffer;
 
-                ASSERT: {
-                    const number_of_points = values.length / 6;
-                    for ( let i=0; i<8; ++i ) {
-                        if (this._metaInfo.indices[i] > number_of_points) {
-                            console.log("warning fix indices");
-                            this._metaInfo.indices[i] = number_of_points;
-                        }
-                    }
+            this._vertex_length = values.length / 6;
+            gl.bindBuffer(gl.ARRAY_BUFFER, this._vertex_buffer);
+            gl.bufferData(gl.ARRAY_BUFFER, values, gl.STATIC_DRAW);
+            gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+            /*
+                * +------------+------------+----
+                * | a_position | a_color    | ...
+                * +------------+------------+----
+                * 
+                * |<--12 bit-->|<--12 bit-->|
+                */
+            this._vertex_attribs = {
+                "a_position": {
+                    buffer:         this._vertex_buffer,
+                    num_components: 3,
+                    component_type: gl.FLOAT,
+                    normalized:     false,
+                    byte_stride:    24,
+                    byte_offset:    0
+                },
+                "a_color": {
+                    buffer:         this._vertex_buffer,
+                    num_components: 3,
+                    component_type: gl.FLOAT,
+                    normalized:     false,
+                    byte_stride:    24,
+                    byte_offset:    12
                 }
+            };
+            this._status = Box.Status.LOADED;
 
-                const gl = this._owner.glenv.context;
-
-                const buffer = gl.createBuffer();
-                if ( !buffer ) throw new Error("failed to create buffer");
-                this._vertex_buffer = buffer;
-
-                this._vertex_length = values.length / 6;
-                gl.bindBuffer(gl.ARRAY_BUFFER, this._vertex_buffer);
-                gl.bufferData(gl.ARRAY_BUFFER, values, gl.STATIC_DRAW);
-                gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
-                /*
-                 * +------------+------------+----
-                 * | a_position | a_color    | ...
-                 * +------------+------------+----
-                 * 
-                 * |<--12 bit-->|<--12 bit-->|
-                 */
-                this._vertex_attribs = {
-                    "a_position": {
-                        buffer:         this._vertex_buffer,
-                        num_components: 3,
-                        component_type: gl.FLOAT,
-                        normalized:     false,
-                        byte_stride:    24,
-                        byte_offset:    0
-                    },
-                    "a_color": {
-                        buffer:         this._vertex_buffer,
-                        num_components: 3,
-                        component_type: gl.FLOAT,
-                        normalized:     false,
-                        byte_stride:    24,
-                        byte_offset:    12
-                    }
-                };
-                this._status = Box.Status.LOADED;
-
-                this._updateDebugMesh();
-        })
-        .catch(error =>  {
-                const skip_error = (
-                    error.message === "cancel" ||
-                    error.message === "not loading" ||
-                    error.message === "The user aborted a request." ||
-                    error.is_aborted
-                );
-                if ( !skip_error ) {
-                    console.log(error);
-                    this._status = Box.Status.DESTROYED;
+            this._updateDebugMesh();
+        }
+        catch ( error: unknown ) {
+            let skip_error = false;
+            if ( error && typeof( error ) === "object" ) {
+                if ( "message" in error ) {
+                    skip_error ||= (
+                        error.message === "cancel" ||
+                        error.message === "not loading" ||
+                        error.message === "The user aborted a request."
+                    );
                 }
-        });
+                if ( "is_aborted" in error && typeof( error.is_aborted ) === "boolean" ) {
+                    skip_error ||= error.is_aborted;
+                }
+            }
+            if ( !skip_error ) {
+                console.log( error );
+                this._status = Box.Status.DESTROYED;
+            }
+        };
     }
 
 
@@ -1472,9 +1480,6 @@ export class Box {
         if ( this._status === Box.Status.LOADING ) {
             if ( this._abort_controller ) {
                 this._abort_controller.abort();
-            }
-            if ( this._loadId !== undefined ) {
-                this._owner.provider.cancel( this._loadId );
             }
         }
 

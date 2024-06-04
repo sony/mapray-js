@@ -1,40 +1,81 @@
+import Util from "./util/Util";
+import { cfa_assert } from "./util/assertion";
+
 /**
  * 点群データプロバイダ
  *
- * このインスタンスには状態 ([[PointCloudProvider.Status]]型) があり、[[PointCloudProvider.Status.INITIALIZED]] 以外の状態では新規に読み込み([[load]])を行うことができない。
+ * レンダラーに点群データを与えるためのクラスです。
+ * コンストラクタの引数によって実際の処理が決定されます。
+ * 独自の点群プロバイダを作成する際は、通常このクラスを直接継承するのではなく {@link PointCloudProvider.Hook} を用いる方法で行います。
  *
- * 以下の抽象メソッドは既定の動作がないので、利用者はこれらのメソッドをオーバーライドした具象クラスを使用しなければならない。
- * - [[doInit]]
- * - [[doLoad]]
- * - [[doDestroy]]
  */
-abstract class PointCloudProvider {
+class PointCloudProvider {
 
-    private _status: PointCloudProvider.Status;
+    private _status = PointCloudProvider.Status.NOT_INITIALIZED;
+
+    private readonly _init_resolvers = Util.withResolvers<Required<PointCloudProvider.Info>>();
+
+    private readonly _hook: PointCloudProvider.Hook;
 
     protected _time_info_handler?: PointCloudProvider.TimeInfoHandler;
 
+    // init 後に確定する値
+    private _info!: Required<PointCloudProvider.Info>;
 
-    constructor( option: PointCloudProvider.Option = {} ) {
-        this._status = PointCloudProvider.Status.NOT_INITIALIZED;
+    /* init 後に確定する */
+    private _version!: {
+        major: number;
+        minor: number;
+    };
 
+    private _requests: number;
+
+
+    constructor( hook: PointCloudProvider.Hook, option: PointCloudProvider.Option = {} ) {
+        this._hook = hook;
         this._time_info_handler = option?.time_info_handler;
+        this._requests = 0;
     }
 
 
     /**
      * 初期化します。
-     * 継承クラスではdoInit()を継承する
+     *
+     * @see {@link PointCloudProvider.Hook.init}
      */
-    async init() {
-        if (this._status !== PointCloudProvider.Status.NOT_INITIALIZED) throw new Error("invalid status");
-        try {
-            await this.doInit();
-            this._status = PointCloudProvider.Status.INITIALIZED;
+    async init(): Promise<Required<PointCloudProvider.Info>>
+    {
+        if ( this._status !== PointCloudProvider.Status.NOT_INITIALIZED ) {
+            return await this._init_resolvers.promise;
         }
-        catch(e) {
-            this._status = PointCloudProvider.Status.DESTROYED;
-            throw e;
+        this._status = PointCloudProvider.Status.INITIALIZING;
+        try {
+            const info = PointCloudProvider.applyInfoWithDefaults( await this._hook.init() );
+            const [ major, minor ] = info.version.split( "." ).map( str => parseInt( str ) );
+            if ( major !== 0 || minor !== 0 ) {
+                console.log("Warning: Unknown Version: " + major + "." + minor);
+            }
+            this._version = { major, minor };
+            this._info = info;
+            this._status = PointCloudProvider.Status.INITIALIZED;
+            this._init_resolvers.resolve( this._info );
+            return this._info;
+        }
+        catch ( err ) {
+            this._status = PointCloudProvider.Status.ERROR;
+            this._init_resolvers.reject( err );
+            throw err;
+        }
+    }
+
+
+    getInfo(): Required<PointCloudProvider.Info>
+    {
+        switch ( this._status ) {
+            case PointCloudProvider.Status.NOT_INITIALIZED:
+            case PointCloudProvider.Status.INITIALIZING:    throw new Error( "info is missing: provider not loaded" );
+            case PointCloudProvider.Status.ERROR:           throw new Error( "info is missing: provider failed to initialize" );
+            default:                                        return this._info;
         }
     }
 
@@ -49,38 +90,43 @@ abstract class PointCloudProvider {
 
 
     /**
-     * 点群を読み込む
-     * 継承クラスでは [[doLoad]] を継承する
+     * タイル画像をリクエストする
+     * 2回以上呼ばれた場合は、処理をスキップし初回と同様の値を返却する。
      * @param level レベル
      * @param x x
      * @param y y
      * @param z z
+     * @param options.signal リクエストキャンセル用のシグナル
+     * @see {@link PointCloudProvider.Hook.requestTile}
      */
-    load( level: number, x: number, y: number, z: number ): PointCloudProvider.Request {
-        if ( this._status !== PointCloudProvider.Status.INITIALIZED ) {
-            return { id: -1, done: Promise.reject(new Error("invalid status")) };
+    async requestTile( level: number, x: number, y: number, z: number, options?: { signal?: AbortSignal } ): Promise<PointCloudProvider.Data>
+    {
+        cfa_assert( this._status === PointCloudProvider.Status.INITIALIZED );
+        this._requests++;
+
+        try {
+
+            const start = Date.now();
+            const ret = await this._hook.requestTile( level, x, y, z, options );
+            if ( this._time_info_handler ) {
+                const path = level + "/" + x + "/" + y + "/" + z;
+                const end = Date.now();
+                if ( ret.times ) {
+                    ret.times.path = path;
+                    ret.times.start = start;
+                    ret.times.end = end;
+                }
+                else {
+                    ret.times = { path, start, end };
+                }
+                this._time_info_handler( ret.times );
+            }
+
+            return ret;
+
         }
-        const id = PointCloudProvider._id_max++;
-        return {
-            id,
-            done: (async () => {
-                    const start = Date.now();
-                    const ret = await this.doLoad( id, level, x, y, z );
-                    if ( this._time_info_handler ) {
-                        const path = level + "/" + x + "/" + y + "/" + z;
-                        const end = Date.now();
-                        if ( ret.times ) {
-                            ret.times.path = path;
-                            ret.times.start = start;
-                            ret.times.end = end;
-                        }
-                        else {
-                            ret.times = { path, start, end };
-                        }
-                        this._time_info_handler( ret.times );
-                    }
-                    return ret;
-            })(),
+        finally {
+            this._requests--;
         }
     }
 
@@ -139,69 +185,102 @@ abstract class PointCloudProvider {
 
 
     /**
-     * 実行中のリクエストをキャンセルする
-     * @param id リクエストID
-     */
-    cancel( id: number ) {
-        if ( this._status !== PointCloudProvider.Status.INITIALIZED ) throw new Error("invalid status");
-        this.doCancel( id );
-    }
-
-    protected doCancel( id: number ): void {
-    }
-
-
-    /**
      * 実行中のリクエスト数を返す
      */
-    abstract getNumberOfRequests(): number;
+    getNumberOfRequests(): number
+    {
+        return this._requests;
+    }
 
 
     /**
      * 破棄
-     * 継承クラスではdoDestroy()を継承する
      */
-    async destroy() {
-        if ( this._status !== PointCloudProvider.Status.INITIALIZED ) throw new Error("invalid status");
-        try {
-            await this.doDestroy();
-        }
-        finally {
-            this._status = PointCloudProvider.Status.DESTROYED;
-        }
+    destroy() {
+        this._status = PointCloudProvider.Status.ERROR;
     }
 
-
-    /**
-     * 初期化を行う
-     */
-    protected abstract doInit(): Promise<void>;
-
-
-    /**
-     * 読み込みを行う
-     * @param id リクエストid
-     * @param level レベル
-     * @param x x
-     * @param y y
-     * @param z z
-     */
-    protected abstract doLoad( id: number, level: number, x: number, y: number, z: number ): Promise<PointCloudProvider.Data>;
-
-
-    /**
-     * 破棄を行う
-     */
-    protected abstract doDestroy(): Promise<void>;
-
-
-    private static _id_max: number = 0;
 }
 
 
 
 
 namespace PointCloudProvider {
+
+
+
+/**
+ * 点群プロバイダフック
+ *
+ * 独自の点群プロバイダを作成する際に利用します。
+ *
+ * オブジェクトによる実装
+ * 単純な動作の場合は下記のように簡易的に実装することができます。
+ * @example
+ * ```ts
+ * viewer.point_cloud_collection.add(new PointCloudProvider({
+ *     init: () => {
+ *         // 必要に応じて初期化します。
+ *     },
+ *     requestTile: ( level, x, y, z ) => {
+ *         // タイルを取得します。
+ *     },
+ * }));
+ * ```
+ *
+ * クラスによる実装
+ * 下記のように実装することで、複雑なプロバイダを記述することができます。
+ * @example
+ * ```ts
+ * // クラスとして定義
+ * class ProviderHook implements mapray.PointCloudProvider.Hook {
+ *     constructor( id, option ) {
+ *         // タイルへのアクセスに必要な情報などを受け取る
+ *     }
+ *     async init() {
+ *         // 認証やログインなどを行い、アクセスできるようにする
+ *     }
+ *     async requestTile( level, x, y, z ) {
+ *         // 実際にデータにアクセスする
+ *     }
+ * }
+ *
+ * // インスタンス化して利用します。
+ * viewer.point_cloud_collection.add( new ProviderHook( "id", { token: "xxxxxx" } ) );
+ * ```
+ *
+ */
+export interface Hook {
+
+    /**
+     * タイルプロバイダを初期化しリクエストできる状態にします。
+     *
+     * - リクエストできる状態に遷移できなかった場合は必ず例外をスローします
+     * - この関数は2回以上呼ばれることはありません
+     *
+     * @param signal 中断信号（可能であれば処理を中断する）
+     * @returns タイルプロバイダの情報
+     */
+    init( options?: { signal?: AbortSignal } ): Promise<PointCloudProvider.Info>;
+
+
+    /**
+     * タイルをリクエストします。
+     *
+     * 座標が (level, x, y, z) のタイルデータを要求します。
+     * {@link Hook.init} の呼び出しに成功した場合に、レンダラが必要なタイミングで何度も呼び出します。
+     *
+     * @param  level レベル
+     * @param  x     X タイル座標
+     * @param  y     Y タイル座標
+     * @param  z     Z タイル座標
+     * @param  signal  中断信号（可能であれば処理を中断する）
+     *
+     * @return リクエスト結果
+     */
+    requestTile( level: number, x: number, y: number, z: number, options?: { signal?: AbortSignal } ): Promise<PointCloudProvider.Data>;
+
+}
 
 
 export interface Data {
@@ -218,47 +297,30 @@ export interface Data {
 }
 
 
-/**
- * リクエスト
- */
-export interface Request {
-    /** リクエストID */
-    id: number,
 
-    /** リクエストの完了を示すプロミス */
-    done: Promise<Data>,
-}
-
-
-
-/**
- * 状態の列挙型
- *
- * ```text
- * NOT_LOADED ---------> INITIALIZED  ------------> DESTROYED 
- *              init()                  dispose()      ^      
- *                |                                    |      
- *                `------------------------------------'      
- *                                 error                      
- * ```
- *
- * @see [[PointCloudProvider._status]]
- */
-export enum Status {
-    /**
-     * 初期化前 (初期状態)
-     */
-    NOT_INITIALIZED,
+/** @internal */
+export const enum Status {
 
     /**
-     * 初期化済み（読み込み可能）
+     * 初期状態であり、読み込みが開始されていない状態。
      */
-    INITIALIZED,
+    NOT_INITIALIZED = "@@_PointCloudProvider.Status.NOT_INITIALIZED",
 
     /**
-     * 破棄状態
+     * 読み込みが開始されたが、まだ完了していない状態。
+     * 正常に処理が完了すると INITIALIZED 、何らかのエラーが発生した場合は ERROR となる。
      */
-    DESTROYED,
+    INITIALIZING = "@@_PointCloudProvider.Status.INITIALIZING",
+
+    /**
+     * 読み込みが完了し、リクエストを処理できる状態。
+     */
+    INITIALIZED = "@@_PointCloudProvider.Status.INITIALIZED",
+
+    /**
+     * エラーが発生し、リクエストを処理できない状態。
+     */
+    ERROR = "@@_PointCloudProvider.Status.ERROR",
 }
 
 
@@ -280,6 +342,37 @@ export interface TimeInfo {
  * 時間計測終了時のコールバック関数定義
  */
 export type TimeInfoHandler = ( time_info: TimeInfo ) => void;
+
+
+export interface CloudInfo {
+    url: string;
+    fileinfo: Info;
+}
+
+
+export interface Info {
+    version?: string;
+    format: string;
+    url?: string | null;
+    content_root: [level: number, x: number, y: number, z: number];
+}
+
+
+export function applyInfoWithDefaults( info: Info ): Required<Info>
+{
+    return {
+        version: info.version ?? "0.0",
+        format: info.format,
+        url: info.url ?? null,
+        content_root: info.content_root,
+    };
+}
+
+
+export function isCloudInfo( info: CloudInfo | Info ): info is CloudInfo
+{
+    return "fileinfo" in info;
+}
 
 
 } // namespace PointCloudProvider
