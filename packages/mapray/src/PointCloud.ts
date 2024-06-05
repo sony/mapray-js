@@ -14,7 +14,7 @@ import { AttributeBindInfoDict } from "./Material";
  * 点群データを表現するクラス
  *
  * ```typescript
- * const provider = new mapray.RawPointCloudProvider({
+ * const provider = new mapray.StandardPointCloudProvider({
  *     resource: {
  *         prefix: "https://..."
  *     }

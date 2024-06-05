@@ -71,7 +71,7 @@ export { default as B3dScene } from "./B3dScene";
 
 // PointCloud
 export { default as PointCloud } from "./PointCloud";
-export { default as RawPointCloudProvider } from "./RawPointCloudProvider";
+export { default as StandardPointCloudProvider } from "./StandardPointCloudProvider";
 export { default as PointCloudProvider } from "./PointCloudProvider";
 export { default as PointCloudCollection } from "./PointCloudCollection";
 export { default as PointCloudBoxCollector } from "./PointCloudBoxCollector";

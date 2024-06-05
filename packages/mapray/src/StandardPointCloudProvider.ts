@@ -4,17 +4,17 @@ import Resource, { URLResource } from "./Resource";
 
 
 
-class RawPointCloudProvider extends PointCloudProvider {
+class StandardPointCloudProvider extends PointCloudProvider {
 
-    constructor( resource: Resource | RawPointCloudProvider.ResourceInfo, option: RawPointCloudProvider.Option = {} ) {
-        super( new RawPointCloudProvider.Hook( resource, option ), option );
+    constructor( resource: Resource | StandardPointCloudProvider.ResourceInfo, option: StandardPointCloudProvider.Option = {} ) {
+        super( new StandardPointCloudProvider.Hook( resource, option ), option );
     }
 
 }
 
 
 
-namespace RawPointCloudProvider {
+namespace StandardPointCloudProvider {
 
 
 
@@ -31,7 +31,7 @@ export class Hook implements PointCloudProvider.Hook {
      * resource 点群定義(json)リソース
      * @param resource リソース
      */
-    constructor( resource: Resource | RawPointCloudProvider.ResourceInfo, _option: RawPointCloudProvider.Option = {} ) {
+    constructor( resource: Resource | StandardPointCloudProvider.ResourceInfo, _option: StandardPointCloudProvider.Option = {} ) {
         this._suffix = ".xyz";
         if ( resource instanceof Resource ) {
             this._info_resource = resource;
@@ -111,7 +111,7 @@ export class Hook implements PointCloudProvider.Hook {
 
 
     toString() {
-        return "RawPointCloudProvider(" + this._resource.toString() + ")";
+        return "StandardPointCloudProvider(" + this._resource.toString() + ")";
     }
 }
 
@@ -137,7 +137,7 @@ export interface Task {
 
 
 
-} // namespace RawPointCloudProvider
+} // namespace StandardPointCloudProvider
 
 
-export default RawPointCloudProvider;
+export default StandardPointCloudProvider;
