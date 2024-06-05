@@ -12,7 +12,7 @@ import ImageProvider from "./ImageProvider";
  * 地図レイヤーを管理するオブジェクトである。
  * インスタンスは {@link mapray.Viewer#layers} から得ることができる。
  *
- * @see [[Layer]]
+ * @see {@link Layer}
  */
 class LayerCollection {
 

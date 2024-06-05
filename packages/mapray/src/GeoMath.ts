@@ -1059,7 +1059,7 @@ class GeoMath {
      * @package
      * @see https://developers.google.com/kml/documentation/kmlreference#model
      *
-     * @deprecated [[mapray.Orientation.getTransformMatrix]] の使用を推奨
+     * @deprecated {@link mapray.Orientation.getTransformMatrix} の使用を推奨
      */
     static kml_model_matrix( heading: number, tilt: number, roll: number, scale: Vector3, dst: Matrix ): Matrix
     {

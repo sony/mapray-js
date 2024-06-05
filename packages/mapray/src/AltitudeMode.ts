@@ -1,7 +1,7 @@
 /**
  * 高度モード
  *
- * [[mapray.GeoPoint]] などの高度値をどのように解釈するかを指定する列挙値の型である。
+ * {@link mapray.GeoPoint} などの高度値をどのように解釈するかを指定する列挙値の型である。
  *
  * @see mapray.Entity
  */

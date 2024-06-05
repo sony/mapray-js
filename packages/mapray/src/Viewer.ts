@@ -269,14 +269,14 @@ class Viewer {
      *
      * 次の順番で処理を行い、インスタンスを破棄する。
      *
-     * 1. アニメーションフレームを止める。(this.[[render_callback]] の [[RenderCallback.onUpdateFrame onUpdateFrame()]] が呼び出されなくなる)
-     * 2. this.[[render_callback]] の [[RenderCallback.onStop onStop()]] を呼び出す。([[RenderCallback.onStart onStart()]] がすでに呼び出されている場合)
-     * 3. [[RenderCallback]] インスタンスを this から切り離す。([[RenderCallback.viewer]] プロパティは null を返すようになる)
-     * 4. [[canvas_element]] を [[container_element]] から取り外す。(キャンバスは表示されなくなる)
+     * 1. アニメーションフレームを止める。({@link render_callback} の {@link RenderCallback.onUpdateFrame onUpdateFrame()} が呼び出されなくなる)
+     * 2. {@link render_callback} の {@link RenderCallback.onStop onStop()} を呼び出す。({@link RenderCallback.onStart onStart()} がすでに呼び出されている場合)
+     * 3. {@link RenderCallback} インスタンスを this から切り離す。({@link RenderCallback.viewer} プロパティは null を返すようになる)
+     * 4. {@link canvas_element} を {@link container_element} から取り外す。(キャンバスは表示されなくなる)
      * 5. データプロバイダのリクエスト、シーンデータのロードの取り消しを試みる。
      *
-     * このメソッドを呼び出した後は this に直接的または間接的にアクセスすることはできない。ただし [[destroy destroy()]] の呼び出しは除く。
-     * このメソッドは [[RenderCallback]] のメソッドから呼び出してはならない。
+     * このメソッドを呼び出した後は this に直接的または間接的にアクセスすることはできない。ただし {@link destroy destroy()} の呼び出しは除く。
+     * このメソッドは {@link RenderCallback} のメソッドから呼び出してはならない。
      */
     destroy()
     {
@@ -529,8 +529,8 @@ class Viewer {
      *
      * @defaultValue `null`
      *
-     * @see [[setVectileManager]],
-     *      [[Category.VECTILE]]
+     * @see {@link setVectileManager},
+     *      {@link Category.VECTILE}
      */
     get vectile_manager(): StyleManager | null
     { return this._vectile_manager; }
@@ -619,13 +619,10 @@ class Viewer {
      *
      * `target` に属するオブジェクトを表示するかどうかを指定する。
      *
-     * 可視性は [[Viewer.constructor]] の `ground_visibility`,
-     * `entity_visibility`, `b3d_scene_visibility`,
-     * `vectile_visibility`オプションでも指定することができる。
+     * 可視性は {@link Viewer.constructor} のオプションでも指定することができる。
      *
      * @param target      表示対象
      * @param visibility  表示するとき true, 表示しないとき false
-     * @see [[getVisibility]]
      */
     setVisibility( target: Viewer.Category, visibility: boolean ): void
     {
@@ -658,8 +655,6 @@ class Viewer {
      *
      * @param  target  表示対象
      * @return 表示するとき true, 表示しないとき false
-     *
-     * @see [[setVisibility]]
      */
     getVisibility( target: Viewer.Category ): boolean
     {
@@ -692,11 +687,11 @@ class Viewer {
      * `manager` に `null` を指定したとき、ベクトルタイルはレンダリン
      * グされなくなる。
      *
-     * 設定された値は [[vectile_manager]] により参照することができる。
+     * 設定された値は {@link vectile_manager} により参照することができる。
      *
-     * @see [[vectile_manager]],
-     *      [[Category.VECTILE]],
-     *      [[StyleManager.viewer]]
+     * @see {@link vectile_manager},
+     *      {@link Category.VECTILE},
+     *      {@link StyleManager.viewer}
      */
     setVectileManager( manager: StyleManager | null ): void
     {
@@ -774,7 +769,7 @@ class Viewer {
      * @param position  位置 (高度は無視される)
      * @return          標高
      *
-     * @see [[getExistingElevations]]
+     * @see {@link getExistingElevations}
      */
     getExistingElevation( position: GeoPoint ): number
     {
@@ -805,7 +800,7 @@ class Viewer {
      * @param  dst_stride  出力データのストライド
      * @return             dst_array
      *
-     * @see [[getExistingElevation]]
+     * @see {@link getExistingElevation}
      */
     getExistingElevations( num_points: number, src_array: Float64Array|number[], src_offset: number, src_stride: number, dst_array: Float64Array|number[], dst_offset: number, dst_stride: number ): number[]
     {
@@ -971,7 +966,7 @@ class Viewer {
 
     /**
      * フレーム更新のときに呼び出される。
-     * @see [[RenderStage]]
+     * @see {@link RenderStage}
      */
     private _updateFrame()
     {
@@ -1236,8 +1231,8 @@ export interface Option {
      * オプションを指定すると、北側と南側の極地に関する、地表の表示と交差判定の有効性が有効となり、通常領域以外に北側と南側の極地を表示することができる。
      * 省略時は極地に関する表示と交差判定は無効となる。
      *
-     * ただし現在は、[[LayerCollection]] のレイヤー画像、高度モード
-     * ([[Entity.altitude_mode]]) が [[AltitudeMode.ABSOLUTE]] 以外の
+     * ただし現在は、{@link LayerCollection} のレイヤー画像、高度モード
+     * ({@link Entity.altitude_mode}) が {@link AltitudeMode.ABSOLUTE} 以外の
      * エンティティは、通常領域にしか表示することができない。
      */
     pole?: PoleOption;
@@ -1272,7 +1267,7 @@ export interface Option {
 /**
  * 北側と南側の極地に関するオプションの型
  *
- * @see [[Option.pole]], [[Viewer.constructor]], [[PoleInfo]]
+ * @see {@link Option.pole}, {@link Viewer.constructor}, {@link PoleInfo}
  */
 export interface PoleOption {
 
@@ -1310,10 +1305,10 @@ export interface PoleOption {
 /**
  * 北側と南側の極地に関する情報
  *
- * 各プロパティの意味は [[PoleOption]] の同名のプロパティの説明を参照
+ * 各プロパティの意味は {@link PoleOption} の同名のプロパティの説明を参照
  * のこと。
  *
- * @see [[Viewer.pole_info]], [[PoleOption]]
+ * @see {@link Viewer.pole_info}, {@link PoleOption}
  */
 export class PoleInfo {
 
@@ -1476,10 +1471,9 @@ export interface PickResult {
 /**
  * 表示対象の列挙型
  *
- * [[Viewer.setVisibility]] と [[Viewer.getVisibility]] メソッドの
- * target 引数に指定する値の型である。
+ * {@link Viewer.setVisibility} や {@link Viewer.getVisibility} などで利用される型である。
  *
- * @see [[PickResult.category]]
+ * @see {@link PickResult.category}
  */
 export const enum Category {
 
@@ -1510,8 +1504,8 @@ export const enum Category {
     /**
      * ベクトルタイル
      *
-     * @see [[setVectileManager]],
-     *      [[vectile_manager]]
+     * @see {@link setVectileManager},
+     *      {@link vectile_manager}
      */
     VECTILE = "@@_Viewer.Category.VECTILE",
 
@@ -1521,8 +1515,8 @@ export const enum Category {
 /**
  * レンダリングモードの列挙型
  *
- * [[Viewer.constructor]] の `options.render_mode` パラメータ、または
- * [[Viewer.render_mode]] プロパティに指定する値の型である。
+ * {@link Viewer.constructor} の `options.render_mode` パラメータ、または
+ * {@link Viewer.render_mode} プロパティに指定する値の型である。
  */
 export const enum RenderMode {
 

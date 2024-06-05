@@ -5,11 +5,11 @@ import Viewer from "./Viewer";
  *
  * レンダリングループでの各箇所で呼び出されるコールバック関数を実装するための抽象クラスである。
  * サブクラスでは以下のメソッドをオーバーライドすることができる。オーバーライドしないメソッドは何もしない。
- * - [[onStart]]
- * - [[onUpdateFrame]]
- * - [[onStop]]
+ * - {@link onStart}
+ * - {@link onUpdateFrame}
+ * - {@link onStop}
  *
- * @see [[Viewer]]
+ * @see {@link Viewer}
  */
 abstract class RenderCallback {
 

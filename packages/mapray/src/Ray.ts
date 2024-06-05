@@ -7,8 +7,8 @@ import Camera from "./Camera";
  * 始点と方向
  *
  * 始点と方向で表現される半直線である。
- * @see [[Viewer.getRayIntersection]]
- * @see [[Camera.getCanvasRay]]
+ * @see {@link Viewer.pickWithRay}
+ * @see {@link Camera.getCanvasRay}
  */
 class Ray {
 
@@ -26,7 +26,7 @@ class Ray {
 
 
     /**
-     * pos の参照を [[position]], dir の参照を [[direction]] に代入する。
+     * pos の参照を {@link position}, dir の参照を {@link direction} に代入する。
      *
      * ただし引数を省略したとき、対応するメンバーには新たに生成されたベクトルが代入される。
      * @param pos レイの始点（default[0, 0, 0]）

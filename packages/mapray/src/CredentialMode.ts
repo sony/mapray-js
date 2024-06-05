@@ -4,7 +4,7 @@
  * HTTP リクエストのクレデンシャルモードを表現する型である。
  *
  * @see https://developer.mozilla.org/docs/Web/API/Request/credentials
- * @see [[StandardDemProvider]]
+ * @see {@link StandardDemProvider}
  *
  * @privateRemark
  *

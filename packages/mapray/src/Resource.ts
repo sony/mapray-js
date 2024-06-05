@@ -174,7 +174,7 @@ export type TransformCallback = ( url: string, type: any ) => Resource.Transform
 /**
  * リソース要求変換関数の変換結果
  *
- * 関数型 [[Loader.TransformCallback]] の戻り値のオブジェクト構造である。
+ * 関数型 [@link Loader.TransformCallback} の戻り値のオブジェクト構造である。
  */
 export interface TransformResult {
     /**
@@ -244,9 +244,9 @@ export enum Type {
  * サブリソースはベースとなるリソースからの相対パスで表現されることや、絶対パスで表現されることがあります。
  * また、htmlファイルには、別のhtmlファイルへのリンクが記述されることがあり、別のhtmlファイルはさらに画像やcssなどのファイルを持ちます。
  * このクラスは上記のような状況を表現することができます。
- * - [[load]] はベースとなるリソースの内容を読み込みます。
- * - [[loadSubResource]] は、ベースとなるリソースからの相対パスを指定してサブリソースの内容を読み込みます（絶対パスを指定すると指定したURLへ直接アクセスします）。
- * - [[resolveResource]] は、別のhtmlファイルへのリンクをたどるような状況を表現する場合に利用します。相対パスや絶対パスを指定すると、新たな Resource を得ることができます。
+ * - {@link load} はベースとなるリソースの内容を読み込みます。
+ * - {@link loadSubResource} は、ベースとなるリソースからの相対パスを指定してサブリソースの内容を読み込みます（絶対パスを指定すると指定したURLへ直接アクセスします）。
+ * - {@link resolveResource} は、別のhtmlファイルへのリンクをたどるような状況を表現する場合に利用します。相対パスや絶対パスを指定すると、新たな Resource を得ることができます。
  *
  * 下記に使用例を示します。
  * ```ts

@@ -8,7 +8,7 @@ import FlakeMaterial from "./FlakeMaterial";
 /**
  * レイヤー基底クラス
  *
- * {@link mapray.Maplayer} と {@link mapray.ContourLayer} の共通機能を提供するクラスである。
+ * {@link ImageLayer} と {@link ContourLayer} の共通機能を提供するクラスである。
  */
 abstract class Layer {
 

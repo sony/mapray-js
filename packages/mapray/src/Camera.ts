@@ -7,7 +7,7 @@ import Viewer from "./Viewer";
  * 視点を表現するカメラ
  *
  * 視点を表現するカメラである。
- * インスタンスは [[Viewer.camera]] から得ることができる。
+ * インスタンスは {@link Viewer.camera} から得ることができる。
  *
  */
 class Camera {

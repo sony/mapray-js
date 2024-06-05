@@ -23,7 +23,7 @@ import { AttributeBindInfoDict } from "./Material";
  * point_cloud.setPointShape( mapray.PointCloud.PointShapeType.GRADIENT_CIRCLE );
  * ```
  *
- * @see [[PointCloudProvider]]
+ * @see {@link PointCloudProvider}
  */
 class PointCloud {
 
@@ -103,7 +103,7 @@ class PointCloud {
 
     /**
      * 初期化
-     * [[PointCloudBoxCollector]]へ追加時に自動的に呼ばれる。
+     * {@link PointCloudBoxCollector} へ追加時に自動的に呼ばれる。
      * @internal
      */
     async init() {
@@ -112,7 +112,7 @@ class PointCloud {
 
     /**
      * 破棄
-     * [[PointCloudBoxCollector]]から削除時に自動的に呼ばれる。
+     * {@link PointCloudBoxCollector} から削除時に自動的に呼ばれる。
      * @internal
      */
     async destroy() {
@@ -191,7 +191,7 @@ class PointCloud {
 
     /**
      * 点を描画する際の形状
-     * @return [[PointCloud.PointShapeType]]
+     * @return {@link PointCloud.PointShapeType}
      */
     getPointShape() { return this._point_shape; }
 
@@ -220,13 +220,13 @@ class PointCloud {
     /**
      * 点を描画する際のサイズ
      * point_size_typeにより単位が異なる
-     * @see [[PointCloud.getPointSizeType]]
+     * @see {@link PointCloud.getPointSizeType}
      */
     getPointSize(): number { return this._point_size; }
 
     /**
      * 点を描画する際のサイズを設定。
-     * [[PointCloud.setPointSizeType]]により指定された値によって解釈される単位が異なる。
+     * {@link PointCloud.setPointSizeType}により指定された値によって解釈される単位が異なる。
      * @param val 設定する値
      */
     setPointSize( val: number ) {
@@ -317,7 +317,7 @@ class PointCloud {
 
     /**
      * Traverse結果の統計情報を取得。
-     * リクエストキューに登録し、[[RenderStage]]が処理を完了するのを待つ。
+     * リクエストキューに登録し、{@link RenderStage} が処理を完了するのを待つ。
      * @return {Promise<PointCloud.Statistics>}
      * @internal
      */
@@ -616,7 +616,7 @@ export class Box {
 
     /**
      * 所属するPointCloud。
-     * ルート要素の場合は [[Box.createRoot]] で設定される。
+     * ルート要素の場合は {@link Box.createRoot} で設定される。
      */
     private _owner!: PointCloud;
 

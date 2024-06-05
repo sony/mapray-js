@@ -14,7 +14,7 @@ import { Vector3 } from "./GeoMath";
  *
  * 画像レイヤーを表現するオブジェクトである。
  *
- * @see [[LayerCollection]]
+ * @see {@link LayerCollection}
  */
 class ImageLayer extends Layer {
 
@@ -192,7 +192,7 @@ export enum DrawType {
 /**
  * 北側と南側の極地に関するレイヤー用オプションの型
  *
- * @see [[Option.pole]]
+ * @see {@link Option.pole}
  */
 export interface PoleOption {
 

@@ -9,7 +9,7 @@ import { Vector4 } from "./GeoMath";
  *
  * 等高線レイヤーを表現するオブジェクトである。
  *
- * @see [[LayerCollection]]
+ * @see {@link LayerCollection}
  */
 class ContourLayer extends Layer {
 

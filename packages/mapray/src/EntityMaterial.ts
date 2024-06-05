@@ -9,13 +9,13 @@ import { cfa_assert } from "./util/assertion";
 /**
  * エンティティ・マテリアル
  *
- * このクラスは、[[mapray.RenderStage.getRenderTarget()]] の値により異なる動作をする。
+ * このクラスは、{@link RenderStage.getRenderTarget()} の値により異なる動作をする。
  *
- * - [[RenderStage.RenderTarget.SCENE]] の場合は、通常通り描画を行う。
- *   [[setParameters]] は、描画に必要な全てのパラメータを設定します。
- * - [[RenderStage.RenderTarget.RID]] の場合は、
- *   [[setParameters]] は、RID描画に必要なパラメータのみ設定します（一般にテクスチャや色情報は除外される）。
- *   このクラスでの実装は、[[setParameters]] により、`u_rid` が設定されるようになっています。
+ * - {@link RenderStage.RenderTarget.SCENE} の場合は、通常通り描画を行う。
+ *   {@link setParameters} は、描画に必要な全てのパラメータを設定します。
+ * - {@link RenderStage.RenderTarget.RID} の場合は、
+ *   {@link setParameters} は、RID描画に必要なパラメータのみ設定します（一般にテクスチャや色情報は除外される）。
+ *   このクラスでの実装は、{@link setParameters} により、`u_rid` が設定されるようになっています。
  */
 abstract class EntityMaterial extends Material {
 

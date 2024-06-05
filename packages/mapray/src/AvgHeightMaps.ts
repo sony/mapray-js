@@ -1,7 +1,7 @@
 /**
  * 平均標高マップ
  *
- * @see [[DemBinary]]
+ * @see {@link DemBinary}
  */
 class AvgHeightMaps {
 
