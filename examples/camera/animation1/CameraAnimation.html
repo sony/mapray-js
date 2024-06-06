@@ -35,7 +35,7 @@
         // Viewerを作成する
         new mapray.Viewer("mapray-container", {
             render_callback: this,
-            image_provider: new mapray.StandardImageProvider("https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", ".jpg", 256, 2, 18),
+            image_provider: new mapray.StandardImageProvider( { url: "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", format: "jpg", min_level: 2, max_level: 18 } ),
             dem_provider: new mapray.CloudDemProvider(accessToken)
         });
 

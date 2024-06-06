@@ -59,7 +59,8 @@ class VirtualPathCameraAnimation extends mapray.RenderCallback {
 
     // 画像プロバイダを生成
     createImageProvider() {
-        return new mapray.StandardImageProvider("https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", ".jpg", 256, 2, 18);
+        return new mapray.StandardImageProvider( { url: "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", format: "jpg", min_level: 2, max_level: 18 } );
+
     }
 
     // 2点の間を線形保管し、基準座標系から GOCS への変換行列を生成
