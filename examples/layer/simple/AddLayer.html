@@ -31,9 +31,9 @@
     // レイヤーを設定しViewerを作成する。
     viewer = new mapray.Viewer(
         "mapray-container", {
-            image_provider: new mapray.StandardImageProvider("https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", ".jpg", 256, 2, 18),
+            image_provider: new mapray.StandardImageProvider( { url: "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", format: "jpg", min_level: 2, max_level: 18 } ),
             dem_provider: new mapray.CloudDemProvider(accessToken),
-            layers: [{ image_provider: new mapray.StandardImageProvider("https://cyberjapandata.gsi.go.jp/xyz/std/", ".png", 256, 5, 18), opacity: 0.5 }]
+            layers: [{ image_provider: new mapray.StandardImageProvider( { url: "https://cyberjapandata.gsi.go.jp/xyz/std/", format: "png", min_level: 5, max_level: 18 } ), opacity: 0.5 }]
         }
     );
 

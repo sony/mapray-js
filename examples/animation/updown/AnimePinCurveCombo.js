@@ -35,7 +35,7 @@ class AnimePinCurveCombo extends mapray.RenderCallback {
 
     // 画像プロバイダを生成
     createImageProvider() {
-        return new mapray.StandardImageProvider("https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", ".jpg", 256, 2, 18);
+        return new mapray.StandardImageProvider( { url: "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", format: "jpg", min_level: 2, max_level: 18 } );
     }
 
     // カメラ位置の設定

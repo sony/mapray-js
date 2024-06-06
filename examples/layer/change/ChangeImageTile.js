@@ -27,10 +27,10 @@ class ViewerImageControl {
 
         if (map_Tile_Value == "std") {
             // 国土地理院提供の標準地図タイルを設定
-            return new mapray.StandardImageProvider("https://cyberjapandata.gsi.go.jp/xyz/std/", ".png", 256, 5, 18);
+            return new mapray.StandardImageProvider( { url: "https://cyberjapandata.gsi.go.jp/xyz/std/", format: "png", min_level: 5, max_level: 18 } );
         } else {
             // 国土地理院提供の写真タイルを設定
-            return new mapray.StandardImageProvider("https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", ".jpg", 256, 2, 18);
+            return new mapray.StandardImageProvider( { url: "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", format: "jpg", min_level: 2, max_level: 18 } );
         }
     }
 
