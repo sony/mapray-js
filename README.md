@@ -59,7 +59,7 @@ Mapray Cloud managed by [Sony Group Corporation.](https://www.sony.com/) If you 
        var accessToken = "<your access token here>";
 
        // For Image tiles
-       var imageProvider = new mapray.StandardImageProvider( "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", ".jpg", 256, 0, 18 );
+       var imageProvider = new mapray.StandardImageProvider( { url: "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", format: "jpg", min_level: 2, max_level: 18 } );
 
        // Create viewer
        var viewer = new mapray.Viewer(
