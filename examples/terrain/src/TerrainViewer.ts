@@ -51,10 +51,10 @@ class TerrainViewer extends maprayui.StandardUIViewer {
                 });
                 break;
             case "satellite":
-                imageProvider = new mapray.StandardImageProvider( "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", ".jpg", 256, 2, 18 );
+                imageProvider = new mapray.StandardImageProvider( { url: "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", format: ".jpg", min_level: 2, max_level: 18 } );
                 break;
             case "street":
-                imageProvider = new mapray.StandardImageProvider( "https://cyberjapandata.gsi.go.jp/xyz/std/", ".png", 256, 5, 18 );
+                imageProvider = new mapray.StandardImageProvider( { url: "https://cyberjapandata.gsi.go.jp/xyz/std/", format: ".png", min_level: 5, max_level: 18 } );
                 break;
         }
 
