@@ -64,7 +64,7 @@ export default class App extends maprayui.StandardUIViewer {
 
         // Atmosphere
         this.viewer.sun.setSunDirection( [ 1, 0, 0 ] );
-        this.addLayer( { image_provider: new mapray.StandardImageProvider("https://opentiles.mapray.com/xyz/night-satellite/", ".png", 256, 0, 8), opacity: 1.0, type: mapray.Layer.Type.IMAGE, draw_type: mapray.ImageLayer.DrawType.NIGHT } );
+        this.addLayer( { image_provider: new mapray.StandardImageProvider( { url: "https://opentiles.mapray.com/xyz/night-satellite/", format: "png", min_level: 0, max_level: 8 } ), opacity: 1.0, type: mapray.Layer.Type.IMAGE, draw_type: mapray.ImageLayer.DrawType.NIGHT } );
         this.setAtmosphereVisibility( false );
 
         // // 文字のエンティティを作成
@@ -171,7 +171,7 @@ export default class App extends maprayui.StandardUIViewer {
         // Add Point Cloud
         const point_cloud_url = "https://opentiles.mapray.com/pc/raw/dronebird/aoyamagakuin2";
         const infojson = point_cloud_url + "/info.json";
-        this.viewer.point_cloud_collection.add( new mapray.RawPointCloudProvider( { url: infojson } ) );
+        this.viewer.point_cloud_collection.add( new mapray.StandardPointCloudProvider( { url: infojson } ) );
     }
 
     addB3d()

@@ -133,7 +133,7 @@ export default class App extends maprayui.StandardUIViewer {
         // Add Point Cloud
         const point_cloud_url = "https://opentiles.mapray.com/pc/raw/dronebird/aoyamagakuin2";
         const infojson = point_cloud_url + "/info.json";
-        this.viewer.point_cloud_collection.add( new mapray.RawPointCloudProvider( { url: infojson } ) );
+        this.viewer.point_cloud_collection.add( new mapray.StandardPointCloudProvider( { url: infojson } ) );
     }
 
     addB3d() {
