@@ -4,7 +4,7 @@ import GeoPoint from "../dist/es/GeoPoint";
 
 test('empty', () => {
     const region = new GeoRegion();
-    expect(region.empty()).toEqual(true)
+    expect(region.is_empty).toEqual(true)
 });
 
 test('10 to 120', () => {
