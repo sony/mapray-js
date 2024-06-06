@@ -63,21 +63,6 @@
     "@jridgewell/resolve-uri" "^3.0.3"
     "@jridgewell/sourcemap-codec" "^1.4.10"
 
-"@mapray/mapray-js@^0.9.0":
-  version "0.9.0"
-  resolved "https://registry.yarnpkg.com/@mapray/mapray-js/-/mapray-js-0.9.0.tgz#09c8fa83ea95c6952f9750ff467c4d901dc52ec0"
-  integrity sha512-NfMr0bE/CchcWhun6QTVyOTg2k0uzxwig/lc4LQm+F6QHcN4KdPEhTmvjugnWkNZ9y2GBh35yFV/kbtYRUA3sg==
-  dependencies:
-    tslib "^2.2.0"
-
-"@mapray/ui@^0.9.0":
-  version "0.9.0"
-  resolved "https://registry.yarnpkg.com/@mapray/ui/-/ui-0.9.0.tgz#801e9833e84dd7b95ab7a94d9e1c63a52f711c92"
-  integrity sha512-42JHglwfUKuzS7LCINMK0XMYuVqG/TlkXRtHCxvUZRBJujUJ3bVzid7vKZWXjhCxyDxleJ3FfecgQ2KMQHnyMQ==
-  dependencies:
-    "@mapray/mapray-js" "^0.9.0"
-    tslib "^2.2.0"
-
 "@rollup/plugin-node-resolve@^13.1.3":
   version "13.3.0"
   resolved "https://registry.yarnpkg.com/@rollup/plugin-node-resolve/-/plugin-node-resolve-13.3.0.tgz#da1c5c5ce8316cef96a2f823d111c1e4e498801c"

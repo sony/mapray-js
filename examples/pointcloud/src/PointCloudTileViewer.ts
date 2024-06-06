@@ -85,7 +85,7 @@ class PointCloudTileViewer extends maprayui.StandardUIViewer {
                 if ( index === array.length - 1 ) {
                     isMove = true;
                 }
-                this._addRawPointCloud( value.url, isMove, isDelete );
+                this._addStandardPointCloud( value.url, isMove, isDelete );
             } );
         }
     }
@@ -158,7 +158,7 @@ class PointCloudTileViewer extends maprayui.StandardUIViewer {
         }
     }
 
-    _addRawPointCloud(　url: string, isMove: boolean, isDelete: boolean　) {
+    _addStandardPointCloud(　url: string, isMove: boolean, isDelete: boolean　) {
         const infojson = url + "/info.json";
         if( isMove ) {
             this._moveCamera(infojson);
@@ -166,7 +166,7 @@ class PointCloudTileViewer extends maprayui.StandardUIViewer {
         if (　isDelete && this._current_point_cloud　) {
             this._removePointCloud(　this._current_point_cloud　);
         }
-        this._current_point_cloud = this.viewer.point_cloud_collection.add(　new mapray.RawPointCloudProvider( {　url: infojson　} ) );
+        this._current_point_cloud = this.viewer.point_cloud_collection.add(　new mapray.StandardPointCloudProvider( {　url: infojson　} ) );
     }
 
     _removePointCloud(　resource: PointCloud　) {
