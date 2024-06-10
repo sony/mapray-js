@@ -70,7 +70,7 @@ class CloudApiV1 extends CloudApi {
      */
     async createDataset( name: string, description: string ): Promise<Dataset.Json>
     {
-        return await this.post( "datasets", [ this._user_id ], undefined, { name, description } ) as Dataset.Json;
+        return await this.post( "datasets", [ this._user_id ], undefined, { name, description, srid: 4326, geoid: "EGM96_15" } ) as Dataset.Json;
     }
 
     /**
@@ -206,6 +206,28 @@ class CloudApiV1 extends CloudApi {
     async create3DDatasetUploadUrl( datasetId: string, fileInfo: Dataset3D.UploadFileInfo[] ): Promise<Dataset3D.UploadUrlInfo>
     {
         return await this.post( "3ddatasets", [ this._user_id, "uploads", datasetId ], undefined, fileInfo );
+    }
+
+    /**
+     * @internal
+     * 3DデータセットのConvertを開始します。
+     * @param datasetId データセットId
+     * @return json
+     */
+    async convert3DDataset( datasetId: string ): Promise<Dataset3D.Json>
+    {
+        return await this.post( "3ddatasets", [ "convert", datasetId ], undefined ) as Dataset3D.Json;
+    }
+
+    /**
+     * @internal
+     * 3DデータセットのConvertStatusを取得します。
+     * @param datasetId データセットId
+     * @return json
+     */
+    async retrieve3DDatasetConvertStatus( datasetId: string ): Promise<Dataset3D.Json>
+    {
+        return await this.get( "3ddatasets", [ "convert/status", datasetId ], undefined ) as Dataset3D.Json;
     }
 
     /**

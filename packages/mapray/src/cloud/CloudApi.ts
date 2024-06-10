@@ -336,6 +336,22 @@ abstract class CloudApi {
 
     /**
      * @internal
+     * 3DデータセットのConvertを開始します。
+     * @param datasetId データセットId
+     * @return json
+     */
+    abstract convert3DDataset( datasetId: string ): Promise<Dataset3D.Json>;
+
+    /**
+     * @internal
+     * 3DデータセットのConvertStatusを取得します。
+     * @param datasetId データセットId
+     * @return json
+     */
+    abstract retrieve3DDatasetConvertStatus( datasetId: string ): Promise<Dataset3D.Json>;
+
+    /**
+     * @internal
      * 3Dデータセット情報を取得します。
      * データセットが保持するデータにアクセスするには、get3DDatasetScene()を利用します。
      * @param datasetId データセットId

@@ -6,7 +6,7 @@ global.Headers = Headers;
 global.Response = Response;
 
 import CloudApi from "../dist/es/cloud/CloudApi";
-import CloudApiV1 from "../dist/es/cloud/CloudApiV1";
+// import CloudApiV1 from "../dist/es/cloud/CloudApiV1";
 import CloudApiV2 from "../dist/es/cloud/CloudApiV2";
 
 
@@ -18,9 +18,9 @@ let feature_id = 0;
 // テスト用環境変数の確認
 const basePath = process.env.MAPRAY_API_BASE_PATH || "https://cloud.mapray.com";
 
-if ( !process.env.MAPRAY_API_USER_ID ) {
-    throw new Error("MAPRAY_API_USER_ID is undefined.");
-}
+// if ( !process.env.MAPRAY_API_USER_ID ) {
+//     throw new Error("MAPRAY_API_USER_ID is undefined.");
+// }
 
 if ( !process.env.MAPRAY_API_KEY ) {
     throw new Error("MAPRAY_API_KEY is undefined.");
@@ -32,11 +32,11 @@ if ( !process.env.MAPRAY_API_KEY ) {
 // テストに使用するapiリスト
 let api_list = [
     // for v1
-    new CloudApiV1({
-            basePath: basePath,
-            userId: process.env.MAPRAY_API_USER_ID,
-            token: process.env.MAPRAY_API_KEY,
-    }),
+    // new CloudApiV1({
+    //         basePath: basePath,
+    //         userId: process.env.MAPRAY_API_USER_ID,
+    //         token: process.env.MAPRAY_API_KEY,
+    // }),
     // for v2 api key
     new CloudApiV2({
             basePath: basePath,
@@ -228,6 +228,18 @@ describe.each( api_list ) ( '3D Sequence Test', ( api )=> {
         expect( uploadurl[0].filename ).toBe( filename );
     });
 
+    test( '3D Test convert', async () => {
+        const result = await api.convert3DDataset( target_id );
+    });
+
+    test( '3D Test convert status', async () => {
+        while( true ) {
+            const result = await api.retrieve3DDatasetConvertStatus( target_id );
+            if ( result.status == "ready" ) break;
+            await new Promise((r) => setTimeout(r, 2000));
+        }
+    });
+
     test( '3D Test load3DDataset', async () => {
         // load3DDataset( get3DDataset )
         const dataset = await api.load3DDataset( target_id );
@@ -253,12 +265,9 @@ describe.each( api_list ) ( '3D Sequence Test', ( api )=> {
         // update3DDataset
         const dataset = await api.update3DDataset( target_id, 'test3d update', 'test3d desc update', { 
             path: '/test.gltf',
-            srid: 4326,
             x: 10,
             y: 20,
             z: 30,
-            src_file_type: 'glTF',
-            dst_file_type: 'glTF',
             extensions: {"shadeless": true}
         });
         // check
