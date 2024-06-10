@@ -90,7 +90,7 @@ test( 'entity', async ( { page } ) => {
     await gotoPage( page, app_url + '#35.5663825590/139.4034165561/114.60596a/74.51198t/432.99670r/12.80000h');
     // clear entities
     await page.evaluate( () => {
-        const { app } = window as unknown as BasicTesterGlobal;
+        const { app } = window as unknown as FlatTesterGlobal;
         const entity_count = app.getEntityNum();
         for ( let i = 0; i < entity_count ; i++ ) {
             app.getEntity(i).setVisibility( false );
@@ -98,7 +98,7 @@ test( 'entity', async ( { page } ) => {
     });
     // load point cloud
     await page.evaluate( () => {
-        const { app } = window as unknown as BasicTesterGlobal;
+        const { app } = window as unknown as FlatTesterGlobal;
         app.addPointCloud();
     });
     await waitAndSnapshot( page, 'entity-pc.png', pixel_diff );
@@ -107,7 +107,7 @@ test( 'entity', async ( { page } ) => {
     await gotoPage( page, app_url + '#35.6420029924/139.7488512803/3.16785a/62.68040t/1662.34885r/5.59657h');
     // load b3d
     await page.evaluate( () => {
-        const { app } = window as unknown as BasicTesterGlobal;
+        const { mapray, app } = window as unknown as FlatTesterGlobal;
         app.addB3d();
     });
     await waitAndSnapshot( page, 'entity-b3d.png', pixel_diff );

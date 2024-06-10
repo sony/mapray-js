@@ -18,8 +18,6 @@ export default class App extends maprayui.StandardUIViewer {
 
     private _render_mode: mapray.Viewer.RenderMode;
 
-    private _total_time: number;
-
     private _pc: number;
 
     constructor( container: string, options: Option = {} )
@@ -33,6 +31,17 @@ export default class App extends maprayui.StandardUIViewer {
                 atmosphere: new mapray.Atmosphere(),
                 sun_visualizer: new mapray.SunVisualizer( 32 ),
         } );
+
+        this._init();
+
+        this._render_mode = mapray.Viewer.RenderMode.SURFACE;
+
+        this._pc = 0;
+    }
+
+    private async _init(): Promise<void>
+    {
+        await this.viewer.init_promise;
 
         const init_camera = {
             longitude: 139.73685,
@@ -60,11 +69,9 @@ export default class App extends maprayui.StandardUIViewer {
 
         this.enableURLUpdate( true );
 
-        this._render_mode = mapray.Viewer.RenderMode.SURFACE;
-
         // Atmosphere
         this.viewer.sun.setSunDirection( [ 1, 0, 0 ] );
-        this.addLayer( { image_provider: new mapray.StandardImageProvider( { url: "https://opentiles.mapray.com/xyz/night-satellite/", format: "png", min_level: 0, max_level: 8 } ), opacity: 1.0, type: mapray.Layer.Type.IMAGE, draw_type: mapray.ImageLayer.DrawType.NIGHT } );
+        await this.addLayer( { image_provider: new mapray.StandardImageProvider( { url: "https://opentiles.mapray.com/xyz/night-satellite/", format: "png", min_level: 0, max_level: 8 } ), opacity: 1.0, type: mapray.Layer.Type.IMAGE, draw_type: mapray.ImageLayer.DrawType.NIGHT } );
         this.setAtmosphereVisibility( false );
 
         // // 文字のエンティティを作成
@@ -93,15 +100,10 @@ export default class App extends maprayui.StandardUIViewer {
         // 3D
         this.add3DEntity();
 */
-        // アニメーション用タイム
-        this._total_time = 0;
 
         (mapray.PointCloud as unknown as PointCloudStatistics).setStatisticsHandler((stat) => {
             this._pc = stat.loading_boxes;
         });
-
-        this._pc = 0;
-
     }
 
     setRenderMode( render_mode: mapray.Viewer.RenderMode )

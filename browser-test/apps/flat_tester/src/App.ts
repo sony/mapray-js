@@ -18,8 +18,6 @@ export default class App extends maprayui.StandardUIViewer {
 
     private _render_mode: mapray.Viewer.RenderMode;
 
-    private _total_time: number;
-
     private _pc: number;
 
     constructor( container: string, options: Option = {} )
@@ -31,6 +29,18 @@ export default class App extends maprayui.StandardUIViewer {
                     : undefined
                 )
         } );
+
+        this._init();
+
+        this._render_mode = mapray.Viewer.RenderMode.SURFACE;
+
+        this._pc = 0;
+    }
+
+
+    private async _init(): Promise<void>
+    {
+        await this.viewer.init_promise;
 
         const init_camera = {
             longitude: 139.73685,
@@ -58,17 +68,9 @@ export default class App extends maprayui.StandardUIViewer {
 
         this.enableURLUpdate( true );
 
-        this._render_mode = mapray.Viewer.RenderMode.SURFACE;
-
-        // アニメーション用タイム
-        this._total_time = 0;
-
         (mapray.PointCloud as unknown as PointCloudStatistics).setStatisticsHandler((stat) => {
             this._pc = stat.loading_boxes;
         });
-
-        this._pc = 0;
-
     }
 
     setRenderMode( render_mode: mapray.Viewer.RenderMode )
@@ -196,6 +198,9 @@ export default class App extends maprayui.StandardUIViewer {
             } break;
             case "g": {
                 this.viewer.setVisibility( mapray.Viewer.Category.GROUND, false );
+            } break;
+            case "f": {
+                this.viewer.setVisibility( mapray.Viewer.Category.GROUND, true );
             } break;
             default: {
                 super.onKeyDown( event );
