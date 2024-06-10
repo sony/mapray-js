@@ -449,21 +449,27 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
             this._fps.push(0);
         }
 
-        this._updateDebugUI();
-
         // PointCloud
         this._point_cloud_mode = undefined;
         this._point_cloud_cache = {
             bbox_geoms: [],
         };
 
-        (async () => {
-                await this._loadClouds();
-        })();
+        this._init();
+    }
+
+    // await viewer init
+    private async _init(): Promise<void>
+    {
+        await this.viewer.init_promise;
+
+        this._updateDebugUI();
+
+        await this._loadClouds();
 
         // 初期値設定
         this._setupInitialValue();
-}
+    }
 
     /**
      * Viewerを閉じる
@@ -490,6 +496,10 @@ export default class SpaceApp extends maprayui.StandardUIViewer {
      private _loadGISInfo()
     {
         // シーンの読み込みを開始
+        (async () => {
+            await this._loadClouds();
+        })();
+        this._setCloudContour( this._renderOption.get("cloud contour") );
 
         const targetPos = new mapray.GeoPoint(137.7238014361, 34.7111256306);
         var pin = new mapray.PinEntity( this.viewer.scene );
