@@ -603,13 +603,13 @@ class StandardUIViewer extends mapray.RenderCallback
       );
       if ( changed ) {
           const new_hash = this.createCameraParameterHash();
-          if ( new_hash ) {
-              this._last_camera_parameter.latitude = this._camera_parameter.latitude;
-              this._last_camera_parameter.longitude = this._camera_parameter.longitude;
-              this._last_camera_parameter.height = this._camera_parameter.height;
-              this._last_camera_parameter.pitch = this._camera_parameter.pitch;
-              this._last_camera_parameter.yaw = this._camera_parameter.yaw;
+          this._last_camera_parameter.latitude = this._camera_parameter.latitude;
+          this._last_camera_parameter.longitude = this._camera_parameter.longitude;
+          this._last_camera_parameter.height = this._camera_parameter.height;
+          this._last_camera_parameter.pitch = this._camera_parameter.pitch;
+          this._last_camera_parameter.yaw = this._camera_parameter.yaw;
 
+          if ( new_hash ) {
               if ( window.location.hash !== new_hash ) {
                 history.replaceState(null, window.location.hash, new_hash);
               }
