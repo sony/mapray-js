@@ -73,7 +73,7 @@ export default class LayerModule extends Module {
                 description: "不透明度",
                 min: 0.0,
                 max: 1.0,
-                value: 1.0,
+                value: 0.5,
             },
             "layer type": {
                 type: "select",
