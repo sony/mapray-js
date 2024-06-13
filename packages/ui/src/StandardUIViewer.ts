@@ -215,7 +215,7 @@ class StandardUIViewer extends mapray.RenderCallback
      * @param access_token                            アクセストークン
      * @param options                                 生成オプション
      */
-    protected createViewer( container: string | HTMLElement, access_token: string, options: StandardUIViewer.Option = {} ): mapray.Viewer
+    protected async createViewer( container: string | HTMLElement, access_token: string, options: StandardUIViewer.Option = {} ): Promise<void>
     {
         if ( this._viewer ) {
             this.destroy();
@@ -241,6 +241,8 @@ class StandardUIViewer extends mapray.RenderCallback
             }
         );
 
+        await viewer.init_promise;
+
         // 右クリックメニューの無効化
         const element = viewer.canvas_element;
         element.setAttribute( "oncontextmenu", "return false;" );
@@ -251,8 +253,6 @@ class StandardUIViewer extends mapray.RenderCallback
         if ( !options.attribution_controller ) {
             viewer.attribution_controller.addAttribution( StandardUIViewer._standarduiviewer_attributions );
         }
-
-        return this._viewer;
     }
 
 
