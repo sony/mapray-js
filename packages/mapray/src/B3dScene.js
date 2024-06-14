@@ -763,6 +763,7 @@ class B3dStage {
          let cache = this._shader_cache;
          if ( render_target === RenderStage.RenderTarget.SCENE ) {
              if ( cache._B3dMaterial === undefined ) {
+                 this._debug.ridMaterial = false;
                  cache._B3dMaterial = new B3dMaterial( this._glenv, this._debug);
              }
              return cache._B3dMaterial;
