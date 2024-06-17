@@ -1,5 +1,31 @@
 # Change Log
 
+## 0.9.5
+
+### Features and improvements
+
+- Add direct transition mode to the flyCamera function. [#316](https://github.com/sony/mapray-js/issues/316)
+- improved GeoRegion class [#315](https://github.com/sony/mapray-js/issues/315)
+- Improve readability of TypeDoc [#314](https://github.com/sony/mapray-js/issues/314)
+- Refactor GeoJSONLoader [#313](https://github.com/sony/mapray-js/issues/313)
+- Added browser tests [#312](https://github.com/sony/mapray-js/issues/312)
+- Incorrect Sun brightness [#311](https://github.com/sony/mapray-js/issues/311)
+- Sun and star rendering problems on certain devices [#310](https://github.com/sony/mapray-js/issues/310)
+- cloud.frag contains unused values [#309](https://github.com/sony/mapray-js/issues/309)
+- bugfix of slerp [#308](https://github.com/sony/mapray-js/issues/308)
+- Improve b3d rendering speed [#303](https://github.com/sony/mapray-js/issues/303)
+- Support transparent image in ImageIconEntity [#306](https://github.com/sony/mapray-js/issues/306)
+- Support anchor mode in PointEntities [#305](https://github.com/sony/mapray-js/issues/305)
+- Add lightweight rendering mode [#304](https://github.com/sony/mapray-js/issues/304)
+- use Viewer.pick() instead of Viewer.pickWithRay() for StandardUIVIewer [#302](https://github.com/sony/mapray-js/issues/302)
+- Support async/await syntax [#301](https://github.com/sony/mapray-js/issues/301)
+
+### Breaking Changes
+
+- Add contour layer [#307](https://github.com/sony/mapray-js/issues/307)
+- Unify Interfaces of provider classes [#300](https://github.com/sony/mapray-js/issues/300)
+
+
 ## 0.9.4
 ### Features and improvements
 - Add Quaternion to GeoMath [#288](https://github.com/sony/mapray-js/issues/288)
