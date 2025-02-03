@@ -1,4 +1,4 @@
-import mapray, { PointCloud } from "@mapray/mapray-js";
+import mapray from "@mapray/mapray-js";
 import maprayui from "@mapray/ui";
 
 export type InitValue = {
@@ -169,7 +169,7 @@ class PointCloudTileViewer extends maprayui.StandardUIViewer {
         this._current_point_cloud = this.viewer.point_cloud_collection.add(　new mapray.StandardPointCloudProvider( {　url: infojson　} ) );
     }
 
-    _removePointCloud(　resource: PointCloud　) {
+    _removePointCloud(　resource: mapray.PointCloud　) {
         this.viewer.point_cloud_collection.remove(　resource　);
     }
 
