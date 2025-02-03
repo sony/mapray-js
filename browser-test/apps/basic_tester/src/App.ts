@@ -1,4 +1,4 @@
-import mapray, { AltitudeMode, animation } from "@mapray/mapray-js";
+import mapray from "@mapray/mapray-js";
 import maprayui from "@mapray/ui";
 
 // FLAT DEMを使用
