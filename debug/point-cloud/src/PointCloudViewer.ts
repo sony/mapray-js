@@ -1,4 +1,4 @@
-import mapray, { URLResource } from "@mapray/mapray-js";
+import mapray from "@mapray/mapray-js";
 import maprayui from "@mapray/ui";
 import StatusBar from "./StatusBar";
 import Commander from "./Commander";
