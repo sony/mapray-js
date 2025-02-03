@@ -1,4 +1,4 @@
-import mapray, { GeoMath } from "@mapray/mapray-js";
+import mapray from "@mapray/mapray-js";
 import maprayui from "@mapray/ui";
 
 import CosCurve from "./CosCurve";
