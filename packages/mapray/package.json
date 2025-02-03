@@ -12,18 +12,19 @@
     "globe"
   ],
   "type": "module",
-  "main": "./dist/umd/mapray.js",
+  "main": "./dist/es/mapray.js",
   "module": "./dist/es/mapray.js",
-  "types": "./dist/es/@types/index.d.ts",
-  "sideEffects": true,
+  "types": "./dist/es/@types/mapray.d.ts",
+  "sideEffects": [
+    "./dist/es/animation/Type.js"
+  ],
   "directories": {
     "doc": "doc"
   },
   "exports": {
     ".": {
-      "types": "./dist/es/@types/index.d.ts",
-      "import": "./dist/es/mapray.js",
-      "require": "./dist/umd/mapray.js"
+      "types": "./dist/es/@types/mapray.d.ts",
+      "import": "./dist/es/mapray.js"
     }
   },
   "files": [

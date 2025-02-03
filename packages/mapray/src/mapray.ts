@@ -1,1 +1,2 @@
-export * as default from "./";
+import * as mapray from "./";
+export default mapray;

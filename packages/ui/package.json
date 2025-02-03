@@ -14,18 +14,19 @@
     "operation"
   ],
   "type": "module",
-  "main": "./dist/umd/maprayui.js",
+  "main": "./dist/es/maprayui.js",
   "module": "./dist/es/maprayui.js",
-  "types": "./dist/es/@types/index.d.ts",
-  "sideEffects": true,
+  "types": "./dist/es/@types/maprayui.d.ts",
+  "sideEffects": [
+    "**/*.css"
+  ],
   "directories": {
     "doc": "doc"
   },
   "exports": {
     ".": {
-      "types": "./dist/es/@types/index.d.ts",
-      "import": "./dist/es/maprayui.js",
-      "require": "./dist/umd/maprayui.js"
+      "types": "./dist/es/@types/maprayui.d.ts",
+      "import": "./dist/es/maprayui.js"
     },
     "./mapray.css": "./dist/mapray.css"
   },
