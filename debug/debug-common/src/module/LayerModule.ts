@@ -1,11 +1,11 @@
-import mapray, { ImageProvider } from "@mapray/mapray-js";
+import mapray from "@mapray/mapray-js";
 import Module from "./Module";
 import BingMapsImageProvider from "../BingMapsImageProvider";
 
 import TOption, { TDomTool } from "../TOption";
 
 
-const DEFAULT_IMAGE_PROVIDERS = TOption.keyValues<ImageProvider>([
+const DEFAULT_IMAGE_PROVIDERS = TOption.keyValues<mapray.ImageProvider>([
     [ 'Standard',      new mapray.StandardImageProvider( { url: "http://cyberjapandata.gsi.go.jp/xyz/std/", min_level: 0, max_level: 18 } )],
     [ 'Seamlessphoto', new mapray.StandardImageProvider( { url: "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/", format: "jpg", min_level: 2, max_level: 18 } )],
     [ 'Night',         new mapray.StandardImageProvider( { url: "https://opentiles.mapray.com/xyz/night-satellite/", min_level: 0, max_level: 8 } )],
@@ -247,7 +247,7 @@ namespace LayerModule {
 
 
 export interface Option {
-    providers?: TOption.KeyValue<ImageProvider>[];
+    providers?: TOption.KeyValue<mapray.ImageProvider>[];
 }
 
 

@@ -1,4 +1,4 @@
-import mapray, { Viewer } from "@mapray/mapray-js";
+import mapray from "@mapray/mapray-js";
 
 import DebugViewer from "../DebugViewer";
 import Module from "./Module";
