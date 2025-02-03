@@ -1,4 +1,5 @@
-export * as default from "./";
+import * as mapray from "./";
+export default mapray;
 
 export function hasOwnProperty( key: string ) {
     // @ts-ignore
