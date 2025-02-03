@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.9.6
+
+- Fixed issue that occur when using Webpack with TypeScript
+
 ## 0.9.5
 
 ### Features and improvements
