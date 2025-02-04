@@ -132,16 +132,14 @@ class ChangeAltitudeMode {
         var altitude_mode_Value = document.getElementById("AltitudeModePullDown").value;
 
         // プルダウンの値を設定
-        this.altitude_mode = altitude_mode_Value;
-
         switch ( altitude_mode_Value ) {
-            case mapray.AltitudeMode.ABSOLUTE.id:
+            case "ABSOLUTE":
                     this.altitude_mode = mapray.AltitudeMode.ABSOLUTE;
                 break;
-            case mapray.AltitudeMode.RELATIVE.id:
+            case "RELATIVE":
                     this.altitude_mode = mapray.AltitudeMode.RELATIVE;
                 break;
-            case mapray.AltitudeMode.CLAMP.id:
+            case "CLAMP":
                 this.altitude_mode = mapray.AltitudeMode.CLAMP;
                 break;
         }
