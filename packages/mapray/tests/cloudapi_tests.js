@@ -91,7 +91,8 @@ describe.each( api_list )( '2D Sequence Test', ( api )=> {
         target_id = result.id;
         // check
         const datasets_list = await api.loadDatasets( 1, 100 );
-        expect( datasets_list.findIndex( el => el._id == result.id ) ).toBeGreaterThan( -1 );
+        const found_id = datasets_list.findIndex( el => el._id == target_id );
+        expect( found_id ).toBeGreaterThan( -1 );
     });
 
     test( '2D Test count', async () => {
@@ -181,9 +182,10 @@ describe.each( api_list )( '2D Sequence Test', ( api )=> {
         await api.deleteDataset( target_id );
         // check deleted
         const datasets_list = await api.loadDatasets( 1, 100 );
-        expect( datasets_list.findIndex( el => el._id == target_id ) ).toBe(-1);
+        const found_id = datasets_list.findIndex( el => el._id == target_id );
+        expect( found_id ).toBe( -1 );
     });
-    
+
 });
 
 
@@ -191,10 +193,10 @@ describe.each( api_list )( '2D Sequence Test', ( api )=> {
 describe.each( api_list ) ( '3D Sequence Test', ( api )=> {
     // console.log( 'api: ', api._option.version );
 
-    // 3D V1
+    // 3D
     test( '3D Test create3DDataset', async () => {
         // create3DDataset
-        const result = await api.create3DDataset( 'test3d name v1','test3d desc v1', { 
+        const result = await api.create3DDataset( 'test3d name','test3d desc', {
             path: '/test.gltf',
             srid: 4326,
             x: 1,
@@ -208,7 +210,8 @@ describe.each( api_list ) ( '3D Sequence Test', ( api )=> {
         target_id = result.id;
         // check
         const datasets_list = await api.load3DDatasets( 1, 100 );
-        expect( datasets_list.findIndex( el => el._id == result.id ) ).toBeGreaterThan(-1);
+        const found_id = datasets_list.findIndex( el => el._id == target_id );
+        expect( found_id ).toBeGreaterThan( -1 );
     });
 
     test( '3D Test count', async () => {
@@ -226,6 +229,136 @@ describe.each( api_list ) ( '3D Sequence Test', ( api )=> {
         const uploadurl = await api.create3DDatasetUploadUrl( target_id, fileInfo );
         // check
         expect( uploadurl[0].filename ).toBe( filename );
+
+        await fetch( uploadurl[0].url, {
+            method: "PUT",
+            body: JSON.stringify(
+                {
+                    "asset":{
+                        "generator":"Khronos glTF Blender I/O v3.5.30",
+                        "version":"2.0"
+                    },
+                    "scene":0,
+                    "scenes":[
+                        {
+                            "name":"Scene",
+                            "nodes":[
+                                0
+                            ]
+                        }
+                    ],
+                    "nodes":[
+                        {
+                            "mesh":0,
+                            "name":"Cube"
+                        }
+                    ],
+                    "materials":[
+                        {
+                            "doubleSided":true,
+                            "name":"Material",
+                            "pbrMetallicRoughness":{
+                                "baseColorFactor":[
+                                    0.800000011920929,
+                                    0.800000011920929,
+                                    0.800000011920929,
+                                    1
+                                ],
+                                "metallicFactor":0,
+                                "roughnessFactor":0.5
+                            }
+                        }
+                    ],
+                    "meshes":[
+                        {
+                            "name":"Cube",
+                            "primitives":[
+                                {
+                                    "attributes":{
+                                        "POSITION":0,
+                                        "TEXCOORD_0":1,
+                                        "NORMAL":2
+                                    },
+                                    "indices":3,
+                                    "material":0
+                                }
+                            ]
+                        }
+                    ],
+                    "accessors":[
+                        {
+                            "bufferView":0,
+                            "componentType":5126,
+                            "count":24,
+                            "max":[
+                                1,
+                                1,
+                                1
+                            ],
+                            "min":[
+                                -1,
+                                -1,
+                                -1
+                            ],
+                            "type":"VEC3"
+                        },
+                        {
+                            "bufferView":1,
+                            "componentType":5126,
+                            "count":24,
+                            "type":"VEC2"
+                        },
+                        {
+                            "bufferView":2,
+                            "componentType":5126,
+                            "count":24,
+                            "type":"VEC3"
+                        },
+                        {
+                            "bufferView":3,
+                            "componentType":5123,
+                            "count":36,
+                            "type":"SCALAR"
+                        }
+                    ],
+                    "bufferViews":[
+                        {
+                            "buffer":0,
+                            "byteLength":288,
+                            "byteOffset":0,
+                            "target":34962
+                        },
+                        {
+                            "buffer":0,
+                            "byteLength":192,
+                            "byteOffset":288,
+                            "target":34962
+                        },
+                        {
+                            "buffer":0,
+                            "byteLength":288,
+                            "byteOffset":480,
+                            "target":34962
+                        },
+                        {
+                            "buffer":0,
+                            "byteLength":72,
+                            "byteOffset":768,
+                            "target":34963
+                        }
+                    ],
+                    "buffers":[
+                        {
+                            "byteLength":840,
+                            "uri":"data:application/octet-stream;base64,AACAPwAAgD8AAIC/AACAPwAAgD8AAIC/AACAPwAAgD8AAIC/AACAPwAAgL8AAIC/AACAPwAAgL8AAIC/AACAPwAAgL8AAIC/AACAPwAAgD8AAIA/AACAPwAAgD8AAIA/AACAPwAAgD8AAIA/AACAPwAAgL8AAIA/AACAPwAAgL8AAIA/AACAPwAAgL8AAIA/AACAvwAAgD8AAIC/AACAvwAAgD8AAIC/AACAvwAAgD8AAIC/AACAvwAAgL8AAIC/AACAvwAAgL8AAIC/AACAvwAAgL8AAIC/AACAvwAAgD8AAIA/AACAvwAAgD8AAIA/AACAvwAAgD8AAIA/AACAvwAAgL8AAIA/AACAvwAAgL8AAIA/AACAvwAAgL8AAIA/AAAgPwAAAD8AACA/AAAAPwAAID8AAAA/AADAPgAAAD8AAMA+AAAAPwAAwD4AAAA/AAAgPwAAgD4AACA/AACAPgAAID8AAIA+AADAPgAAgD4AAMA+AACAPgAAwD4AAIA+AAAgPwAAQD8AACA/AABAPwAAYD8AAAA/AAAAPgAAAD8AAMA+AABAPwAAwD4AAEA/AAAgPwAAAAAAACA/AACAPwAAYD8AAIA+AAAAPgAAgD4AAMA+AAAAAAAAwD4AAIA/AAAAAAAAAAAAAIC/AAAAAAAAgD8AAACAAACAPwAAAAAAAACAAAAAAAAAgL8AAACAAAAAAAAAAAAAAIC/AACAPwAAAAAAAACAAAAAAAAAAAAAAIA/AAAAAAAAgD8AAACAAACAPwAAAAAAAACAAAAAAAAAgL8AAACAAAAAAAAAAAAAAIA/AACAPwAAAAAAAACAAACAvwAAAAAAAACAAAAAAAAAAAAAAIC/AAAAAAAAgD8AAACAAAAAAAAAgL8AAACAAACAvwAAAAAAAACAAAAAAAAAAAAAAIC/AAAAAAAAAAAAAIA/AACAvwAAAAAAAACAAAAAAAAAgD8AAACAAAAAAAAAgL8AAACAAAAAAAAAAAAAAIA/AACAvwAAAAAAAACAAQAOABQAAQAUAAcACgAGABIACgASABYAFwATAAwAFwAMABAADwADAAkADwAJABUABQACAAgABQAIAAsAEQANAAAAEQAAAAQA"
+                        }
+                    ]
+                }
+            ),
+            headers: {
+                "Content-type": "model/gltf+json",
+            },
+        })
     });
 
     test( '3D Test convert', async () => {
@@ -287,7 +420,8 @@ describe.each( api_list ) ( '3D Sequence Test', ( api )=> {
         const dataset = await api.delete3DDataset( target_id );
         // check deleted
         const datasets_list = await api.load3DDatasets( 1, 100 );
-        expect( datasets_list.findIndex( el => el._id == target_id ) ).toBe(-1);
+        const found_id = datasets_list.findIndex( el => el._id == target_id );
+        expect( found_id ).toBe( -1 );
     });
 });
 
@@ -296,7 +430,7 @@ describe.each( api_list ) ( '3D Sequence Test', ( api )=> {
 describe.each( api_list ) ( 'PointCloud Sequence Test', ( api )=> {
     // console.log( 'api: ', api._option.version );
 
-    // PointCloud V1
+    // PointCloud
     test( 'PointCloud Test loadPointCloudDatasets', async () => {
         // loadPointCloudDatasets( getPointCloudDatasets )
         const datasets_list = await api.getPointCloudDatasets( 1, 100 );
