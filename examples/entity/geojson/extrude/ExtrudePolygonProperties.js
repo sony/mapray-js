@@ -137,7 +137,23 @@ class ExtrudePolygonProperties extends mapray.RenderCallback {
 
     // 画像プロバイダを生成
     createImageProvider() {
-       return new USGSImageProvider("https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/", "", 256, 2, 18, {coord_system: CoordSystem.UPPER_LEFT, coord_order: CoordOrder.ZYX })
+        return new mapray.ImageProvider( {
+            init: () => {
+                return {
+                    image_size: 256,
+                    zoom_level_range: new mapray.ImageProvider.Range( 2, 18 )
+                };
+            },
+            requestTile: ( z, x, y ) => {
+                return new Promise( ( resolve, reject ) => {
+                    const image = new Image();
+                    image.onload      = () => resolve( image );
+                    image.onerror     = () => reject( new Error( "Failed to load image: " + z + "/" + y + "/" + x ) );
+                    image.crossOrigin = "anonymous";
+                    image.src         = "https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/" + z + "/" + y + "/" + x;
+                } );
+            }
+        } );
     }
 
      // Load GeoJSON
