@@ -23,6 +23,7 @@ import GeoPoint from "./GeoPoint";
 import Scene from "./Scene";
 import B3dCollection from "./B3dCollection";
 import B3dScene from "./B3dScene";
+import CustomSceneCollection from "./CustomSceneCollection";
 import { StyleManager } from "./vectile/style_manager";
 import { registerLayerTypes } from "./vectile/style_layers/_register";
 import EasyBindingBlock from "./animation/EasyBindingBlock";
@@ -99,6 +100,8 @@ class Viewer {
 
     private _b3d_scene_visibility: boolean;
 
+    private _custom_scene_visibility: boolean;
+
     private _vectile_visibility: boolean;
 
     private _render_mode: Viewer.RenderMode;
@@ -106,6 +109,8 @@ class Viewer {
     private _debug_stats?: DebugStats;
 
     private _point_cloud_collection: PointCloudCollection;
+
+    private _custom_scene_collection: CustomSceneCollection;
 
     private _render_callback: RenderCallback;
 
@@ -201,10 +206,12 @@ class Viewer {
         this._entity_visibility  = options.entity_visibility ?? true;
         this._point_cloud_visibility = options.point_cloud_visibility ?? true;
         this._b3d_scene_visibility = options.b3d_scene_visibility ?? true;
+        this._custom_scene_visibility = options.custom_scene_visibility ?? true;
         this._vectile_visibility = options.vectile_visibility ?? true;
         this._render_mode        = options.render_mode || Viewer.RenderMode.SURFACE;
         this._debug_stats        = options.debug_stats;
         this._point_cloud_collection = this._createPointCloudCollection( options );
+        this._custom_scene_collection = this._createCustomSceneCollection();
         this._render_callback    = this._createRenderCallback( options );
         this._sun                = new Sun();
         this._moon               = new Moon();
@@ -336,6 +343,9 @@ class Viewer {
         // すべての B3dScene インスタンスを削除
         this._b3d_collection.clearScenes();
 
+        // すべての CustomScene インスタンスを削除
+        this._custom_scene_collection.clearScenes();
+
         // 各 SceneLoader の読み込みを取り消す
         this._scene.cancelLoaders();
 
@@ -421,6 +431,15 @@ class Viewer {
     {
         // const point_cloud_providers = (options.point_cloud_providers) ? options.point_cloud_providers : {};
         return new PointCloudCollection( this._scene );
+    }
+
+
+    /**
+     * CustomSceneCollection を生成
+     */
+    private _createCustomSceneCollection()
+    {
+        return new CustomSceneCollection( this );
     }
 
 
@@ -515,6 +534,12 @@ class Viewer {
      * B3dScene 管理
      */
     get b3d_collection(): B3dCollection { return this._b3d_collection; }
+
+
+    /**
+     * カスタム描画シーン管理
+     */
+    get custom_scene_collection(): CustomSceneCollection { return this._custom_scene_collection; }
 
 
     /**
@@ -662,6 +687,9 @@ class Viewer {
         case Viewer.Category.B3D_SCENE:
             this._b3d_scene_visibility = visibility;
             break;
+        case Viewer.Category.CUSTOM_SCENE:
+            this._custom_scene_visibility = visibility;
+            break;
         case Viewer.Category.VECTILE:
             this._vectile_visibility = visibility;
             break;
@@ -690,6 +718,8 @@ class Viewer {
             return this._point_cloud_visibility;
         case Viewer.Category.B3D_SCENE:
             return this._b3d_scene_visibility;
+        case Viewer.Category.CUSTOM_SCENE:
+            return this._custom_scene_visibility;
         case Viewer.Category.VECTILE:
             return this._vectile_visibility;
         default:
@@ -1252,6 +1282,9 @@ export interface Option {
     /** B3D シーンの可視性 */
     b3d_scene_visibility?: boolean;
 
+    /** カスタム描画シーンの可視性 */
+    custom_scene_visibility?: boolean;
+
     /** ベクトルタイルの可視性 */
     vectile_visibility?: boolean;
 
@@ -1529,6 +1562,11 @@ export const enum Category {
      * B3D シーン
      */
     B3D_SCENE = "@@_Viewer.Category.B3D_SCENE",
+
+    /**
+     * カスタム描画シーン
+     */
+    CUSTOM_SCENE = "@@_Viewer.Category.CUSTOM_SCENE",
 
 
     /**

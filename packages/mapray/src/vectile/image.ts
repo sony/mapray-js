@@ -13,6 +13,14 @@ type LayoutItem = SpriteProvider.LayoutItem;
  * 追加可能な画像の型
  */
 type ImageSource = TexImageSource & CanvasImageSource;
+type ImageSizeSource = {
+    width?: number;
+    height?: number;
+    videoWidth?: number;
+    videoHeight?: number;
+    displayWidth?: number;
+    displayHeight?: number;
+};
 
 
 /**
@@ -68,7 +76,7 @@ export class ImageManager {
                 // SDFではないスプライトがある場合のみアイコン画像を作成
                 sheet_texture ??= create_sheet_from_image( glenv, sheet );
 
-                const icon_image = new IconImage( id, item, sheet_texture, [sheet.width, sheet.height] );
+                const icon_image = new IconImage( id, item, sheet_texture, getImageSize( sheet ) );
                 this._image_map.set( id, icon_image );
             }
         }
@@ -307,11 +315,12 @@ class IsolatedImage extends ColorImage {
                  image: TexImageSource )
     {
         const image_lower: Vector2 = [0, 0];
-        const image_upper: Vector2 = [image.width, image.height];
+        const image_size = getImageSize( image );
+        const image_upper: Vector2 = [image_size[0], image_size[1]];
 
         const texture = create_sheet_from_image( glenv, image );
 
-        super( id, texture, [image.width, image.height], image_lower, image_upper );
+        super( id, texture, image_size, image_lower, image_upper );
     }
 
 }
@@ -330,9 +339,10 @@ export class SdfImage extends ImageBase {
     {
         super( id );
 
+        const image_size = getImageSize( image );
         const canvas = document.createElement( "canvas" );
-        canvas.width  = option?.dw ?? image.width;
-        canvas.height = option?.dh ?? image.height;
+        canvas.width  = option?.dw ?? image_size[0];
+        canvas.height = option?.dh ?? image_size[1];
 
         this.image = canvas;
 
@@ -343,7 +353,7 @@ export class SdfImage extends ImageBase {
         }
 
         context.drawImage( image,
-                           option?.dx ?? 0, option?.dy ?? 0, image.width, image.height );
+                           option?.dx ?? 0, option?.dy ?? 0, image_size[0], image_size[1] );
     }
 
 }
@@ -396,6 +406,20 @@ function create_layout_dictionary( layout: SpriteProvider.Layout ): Map<string, 
     }
 
     return dict;
+}
+
+
+function getImageSize( image: TexImageSource | ImageSource ): [number, number]
+{
+    const source = image as ImageSizeSource;
+    const width = source.width ?? source.videoWidth ?? source.displayWidth;
+    const height = source.height ?? source.videoHeight ?? source.displayHeight;
+
+    if ( width === undefined || height === undefined ) {
+        throw new Error( "Cannot determine image size" );
+    }
+
+    return [width, height];
 }
 
 

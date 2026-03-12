@@ -363,6 +363,11 @@ abstract class RenderStage {
             this._draw_b3d();
         }
 
+        // カスタム描画シーンを描画
+        if ( this._viewer.getVisibility( Viewer.Category.CUSTOM_SCENE ) ) {
+            this._draw_custom_scene();
+        }
+
         // ポイントクラウドを描画
         if ( this._viewer.getVisibility( Viewer.Category.POINT_CLOUD ) ) {
             this._draw_point_cloud();
@@ -556,6 +561,10 @@ abstract class RenderStage {
     {
     }
 
+    protected _draw_custom_scene()
+    {
+    }
+
     protected _draw_extras()
     {
         const gl = this._glenv.context;
@@ -681,6 +690,7 @@ export class SceneRenderStage extends RenderStage {
 
         this._globe.endFrame();
         this._viewer.b3d_collection.endFrame();
+        this._viewer.custom_scene_collection.endFrame();
         this._tile_texture_cache.endFrame();
         this._viewer.layers.endFrame();
     }
@@ -754,6 +764,14 @@ export class SceneRenderStage extends RenderStage {
     protected _draw_b3d()
     {
         this._viewer.b3d_collection.draw( this );
+    }
+
+    /**
+     * @summary カスタム描画シーンを描画
+     */
+    protected _draw_custom_scene()
+    {
+        this._viewer.custom_scene_collection.draw( this );
     }
 }
 
