@@ -1,3 +1,4 @@
+export * from "./";
 export * as default from "./";
 
 export function hasOwnProperty( key: string ) {

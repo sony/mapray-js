@@ -72,9 +72,6 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Build distributables
-        run: yarn mapray && yarn ui && yarn css
-
       - name: Pack core package
         run: |
           mkdir -p "$GITHUB_WORKSPACE/${{ env.RELEASE_ASSET_DIR }}"

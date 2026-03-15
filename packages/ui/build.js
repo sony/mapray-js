@@ -90,6 +90,16 @@ class Project {
           "--environment", Object.entries( env ).map(([key, value]) => `${key}:${value}`).join(","),
       ]);
 
+      if ( process.status === 0 ) {
+        spawnSync("node", [
+            "../../scripts/normalize-dts.mjs",
+            "dist/es/@types",
+            "dist/umd/@types",
+        ], {
+            stdio: "inherit",
+        });
+      }
+
       const end = new Date();
       const duration = (end.getTime() - start.getTime());
 

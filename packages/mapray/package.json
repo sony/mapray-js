@@ -14,14 +14,14 @@
   "type": "module",
   "main": "./dist/umd/mapray.js",
   "module": "./dist/es/mapray.js",
-  "types": "./dist/es/@types/index.d.ts",
+  "types": "./dist/es/@types/mapray.d.ts",
   "sideEffects": true,
   "directories": {
     "doc": "doc"
   },
   "exports": {
     ".": {
-      "types": "./dist/es/@types/index.d.ts",
+      "types": "./dist/es/@types/mapray.d.ts",
       "import": "./dist/es/mapray.js",
       "require": "./dist/umd/mapray.js"
     }
@@ -35,6 +35,7 @@
     "build-min": "node build.js min",
     "build-devel": "node build.js devel",
     "build-watch": "node build.js watch",
+    "prepack": "node build.js",
     "doc": "typedoc --tsconfig tsconfig.json",
     "doc-devel": "typedoc --tsconfig tsconfig-devel.json",
     "tests-devel": "cross-env webpack --watch --mode=development --env.NODE_ENV=tests",
