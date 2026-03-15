@@ -15,6 +15,27 @@
             height: 100%;
             width: 100%;
         }
+
+        .toolbar {
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            z-index: 10;
+        }
+
+        .toolbar button {
+            padding: 8px 12px;
+            color: #d7e2f0;
+            background: rgba(16, 22, 33, 0.88);
+            border: 1px solid rgba(215, 226, 240, 0.24);
+            border-radius: 4px;
+            font: 12px/1.4 monospace;
+            cursor: pointer;
+        }
+
+        .toolbar button:hover {
+            background: rgba(34, 47, 68, 0.95);
+        }
     </style>
     <script type="text/javascript" src="./dist/bundle.js"></script>
     <script type="text/javascript">
@@ -25,5 +46,8 @@
 </head>
 <body>
     <div id="mapray-container"></div>
+    <div class="toolbar">
+        <button id="wireframe-toggle" type="button">Wireframe</button>
+    </div>
 </body>
 </html>

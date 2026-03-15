@@ -98,6 +98,21 @@ class UndergroundViewer extends maprayui.StandardUIViewer {
   }
 
 
+  toggleRenderMode(): void
+  {
+    this.viewer.render_mode =
+      this.viewer.render_mode === mapray.Viewer.RenderMode.SURFACE ?
+        mapray.Viewer.RenderMode.WIREFRAME :
+        mapray.Viewer.RenderMode.SURFACE;
+  }
+
+
+  isWireframeMode(): boolean
+  {
+    return this.viewer.render_mode === mapray.Viewer.RenderMode.WIREFRAME;
+  }
+
+
   private async _loadCloudDatasets(): Promise<void>
   {
     if ( !this._cloud_api ) {
