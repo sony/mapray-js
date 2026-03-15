@@ -7,5 +7,5 @@ This fork ships release tarballs on GitHub Releases instead of publishing to npm
 Install from the release asset:
 
 ```sh
-npm install https://github.com/TakamuneSuda/mapray-js/releases/download/v0.9.5-fork.0/mapray-mapray-js-v0.9.5-fork.0.tgz
+npm install https://github.com/TakamuneSuda/mapray-js/releases/download/v0.9.5-fork.1/mapray-mapray-js-v0.9.5-fork.1.tgz
 ```
