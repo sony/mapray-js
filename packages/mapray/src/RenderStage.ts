@@ -87,6 +87,7 @@ abstract class RenderStage {
     // 半透明化モード
     private _translucent_mode: boolean;
 
+    private _underground_state: Viewer.UndergroundState;
 
     /**
      * @param viewer      所有者である Viewer
@@ -108,6 +109,7 @@ abstract class RenderStage {
         this._point_cloud_collection = viewer.point_cloud_collection;
 
         this._translucent_mode = false;
+        this._underground_state = { ...viewer.getUndergroundState() };
 
         this._debug_stats = viewer.debug_stats;
 
@@ -143,21 +145,7 @@ abstract class RenderStage {
         this._pixel_step    = renderInfo.pixel_step;     // 画素の変化量 (視点空間)
 
         // フレーム間のオブジェクトキャッシュ
-        const render_cache = viewer._render_cache || (viewer._render_cache = {});
-        if ( !render_cache.surface_material ) {
-            render_cache.surface_material = new SurfaceMaterial( viewer );
-            render_cache.wireframe_material = new WireframeMaterial( viewer );
-        }
-        if ( !render_cache.surface_pick_material ) {
-            render_cache.surface_pick_material = new SurfaceMaterial( viewer, { ridMaterial: true } );
-        }
-        if ( !render_cache.surface_ground_space_material ) {
-          render_cache.surface_ground_space_material = new SurfaceMaterial( viewer, { atmosphereFromSpaceMaterial: true } );
-          render_cache.surface_ground_atmosphere_material = new SurfaceMaterial( viewer, { atmosphereMaterial: true } );
-        }
-        if ( !render_cache._flake_bbox_material ) {
-            render_cache._flake_bbox_material = new SurfaceMaterial.FlakeBboxMaterial( viewer );
-        }
+        this._ensureRenderCache();
     }
 
 
@@ -237,6 +225,14 @@ abstract class RenderStage {
     }
 
     /**
+     * カメラが地下にあるか。
+     */
+    isCameraUnderground(): boolean
+    {
+        return this._underground_state.cameraUnderground;
+    }
+
+    /**
      * 半透明化モードを取得。エンティティモデルを半透明化して描画する。
      * Sceneがエンティティへ"半透明化モード"を伝達するのに用いる。
      * @see mapray.Entity#anchor_mode
@@ -304,16 +300,7 @@ abstract class RenderStage {
     {
         const gl = this._glenv.context;
 
-        // 描画領域全体にビューポートを設定
-        gl.viewport( 0, 0, this._width, this._height );
-        if ( this.getRenderTarget() === RenderStage.RenderTarget.SCENE ) {
-            gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
-        }
-        else {
-            gl.clearColor( 0.0, 0.0, 0.0, 0.0 );
-        }
-        gl.depthMask( true );
-        gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
+        this._clearRenderTarget( gl );
 
         if ( this._rendering_cancel )
             return;
@@ -327,10 +314,7 @@ abstract class RenderStage {
 
         this._draw_extras();
 
-        gl.enable( gl.CULL_FACE );
-        gl.enable( gl.DEPTH_TEST );
-        gl.blendFuncSeparate( gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE );  // FB のα値は変えない
-        gl.depthFunc( gl.LEQUAL );
+        this._setupSharedRenderState( gl );
 
         const collector = new FlakeCollector( this );
         this._flake_list = collector.traverse();
@@ -387,6 +371,24 @@ abstract class RenderStage {
         this._draw_sky_layer();
     }
 
+
+    private _clearRenderTarget( gl: WebGLRenderingContext ): void
+    {
+        gl.viewport( 0, 0, this._width, this._height );
+        gl.clearColor( 0.0, 0.0, 0.0, this.getRenderTarget() === RenderStage.RenderTarget.SCENE ? 1.0 : 0.0 );
+        gl.depthMask( true );
+        gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
+    }
+
+
+    private _setupSharedRenderState( gl: WebGLRenderingContext ): void
+    {
+        gl.enable( gl.CULL_FACE );
+        gl.enable( gl.DEPTH_TEST );
+        gl.blendFuncSeparate( gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE );  // FB のα値は変えない
+        gl.depthFunc( gl.LEQUAL );
+    }
+
     /**
      * 地表断片を描画する前の準備
      */
@@ -409,7 +411,14 @@ abstract class RenderStage {
     {
         const gl = this._glenv.context;
 
-        const flakeMaterial = this._flake_material;
+        const underground = this.isCameraUnderground();
+        const no_skirt = false;
+        const flakeMaterial = underground ?
+            // @ts-ignore
+            this._viewer._render_cache.surface_underground_material :
+            this._flake_material;
+
+        this._beginUndergroundFlakeDraw( underground );
 
         // @ts-ignore
         flakeMaterial.bindProgram();
@@ -419,12 +428,17 @@ abstract class RenderStage {
 
         // 一番下の不透明地表
         if ( flakeMaterial.setFlakeParameter( this, rflake, mesh, 0 ) ) {
-            gl.disable( gl.BLEND );
+            if ( underground ) {
+                gl.enable( gl.BLEND );
+            }
+            else {
+                gl.disable( gl.BLEND );
+            }
             gl.depthMask( true );
-            mesh.draw( flakeMaterial );
+            mesh.draw( flakeMaterial, { no_skirt } );
         }
 
-        if ( this.getRenderTarget() === RenderStage.RenderTarget.SCENE ) {
+        if ( this.getRenderTarget() === RenderStage.RenderTarget.SCENE && !underground ) {
             let material = flakeMaterial;
 
             let layerRendered = false;
@@ -445,7 +459,7 @@ abstract class RenderStage {
                         gl.depthMask( false );
                         layerRendered = true;
                     }
-                    mesh.draw( material );
+                    mesh.draw( material, { no_skirt } );
                 }
             }
             if ( layerRendered ) {
@@ -453,11 +467,62 @@ abstract class RenderStage {
             }
         }
 
+        this._endUndergroundFlakeDraw( underground );
+
         // 描画地表断頂点数を記録
         var stats = this._debug_stats;
         if ( stats ) {
             // @ts-ignore
             stats.num_drawing_flake_vertices += mesh.num_vertices;
+        }
+    }
+
+
+    private _beginUndergroundFlakeDraw( underground: boolean ): void
+    {
+        if ( !underground ) {
+            return;
+        }
+
+        const gl = this._glenv.context;
+        gl.enable( gl.CULL_FACE );
+        gl.cullFace( gl.FRONT );
+    }
+
+
+    private _endUndergroundFlakeDraw( underground: boolean ): void
+    {
+        if ( !underground ) {
+            return;
+        }
+
+        const gl = this._glenv.context;
+        gl.cullFace( gl.BACK );
+        gl.enable( gl.CULL_FACE );
+    }
+
+
+    private _ensureRenderCache(): void
+    {
+        const viewer = this._viewer;
+        const render_cache = viewer._render_cache || (viewer._render_cache = {});
+
+        if ( !render_cache.surface_material ) {
+            render_cache.surface_material = new SurfaceMaterial( viewer );
+            render_cache.wireframe_material = new WireframeMaterial( viewer );
+        }
+        if ( !render_cache.surface_underground_material ) {
+            render_cache.surface_underground_material = new SurfaceMaterial( viewer, { undergroundMaterial: true } );
+        }
+        if ( !render_cache.surface_pick_material ) {
+            render_cache.surface_pick_material = new SurfaceMaterial( viewer, { ridMaterial: true } );
+        }
+        if ( !render_cache.surface_ground_space_material ) {
+          render_cache.surface_ground_space_material = new SurfaceMaterial( viewer, { atmosphereFromSpaceMaterial: true } );
+          render_cache.surface_ground_atmosphere_material = new SurfaceMaterial( viewer, { atmosphereMaterial: true } );
+        }
+        if ( !render_cache._flake_bbox_material ) {
+            render_cache._flake_bbox_material = new SurfaceMaterial.FlakeBboxMaterial( viewer );
         }
     }
 
@@ -567,6 +632,10 @@ abstract class RenderStage {
 
     protected _draw_extras()
     {
+        if ( this.isCameraUnderground() ) {
+            return;
+        }
+
         const gl = this._glenv.context;
 
         // sun & atmosphere
@@ -618,6 +687,10 @@ abstract class RenderStage {
 
     protected _draw_sky_layer()
     {
+        if ( this.isCameraUnderground() ) {
+            return;
+        }
+
         const gl = this._glenv.context;
 
         if ( this._viewer.cloudVisualizer && this._viewer.cloudVisualizer.visibility ) {

@@ -82,6 +82,7 @@ class FlakeMaterial extends Material {
     {
         mesh.mul_flake_to_gocs( stage.gocs_to_clip, this._flake_to_clip );
         this.setMatrix( "u_obj_to_clip", this._flake_to_clip );
+        this.setVector3( "u_flake_center", mesh.center );
     }
 
 

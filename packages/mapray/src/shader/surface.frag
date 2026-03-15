@@ -3,6 +3,8 @@ precision mediump float;
 varying vec2  v_texcoord_hi;    // 高レベル画像のテクスチャ座標
 varying vec2  v_texcoord_lo;    // 低レベル画像のテクスチャ座標
 varying float v_lod;            // 補間された LOD
+varying float v_skirt;          // skirt かどうか
+varying float v_underground_boundary_band; // 地下表示時に落とす外周 2 リングか
 
 #ifdef NIGHTIMAGE
     varying float v_opacity;           // 不透明度(太陽方向による処理)
@@ -15,8 +17,13 @@ varying float v_lod;            // 補間された LOD
     uniform float u_opacity;           // 不透明度
 #endif
 
-uniform sampler2D u_image_hi;   // 高レベル画像
-uniform sampler2D u_image_lo;   // 低レベル画像
+uniform sampler2D      u_image_hi;   // 高レベル画像
+uniform sampler2D      u_image_lo;   // 低レベル画像
+uniform mediump float  u_underground_mode;
+uniform mediump float  u_underground_discard_skirt;
+uniform mediump float  u_underground_discard_boundary_band;
+uniform mediump float  u_underground_skirt_factor;
+uniform mediump float  u_underground_skirt_brightness;
 
 /** 画像パラメータ
  *
@@ -40,11 +47,20 @@ void main()
 
 
     // 不透明度を適用
+    vec4 color = mix( color_lo, color_hi, ratio );
+
+    if ( u_underground_discard_skirt > 0.5 && v_skirt > 0.001 ) {
+        discard;
+    }
+
+    if ( u_underground_discard_boundary_band > 0.5 && v_underground_boundary_band > 0.001 ) {
+        discard;
+    }
+
 #ifdef NIGHTIMAGE
-    gl_FragColor = mix( color_lo, color_hi, ratio );
+    gl_FragColor = color;
     gl_FragColor.a *= v_opacity;
 #elif defined(ATMOSPHERE)
-    vec4 color            = mix( color_lo, color_hi, ratio );
     vec4 atmosphere_color = v_color + color * v_secondary_color;
 
     atmosphere_color   = 1.0 - exp( atmosphere_color * u_exposure );
@@ -53,7 +69,12 @@ void main()
     gl_FragColor = atmosphere_color;
     gl_FragColor.a *= u_opacity;
 #else
-    gl_FragColor = mix( color_lo, color_hi, ratio );
+    gl_FragColor = color;
     gl_FragColor.a *= u_opacity;
 #endif
+
+    if ( u_underground_mode > 0.5 && v_skirt > 0.5 ) {
+        gl_FragColor.rgb *= u_underground_skirt_brightness;
+        gl_FragColor.a *= u_underground_skirt_factor;
+    }
 }

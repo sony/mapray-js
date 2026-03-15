@@ -37,6 +37,11 @@ class SurfaceMaterial extends FlakeMaterial {
         this.bindProgram();
         this.setInteger( "u_image_hi", SurfaceMaterial.TEXUNIT_IMAGE_HI );
         this.setInteger( "u_image_lo", SurfaceMaterial.TEXUNIT_IMAGE_LO );
+        this.setFloat( "u_underground_mode", 0.0 );
+        this.setFloat( "u_underground_discard_skirt", 0.0 );
+        this.setFloat( "u_underground_discard_boundary_band", 0.0 );
+        this.setFloat( "u_underground_skirt_factor", 1.0 );
+        this.setFloat( "u_underground_skirt_brightness", 1.0 );
 
         if ( options.ridMaterial ) {
             this._setRenderId( 1 );
@@ -45,6 +50,7 @@ class SurfaceMaterial extends FlakeMaterial {
         this._viewer             = viewer;
         this._tile_texture_cache = viewer.tile_texture_cache;
         this._dummy_tile_texture = this._createDummyTileTexture( viewer.glenv, [128, 128, 128, 255] );
+        this._is_underground_material = options.undergroundMaterial === true;
 
         this._image_zbias = 0;
 
@@ -101,6 +107,7 @@ class SurfaceMaterial extends FlakeMaterial {
 
         if ( param ) {
             const layer = this._viewer.layers.getDrawingLayer( index - 1 ) as ImageLayer;
+            const underground = stage.isCameraUnderground();
 
             this.setVector4( "u_corner_lod", param.corner_lod );
 
@@ -112,6 +119,12 @@ class SurfaceMaterial extends FlakeMaterial {
                                                0 : 1 / ( param.image_hi.lod - param.image_lo.lod )] );
 
             this.setFloat( "u_opacity", ( index === 0 ) ? 1.0 : layer.getOpacity() );
+            const underground_mode = underground || this._is_underground_material;
+            this.setFloat( "u_underground_mode", underground_mode ? 1.0 : 0.0 );
+            this.setFloat( "u_underground_discard_skirt", 0.0 );
+            this.setFloat( "u_underground_discard_boundary_band", 0.0 );
+            this.setFloat( "u_underground_skirt_factor", underground_mode ? SurfaceMaterial.UNDERGROUND_SKIRT_OPACITY : 1.0 );
+            this.setFloat( "u_underground_skirt_brightness", underground_mode ? SurfaceMaterial.UNDERGROUND_SKIRT_BRIGHTNESS : 1.0 );
 
             if ( index > 0 && layer.getDrawType() === ImageLayer.DrawType.NIGHT ) {
                 this.setVector3( "u_sun_direction", this._viewer.sun.sun_direction );
@@ -245,11 +258,14 @@ class SurfaceMaterial extends FlakeMaterial {
     private readonly _viewer: Viewer;
     private readonly _tile_texture_cache: TileTextureCache;
     private readonly _dummy_tile_texture: WebGLTexture;
+    private readonly _is_underground_material: boolean;
     private          _image_zbias: number;
     private readonly _flake_to_gocs: Matrix;
 
     private static readonly TEXUNIT_IMAGE_HI = 0;  // 高レベル画像のテクスチャユニット
     private static readonly TEXUNIT_IMAGE_LO = 1;  // 低レベル画像のテクスチャユニット
+    private static readonly UNDERGROUND_SKIRT_OPACITY = 0.3;
+    private static readonly UNDERGROUND_SKIRT_BRIGHTNESS = 0.55;
 
 }
 
@@ -308,6 +324,11 @@ export interface Option {
      * @defaultValue `false`
      */
     atmosphereMaterial?: boolean;
+
+    /**
+     * @defaultValue `false`
+     */
+    undergroundMaterial?: boolean;
 
 }
 

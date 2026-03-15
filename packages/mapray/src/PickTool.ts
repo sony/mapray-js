@@ -255,13 +255,6 @@ class PickTool {
 
         this._frame_buffer.unbind();
 
-        const endRid = Date.now();
-        DEBUG: {
-            if ( endRid - startRid > 7 ) {
-                console.log("Render and Read Index: " + (endRid - startRid) + "ms gl.readPixels:" + (endRidRead - startRidRead) + "ms");
-            }
-        }
-
         return rid;
     }
 
@@ -324,13 +317,6 @@ class PickTool {
                 ( m[1]*v[0] + m[5]*v[1] + m[ 9]*v[2] + m[13]*v[3] ) / w,
                 ( m[2]*v[0] + m[6]*v[1] + m[10]*v[2] + m[14]*v[3] ) / w
         ]);
-
-        const endDepth = Date.now();
-        DEBUG: {
-            if ( endDepth - startDepth > 7 ) {
-                console.log("Render and Read Depth: " + (endDepth - startDepth) + "ms gl.readPixels:" + (endDepthRead - startDepthRead) + "ms");
-            }
-        }
 
         return point;
     }

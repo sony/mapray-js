@@ -1,6 +1,6 @@
 {
   "name": "@mapray/mapray-js",
-  "version": "0.9.5",
+  "version": "0.9.5-fork.0",
   "description": "3D Rendering Engine for GIS",
   "keywords": [
     "3D",
@@ -70,12 +70,12 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/sony/mapray-js.git"
+    "url": "https://github.com/TakamuneSuda/mapray-js.git"
   },
   "bugs": {
-    "url": "https://github.com/sony/mapray-js/issues"
+    "url": "https://github.com/TakamuneSuda/mapray-js/issues"
   },
-  "homepage": "https://mapray.com",
+  "homepage": "https://github.com/TakamuneSuda/mapray-js",
   "devDependencies": {
     "@babel/core": "^7.8.4",
     "@babel/polyfill": "^7.10.1",

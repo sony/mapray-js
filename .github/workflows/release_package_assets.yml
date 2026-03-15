@@ -1,0 +1,96 @@
+name: Attach package tarballs to GitHub Release
+
+on:
+  release:
+    types: [released, prereleased]
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    env:
+      CORE_PACKAGE_DIR: "./packages/mapray"
+      UI_PACKAGE_DIR: "./packages/ui"
+      EMSDK_DIR: "./_deploy/emsdk"
+      RELEASE_ASSET_DIR: "./release-assets"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: yarn
+
+      - name: Validate release tag matches package versions
+        id: versions
+        run: |
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          RELEASE_VERSION="${TAG_NAME#v}"
+          CORE_VERSION=$(node -p "require('./packages/mapray/package.json').version")
+          UI_VERSION=$(node -p "require('./packages/ui/package.json').version")
+
+          if [ "$CORE_VERSION" != "$UI_VERSION" ]; then
+            echo "Package versions do not match: mapray=$CORE_VERSION ui=$UI_VERSION" >&2
+            exit 1
+          fi
+
+          if [ "$RELEASE_VERSION" != "$CORE_VERSION" ]; then
+            echo "Release tag $TAG_NAME does not match package version $CORE_VERSION" >&2
+            exit 1
+          fi
+
+          echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
+          echo "release_version=$RELEASE_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Setup EMSDK
+        run: |
+          mkdir -p ${{ env.EMSDK_DIR }}/../
+          echo "Cloning EMSDK from github"
+          git clone --branch=2.0.9 --depth=1 https://github.com/emscripten-core/emsdk.git ${{ env.EMSDK_DIR }}
+          echo "Coping patch file to the EMSDK directory"
+          cp ${{ env.CORE_PACKAGE_DIR }}/wasm/emsdk.patch ${{ env.EMSDK_DIR }}/emsdk.patch
+          echo "Install and Activate EMSDK"
+          cd ${{ env.EMSDK_DIR }}
+          ./emsdk install latest
+          ./emsdk activate latest
+          echo "Apply the patch to EMSDK"
+          git apply -p1 emsdk.patch
+
+      - name: Build wasm code
+        run: |
+          echo "Activate EMSDK"
+          source ${{ env.EMSDK_DIR }}/emsdk_env.sh
+          echo "Build wasm code"
+          cd ${{ env.CORE_PACKAGE_DIR }}
+          ./wasm/rebuild_and_install.sh
+        shell: bash
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build distributables
+        run: yarn mapray && yarn ui && yarn css
+
+      - name: Pack core package
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/${{ env.RELEASE_ASSET_DIR }}"
+          yarn pack --filename "$GITHUB_WORKSPACE/${{ env.RELEASE_ASSET_DIR }}/mapray-mapray-js-${{ steps.versions.outputs.tag_name }}.tgz"
+        working-directory: ${{ env.CORE_PACKAGE_DIR }}
+
+      - name: Pack ui package
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/${{ env.RELEASE_ASSET_DIR }}"
+          yarn pack --filename "$GITHUB_WORKSPACE/${{ env.RELEASE_ASSET_DIR }}/mapray-ui-${{ steps.versions.outputs.tag_name }}.tgz"
+        working-directory: ${{ env.UI_PACKAGE_DIR }}
+
+      - name: Upload package tarballs to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-assets/mapray-mapray-js-${{ steps.versions.outputs.tag_name }}.tgz
+            release-assets/mapray-ui-${{ steps.versions.outputs.tag_name }}.tgz
+          overwrite_files: true

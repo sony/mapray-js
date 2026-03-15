@@ -1,19 +1,13 @@
 # @mapray/ui
 
-mapray ui is a ui library for mapray-js
+This fork ships release tarballs on GitHub Releases instead of publishing to npm.
 
 ## Installation
 
-Install the package in your project directory with:
+Install `@mapray/mapray-js` first, or install both tarballs together:
 
 ```sh
-// with npm
-npm install @mapray/ui
-
-// with yarn
-yarn add @mapray/ui
+npm install \
+  https://github.com/TakamuneSuda/mapray-js/releases/download/v0.9.5-fork.0/mapray-mapray-js-v0.9.5-fork.0.tgz \
+  https://github.com/TakamuneSuda/mapray-js/releases/download/v0.9.5-fork.0/mapray-ui-v0.9.5-fork.0.tgz
 ```
-
-## Documentation
-
-[The documentation](https://mapray.com/documents/overview/index.html)

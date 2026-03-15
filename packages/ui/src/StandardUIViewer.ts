@@ -113,8 +113,6 @@ class StandardUIViewer extends mapray.RenderCallback
 
     private _controllable: boolean;
 
-    private _altitude_range: { min: number, max: number };
-
     private _min_zoom_limit: number;
 
     private _buf_matrix1: mapray.Matrix;
@@ -190,12 +188,7 @@ class StandardUIViewer extends mapray.RenderCallback
         this._flycamera_total_time = 0;
         this._flycamera_target_time = 0;
 
-        this._altitude_range = {
-            min: StandardUIViewer.ALTITUDE_RANGE.min,
-            max: StandardUIViewer.ALTITUDE_RANGE.max || Number.MAX_VALUE,
-        };
         this._min_zoom_limit = StandardUIViewer.DEFAULT_MIN_ZOOM_LIMIT;
-
         this._buf_matrix1 = GeoMath.createMatrix();
         this._buf_matrix2 = GeoMath.createMatrix();
 
@@ -547,7 +540,7 @@ class StandardUIViewer extends mapray.RenderCallback
 
             const groundElevation = this.viewer.getElevation( this._camera_parameter.latitude, this._camera_parameter.longitude );
 
-            this._correctAltitude( groundElevation ); // カメラ拘束条件を適用
+            this._applyCameraConstraints( groundElevation ); // カメラ拘束条件を適用
 
             // この時点でカメラ位置・方向が確定
 
@@ -636,7 +629,7 @@ class StandardUIViewer extends mapray.RenderCallback
         if ( !pickResult ) {
             return undefined;
         }
-        const cross_point = pickResult.position;
+        const cross_point = GeoMath.createVector3( pickResult.position );
         const cross_geoPoint = new mapray.GeoPoint();
         cross_geoPoint.setFromGocs( cross_point );
         cross_geoPoint.altitude = viewer.getElevation( cross_geoPoint.latitude, cross_geoPoint.longitude );
@@ -676,8 +669,37 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     protected updateClipPlane( groundElevation: number ): void
     {
-        const camera_height_from_ground = Math.abs( this._camera_parameter.height - groundElevation );
+        if ( this.viewer.isCameraUnderground() ) {
+            this._updateClipPlaneForUnderground();
+            return;
+        }
 
+        this._updateClipPlaneForSurface( groundElevation );
+    }
+
+
+    private _updateClipPlaneForUnderground(): void
+    {
+        const underground_state = this.viewer.getUndergroundState();
+        const underground_depth = Math.max( underground_state.undergroundDepth, StandardUIViewer.UNDERGROUND_MINIMUM_NEAR );
+
+        this._camera_parameter.near = Math.max(
+            underground_depth * StandardUIViewer.UNDERGROUND_NEAR_FACTOR,
+            StandardUIViewer.UNDERGROUND_MINIMUM_NEAR
+        );
+        this._camera_parameter.far = Math.max(
+            this._camera_parameter.near * StandardUIViewer.UNDERGROUND_FAR_FACTOR,
+            Math.max(
+                underground_depth * StandardUIViewer.UNDERGROUND_DEPTH_FAR_FACTOR,
+                StandardUIViewer.UNDERGROUND_MINIMUM_FAR
+            )
+        );
+    }
+
+
+    private _updateClipPlaneForSurface( groundElevation: number ): void
+    {
+        const camera_height_from_ground = Math.abs( this._camera_parameter.height - groundElevation );
         this._camera_parameter.near = Math.max( Math.max( 1.0, camera_height_from_ground ) * StandardUIViewer.NEAR_FACTOR, StandardUIViewer.MINIMUM_NEAR );
         this._camera_parameter.far = Math.max( this._camera_parameter.near * StandardUIViewer.FAR_FACTOR, StandardUIViewer.MINIMUM_FAR );
     }
@@ -686,29 +708,21 @@ class StandardUIViewer extends mapray.RenderCallback
     /**
      * 高度の補正（地表面以下にならないようにする）
      */
-    private _correctAltitude( groundElevation: number ): void
+    private _applyCameraConstraints( groundElevation: number ): void
     {
-        this._camera_parameter.height = GeoMath.clamp( this._camera_parameter.height, groundElevation + this._altitude_range.min, groundElevation + this._altitude_range.max );
+        this._applyAltitudeConstraint( groundElevation );
     }
 
 
     /**
-     * @internal
-     * カメラ高度の移動可能範囲を指定します
-     * 
-     * @param min 下限
-     * @param max 上限（省略可）
+     * 高度の補正。
+     *
+     * 地下表示を標準挙動にしたため、現在は高度拘束を適用しない。
      */
-    setCameraAltitudeRange( min: number, max: number = Number.MAX_VALUE ): void
+    private _applyAltitudeConstraint( groundElevation: number ): void
     {
-        if ( min > max ) throw new Error( "Illegal Argument" );
-        this._altitude_range.min = min;
-        this._altitude_range.max = max;
-
-        const groundElevation = this.viewer.getElevation( this._camera_parameter.latitude, this._camera_parameter.longitude );
-        this._correctAltitude( groundElevation );
+        void groundElevation;
     }
-
 
     /**
      * カメラズームイン操作で近づくことのできる最小距離[m]を設定します。
@@ -762,8 +776,6 @@ class StandardUIViewer extends mapray.RenderCallback
      */
     onMouseDown( point: [x: number, y: number], event: MouseEvent ): void
     {
-        const viewer = this.viewer;
-
         this._mouse_down_position = point;
         this._pre_mouse_position = point;
 
@@ -771,9 +783,7 @@ class StandardUIViewer extends mapray.RenderCallback
         if ( event.button === 0 ) {
             if ( event.shiftKey ) {
                 this._operation_mode = StandardUIViewer.OperationMode.ROTATE;
-
-                const pickResult = viewer.pick( this._mouse_down_position );
-                this._rotate_center = pickResult ? pickResult.position : undefined;
+                this._rotate_center = this._pickInteractionPosition( this._mouse_down_position );
             }
             else if ( event.ctrlKey ) {
                 this._operation_mode = StandardUIViewer.OperationMode.FREE_ROTATE;
@@ -785,9 +795,7 @@ class StandardUIViewer extends mapray.RenderCallback
         // 中ボタン
         else if ( event.button === 1 ) {
             this._operation_mode = StandardUIViewer.OperationMode.ROTATE;
-
-            const pickResult = viewer.pick( this._mouse_down_position );
-            this._rotate_center = pickResult ? pickResult.position : undefined;
+            this._rotate_center = this._pickInteractionPosition( this._mouse_down_position );
         }
         // 右ボタン
         else if ( event.button === 2 ) {
@@ -1100,23 +1108,24 @@ class StandardUIViewer extends mapray.RenderCallback
             }
 
             const camera = viewer.camera;
-            const pickResult_start = viewer.pick( this._mouse_down_position );
+            const start_position = this._pickInteractionPosition( this._mouse_down_position );
 
             const end_mouse_position = GeoMath.createVector2([
                     this._mouse_down_position[0] + this._translate_drag[0],
                     this._mouse_down_position[1] + this._translate_drag[1]
             ]);
             const ray = camera.getCanvasRay( end_mouse_position );
-            const pickResult_end = viewer.pick( end_mouse_position );
-
-            if ( !pickResult_start || !pickResult_end ) {
+            if ( !start_position ) {
                 return;
             }
-            const start_position =  pickResult_start.position;
-            const end_position = pickResult_end.position;
 
             const start_spherical_position = new mapray.GeoPoint();
             start_spherical_position.setFromGocs( start_position );
+
+            const end_position = this._pickInteractionPosition( end_mouse_position, start_spherical_position.altitude );
+            if ( !end_position ) {
+                return;
+            }
 
             const end_spherical_position = new mapray.GeoPoint();
             end_spherical_position.setFromGocs( end_position );
@@ -1199,7 +1208,8 @@ class StandardUIViewer extends mapray.RenderCallback
 
         let rotated_direction = this.rotateVector( camera_direction, rotate_axis, yaw );
 
-        const after_pitch = GeoMath.clamp( this._camera_parameter.pitch + pitch, 0, 90 );
+        const pitchRange = this._getPitchRange();
+        const after_pitch = GeoMath.clamp( this._camera_parameter.pitch + pitch, pitchRange.min, pitchRange.max );
 
         if ( after_pitch !== this._camera_parameter.pitch ) {
             rotate_axis[0] = camera.view_to_gocs[0];
@@ -1242,7 +1252,8 @@ class StandardUIViewer extends mapray.RenderCallback
         const yaw = this._free_rotate_drag[0] / 10.0;
         const pitch = this._free_rotate_drag[1] / 10.0;
 
-        const after_pitch = GeoMath.clamp( this._camera_parameter.pitch + pitch, 0, 90 );
+        const pitchRange = this._getPitchRange();
+        const after_pitch = GeoMath.clamp( this._camera_parameter.pitch + pitch, pitchRange.min, pitchRange.max );
 
         this._camera_parameter.yaw += yaw;
         this._camera_parameter.pitch = after_pitch;
@@ -1296,11 +1307,10 @@ class StandardUIViewer extends mapray.RenderCallback
         const camera = viewer.camera;
 
         // 移動中心
-        const pickResult = viewer.pick( this._mouse_down_position );
-
         let translation_center: mapray.Vector3;
-        if ( pickResult ) {
-            translation_center = pickResult.position;
+        const pickPosition = this._pickInteractionPosition( this._mouse_down_position );
+        if ( pickPosition ) {
+            translation_center = pickPosition;
         }
         else {
             if ( zoom < 1.0 ) {
@@ -1336,24 +1346,6 @@ class StandardUIViewer extends mapray.RenderCallback
         const new_camera_spherical_position = new mapray.GeoPoint();
         new_camera_spherical_position.setFromGocs( new_camera_gocs_position );
 
-        const elevation = viewer.getElevation( new_camera_spherical_position.latitude, new_camera_spherical_position.longitude );
-        const clamp_pos = (
-            (elevation + this._altitude_range.min) > new_camera_spherical_position.altitude ? elevation + this._altitude_range.min:
-            (elevation + this._altitude_range.max) < new_camera_spherical_position.altitude ? elevation + this._altitude_range.max:
-            undefined
-        );
-
-        if ( clamp_pos ) {
-            // fix_altitude だけ高さを変更する。
-            const fix_altitude = new_camera_spherical_position.altitude - clamp_pos;
-            const up = center_spherical_position.getUpwardVector( GeoMath.createVector3() );
-            const translation_vector_length = GeoMath.length3( translation_vector );
-            const up_dot_dir = GeoMath.dot3( translation_vector, up ) / translation_vector_length;
-            GeoMath.scale3( 1 - (fix_altitude / up_dot_dir / translation_vector_length), translation_vector, translation_vector );
-
-            GeoMath.sub3( translation_center, translation_vector, new_camera_gocs_position );
-            new_camera_spherical_position.setFromGocs( new_camera_gocs_position );
-        }
         this._camera_parameter.latitude = new_camera_spherical_position.latitude;
         this._camera_parameter.longitude = new_camera_spherical_position.longitude;
         this._camera_parameter.height = new_camera_spherical_position.altitude;
@@ -1403,8 +1395,6 @@ class StandardUIViewer extends mapray.RenderCallback
         this._camera_parameter.longitude = position.longitude;
         this._camera_parameter.height = position.height;
 
-        // 最低高度補正
-        this._camera_parameter.height = GeoMath.clamp( this._camera_parameter.height, this._altitude_range.min, this._altitude_range.max );
     }
 
 
@@ -1515,8 +1505,86 @@ class StandardUIViewer extends mapray.RenderCallback
 
         GeoMath.scale3( -1, target_camera_direction, target_camera_direction );
 
-        const pitch = GeoMath.clamp( Math.abs( this.calculateAngle( rotate_axis, current_camera_direction, target_camera_direction ) ), 0, 90 );
+        const pitchRange = this._getPitchRange();
+        const pitch = GeoMath.clamp( Math.abs( this.calculateAngle( rotate_axis, current_camera_direction, target_camera_direction ) ), pitchRange.min, pitchRange.max );
         this._camera_parameter.pitch = pitch;
+    }
+
+    /**
+     * 画面上の位置に対応する地表交点を取得する。
+     */
+    private _pickInteractionPosition( screen_position: mapray.Vector2 | [x: number, y: number], altitude_hint?: number ): mapray.Vector3 | undefined
+    {
+        const picked_position = this._pickDirectInteractionPosition( screen_position );
+        if ( picked_position ) {
+            return picked_position;
+        }
+
+        if ( !this.viewer.isCameraUnderground() ) {
+            return undefined;
+        }
+
+        const altitude = altitude_hint ?? this._getFallbackGroundElevation();
+        return this._intersectCanvasRayWithSphere( screen_position, altitude );
+    }
+
+    /**
+     * 画面位置から直接 pick できた交点を取得する。
+     */
+    private _pickDirectInteractionPosition( screen_position: mapray.Vector2 | [x: number, y: number] ): mapray.Vector3 | undefined
+    {
+        const pickResult = this.viewer.pick( screen_position );
+        return pickResult ? GeoMath.createVector3( pickResult.position ) : undefined;
+    }
+
+    /**
+     * 現在位置付近の地表高を取得する。
+     */
+    private _getFallbackGroundElevation(): number
+    {
+        const state = this.viewer.getUndergroundState();
+        return Number.isFinite( state.groundElevationAtCamera ) ?
+            state.groundElevationAtCamera :
+            this.viewer.getElevation( this._camera_parameter.latitude, this._camera_parameter.longitude );
+    }
+
+    /**
+     * キャンバス座標に対応するレイと、指定高度の球面との交点を取得する。
+     */
+    private _intersectCanvasRayWithSphere( screen_position: mapray.Vector2 | [x: number, y: number], altitude: number ): mapray.Vector3 | undefined
+    {
+        const ray = this.viewer.camera.getCanvasRay( screen_position );
+        const radius = GeoMath.EARTH_RADIUS + altitude;
+        const variable_B = 2.0 * GeoMath.dot3( ray.position, ray.direction );
+        const variable_C = GeoMath.lengthSquared3( ray.position ) - radius * radius;
+        const variable_D = variable_B * variable_B - 4.0 * variable_C;
+
+        if ( variable_D < 0 ) {
+            return undefined;
+        }
+
+        const sqrt_D = Math.sqrt( variable_D );
+        const t1 = 0.5 * ( -variable_B - sqrt_D );
+        const t2 = 0.5 * ( -variable_B + sqrt_D );
+        const variable_t = t1 > 0 ? t1 : ( t2 > 0 ? t2 : undefined );
+
+        if ( variable_t === undefined ) {
+            return undefined;
+        }
+
+        return GeoMath.add3(
+            GeoMath.scale3( variable_t, ray.direction, GeoMath.createVector3() ),
+            ray.position,
+            GeoMath.createVector3()
+        );
+    }
+
+    /**
+     * pitch の適用範囲を取得する。
+     */
+    private _getPitchRange(): { min: number, max: number }
+    {
+        return StandardUIViewer.UNDERGROUND_PITCH_RANGE;
     }
 
 
@@ -2141,6 +2209,7 @@ export interface Option extends mapray.Viewer.Option {
 
      /** 極地に関連するオプション */
      pole?: mapray.Viewer.PoleOption;
+
 }
 
 
@@ -2332,18 +2401,21 @@ export const DEFAULT_LOOKAT_POSITION = { latitude: 35.360626, longitude: 138.727
 // カメラパラメータの初期値
 export const DEFAULT_CAMERA_PARAMETER = { fov: 60, near: 30, far: 500000, speed_factor: 2000 };
 
-// カメラと地表面までの最低距離
-export const ALTITUDE_RANGE: { min: number, max?: number } = { min: 2.0, max: undefined };
-
 // ズームインで近寄れる最小距離[m]
 export const DEFAULT_MIN_ZOOM_LIMIT = 0.1;
 
-// 最小近接平面距離 (この値は ALTITUDE_RANGE.min * 0.5 より小さい値を指定します)
+// 最小近接平面距離
 export const MINIMUM_NEAR = 1.0;
 
 // 最小遠方平面距離
 // export const MINIMUM_FAR = 500000;
 export const MINIMUM_FAR = 2870162;
+
+// 地下表示時の最小近接平面距離
+export const UNDERGROUND_MINIMUM_NEAR = 0.05;
+
+// 地下表示時の最小遠方平面距離
+export const UNDERGROUND_MINIMUM_FAR = 5000;
 
 // 高度からの近接平面距離を計算するための係数
 export const NEAR_FACTOR = 0.01;
@@ -2351,8 +2423,20 @@ export const NEAR_FACTOR = 0.01;
 // 近接平面距離からの遠方平面距離を計算するための係数
 export const FAR_FACTOR = 10000;
 
+// 地下深度から近接平面距離を計算するための係数
+export const UNDERGROUND_NEAR_FACTOR = 0.02;
+
+// 地下表示時の near から far を計算するための係数
+export const UNDERGROUND_FAR_FACTOR = 2000;
+
+// 地下深度から far を計算するための係数
+export const UNDERGROUND_DEPTH_FAR_FACTOR = 200;
+
 // 画角の適用範囲
 export const FOV_RANGE = { min: 5, max: 120 };
+
+// 地下操作時のピッチ適用範囲
+export const UNDERGROUND_PITCH_RANGE = { min: -180, max: 180 };
 
 // 画角の倍率　θ' = 2 atan(tan(θ/2)*f)
 export const FOV_FACTOR = 1.148698354997035;
