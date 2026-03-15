@@ -146,6 +146,8 @@ class Viewer {
 
     private _init_promise; /* auto-type */
 
+    private _underground_state: Viewer.UndergroundState;
+
     /**
      * 表示中（直前の描画）の Flake リスト。
      * @experimental
@@ -222,6 +224,7 @@ class Viewer {
             pc_loading: 0,
             total_loading: 0,
         };
+        this._underground_state = this._createUndergroundState();
 
         this._atmosphere = options.atmosphere;
         this._sunVisualizer = options.sun_visualizer;
@@ -433,7 +436,6 @@ class Viewer {
         return new PointCloudCollection( this._scene );
     }
 
-
     /**
      * CustomSceneCollection を生成
      */
@@ -535,7 +537,6 @@ class Viewer {
      */
     get b3d_collection(): B3dCollection { return this._b3d_collection; }
 
-
     /**
      * カスタム描画シーン管理
      */
@@ -571,6 +572,21 @@ class Viewer {
      */
     get camera(): Camera { return this._camera; }
 
+    /**
+     * 地下状態
+     */
+    getUndergroundState(): Viewer.UndergroundState
+    {
+        return this._underground_state;
+    }
+
+    /**
+     * カメラが地下にあるか
+     */
+    isCameraUnderground(): boolean
+    {
+        return this._underground_state.cameraUnderground;
+    }
 
     /**
      * ベクトルタイルを管理するオブジェクト
@@ -1036,6 +1052,7 @@ class Viewer {
         this._updateCanvasSize();
 
         this._render_callback.onUpdateFrameInner( delta_time );
+        this._updateUndergroundState();
 
         if ( this._debug_stats ) {
             this._debug_stats.clearStats();
@@ -1050,6 +1067,48 @@ class Viewer {
         this._updateLoadStatus();
 
         this._finishDebugStats();
+    }
+
+
+    /**
+     * カメラ地下状態を更新する。
+     */
+    private _updateUndergroundState(): void
+    {
+        const view_to_gocs = this._camera.view_to_gocs;
+        const camera_position = GeoMath.createVector3( [
+            view_to_gocs[12],
+            view_to_gocs[13],
+            view_to_gocs[14],
+        ] );
+
+        const camera_geo_point = new GeoPoint();
+        camera_geo_point.setFromGocs( camera_position );
+
+        const groundElevation = this.getElevation( camera_geo_point.latitude, camera_geo_point.longitude );
+        const rawUndergroundDepth = groundElevation - camera_geo_point.altitude;
+        const undergroundDepth = Math.max( rawUndergroundDepth, 0 );
+        const enterThreshold = this._underground_state.enterEpsilon;
+        const exitThreshold = this._underground_state.exitEpsilon;
+
+        this._underground_state.groundElevationAtCamera = groundElevation;
+        this._underground_state.undergroundDepth = undergroundDepth;
+        this._underground_state.cameraUnderground = this._underground_state.cameraUnderground ?
+            rawUndergroundDepth > exitThreshold :
+            rawUndergroundDepth > enterThreshold;
+    }
+
+
+    private _createUndergroundState(): Viewer.UndergroundState
+    {
+        return {
+            cameraUnderground: false,
+            groundElevationAtCamera: 0,
+            undergroundDepth: 0,
+            undergroundEpsilon: Viewer.DEFAULT_UNDERGROUND_EPSILON,
+            enterEpsilon: Viewer.DEFAULT_UNDERGROUND_EPSILON,
+            exitEpsilon: Viewer.DEFAULT_UNDERGROUND_EPSILON * 0.5,
+        };
     }
 
 
@@ -1324,6 +1383,7 @@ export interface Option {
     cloud_visualizer?: CloudVisualizer;
 
     star_visualizer?: StarVisualizer;
+
 }
 
 
@@ -1461,6 +1521,15 @@ export interface LoadStatus {
     total_loading: number;
 }
 
+
+export interface UndergroundState {
+    cameraUnderground: boolean;
+    groundElevationAtCamera: number;
+    undergroundDepth: number;
+    undergroundEpsilon: number;
+    enterEpsilon: number;
+    exitEpsilon: number;
+}
 
 
 /**
@@ -1607,6 +1676,8 @@ export const ContainerPosition = ContainerController.ContainerPosition;
 
 /** ロゴ・著作権表示用コンテナ名称 */
 export const _positions = ["control-top-left", "control-top-right", "control-bottom-left", "control-bottom-right"];
+
+export const DEFAULT_UNDERGROUND_EPSILON = 1.0;
 
 
 } // namespace Viewer

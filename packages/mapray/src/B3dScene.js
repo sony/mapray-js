@@ -494,6 +494,7 @@ class B3dStage {
         this._debug    = tree._owner.$debug;
         this._shader_cache = tree._owner.shader_cache;
         this._render_target = pstage.getRenderTarget();
+        this._camera_underground = pstage.isCameraUnderground ? pstage.isCameraUnderground() : false;
 
         // 変換行列
         this._a0cs_to_view = GeoMath.mul_AA( pstage._gocs_to_view, tree._a0cs_to_gocs, GeoMath.createMatrix() );
@@ -690,8 +691,11 @@ class B3dStage {
 
         // 視点から cube までの最小深度距離 (A0CS)
         const min_depth = depth - radius;
+        const safe_min_depth = ( this._camera_underground && min_depth <= 0 ) ?
+            Math.max( radius * 0.25, 1.0 ) :
+            min_depth;
 
-        if ( min_depth <= 0 ) {
+        if ( safe_min_depth <= 0 ) {
             // 視点と同じか後方に cube の点が存在する可能性がある
             // LOD が計算できないので分割
             return -1;
@@ -699,7 +703,7 @@ class B3dStage {
 
         // cube 内のタイルのレベルの最小値と最大値 (連続値)
         const min_level = this._lod_offset - GeoMath.maprayLog2( depth + radius );
-        const max_level = this._lod_offset - GeoMath.maprayLog2( min_depth );
+        const max_level = this._lod_offset - GeoMath.maprayLog2( safe_min_depth );
 
         if ( max_level - min_level >= B3dScene.LEVEL_INTERVAL ) {
             // cube 内のレベルの差が大きすぎるので cube を分割

@@ -13,14 +13,33 @@ type LayoutItem = SpriteProvider.LayoutItem;
  * 追加可能な画像の型
  */
 type ImageSource = TexImageSource & CanvasImageSource;
-type ImageSizeSource = {
-    width?: number;
-    height?: number;
-    videoWidth?: number;
-    videoHeight?: number;
-    displayWidth?: number;
-    displayHeight?: number;
-};
+
+
+function getImageSize( image: TexImageSource | ImageSource ): [number, number]
+{
+    const width = (image as { width?: unknown }).width;
+    const height = (image as { height?: unknown }).height;
+
+    if ( typeof width === "number" && typeof height === "number" ) {
+        return [width, height];
+    }
+
+    const video_width = (image as { videoWidth?: unknown }).videoWidth;
+    const video_height = (image as { videoHeight?: unknown }).videoHeight;
+
+    if ( typeof video_width === "number" && typeof video_height === "number" ) {
+        return [video_width, video_height];
+    }
+
+    const display_width = (image as { displayWidth?: unknown }).displayWidth;
+    const display_height = (image as { displayHeight?: unknown }).displayHeight;
+
+    if ( typeof display_width === "number" && typeof display_height === "number" ) {
+        return [display_width, display_height];
+    }
+
+    throw new Error( "Unsupported image source" );
+}
 
 
 /**
@@ -75,8 +94,9 @@ export class ImageManager {
             else {
                 // SDFではないスプライトがある場合のみアイコン画像を作成
                 sheet_texture ??= create_sheet_from_image( glenv, sheet );
+                const [sheet_width, sheet_height] = getImageSize( sheet );
 
-                const icon_image = new IconImage( id, item, sheet_texture, getImageSize( sheet ) );
+                const icon_image = new IconImage( id, item, sheet_texture, [sheet_width, sheet_height] );
                 this._image_map.set( id, icon_image );
             }
         }
@@ -314,13 +334,13 @@ class IsolatedImage extends ColorImage {
                  id: string,
                  image: TexImageSource )
     {
+        const [image_width, image_height] = getImageSize( image );
         const image_lower: Vector2 = [0, 0];
-        const image_size = getImageSize( image );
-        const image_upper: Vector2 = [image_size[0], image_size[1]];
+        const image_upper: Vector2 = [image_width, image_height];
 
         const texture = create_sheet_from_image( glenv, image );
 
-        super( id, texture, image_size, image_lower, image_upper );
+        super( id, texture, [image_width, image_height], image_lower, image_upper );
     }
 
 }
@@ -338,11 +358,11 @@ export class SdfImage extends ImageBase {
                  option?: SdfImage.Option  )
     {
         super( id );
+        const [image_width, image_height] = getImageSize( image );
 
-        const image_size = getImageSize( image );
         const canvas = document.createElement( "canvas" );
-        canvas.width  = option?.dw ?? image_size[0];
-        canvas.height = option?.dh ?? image_size[1];
+        canvas.width  = option?.dw ?? image_width;
+        canvas.height = option?.dh ?? image_height;
 
         this.image = canvas;
 
@@ -353,7 +373,7 @@ export class SdfImage extends ImageBase {
         }
 
         context.drawImage( image,
-                           option?.dx ?? 0, option?.dy ?? 0, image_size[0], image_size[1] );
+                           option?.dx ?? 0, option?.dy ?? 0, image_width, image_height );
     }
 
 }
@@ -406,20 +426,6 @@ function create_layout_dictionary( layout: SpriteProvider.Layout ): Map<string, 
     }
 
     return dict;
-}
-
-
-function getImageSize( image: TexImageSource | ImageSource ): [number, number]
-{
-    const source = image as ImageSizeSource;
-    const width = source.width ?? source.videoWidth ?? source.displayWidth;
-    const height = source.height ?? source.videoHeight ?? source.displayHeight;
-
-    if ( width === undefined || height === undefined ) {
-        throw new Error( "Cannot determine image size" );
-    }
-
-    return [width, height];
 }
 
 

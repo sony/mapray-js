@@ -31,11 +31,18 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+precision mediump float;
 
 attribute vec4 a_position;         // 位置 (地表断片座標系)
+attribute vec3 a_surface_position; // 地下表示用の地表位置
 attribute vec2 a_uv;               // uv 座標
+attribute float a_height;          // 地表高さ
+attribute float a_skirt;           // skirt 頂点か
+attribute float a_underground_boundary_band;  // 地下表示時に落とす外周 2 リングか
 
-uniform mat4  u_obj_to_clip;       // 地表断片座標系からクリップ座標系への変換
+uniform mat4          u_obj_to_clip;       // 地表断片座標系からクリップ座標系への変換
+uniform vec3          u_flake_center;      // flake 中心位置 (GOCS)
+uniform mediump float u_underground_mode;  // 地下描画モードか
 
 uniform vec4  u_texcoord_rect_hi;  // 高レベル画像 左下座標: (x, y), 座標サイズ: (z, w)
 uniform vec4  u_texcoord_rect_lo;  // 低レベル画像 左下座標: (x, y), 座標サイズ: (z, w)
@@ -66,6 +73,10 @@ uniform vec4  u_corner_lod;        // uv = (0,0), (1,0), (0,1), (1,1) の LOD
 varying vec2  v_texcoord_hi;       // 高レベル画像のテクスチャ座標
 varying vec2  v_texcoord_lo;       // 低レベル画像のテクスチャ座標
 varying float v_lod;               // 補間された LOD
+varying float v_skirt;             // skirt かどうか
+varying float v_underground_boundary_band; // 地下表示時に落とす外周 2 リングか
+
+const float planet_radius = 6378137.0;
 
 #ifdef NIGHTIMAGE
     float sigmoid( float a, float x )
@@ -76,7 +87,6 @@ varying float v_lod;               // 補間された LOD
     const float loop_float = 2.0;         // loop
     const int   loop_int   = 2;           // loop
 
-    const float planet_radius = 6378137.0;
     const float atmosphere_radius = planet_radius * 1.025;
 
     const float PI = 3.14159265358932384626;
@@ -105,11 +115,18 @@ varying float v_lod;               // 補間された LOD
 
 void main()
 {
-    gl_Position = u_obj_to_clip * a_position;
+    vec4 position = a_position;
+    if ( u_underground_mode > 0.5 && a_skirt > 0.5 ) {
+        position = vec4( a_surface_position, 1.0 );
+    }
+
+    gl_Position = u_obj_to_clip * position;
 
     // uv 座標をテクスチャ座標に変換
     v_texcoord_hi = u_texcoord_rect_hi.xy + u_texcoord_rect_hi.zw * a_uv;
     v_texcoord_lo = u_texcoord_rect_lo.xy + u_texcoord_rect_lo.zw * a_uv;
+    v_skirt = a_skirt;
+    v_underground_boundary_band = a_underground_boundary_band;
 
     // LOD の補間
     float u = a_uv.x;
@@ -127,12 +144,12 @@ void main()
     v_lod = lod_uv;
 
 #ifdef NIGHTIMAGE
-    vec3 ground_vector = normalize( vec3( u_obj_to_gocs * a_position ) );
+    vec3 ground_vector = normalize( vec3( u_obj_to_gocs * position ) );
     float dir = dot( ground_vector, u_sun_direction );
     float sun_opacity = 1.0 - sigmoid( 5.0, dir );
     v_opacity = sun_opacity * u_opacity;  // 不透明度を適用
 #elif defined(ATMOSPHERE)
-    vec3  vertex_position = vec3( u_obj_to_gocs * a_position );
+    vec3  vertex_position = vec3( u_obj_to_gocs * position );
     vec3  ray             = vertex_position - u_camera_position;
     float far_length      = length( ray );
     ray /= far_length;

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>mapray-underground</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background: #101621;
+        }
+
+        #mapray-container {
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+    <script type="text/javascript" src="./dist/bundle.js"></script>
+    <script type="text/javascript">
+        window.addEventListener("load", () => {
+            window.startApp("mapray-container");
+        });
+    </script>
+</head>
+<body>
+    <div id="mapray-container"></div>
+</body>
+</html>

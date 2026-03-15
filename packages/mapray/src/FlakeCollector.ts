@@ -138,6 +138,15 @@ class FlakeCollector {
         var volume_planes = stage.getVolumePlanes();
         var   clip_planes = [];
 
+        if ( stage.isCameraUnderground() ) {
+            for ( let i = 0; i < 6; ++i ) {
+                const dst_plane = GeoMath.createVector4();
+                GeoMath.transformPlane_A( gocs_to_view, volume_planes[i], dst_plane );
+                clip_planes.push( dst_plane );
+            }
+            return clip_planes;
+        }
+
         // 地表遮蔽カリング平面
         const elev_range = globe.getElevationRange();
         const rmin = GeoMath.EARTH_RADIUS + elev_range.min;  // 最小半径

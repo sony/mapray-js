@@ -185,6 +185,15 @@ export class TraverseContext {
         const volume_planes = stage.getVolumePlanes();
         const   clip_planes = [];
 
+        if ( stage.isCameraUnderground() ) {
+            for ( let i = 0; i < 6; ++i ) {
+                const dst_plane = GeoMath.createVector4();
+                GeoMath.transformPlane_A( gocs_to_view, volume_planes[i], dst_plane );
+                clip_planes.push( dst_plane );
+            }
+            return clip_planes;
+        }
+
         // 地表遮蔽カリング平面
         const rmin = GeoMath.EARTH_RADIUS + root_flake.height_min;  // 最小半径
         const rmax = GeoMath.EARTH_RADIUS + root_flake.height_max;  // 最大半径
