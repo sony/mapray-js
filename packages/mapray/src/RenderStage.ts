@@ -413,10 +413,11 @@ abstract class RenderStage {
 
         const underground = this.isCameraUnderground();
         const no_skirt = false;
-        const flakeMaterial = underground ?
-            // @ts-ignore
-            this._viewer._render_cache.surface_underground_material :
-            this._flake_material;
+        const flakeMaterial =
+            underground && !this._flake_material.isWireframe() ?
+                // @ts-ignore
+                this._viewer._render_cache.surface_underground_material :
+                this._flake_material;
 
         this._beginUndergroundFlakeDraw( underground );
 

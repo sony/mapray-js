@@ -57,3 +57,4 @@ yarn --cwd debug/underground start
 - データセットが読めた場合は、自動でその付近へカメラを合わせます。
 - dataset metadata が無効で、原点が `0,0` になるような値は採用しません。
   その場合は関東平野の初期視点を維持します。
+- 左上のボタンで背景地図の表示を surface / wireframe で切り替えできます。
