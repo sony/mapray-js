@@ -42,6 +42,14 @@ class BufferView {
 
 
     /**
+     * ビューのバイト長
+     * @type {number}
+     * @readonly
+     */
+    get byteLength() { return this._byteLength; }
+
+
+    /**
      * インタリーブのバイトストライド
      * @type {number}
      * @readonly

@@ -75,19 +75,19 @@ jobs:
       - name: Pack core package
         run: |
           mkdir -p "$GITHUB_WORKSPACE/${{ env.RELEASE_ASSET_DIR }}"
-          yarn pack --filename "$GITHUB_WORKSPACE/${{ env.RELEASE_ASSET_DIR }}/mapray-mapray-js-${{ steps.versions.outputs.tag_name }}.tgz"
+          yarn pack --filename "$GITHUB_WORKSPACE/${{ env.RELEASE_ASSET_DIR }}/mapray-js.tgz"
         working-directory: ${{ env.CORE_PACKAGE_DIR }}
 
       - name: Pack ui package
         run: |
           mkdir -p "$GITHUB_WORKSPACE/${{ env.RELEASE_ASSET_DIR }}"
-          yarn pack --filename "$GITHUB_WORKSPACE/${{ env.RELEASE_ASSET_DIR }}/mapray-ui-${{ steps.versions.outputs.tag_name }}.tgz"
+          yarn pack --filename "$GITHUB_WORKSPACE/${{ env.RELEASE_ASSET_DIR }}/mapray-ui.tgz"
         working-directory: ${{ env.UI_PACKAGE_DIR }}
 
       - name: Upload package tarballs to release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            release-assets/mapray-mapray-js-${{ steps.versions.outputs.tag_name }}.tgz
-            release-assets/mapray-ui-${{ steps.versions.outputs.tag_name }}.tgz
+            release-assets/mapray-js.tgz
+            release-assets/mapray-ui.tgz
           overwrite_files: true

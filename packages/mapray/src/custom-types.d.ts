@@ -28,3 +28,8 @@ declare module "*.wasm" {
 // パッケージ @types/mapbox-gl には style-spec の型宣言は用意されてい
 // ないので、空の型宣言で any とする
 declare module "mapbox-gl/dist/style-spec/index.es.js";
+
+declare module "draco3d/draco_decoder_nodejs.js" {
+  const createDecoderModule: ( options?: any ) => Promise<any>;
+  export default createDecoderModule;
+}

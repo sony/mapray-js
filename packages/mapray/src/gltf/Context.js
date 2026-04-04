@@ -26,6 +26,7 @@ class Context {
         this._base_resource = opts.base_resource;
         this._binary_type = opts.binary_type;
         this._image_type = opts.image_type;
+        this._binary_chunk = opts.binary_chunk || null;
         this._supported_extensions = opts.supported_extensions || [];
 
         this._resolve  = null;  // Promise の resolve() 関数
@@ -198,6 +199,14 @@ class Context {
      * @readonly
      */
     get gjson() { return this._gjson; }
+
+
+    /**
+     * GLB 由来の埋め込みバイナリチャンク。
+     * @type {?Uint8Array}
+     * @readonly
+     */
+    get binary_chunk() { return this._binary_chunk; }
 
 
     /**

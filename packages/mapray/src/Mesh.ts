@@ -139,10 +139,32 @@ class Mesh {
      */
     dispose(): void
     {
+        if ( this._disposed ) {
+            return;
+        }
+
+        const buffers = new Set<MeshBuffer>();
+        for ( const key in this._attrib_data ) {
+            const entry = this._attrib_data[key];
+            if ( entry ) {
+                buffers.add( entry.mesh_buffer );
+            }
+        }
+
+        if ( this._index_data ) {
+            buffers.add( this._index_data.mesh_buffer );
+        }
+
+        for ( const buffer of buffers ) {
+            buffer.dispose();
+        }
+
         // @ts-ignore
         this._attrib_data = {};
         // @ts-ignore
         this._index_data = null;
+        // @ts-ignore
+        this._disposed = true;
     }
 
 
@@ -190,6 +212,7 @@ class Mesh {
     private readonly _num_vertices: number;
     private readonly _attrib_data:  AttribData;
     private readonly _index_data:   IndexData | null;
+    private _disposed: boolean = false;
 
 }
 

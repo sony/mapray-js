@@ -7,24 +7,24 @@
 core のみ:
 
 ```bash
-npm install https://github.com/TakamuneSuda/mapray-js/releases/download/v0.9.5-fork.2/mapray-mapray-js-v0.9.5-fork.2.tgz
+npm install https://github.com/TakamuneSuda/mapray-js/releases/download/v0.9.5/mapray-js.tgz
 ```
 
 ui も使う場合:
 
 ```bash
 npm install \
-  https://github.com/TakamuneSuda/mapray-js/releases/download/v0.9.5-fork.2/mapray-mapray-js-v0.9.5-fork.2.tgz \
-  https://github.com/TakamuneSuda/mapray-js/releases/download/v0.9.5-fork.2/mapray-ui-v0.9.5-fork.2.tgz
+  https://github.com/TakamuneSuda/mapray-js/releases/download/v0.9.5/mapray-js.tgz \
+  https://github.com/TakamuneSuda/mapray-js/releases/download/v0.9.5/mapray-ui.tgz
 ```
 
 ## Release
 
 1. `packages/mapray/package.json` と `packages/ui/package.json` の `version` を揃える
-2. その version に対応する tag を `v0.9.5-fork.2` のように作る
+2. その version に対応する tag を `v0.9.5` のように作る
 3. GitHub Release を作成する
 
-Release 作成時に [release_package_assets.yml](/Users/takamunesuda/develop/mapray-js-fork/.github/workflows/release_package_assets.yml) が動いて、`mapray-mapray-js-vX.Y.Z.tgz` と `mapray-ui-vX.Y.Z.tgz` を添付します。
+Release 作成時に [release_package_assets.yml](/Users/takamunesuda/Develop/Personal/mapray-js/.github/workflows/release_package_assets.yml) が動いて、`mapray-js.tgz` と `mapray-ui.tgz` を添付します。
 
 ## Local Build
 

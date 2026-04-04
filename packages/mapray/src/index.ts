@@ -70,6 +70,7 @@ export { default as B3dCollection } from "./B3dCollection";
 export { default as B3dScene } from "./B3dScene";
 export { default as CustomSceneCollection } from "./CustomSceneCollection";
 export { default as CustomScene } from "./CustomScene";
+export { default as ThreeDTileset } from "./ThreeDTileset";
 
 // PointCloud
 export { default as PointCloud } from "./PointCloud";

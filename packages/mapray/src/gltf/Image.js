@@ -1,4 +1,5 @@
 import BufferView from "./BufferView";
+import Dom from "../util/Dom";
 
 
 /**
@@ -33,6 +34,22 @@ class Image {
         }
         else if ( jimage.bufferView !== undefined ) {
             this._bufferView = new BufferView( ctx, jimage.bufferView );
+
+            const buffer = this._bufferView.buffer.binary;
+            if ( buffer !== null && jimage.mimeType !== undefined ) {
+                ctx.onStartLoadImage();
+                const first = this._bufferView.byteOffset;
+                const last = first + this._bufferView.byteLength;
+                const blob = new Blob( [buffer.slice( first, last )], { type: jimage.mimeType } );
+                Dom.loadImage( blob )
+                    .then( image => {
+                        this._image = image;
+                        ctx.onFinishLoadImage();
+                    } )
+                    .catch( error => {
+                        ctx.onFinishLoadImage( error );
+                    } );
+            }
         }
 
         // mimeType は "image/jpeg" または "image/png" で bufferView のときは必須

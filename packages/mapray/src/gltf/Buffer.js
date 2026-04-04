@@ -41,9 +41,15 @@ class Buffer {
                 } );
             }
             else {
-                // todo: GLB-stored Buffer
                 this._uri = null;
-                this._binary = null;
+                this._binary = (
+                    ctx.binary_chunk ?
+                        ctx.binary_chunk.buffer.slice(
+                            ctx.binary_chunk.byteOffset,
+                            ctx.binary_chunk.byteOffset + this._byteLength
+                        ) :
+                        null
+                );
             }
         }
     }

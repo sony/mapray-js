@@ -65,6 +65,7 @@ export default [
     ],
     plugins: [
       resolve(),
+      commonjs(),
       base64({
         include: '**/*.wasm'
       }),
