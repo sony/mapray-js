@@ -9,7 +9,7 @@ mapray access token(`MAPRAY_API_KEY`) needs to be defined.
 
 **To set access token:**
 
-To see the terrian data, you need a [Mapray access token](/doc/developer-guide/GettingStarted/index.md). You can either set an environment variable:
+To see the terrian data, you need a [Mapray access token](https://mapray.com/documents/index.html). You can either set an environment variable:
 
 ```bash
 export MAPRAY_API_KEY=<mapray_access_token>
