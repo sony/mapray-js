@@ -1,4 +1,4 @@
-[<p align="center"><img width="400" alt="Mapray" src="https://storage.googleapis.com/ino-sandbox.appspot.com/github/mainlogo.png"></p>](https://mapray.com/)
+[<p align="center"><img width="400" alt="Mapray" src="packages/mapray/src/resources/svg/mapray.svg"></p>](https://mapray.com/)
 
 maprayJS is a JavaScript library for a high quality interactive 3D globes and digital twin on the web. It is based on WebGL.
 [WebSite](https://mapray.com)
